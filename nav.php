@@ -49,11 +49,11 @@
 #leftMenu {
 	background-color: rgb(46, 94, 62);
 	color: #C1C1C1;
-	width: 150px;
+	width: 170px;
 	height: calc(100vh - 40px);
 	position: absolute;
 	top: 40px;
-	left: -150px;
+	left: -170px;
 }
 
 #leftMenu button {
@@ -126,6 +126,10 @@
 		<div class=btnimg><image src='resource/logout.png' alt='Logout' height=24px style='filter: invert(80%);margin-top:3px'/></div>
 		<div class=btntxt>Logout</div>
 	</button>
+	<button onclick="window.open('https://github.com/danrahn/plexweb', '_blank')">
+		<div class=btnimg><image src='resource/github.png' alt='Github' height=24px style='filter: invert(80%);margin-top:3px'/></div>
+		<div class=btntxt>Source Code</div>
+	</button>
 </div>
 </div>
 <script>
@@ -133,7 +137,7 @@
 		let menu = document.getElementById("leftMenu");
 		if (menu) {
 			if (menu.style.opacity == "1") {
-				Animation.queue({"opacity" : 0, "left": "-150px"}, menu, 200);
+				Animation.queue({"opacity" : 0, "left": "-170px"}, menu, 200);
 			} else {
 				Animation.queue({"opacity" : 1, "left" : "0px"}, menu, 200);
 			}
@@ -146,7 +150,7 @@
 		if (key === 27 /*esc*/) {
 			let menu = document.getElementById("leftMenu");
 			if (menu && menu.style.opacity != 0) {
-				Animation.queue({"opacity" : 0, "left": "-150px"}, menu, 200);
+				Animation.queue({"opacity" : 0, "left": "-170px"}, menu, 200);
 			}
 		}
 	});
@@ -164,7 +168,7 @@
 
 		let menu = document.getElementById("leftMenu");
 		if (menu && menu.style.opacity != 0) {
-			Animation.queue({"opacity" : 0, "left": "-150px"}, menu, 200);
+			Animation.queue({"opacity" : 0, "left": "-170px"}, menu, 200);
 		}
 
 	})
