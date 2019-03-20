@@ -1,0 +1,35 @@
+table, th, td {
+	border-collapse: collapse;
+	padding: 5px 10px 5px 10px;
+}
+
+th, td {
+	border-left: 2px solid #808080;
+	border-right: 2px solid #808080;
+	width: auto;
+	border-bottom: 1px solid #606060;
+}
+
+table {
+	width: auto;
+	background-color: rgba(0,0,0,.3);
+	color: #C1C1C1;
+	margin: auto;
+	margin-top: 50px;
+}
+
+th {
+	background-color: rgba(0,100,0,.3);
+}
+
+tr:hover {
+	background-color: rgba(0,0,0,0.2);
+}
+
+.approved_request {
+	background-color: rgb(63, 100, 69);
+}
+
+.denied_request {
+	background-color: rgb(100, 66, 69);
+}

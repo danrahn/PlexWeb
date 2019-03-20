@@ -1,0 +1,6 @@
+RewriteEngine on
+RewriteRule ^/?art/(.*)$ get_image.php?path=/$1&type=background [PT]
+RewriteRule ^/?thumb/(.*)$ get_image.php?path=/$1&type=thumb [PT]
+RewriteRule ^/?resource/(.*)$ get_resource.php?resource=$1 [PT]
+
+FileETag MTime Size
