@@ -245,6 +245,7 @@ abstract class RequestType
 			case "movie":
 				return RequestType::Movie;
 			case "tvshow":
+			case "tv":
 				return RequestType::TVShow;
 			case "audiobook":
 				return RequestType::AudioBook;
