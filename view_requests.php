@@ -173,7 +173,9 @@ function print_status_options($status, $rid)
 <div id="plexFrame">
     <?php include "nav.php" ?>
     <div id="container">
-        <?php fill_request_table() ?>
+        <div class="tableHolder">
+            <?php fill_request_table() ?>
+        </div>
     </div>
 </div>
 </body>
@@ -208,7 +210,7 @@ function print_status_options($status, $rid)
         http.onreadystatechange = function() {
             if (this.readyState != 4 || this.status != 200)
             {
-            	logVerbose(`ReadyState: ${this.readyState}; Status: ${this.status}`);
+                logVerbose(`ReadyState: ${this.readyState}; Status: ${this.status}`);
                 return;
             }
 

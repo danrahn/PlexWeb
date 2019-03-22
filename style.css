@@ -336,6 +336,10 @@ hr {
     position: absolute;
 }
 
+.tableHolder {
+    overflow-y: scroll;
+}
+
 @media (orientation: landscape), (min-width: 767px) {
     .mediainfo {
         min-width: 630px;
@@ -361,6 +365,19 @@ hr {
     /* width*/
     ::-webkit-scrollbar {
         width: 10px;
+        height: 10px;
+    }
+
+    .tableHolder::-webkit-scrollbar {
+        width: 0;
+        height: 5px;
+    }
+
+    /* Track */
+    .tableHolder::-webkit-scrollbar-track {
+        background: transparent;
+        width: 0;
+        height: 5px;
     }
 }
 
@@ -394,6 +411,19 @@ hr {
     /* width*/
     ::-webkit-scrollbar {
         width: 3px;
+        height: 3px;
+    }
+
+    .tableHolder::-webkit-scrollbar {
+        width: 2px;
+        height: 2px;
+    }
+
+    /* Track */
+    .tableHolder::-webkit-scrollbar-track {
+        background: transparent;
+        width: 0;
+        height: 2px;
     }
 }
 

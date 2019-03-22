@@ -26,6 +26,8 @@ requireSSL();
     <?php include "nav.php" ?>
     <div id="container">
         <div id="welcome">Loading Member List...</div>
+        <div class="tableHolder">
+        </div>
     </div>
 </div>
 </body>
@@ -69,7 +71,7 @@ requireSSL();
             appendData(table, users[i]);
         }
 
-        document.getElementById("container").appendChild(table);
+        document.querySelector(".tableHolder").appendChild(table);
     }
 
     function appendHeaders(table, ...values) {
