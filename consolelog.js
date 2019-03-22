@@ -1,11 +1,11 @@
 const LOG = {
-	Extreme: -1,
-	Tmi: 0,
-	Verbose: 1,
-	Info: 2,
-	Warn: 3,
-	Error: 4,
-	Critical: 5
+    Extreme: -1,
+    Tmi: 0,
+    Verbose: 1,
+    Info: 2,
+    Warn: 3,
+    Error: 4,
+    Critical: 5
 };
 
 const g_logStr = ["TMI", "VERBOSE", "INFO", "WARN", "ERROR", "CRITICAL"];
@@ -20,50 +20,50 @@ const g_levelColors = [
 
 let g_logLevel = parseInt(sessionStorage.getItem("loglevel"));
 if (isNaN(g_logLevel)) {
-	g_logLevel = LOG.Warn;
+    g_logLevel = LOG.Warn;
 }
 
 function setLogLevel(level) {
-	sessionStorage.setItem("loglevel", level);
-	g_logLevel = level;
+    sessionStorage.setItem("loglevel", level);
+    g_logLevel = level;
 }
 
 function logTmi(text, isObject = false) {
-	log(text, LOG.Tmi, isObject);
+    log(text, LOG.Tmi, isObject);
 }
 
 function logVerbose(text, isObject = false) {
-	log(text, LOG.Verbose, isObject);
+    log(text, LOG.Verbose, isObject);
 }
 
 function logInfo(text, isObject = false) {
-	log(text, LOG.Info, isObject);
+    log(text, LOG.Info, isObject);
 }
 
 function logWarn(text, isObject = false) {
-	log(text, LOG.Warn, isObject);
+    log(text, LOG.Warn, isObject);
 }
 
 function logError(text, isObject = false) {
-	log(text, LOG.Error, isObject);
+    log(text, LOG.Error, isObject);
 }
 
 function logJson(object, level) {
-	log(JSON.stringify(object), level);
+    log(JSON.stringify(object), level);
 }
 
 function log(text, level, isObject = false) {
-	if (level < g_logLevel) {
-		return;
-	}
+    if (level < g_logLevel) {
+        return;
+    }
 
-	if (g_logLevel === LOG.Extreme) {
+    if (g_logLevel === LOG.Extreme) {
         console.log("%c[TMI] " + "%cCalled log with (" + text + ", " + level + ", " + isObject + ")",
             "color: " + g_levelColors[0][0],
             "color: " + g_levelColors[0][1]);
-	}
+    }
 
-	let output;
+    let output;
     if (level < LOG.Warn) {
         output = console.log;
     } else if (level < LOG.Error) {

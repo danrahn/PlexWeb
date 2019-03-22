@@ -135,7 +135,8 @@ function login(&$error)
     session_start();
 
     $ip = $db->real_escape_string($_SERVER['REMOTE_ADDR']);
-    $query = "INSERT INTO logins (userid, ip) VALUES ($id, '$ip')";
+    $user_agent = $db->real_escape_string($_SERVER['HTTP_USER_AGENT']);
+    $query = "INSERT INTO logins (userid, ip, user_agent) VALUES ($id, '$ip', '$user_agent')";
     $db->query($query);
     $query = "UPDATE users SET last_login=CURRENT_TIMESTAMP WHERE id=$id";
     $db->query($query);
@@ -527,7 +528,7 @@ function update_req_status($req_id, $status, $requester)
     $query = "UPDATE user_requests SET satisfied=$status WHERE id=$req_id";
     if (!$db->query($query))
     {
-    	json_error_and_exit($db->error);
+		json_error_and_exit($db->error);
     }
 
     $status_str = ($status == 0 ? "pending" : ($status == 1 ? "approved" : "denied"));
