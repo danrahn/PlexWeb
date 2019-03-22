@@ -14,8 +14,8 @@
 	background-color: #2E5E3E;
 	color: #C1C1C1;
 	font-weight: bold;
-	padding-left: 15px;
-	padding-right: 15px;
+	padding-left: 10px;
+	padding-right: 10px;
 	border: none;
 }
 
@@ -29,31 +29,36 @@
 	float: right;
 }
 
-#navholder button:hover, #mainMenu:hover {
+#navholder button:hover, #mainMenu:hover, #pageName:hover {
 	background-color: #0E3E1E;
 }
 
 .ham {
 	width: 30px;
-	height: 3px;
+	height: 5px;
 	background-color: #c1c1c1;
-	margin-top: 8px;
+	margin-top: 5px;
 }
 
 #mainMenu {
-	height: 40px;
-	padding: 0 10px;
+	height: 37px;
+	padding: 3px 10px 0 10px;
 	margin: auto;
+}
+
+#mainMenu:hover .ham {
+	background-color: #A1A1A1;
 }
 
 #leftMenu {
 	background-color: rgb(46, 94, 62);
 	color: #C1C1C1;
-	width: 170px;
+	width: 169px;
 	height: calc(100vh - 40px);
 	position: absolute;
 	top: 40px;
 	left: -170px;
+	border-right: 1px solid #808080;
 }
 
 #leftMenu button {
@@ -71,11 +76,11 @@
 }
 
 .btnimg {
-	float: left;
+	float: right;
 }
 
 .btntxt {
-	float: right;
+	float: left;
 }
 
 #pageName {
@@ -86,6 +91,17 @@
 	line-height: 40px;
 	padding: 0 10px;
 	font-size: 14pt;
+	cursor: pointer;
+}
+
+#pageName:hover {
+	color: #a1a1a1;
+}
+
+@media all and (orientation: portrait) and (max-width: 767px) {
+	#navShort {
+		display: none;
+	}
 }
 </style>
 <div id="navholder">
@@ -95,42 +111,47 @@
 		<div class="ham"></div>
 		<div class="ham"></div>
 	</div>
-	<button class="rightbutton" onclick="window.location = 'logout.php'">
-		<div class=btnimg><image src='resource/logout.png' alt='Logout' height=24px style='filter: invert(80%);margin-top:3px'/></div>
-	</button>
-	<button class="rightbutton"onclick="window.location = 'view_requests.php'">
-		<div class=btnimg><image src='resource/requests.png' alt='Requests' height=24px style='filter: invert(80%);margin-top:3px'/></div>
-	</button>
-	<button class="rightbutton" onclick="window.location = 'user_settings.php'">
-		<div class=btnimg><image src='resource/settings.png' alt='Settings' height=24px style='filter: invert(80%);margin-top:3px'/></div>
-	</button>
+	<div id="navShort">
+		<button class="rightbutton" onclick="window.location = 'logout.php'">
+			<div class=btnimg><image src='resource/logout.png' alt='Logout' height=24px style='filter: invert(80%);margin-top:3px'/></div>
+		</button>
+		<button class="rightbutton"onclick="window.location = 'view_requests.php'">
+			<div class=btnimg><image src='resource/requests.png' alt='Requests' height=24px style='filter: invert(80%);margin-top:3px'/></div>
+		</button>
+		<button class="rightbutton" onclick="window.location = 'user_settings.php'">
+			<div class=btnimg><image src='resource/settings.png' alt='Settings' height=24px style='filter: invert(80%);margin-top:3px'/></div>
+		</button>
+	</div>
 	<div id="pageName" onclick="window.location = 'index.php'">Plex Web</button>
+</div>
 </div>
 <div id="leftMenu">
 	<button onclick="window.location = 'index.php'">
-		<div class=btnimg><image src='resource/home.png' alt='Home' height=24px style='filter: invert(80%);margin-top:3px'/></div>
 		<div class=btntxt>Home</div>
+		<div class=btnimg><image src='resource/home.png' alt='Home' height=24px style='filter: invert(80%);margin-top:3px'/></div>
 	</button>
 <?php if (isset($_SESSION['level']) && (int)$_SESSION['level'] >= 100) { ?>
 	<button onclick="window.location = 'members.php'">
-		<div class=btnimg><image src='resource/members.png' alt='Home' height=24px style='filter: invert(80%);margin-top:3px'/></div>
 		<div class=btntxt>Members</div>
+		<div class=btnimg><image src='resource/members.png' alt='Home' height=24px style='filter: invert(80%);margin-top:3px'/></div>
 	</button>
 <?php } ?>
-	<button class="rightbutton" onclick="window.location = 'user_settings.php'"><div class=btnimg><image src='resource/settings.png' alt='Settings' height=24px style='filter: invert(80%);margin-top:3px'/></div><div class=btntxt>Settings</div></button>
+	<button class="rightbutton" onclick="window.location = 'user_settings.php'">
+		<div class=btntxt>Settings</div>
+		<div class=btnimg><image src='resource/settings.png' alt='Settings' height=24px style='filter: invert(80%);margin-top:3px'/></div>
+	</button>
 	<button onclick="window.location = 'view_requests.php'">
-		<div class=btnimg><image src='resource/requests.png' alt='Requests' height=24px style='filter: invert(80%);margin-top:3px'/></div>
 		<div class=btntxt>Requests</div>
+		<div class=btnimg><image src='resource/requests.png' alt='Requests' height=24px style='filter: invert(80%);margin-top:3px'/></div>
 	</button>
 	<button onclick="window.location = 'logout.php'">
-		<div class=btnimg><image src='resource/logout.png' alt='Logout' height=24px style='filter: invert(80%);margin-top:3px'/></div>
 		<div class=btntxt>Logout</div>
+		<div class=btnimg><image src='resource/logout.png' alt='Logout' height=24px style='filter: invert(80%);margin-top:3px'/></div>
 	</button>
 	<button onclick="window.open('https://github.com/danrahn/plexweb', '_blank')">
-		<div class=btnimg><image src='resource/github.png' alt='Github' height=24px style='filter: invert(80%);margin-top:3px'/></div>
 		<div class=btntxt>Source Code</div>
+		<div class=btnimg><image src='resource/github.png' alt='Github' height=24px style='filter: invert(80%);margin-top:3px'/></div>
 	</button>
-</div>
 </div>
 <script>
 	document.getElementById("mainMenu").addEventListener("click", function() {
