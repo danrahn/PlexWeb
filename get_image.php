@@ -14,7 +14,7 @@ $img_path = param_or_die("path");
 $type = param_or_die("type");
 if ($type !== "thumb" && $type !== "background")
 {
-	error_and_exit(400);
+    error_and_exit(400);
 }
 
 $isThumb = !strcmp($type, "thumb");
@@ -25,48 +25,48 @@ $filename = "includes/cache/" . $root_folder . $filename_parts[count($filename_p
 
 if (file_exists($filename))
 {
-	// Plex explicitly doesn't cache anything, so this pretty much does nothing.
-	// Could have an automated task to re-run this every few hours, but probably overkill.
-	// I can just zap the cache dir if I want things to refresh
-	$ch = curl_init();
-	curl_setopt($ch, CURLOPT_URL, "127.0.0.1:32400" . $img_path . "?" . PLEX_TOKEN);
-	curl_setopt($ch, CURLOPT_NOBODY, true);
-	curl_setopt($ch, CURLOPT_HEADER, true);
-	curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-	curl_setopt($ch, CURLOPT_FILETIME, true);
-	$result = curl_exec($ch);
-	$info = curl_getinfo($ch);
-	curl_close($ch);
+    // Plex explicitly doesn't cache anything, so this pretty much does nothing.
+    // Could have an automated task to re-run this every few hours, but probably overkill.
+    // I can just zap the cache dir if I want things to refresh
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, "127.0.0.1:32400" . $img_path . "?" . PLEX_TOKEN);
+    curl_setopt($ch, CURLOPT_NOBODY, true);
+    curl_setopt($ch, CURLOPT_HEADER, true);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_FILETIME, true);
+    $result = curl_exec($ch);
+    $info = curl_getinfo($ch);
+    curl_close($ch);
 
-	$file_time = filemtime($filename);
-	if (isset($info['filetime']) && $info['filetime'] != -1 && strtotime($info['filetime']) >= $file_time)
-	{
-		// Plex has a newer image
-		serve_new_image($img_path, $filename, $isThumb);
-	}
-	else
-	{
-		$headers = apache_request_headers(); 
-		header('Cache-Control: private');
-		header('Last-Modified: '.gmdate('D, d M Y H:i:s', $file_time) . ' GMT');
-		if (isset($headers['If-Modified-Since']) && (strtotime($headers['If-Modified-Since']) >= $file_time))
-		{
-			header('HTTP/1.1 304 Not Modified');
-			header('Connection: close');
-		}
-		else
-		{
-			header('HTTP/1.1 200 OK');
-			header('Content-Length: '. filesize($filename));
-			header('Content-type: image/jpeg');
+    $file_time = filemtime($filename);
+    if (isset($info['filetime']) && $info['filetime'] != -1 && strtotime($info['filetime']) >= $file_time)
+    {
+        // Plex has a newer image
+        serve_new_image($img_path, $filename, $isThumb);
+    }
+    else
+    {
+        $headers = apache_request_headers(); 
+        header('Cache-Control: private');
+        header('Last-Modified: '.gmdate('D, d M Y H:i:s', $file_time) . ' GMT');
+        if (isset($headers['If-Modified-Since']) && (strtotime($headers['If-Modified-Since']) >= $file_time))
+        {
+            header('HTTP/1.1 304 Not Modified');
+            header('Connection: close');
+        }
+        else
+        {
+            header('HTTP/1.1 200 OK');
+            header('Content-Length: '. filesize($filename));
+            header('Content-type: image/jpeg');
 
-			readfile($filename);
-		}
-	}
+            readfile($filename);
+        }
+    }
 }
 else
 {
-	serve_new_image($img_path, $filename, $isThumb);
+    serve_new_image($img_path, $filename, $isThumb);
 }
 
 /// <summary>
@@ -75,26 +75,26 @@ else
 /// </summary>
 function serve_new_image($img_path, $filename, $isThumb)
 {
-	$img = new Imagick();
-	$img->readImageBlob(curl("127.0.0.1:32400" . $img_path . '?' . PLEX_TOKEN));
+    $img = new Imagick();
+    $img->readImageBlob(curl("127.0.0.1:32400" . $img_path . '?' . PLEX_TOKEN));
 
-	if ($isThumb)
-	{
-		$img->thumbnailImage(250, 0);
-	}
-	else
-	{
-		$img->thumbnailImage(600, 0);
-		$img->blurImage(30.0, 6);
-	}
+    if ($isThumb)
+    {
+        $img->thumbnailImage(250, 0);
+    }
+    else
+    {
+        $img->thumbnailImage(600, 0);
+        $img->blurImage(30.0, 6);
+    }
 
-	header('Cache-Control: private');
-	header('Last-Modified: ' . gmdate('D, d M Y H:i:s', time()) . ' GMT');
-	header('HTTP/1.1 200 OK');
-	file_put_contents($filename, $img->getImageBlob());
-	header('Content-Length: '. filesize($filename));
-	header("Content-Type: image/jpeg");
-	echo $img->getImageBlob();
+    header('Cache-Control: private');
+    header('Last-Modified: ' . gmdate('D, d M Y H:i:s', time()) . ' GMT');
+    header('HTTP/1.1 200 OK');
+    file_put_contents($filename, $img->getImageBlob());
+    header('Content-Length: '. filesize($filename));
+    header("Content-Type: image/jpeg");
+    echo $img->getImageBlob();
 }
 
 /// <summary>
@@ -102,13 +102,13 @@ function serve_new_image($img_path, $filename, $isThumb)
 /// </summary>
 function curl($url)
 {
-	$ch = curl_init();
-	curl_setopt($ch, CURLOPT_URL, $url);
-	curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 
-	$return = curl_exec($ch);
-	curl_close($ch);
-	return $return;
+    $return = curl_exec($ch);
+    curl_close($ch);
+    return $return;
 }
 
 ?>

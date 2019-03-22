@@ -10,225 +10,225 @@
 /// <todo>When required, support multiple properties at once, i.e. { "backgroundColor" : "#AAA", "color": "#BBB" }</todo>
 A = function()
 {
-	/// <summary>
-	/// Queue an animation of the given element
-	/// </summary>
-	this.queue = function(func, element, ...args)
-	{
-		this.queueDelayed(func, element, 0, ...args);
-	}
+    /// <summary>
+    /// Queue an animation of the given element
+    /// </summary>
+    this.queue = function(func, element, ...args)
+    {
+        this.queueDelayed(func, element, 0, ...args);
+    }
 
-	/// <summary>
-	/// Queue an animation that once queued for exexcution will fire after the specified delay
-	/// </summary>
-	this.queueDelayed = function(func, element, delay, ...args)
-	{
-		if (arguments.length < 2)
-		{
-			return;
-		}
+    /// <summary>
+    /// Queue an animation that once queued for exexcution will fire after the specified delay
+    /// </summary>
+    this.queueDelayed = function(func, element, delay, ...args)
+    {
+        if (arguments.length < 2)
+        {
+            return;
+        }
 
-		if (!element.id)
-		{
-			logWarn("Animated element does not have an id!");
-		}
+        if (!element.id)
+        {
+            logWarn("Animated element does not have an id!");
+        }
 
-		if (!animationQueue[element.id])
-		{
-			animationQueue[element.id] = [];
-		}
+        if (!animationQueue[element.id])
+        {
+            animationQueue[element.id] = [];
+        }
 
-		let animations = [];
-		let seen = {};
-		for (let [key, value] of Object.entries(func))
-		{
-			if (key in seen)
-			{
-				// Don't allow duplicate entries
-				return;
-			}
+        let animations = [];
+        let seen = {};
+        for (let [key, value] of Object.entries(func))
+        {
+            if (key in seen)
+            {
+                // Don't allow duplicate entries
+                return;
+            }
 
-			seen[key] = 1;
+            seen[key] = 1;
 
-			animations.push(new AnimationParams(/*Funcs[key]*/getFunc(key), key, delay, value, ...args));
-		}
+            animations.push(new AnimationParams(/*Funcs[key]*/getFunc(key), key, delay, value, ...args));
+        }
 
-		animationQueue[element.id].push(animations);
-		if (animationQueue[element.id].length !== 1)
-		{
-			// Can't fire immediately
-			return;
-		}
+        animationQueue[element.id].push(animations);
+        if (animationQueue[element.id].length !== 1)
+        {
+            // Can't fire immediately
+            return;
+        }
 
-		for (let i = 0; i < animations.length; ++i)
-		{
-			setTimeout(function(func, element, prop, ...args) {
-				func(element, prop, ...args);
-			}, delay, animations[i].func, element, animations[i].prop, ...animations[i].args);
-		}
-	}
+        for (let i = 0; i < animations.length; ++i)
+        {
+            setTimeout(function(func, element, prop, ...args) {
+                func(element, prop, ...args);
+            }, delay, animations[i].func, element, animations[i].prop, ...animations[i].args);
+        }
+    }
 
-	// Our animation queue allows us to keep track of the current animations that are pending execution
-	let animationQueue = {};
+    // Our animation queue allows us to keep track of the current animations that are pending execution
+    let animationQueue = {};
 
-	/// <summary>
-	/// Generic holder for the various arguments for a given animation
-	/// </summary>
-	let AnimationParams = function(func, prop, delay, ...args)
-	{
-		this.func = func;
-		this.prop = prop;
-		this.delay = delay;
-		this.args = args;
-	}
+    /// <summary>
+    /// Generic holder for the various arguments for a given animation
+    /// </summary>
+    let AnimationParams = function(func, prop, delay, ...args)
+    {
+        this.func = func;
+        this.prop = prop;
+        this.delay = delay;
+        this.args = args;
+    }
 
-	/// <summary>
-	/// Should only be called after an animation completes. Removes the current
-	/// animation from the queue and firest the next one if applicable
-	/// </summary>
-	let fireNext = function(element)
-	{
-		animationQueue[element.id][0].shift();
-		if (animationQueue[element.id][0].length === 0)
-		{
-			// Clear it from our dictionary to save some space
-			animationQueue[element.id].shift();
-		}
-		else
-		{
-			// Still waiting for the last animation from the given group
-			return;
-		}
+    /// <summary>
+    /// Should only be called after an animation completes. Removes the current
+    /// animation from the queue and firest the next one if applicable
+    /// </summary>
+    let fireNext = function(element)
+    {
+        animationQueue[element.id][0].shift();
+        if (animationQueue[element.id][0].length === 0)
+        {
+            // Clear it from our dictionary to save some space
+            animationQueue[element.id].shift();
+        }
+        else
+        {
+            // Still waiting for the last animation from the given group
+            return;
+        }
 
-		if (animationQueue[element.id].length === 0)
-		{
-			delete animationQueue[element.id];
-		}
-		else
-		{
-			let nextAnimations = animationQueue[element.id][0];
-			for (let i = 0; i < nextAnimations.length; ++i)
-			{
-				setTimeout(function(element, nextAnimation) {
-					nextAnimation.func(element, nextAnimation.prop, ...nextAnimation.args);
-				}, nextAnimations[i].delay, element, nextAnimations[i]);
-			}
-		}
-	}
+        if (animationQueue[element.id].length === 0)
+        {
+            delete animationQueue[element.id];
+        }
+        else
+        {
+            let nextAnimations = animationQueue[element.id][0];
+            for (let i = 0; i < nextAnimations.length; ++i)
+            {
+                setTimeout(function(element, nextAnimation) {
+                    nextAnimation.func(element, nextAnimation.prop, ...nextAnimation.args);
+                }, nextAnimations[i].delay, element, nextAnimations[i]);
+            }
+        }
+    }
 
-	/// <summary>
-	/// The list of supported animations and their subsequent implementations
-	/// </summary>
-	let getFunc = function(func)
-	{
-		switch (func)
-		{
-			case "backgroundColor":
-			case "color":
-				return function(element, prop, newColor, duration, deleteAfterTransition = false)
-				{
-					animateColorProperty(element, prop, newColor, duration, deleteAfterTransition);
-				}
-			case "opacity":
-			case "left":
-				return function(element, prop, newValue, duration, deleteAfterTransition = false)
-				{
-					var steps = Math.round(duration / (50 / 3));
-					const percent = newValue[newValue.length - 1] == '%';
-					let px = newValue[newValue.length - 1] == 'x';
-					const newVal = parseFloat(newValue);
+    /// <summary>
+    /// The list of supported animations and their subsequent implementations
+    /// </summary>
+    let getFunc = function(func)
+    {
+        switch (func)
+        {
+            case "backgroundColor":
+            case "color":
+                return function(element, prop, newColor, duration, deleteAfterTransition = false)
+                {
+                    animateColorProperty(element, prop, newColor, duration, deleteAfterTransition);
+                }
+            case "opacity":
+            case "left":
+                return function(element, prop, newValue, duration, deleteAfterTransition = false)
+                {
+                    var steps = Math.round(duration / (50 / 3));
+                    const percent = newValue[newValue.length - 1] == '%';
+                    let px = newValue[newValue.length - 1] == 'x';
+                    const newVal = parseFloat(newValue);
 
-					let oldVal = parseFloat(getComputedStyle(element)[prop]);
-					if (percent)
-					{
-						oldVal = oldVal / parseInt(getComputedStyle(document.body).width);
-					}
+                    let oldVal = parseFloat(getComputedStyle(element)[prop]);
+                    if (percent)
+                    {
+                        oldVal = oldVal / parseInt(getComputedStyle(document.body).width);
+                    }
 
-					var oldOpacity = parseFloat(getComputedStyle(element).opacity);
-					let animationFunc = function(element, prop, oldVal, newVal, percent, px, i, steps, deleteAfterTransition)
-					{
-						element.style[prop] = oldVal + (((newVal - oldVal) / steps) * i) + (percent ? "%" : px ? "px" : "");
-						if (i === steps)
-						{
-							if (deleteAfterTransition)
-							{
-								element.parentNode.removeChild(element);
-							}
+                    var oldOpacity = parseFloat(getComputedStyle(element).opacity);
+                    let animationFunc = function(element, prop, oldVal, newVal, percent, px, i, steps, deleteAfterTransition)
+                    {
+                        element.style[prop] = oldVal + (((newVal - oldVal) / steps) * i) + (percent ? "%" : px ? "px" : "");
+                        if (i === steps)
+                        {
+                            if (deleteAfterTransition)
+                            {
+                                element.parentNode.removeChild(element);
+                            }
 
-							// Always need to call this once a particular animation is done!
-							fireNext(element);
-						}
-					}
+                            // Always need to call this once a particular animation is done!
+                            fireNext(element);
+                        }
+                    }
 
-					for (var i = 1; i <= steps; i++)
-					{
-						setTimeout(animationFunc, (50 / 3) * i, element, prop, oldVal, newVal, percent, px, i, steps, deleteAfterTransition);
-					}
-				}
-			default:
-				logError("Bad:" + func);
-				return;
-		}
-	}
+                    for (var i = 1; i <= steps; i++)
+                    {
+                        setTimeout(animationFunc, (50 / 3) * i, element, prop, oldVal, newVal, percent, px, i, steps, deleteAfterTransition);
+                    }
+                }
+            default:
+                logError("Bad:" + func);
+                return;
+        }
+    }
 
-	/// <summary>
-	/// Generic method to animate the color value of a given element
-	/// </summary>
-	let animateColorProperty = function(element, prop, newColor, duration, deleteAfterTransition)
-	{
-		const steps = Math.round(duration / (50 / 3)); // 1000 / 60 -> 60Hz
-		let oldColor = new Color(getComputedStyle(element)[prop]);
+    /// <summary>
+    /// Generic method to animate the color value of a given element
+    /// </summary>
+    let animateColorProperty = function(element, prop, newColor, duration, deleteAfterTransition)
+    {
+        const steps = Math.round(duration / (50 / 3)); // 1000 / 60 -> 60Hz
+        let oldColor = new Color(getComputedStyle(element)[prop]);
 
-		// If newColor is a string, try to parse a hex value. Otherwise it needs to be 'transparent'
-		if (typeof(newColor) === "string")
-		{
-			if ((newColor = newColor.toLowerCase()) === "transparent")
-			{
-				newColor = oldColor.clone();
-				newColor.a = 0;
-			}
-			else if (newColor[0] == '#')
-			{
-				newColor = new Color(newColor);
-			}
-			else
-			{
-				// Create an element with our color and use whatever the document
-				// tells us the color should be. If it's invalid, the default
-				// body color will be returned
-				let tempElement = document.createElement("q");
-				tempElement.style.color = newColor;
-				document.body.append(tempElement); // Some browsers need the element to be attached
-				newColor = new Color(getComputedStyle(tempElement)[prop]);
-				document.body.removeChild(tempElement);
-			}
-		}
+        // If newColor is a string, try to parse a hex value. Otherwise it needs to be 'transparent'
+        if (typeof(newColor) === "string")
+        {
+            if ((newColor = newColor.toLowerCase()) === "transparent")
+            {
+                newColor = oldColor.clone();
+                newColor.a = 0;
+            }
+            else if (newColor[0] == '#')
+            {
+                newColor = new Color(newColor);
+            }
+            else
+            {
+                // Create an element with our color and use whatever the document
+                // tells us the color should be. If it's invalid, the default
+                // body color will be returned
+                let tempElement = document.createElement("q");
+                tempElement.style.color = newColor;
+                document.body.append(tempElement); // Some browsers need the element to be attached
+                newColor = new Color(getComputedStyle(tempElement)[prop]);
+                document.body.removeChild(tempElement);
+            }
+        }
 
-		let animationFunc = function(element, oldColor, newColor, i, steps, prop, deleteAfterTransition)
-		{
-			element.style[prop] = "rgba(" +
-				Math.round(oldColor.r + (((newColor.r - oldColor.r) / steps) * i)) + "," +
-				Math.round(oldColor.g + (((newColor.g - oldColor.g) / steps) * i)) + "," +
-				Math.round(oldColor.b + (((newColor.b - oldColor.b) / steps) * i)) + "," +
-				(oldColor.a + (((newColor.a - oldColor.a) / steps) * i)) + ")";
+        let animationFunc = function(element, oldColor, newColor, i, steps, prop, deleteAfterTransition)
+        {
+            element.style[prop] = "rgba(" +
+                Math.round(oldColor.r + (((newColor.r - oldColor.r) / steps) * i)) + "," +
+                Math.round(oldColor.g + (((newColor.g - oldColor.g) / steps) * i)) + "," +
+                Math.round(oldColor.b + (((newColor.b - oldColor.b) / steps) * i)) + "," +
+                (oldColor.a + (((newColor.a - oldColor.a) / steps) * i)) + ")";
 
-			if (i === steps)
-			{
-				if (deleteAfterTransition)
-				{
-					element.style[prop] = null;
-				}
+            if (i === steps)
+            {
+                if (deleteAfterTransition)
+                {
+                    element.style[prop] = null;
+                }
 
-				// Always need to call this once a particular animation is done!
-				fireNext(element);
-			}
-		}
+                // Always need to call this once a particular animation is done!
+                fireNext(element);
+            }
+        }
 
-		for (var i = 1; i <= steps; i++)
-		{
-			setTimeout(animationFunc, (50 / 3) * i, element, oldColor, newColor, i, steps, prop, deleteAfterTransition);
-		}
-	}
+        for (var i = 1; i <= steps; i++)
+        {
+            setTimeout(animationFunc, (50 / 3) * i, element, oldColor, newColor, i, steps, prop, deleteAfterTransition);
+        }
+    }
 }
 
 Animation = new A();
@@ -238,55 +238,55 @@ Animation = new A();
 /// </summary>
 function Color(r, g, b, a)
 {
-	if (g === undefined && r.startsWith("#"))
-	{
-		// Better be a hex string!
-		let result;
-		if (r.length == 4)
-		{
-			r = r[0] + r[1] + r[1] + r[2] + r[2] + r[3] + r[3];
-		}
+    if (g === undefined && r.startsWith("#"))
+    {
+        // Better be a hex string!
+        let result;
+        if (r.length == 4)
+        {
+            r = r[0] + r[1] + r[1] + r[2] + r[2] + r[3] + r[3];
+        }
 
-		// Assume rgb string
-		result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(r);
+        // Assume rgb string
+        result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(r);
 
-		this.r = parseInt(result[1], 16);
-		this.g = parseInt(result[2], 16);
-		this.b = parseInt(result[3], 16);
-		this.a = 1;
-	}
-	else
-	{
-		if (g === undefined)
-		{
-			// Hacky to keep the trailing parenthsis, but parseInt/Float figures it out
-			[r, g, b, a] = r.substr(r.indexOf("(") + 1).split(",");
-		}
+        this.r = parseInt(result[1], 16);
+        this.g = parseInt(result[2], 16);
+        this.b = parseInt(result[3], 16);
+        this.a = 1;
+    }
+    else
+    {
+        if (g === undefined)
+        {
+            // Hacky to keep the trailing parenthsis, but parseInt/Float figures it out
+            [r, g, b, a] = r.substr(r.indexOf("(") + 1).split(",");
+        }
 
-		this.r = r ? parseInt(r) : 0;
-		this.g = g ? parseInt(g) : 0;
-		this.b = b ? parseInt(b) : 0;
-		this.a = a ? parseFloat(a) : 1; // Opaque by default
-	}
+        this.r = r ? parseInt(r) : 0;
+        this.g = g ? parseInt(g) : 0;
+        this.b = b ? parseInt(b) : 0;
+        this.a = a ? parseFloat(a) : 1; // Opaque by default
+    }
 
-	/// <summary>
-	/// Return a copy of this color
-	/// </summary>
-	this.clone = function() {
-		return new Color(this.r, this.g, this.b, this.a);
-	}
+    /// <summary>
+    /// Return a copy of this color
+    /// </summary>
+    this.clone = function() {
+        return new Color(this.r, this.g, this.b, this.a);
+    }
 
-	/// <summary>
-	/// Returns whether the given color is equal to this one
-	/// </summary>
-	this.equals = function(other) {
-		return this.r == other.r && this.g == other.g && this.b == other.b && this.a == other.a;
-	}
+    /// <summary>
+    /// Returns whether the given color is equal to this one
+    /// </summary>
+    this.equals = function(other) {
+        return this.r == other.r && this.g == other.g && this.b == other.b && this.a == other.a;
+    }
 
-	/// <summary>
-	/// Return an rgba string representation of this color
-	/// </summary>
-	this.toString = function() {
-		return "rgba(" + this.r + ", " + this.g + ", " + this.b + ", " + this.a + ")";
-	}
+    /// <summary>
+    /// Return an rgba string representation of this color
+    /// </summary>
+    this.toString = function() {
+        return "rgba(" + this.r + ", " + this.g + ", " + this.b + ", " + this.a + ")";
+    }
 }

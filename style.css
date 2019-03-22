@@ -1,53 +1,53 @@
 #plexFrame {
-	background: rgba(0,0,0,0) url("res/noise.8b05ce45d0df59343e206bc9ae78d85d.png") repeat scroll 0% 0%;
-	width : 100%;
-	height : 100%;
-	margin: 0;
-	border: 0;
-	overflow: auto;
+    background: rgba(0,0,0,0) url("res/noise.8b05ce45d0df59343e206bc9ae78d85d.png") repeat scroll 0% 0%;
+    width : 100%;
+    height : 100%;
+    margin: 0;
+    border: 0;
+    overflow: auto;
 }
 
 body {
-	background-image: url("res/preset-light.770a0981b66e038d3ffffbcc4f5a26a4.png");
-	background-size: cover;
-	background-position: center center;
-	background-repeat: no repeat;
-	margin: 0;
-	padding: 0;
-	font-family: sans-serif;
+    background-image: url("res/preset-light.770a0981b66e038d3ffffbcc4f5a26a4.png");
+    background-size: cover;
+    background-position: center center;
+    background-repeat: no repeat;
+    margin: 0;
+    padding: 0;
+    font-family: sans-serif;
 }
 
 h1, h2, h3 {
-	margin-top: 10px;
-	text-align: center;
+    margin-top: 10px;
+    text-align: center;
 }
 
 #welcome {
-	color: #2e832e;;
-	margin-top: 50px;
+    color: #2e832e;;
+    margin-top: 50px;
 }
 
 .formContainer {
-	margin: auto;
-	min-width: 300px;
-	margin-top: 50px;
-	border: 2px solid #444;
-	padding: 20px;
-	border-radius: 10px;
-	background: rgba(63, 66, 69, .4);
-	color: rgb(192, 189, 186);
+    margin: auto;
+    min-width: 300px;
+    margin-top: 50px;
+    border: 2px solid #444;
+    padding: 20px;
+    border-radius: 10px;
+    background: rgba(63, 66, 69, .4);
+    color: rgb(192, 189, 186);
 }
 
 .formContainer a {
-	color: #80A020;
+    color: #80A020;
 }
 
 .formContainer a:visited {
-	color: #80A020;
+    color: #80A020;
 }
 
 .formContainer a:hover {
-	color: #608020;
+    color: #608020;
 }
 
 #formStatus {
@@ -61,340 +61,340 @@ h1, h2, h3 {
 }
 
 .statusSuccess {
-	background-color: rgba(63, 100, 69, 0.5);
+    background-color: rgba(63, 100, 69, 0.5);
 }
 
 .statusFail {
-	background-color: rgba(100, 66, 69, 0.5);
+    background-color: rgba(100, 66, 69, 0.5);
 }
 
 #suggest {
-	width: 30%;
+    width: 30%;
 }
 
 #login, #register, #info {
-	width: 30%;
-	max-width: 400px;
+    width: 30%;
+    max-width: 400px;
 }
 
 form input[type=text], form input[type=password], form textarea {
-	width: 50%;
+    width: 50%;
 }
 
 form textarea {
-	max-width: 50%;
+    max-width: 50%;
 }
 
 textarea {
-	font-family: sans-serif;
-	resize: vertical;
-	min-height: 20px;
+    font-family: sans-serif;
+    resize: vertical;
+    min-height: 20px;
 }
 
 #suggest:hover {
-	background: rgba(63, 66, 69, .3);
+    background: rgba(63, 66, 69, .3);
 }
 
 label {
-	float: left;
+    float: left;
 }
 
 input, select, textarea {
-	float: right;
+    float: right;
 }
 
 input, select, textarea {
-	border-radius: 5px;
-	padding: 2px;
-	border: 1px solid #2e2e2e;
-	background-color: rgb(63, 66, 69);
-	color: rgb(192, 189, 186);
-	outline: none;
+    border-radius: 5px;
+    padding: 2px;
+    border: 1px solid #2e2e2e;
+    background-color: rgb(63, 66, 69);
+    color: rgb(192, 189, 186);
+    outline: none;
 }
 
 input:focus, select:focus, textarea:focus {
-	outline: none;
-	border: 1px solid rgb(255, 127, 0);
+    outline: none;
+    border: 1px solid rgb(255, 127, 0);
 }
 
 input:hover, select:hover, textarea:hover {
-	background-color: rgb(83, 86, 89);
+    background-color: rgb(83, 86, 89);
 }
 
 .formInput {
-	padding: 5px;
-	overflow: auto;
+    padding: 5px;
+    overflow: auto;
 }
 
 hr {
-	border: 1px solid rgb(63, 66, 69);
+    border: 1px solid rgb(63, 66, 69);
 }
 
 .formInput:hover {
-	/*border-bottom: 2px solid white;*/
-	/*background-color: #AEAEAE;*/
-	color: rgba(192, 189, 186, .9);
+    /*border-bottom: 2px solid white;*/
+    /*background-color: #AEAEAE;*/
+    color: rgba(192, 189, 186, .9);
 }
 
 #invalid {
-	color: #c1c1c1;
-	font-weight: bold;
-	background-color: rgb(100, 66, 69);
-	display: none;
-	margin: auto;
-	width: 30%;
-	min-width: 300px;
-	font-size: 16pt;
-	border-radius: 5px;
-	border: 2px solid rgb(150, 66, 69);
-	padding: 20px;
-	text-align: center;
+    color: #c1c1c1;
+    font-weight: bold;
+    background-color: rgb(100, 66, 69);
+    display: none;
+    margin: auto;
+    width: 30%;
+    min-width: 300px;
+    font-size: 16pt;
+    border-radius: 5px;
+    border: 2px solid rgb(150, 66, 69);
+    padding: 20px;
+    text-align: center;
 }
 
 #invalid:hover {
-	background-color: rgba(125, 0, 0, .5);
+    background-color: rgba(125, 0, 0, .5);
 }
 
 #loginerror, #registerSuccess {
-	color: #c1c1c1;
-	font-weight: bold;
-	display: none;
-	margin: auto;
-	text-align: center;
-	margin-top: 15px;
+    color: #c1c1c1;
+    font-weight: bold;
+    display: none;
+    margin: auto;
+    text-align: center;
+    margin-top: 15px;
 }
 
 #loginerror {
-	background-color: rgb(100, 66, 69);
+    background-color: rgb(100, 66, 69);
 }
 
 #registerSuccess {
-	margin-bottom: 15px;
-	background-color: rgb(66, 100, 69);
+    margin-bottom: 15px;
+    background-color: rgb(66, 100, 69);
 }
 
 #formTitle {
-	margin-bottom: 15px;
-	overflow: auto;
-	font-weight: bold;
+    margin-bottom: 15px;
+    overflow: auto;
+    font-weight: bold;
 }
 
 .statusOk {
-	color: #2e832e;
+    color: #2e832e;
 }
 
 .statusMedium {
-	color: #83832e;
+    color: #83832e;
 }
 
 .statusBad {
-	color: #832e2e;
+    color: #832e2e;
 }
 
 #logout {
-	position: absolute;
-	right: 10px;
-	bottom: 5px;
+    position: absolute;
+    right: 10px;
+    bottom: 5px;
 }
 
 #active, #active a, #login a, #register a, #logout a {
-	color: #80A020;
+    color: #80A020;
 }
 
 #login a:hover, #register a:hover, #logout a:hover {
-	color: #608020;
+    color: #608020;
 }
 
 #active a {
-	text-decoration: none;
+    text-decoration: none;
 }
 
 #active a:hover {
-	text-decoration: underline;
-	color: #202060;
+    text-decoration: underline;
+    color: #202060;
 }
 
 #footer {
-	position: fixed;
-	left: 0;
-	bottom: 5px;
-	width: 100%;
-	color: white;
-	text-align: right;
+    position: fixed;
+    left: 0;
+    bottom: 5px;
+    width: 100%;
+    color: white;
+    text-align: right;
 }
 
 #footer a {
-	color: white;
-	font-size: 8pt;
-	padding: 5px;
+    color: white;
+    font-size: 8pt;
+    padding: 5px;
 }
 
 .mediainfo {
-	border: 2px solid black;
-	margin: 10px;
-	width: 30%;
-	clear: both;
-	overflow: auto;
-	border: 2px solid #222;
-	border-radius: 10px;
-	margin-left: auto;
-	margin-right: auto;
-	margin-top: 10px;
-	margin-bottom: 10px;
-	background-size: cover;
-	background-position: center;
+    border: 2px solid black;
+    margin: 10px;
+    width: 30%;
+    clear: both;
+    overflow: auto;
+    border: 2px solid #222;
+    border-radius: 10px;
+    margin-left: auto;
+    margin-right: auto;
+    margin-top: 10px;
+    margin-bottom: 10px;
+    background-size: cover;
+    background-position: center;
 
     text-shadow: -1px 0 1px #444, 0 1px 1px #444, 1px 0 1px #444, 0 -1px 1px #444;
-	/*box-shadow: inset 10px 10px 10px black;*/
+    /*box-shadow: inset 10px 10px 10px black;*/
 }
 
 .mediainfo a {
-	color: #50C050;
-	font-weight: bold;
+    color: #50C050;
+    font-weight: bold;
 }
 
 .mediainfo a:visited {
-	color: #50B050;
+    color: #50B050;
 }
 
 .mediainfo a:hover {
-	text-decoration: underline;
-	color: #40A040;
+    text-decoration: underline;
+    color: #40A040;
 }
 
 .mediainfo strong {
-	color: #AAA;
+    color: #AAA;
 }
 
 .innerHolder {
-	margin: 15px;
+    margin: 15px;
 }
 
 .progressHolder {
-	width: 100%;
-	position: relative;
-	bottom: 0;
-	left: 0;
-	margin-left: auto;
-	margin-right: auto;
-	overflow: auto;
+    width: 100%;
+    position: relative;
+    bottom: 0;
+    left: 0;
+    margin-left: auto;
+    margin-right: auto;
+    overflow: auto;
 }
 
 .progress, .tcdiff, .remaining {
-	border-top: 1px solid #222;
-	height: 5px;
-	margin-top: 0;
-	opacity: 0.5;
-	margin-top: 15px;
+    border-top: 1px solid #222;
+    height: 5px;
+    margin-top: 0;
+    opacity: 0.5;
+    margin-top: 15px;
 }
 
 .mediainfo:hover .progress, .mediainfo:hover .tcdiff, .mediainfo:hover .remaining {
-	opacity: 0.8;
-	height: 15px;
-	margin-top: 5px;
+    opacity: 0.8;
+    height: 15px;
+    margin-top: 5px;
 }
 
 .mediainfo:hover .time {
-	opacity: 1;
+    opacity: 1;
 }
 
 .progress {
-	float: left;
-	background-color: #A0C030;
+    float: left;
+    background-color: #A0C030;
 }
 
 .tcdiff {
-	float: left;
-	background-color: rgb(176, 160, 48);
+    float: left;
+    background-color: rgb(176, 160, 48);
 }
 
 .remaining {
-	float: right;
-	background-color: #C08030;
+    float: right;
+    background-color: #C08030;
 }
 
 .time {
-	position: absolute;
-	bottom: 0;
-	font-size: smaller;
-	margin: auto;
-	color: #c1c1c1;
-	font-weight: bold;
-	left: 50%;
-	transform: translateX(-50%);
-	-webkit-transform: translateX(-50%);
-	opacity: 0;
+    position: absolute;
+    bottom: 0;
+    font-size: smaller;
+    margin: auto;
+    color: #c1c1c1;
+    font-weight: bold;
+    left: 50%;
+    transform: translateX(-50%);
+    -webkit-transform: translateX(-50%);
+    opacity: 0;
 }
 
 #tooltip {
-	display: none;
-	background-color: rgba(50, 50, 50, .7);
-	color: #c1c1c1;
-	border-radius: 3px;
-	border: 1px solid #616161;
-	padding: 5px;
-	position: absolute;
+    display: none;
+    background-color: rgba(50, 50, 50, .7);
+    color: #c1c1c1;
+    border-radius: 3px;
+    border: 1px solid #616161;
+    padding: 5px;
+    position: absolute;
 }
 
 @media (orientation: landscape), (min-width: 767px) {
-	.mediainfo {
-		min-width: 630px;
-	}
+    .mediainfo {
+        min-width: 630px;
+    }
 
-	.mediainfo ul {
-		text-align: left;
-		color: #CCC;
-		font-size: small;
-	}
+    .mediainfo ul {
+        text-align: left;
+        color: #CCC;
+        font-size: small;
+    }
 
-	.thumbholder {
-		float: left;
-		z-index: 1;
-	}
+    .thumbholder {
+        float: left;
+        z-index: 1;
+    }
 
-	.details {
-		float: left;
-		margin-left: 10px;
-		max-width: calc(100% - 110px);
-	}
+    .details {
+        float: left;
+        margin-left: 10px;
+        max-width: calc(100% - 110px);
+    }
 
-	/* width*/
-	::-webkit-scrollbar {
-		width: 10px;
-	}
+    /* width*/
+    ::-webkit-scrollbar {
+        width: 10px;
+    }
 }
 
 @media all and (orientation: portrait) and (max-width: 767px) {
-	.mediainfo {
-		min-width: 80%;
-		text-align: center;
-	}
-	.mediainfo ul {
-		text-align: center;
-		color: #CCC;
-		font-size: small;
-		padding: 0;
-	}
+    .mediainfo {
+        min-width: 80%;
+        text-align: center;
+    }
+    .mediainfo ul {
+        text-align: center;
+        color: #CCC;
+        font-size: small;
+        padding: 0;
+    }
 
-	.mediainfo li {
-		list-style-type: none;
-		margin: none;
-	}
+    .mediainfo li {
+        list-style-type: none;
+        margin: none;
+    }
 
-	.thumbholder {
-		text-align: center;
-		clear: both;
-	}
+    .thumbholder {
+        text-align: center;
+        clear: both;
+    }
 
-	.details {
-		margin-left: 10px;
-		text-align: center;
-	}
+    .details {
+        margin-left: 10px;
+        text-align: center;
+    }
 
-	/* width*/
-	::-webkit-scrollbar {
-		width: 3px;
-	}
+    /* width*/
+    ::-webkit-scrollbar {
+        width: 3px;
+    }
 }
 
 @font-face {
@@ -424,24 +424,24 @@ hr {
 
 /* Track */
 ::-webkit-scrollbar-track {
- 	background: transparent; 
+     background: transparent; 
 }
 
 /* Handle */
 ::-webkit-scrollbar-thumb {
-	width: 5px;
-	border-radius: 5px;
- 	background: #616161;
- 	opacity: 0.5;
+    width: 5px;
+    border-radius: 5px;
+     background: #616161;
+     opacity: 0.5;
 }
 
 /* corner */
 ::-webkit-scrollbar-corner {
-	background: #616161;
-	border: none;
+    background: #616161;
+    border: none;
 }
 
 /* Handle on hover */
 ::-webkit-scrollbar-thumb:hover {
- 	background: #818181; 
+     background: #818181; 
 }

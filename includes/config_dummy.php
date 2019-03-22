@@ -17,7 +17,7 @@ define("PLEX_TOKEN", 'plexApiToken');
 $db = new mysqli(DB_SERVER, DB_USERNAME, DB_PASSWORD, DB_NAME);
 if ($db->connect_error)
 {
-	die("ERROR: Could not connect. " . $db->connect_error);
+    die("ERROR: Could not connect. " . $db->connect_error);
 }
 
 ?>
