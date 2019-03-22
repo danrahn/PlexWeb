@@ -33,35 +33,3 @@ tr:hover {
 .denied_request {
     background-color: rgb(100, 66, 69);
 }
-
-#tableHolder {
-    overflow-y: scroll;
-}
-
-@media (orientation: landscape), (min-width: 767px) {
-    #tableHolder::-webkit-scrollbar {
-        width: 0;
-        height: 5px;
-    }
-
-    /* Track */
-    #tableHolder::-webkit-scrollbar-track {
-        background: transparent;
-        width: 0;
-        height: 5px;
-    }
-}
-
-@media all and (orientation: portrait) and (max-width: 767px) {
-    #tableHolder::-webkit-scrollbar {
-        width: 2px;
-        height: 2px;
-    }
-
-    /* Track */
-    #tableHolder::-webkit-scrollbar-track {
-        background: transparent;
-        width: 0;
-        height: 2px;
-    }
-}
