@@ -198,7 +198,8 @@ function print_status_options($status, $rid)
     function updateRequest(element, reqId, requestType, field="value")
     {
         element.setAttribute("modified", "false");
-        console.log("Updating content for requestId " + reqId);
+        logInfo("Updating content for requestId " + reqId + " (" + requestType + ")");
+
         let http = new XMLHttpRequest();
         http.open("POST", "process_request.php", true /*async*/);
         http.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
@@ -207,6 +208,7 @@ function print_status_options($status, $rid)
         http.onreadystatechange = function() {
             if (this.readyState != 4 || this.status != 200)
             {
+            	logVerbose(`ReadyState: ${this.readyState}; Status: ${this.status}`);
                 return;
             }
 
@@ -242,7 +244,7 @@ function print_status_options($status, $rid)
             }
         };
 
-        http.send("&type=req_update&id=" + reqId + "&kind=" + requestType + "&content=" + element[field]);
+        http.send(`&type=req_update&id=${reqId}&kind=${requestType}&content=${element[field]}`);
     }
 
     function setCommentListeners(className, requestType, field="value") {

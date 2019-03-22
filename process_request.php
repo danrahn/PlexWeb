@@ -485,7 +485,7 @@ function update_user_comment($req_id, $content)
 /// <summary>
 /// Updates the status of the given request
 /// </summary>
-function update_req_status($req_id, $content, $requester)
+function update_req_status($req_id, $status, $requester)
 {
     global $db;
     $request_query = "SELECT * FROM user_requests WHERE id=$req_id";
@@ -524,10 +524,10 @@ function update_req_status($req_id, $content, $requester)
     }
 
     // Update the actual request
-    $query = "UPDATE user_requests SET satisified=$status WHERE id=$req_id";
+    $query = "UPDATE user_requests SET satisfied=$status WHERE id=$req_id";
     if (!$db->query($query))
     {
-        error_and_exit(500);
+    	json_error_and_exit($db->error);
     }
 
     $status_str = ($status == 0 ? "pending" : ($status == 1 ? "approved" : "denied"));
