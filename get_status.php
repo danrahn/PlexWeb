@@ -422,14 +422,13 @@ function get_tv_hyperlink($show_guid)
     }
 
     // This "in-house" tvdb class is targeted at implementing the bare minimum required to
-    // get what's necessary for the following to work. It was unnecessary to include so many
-    // things for such a small part of this operation, but in the grand scheme of things the
-    // overhead of adrenth/thetvdb2 is probably not noticeable. However, it's good to
-    // implement it on my own.
+    // get what's necessary for the following to work. adrenth/thetvdb2 worked, but brought
+    // in a bunch of other dependencies (that admittedly probably didn't affect performance
+    // at all).
     if (!$tvdb_client)
     {
         $tvdb_client = new Tvdb();
-        if (!$tvdb_client)
+        if (!$tvdb_client || !$tvdb_client->ready())
         {
             file_put_contents("includes/tvdberror.txt", "Login failed", FILE_APPEND);
             return "";

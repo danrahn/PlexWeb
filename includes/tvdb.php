@@ -1,6 +1,11 @@
 <?php
 
 require_once "includes/config.php";
+
+/// <summary>
+/// A class containing relevant Episode information. imdbId is currently
+/// the only fied that's actually used
+/// </summary>
 class Episode
 {
     private $id;
@@ -71,6 +76,10 @@ class Episode
     }
 }
 
+/// <summary>
+/// A very slim TVDB API client. Only supports grabbing a single episode
+/// based on showId, season number, and episode number of the season
+/// </summary>
 class Tvdb
 {
     private const BASE_URI = "https://api.thetvdb.com/";
@@ -96,11 +105,17 @@ class Tvdb
         }
     }
 
+    /// <summary>
+    /// Returns whether the client is ready for queries (i.e. token is set)
+    /// </summary>
     function ready()
     {
         return !!$this->token;
     }
 
+    /// <summary>
+    /// Get a single episode given the show, season, and episode numbers
+    /// </summary>
     function get_episode($showId, $season, $episode)
     {
         $data = [ "airedSeason" => $season, "airedEpisode" => $episode ];
@@ -108,6 +123,9 @@ class Tvdb
         return new Episode($response);
     }
 
+    /// <summary>
+    /// Makes a request to the tvdb api with the given data
+    /// </summary>
     private function apiCall($method, $path, $data = [])
     {
         $url = self::BASE_URI . $path;
@@ -121,7 +139,9 @@ class Tvdb
         }
     }
 
-
+    /// <summary>
+    /// Send a GET request to the tvdb api, with a json header
+    /// </summary>
     private function curl_get($path)
     {
         $ch = curl_init();
@@ -137,6 +157,9 @@ class Tvdb
         return $data;
     }
 
+    /// <summary>
+    /// Sends a POST request to the tvdb api with the given data
+    /// </summary>
     private function curl_post($path, $data)
     {
         $fields = json_encode($data);
