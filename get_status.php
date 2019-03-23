@@ -1,7 +1,6 @@
 <?php
 session_start();
 
-require_once "vendor/autoload.php";
 require_once "includes/common.php";
 require_once "includes/config.php";
 require_once "includes/tvdb.php";
@@ -393,7 +392,6 @@ function get_hyperlink($guid, $type)
 /// </summary>
 function get_tv_hyperlink($show_guid)
 {
-    global $client;
     global $tvdb_client;
     $ind = strpos($show_guid, "thetvdb://");
     if ($ind === FALSE)
