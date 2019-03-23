@@ -4,6 +4,7 @@ session_start();
 
 require_once "includes/common.php";
 requireSSL();
+ieCheck();
 
 if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === TRUE)
 {

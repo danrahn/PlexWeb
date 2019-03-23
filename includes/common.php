@@ -278,4 +278,17 @@ function send_email_forget($to, $content, $subject)
     fwrite($fp, $out);
     fclose($fp);
 }
+
+/// <summary>
+/// I'm too lazy to support IE, so block it
+/// </summary>
+function ieCheck()
+{
+	$ua = strtolower($_SERVER['HTTP_USER_AGENT']);
+	if (strpos($ua, "msie") !== FALSE ||
+		(strpos($ua, "trident") !== FALSE && strpos($ua, "11.") !== FALSE))
+	{
+		header("Location: ie.html");
+	}
+}
 ?>
