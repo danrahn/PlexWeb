@@ -4,16 +4,12 @@ session_start();
 require_once "vendor/autoload.php";
 require_once "includes/common.php";
 require_once "includes/config.php";
+require_once "includes/tvdb.php";
 
 requireSSL();
 verify_loggedin();
 
-// TODO: Remove dependency on Adrenth\Thetvdb and create my own interface, as it pulls
-// in a lot of dependencies that are probably unnecessary for my use
-$client = new \Adrenth\Thetvdb\Client();
-$client->setLanguage('en');
-$token = $client->authentication()->login(TVDB_TOKEN);
-$client->setToken($token);
+$tvdb_client;
 
 /// <summary>
 /// Class for determining the type of request we're processing
@@ -397,8 +393,8 @@ function get_hyperlink($guid, $type)
 /// </summary>
 function get_tv_hyperlink($show_guid)
 {
-
     global $client;
+    global $tvdb_client;
     $ind = strpos($show_guid, "thetvdb://");
     if ($ind === FALSE)
     {
@@ -427,35 +423,34 @@ function get_tv_hyperlink($show_guid)
         return $cached;
     }
 
-    // There's no good way to instantly get a particular episode from a given tv show,
-    // we must go through _every_ episode for the show and find our match. Results are
-    // limited to 100 per request, so we may need to go through multiple pages.
-    $page = 0;
-    while (true)
+    // This "in-house" tvdb class is targeted at implementing the bare minimum required to
+    // get what's necessary for the following to work. It was unnecessary to include so many
+    // things for such a small part of this operation, but in the grand scheme of things the
+    // overhead of adrenth/thetvdb2 is probably not noticeable. However, it's good to
+    // implement it on my own.
+    if (!$tvdb_client)
     {
-        ++$page;
-        $series = $client->series()->getEpisodes($arr[0], $page);
-        if (!$series || count($series->getData()) === 0)
+        $tvdb_client = new Tvdb();
+        if (!$tvdb_client)
         {
+            file_put_contents("includes/tvdberror.txt", "Login failed", FILE_APPEND);
             return "";
         }
+    }
 
-        foreach ($series->getData() as $episode)
-        {
-            $ep = (int)($episode->getAiredEpisodeNumber());
-            $season = (int)($episode->getAiredSeason());
-            if (intval($arr[2]) === $ep && intval($arr[1]) === $season)
-            {
-                $imdb_id = $episode->getImdbId();
-                set_imdb_link($arr[0], $arr[1], $arr[2], $imdb_id);
-                return $imdb_id;
-            }
-            else
-            {
-                // Might as well cache this as well since we're here
-                set_imdb_link($arr[0], $season, $ep, $episode->getImdbId());
-            }
-        }
+    $episode = $tvdb_client->get_episode($arr[0], $arr[1], $arr[2]);
+    if ($episode->isError())
+    {
+        // Log errors to a file, since it's much more likely to be buggy than the better
+        // supported package this replaced
+        echo $episode->getError();
+        file_put_contents("includes/tvdberror.txt", $episode->getError(), FILE_APPEND);
+        return "";
+    }
+    else
+    {
+        set_imdb_link($arr[0], $arr[1], $arr[2], $episode->getImdbLink());
+        return $episode->getImdbLink();
     }
 }
 
