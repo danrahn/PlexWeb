@@ -425,6 +425,10 @@ hr {
         width: 0;
         height: 2px;
     }
+
+    .tableholder td {
+    	font-size: smaller;
+    }
 }
 
 @font-face {

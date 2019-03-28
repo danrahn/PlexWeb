@@ -6,6 +6,11 @@ require_once "includes/common.php";
 verify_loggedin(true);
 requireSSL();
 
+if ((int)$_SESSION['level'] < 100)
+{
+    error_and_exit(401);
+}
+
 ?>
 
 <html>
