@@ -160,8 +160,10 @@
         let menu = document.getElementById("leftMenu");
         if (menu) {
             if (menu.style.opacity == "1") {
+                logVerbose("Contracting Menu");
                 Animation.queue({"opacity" : 0, "left": "-170px"}, menu, 200);
             } else {
+                logVerbose("Expanding menu");
                 Animation.queue({"opacity" : 1, "left" : "0px"}, menu, 200);
             }
         }
@@ -183,7 +185,7 @@
         let element = e.target;
         let parent = element;
         while (parent) {
-            if (parent.id == 'leftMenu') {
+            if (parent.id == 'leftMenu' || parent.id == 'nav') {
                 return;
             }
             parent = parent.parentNode;
@@ -267,14 +269,13 @@
         let menu = document.getElementById("leftMenu");
         dxTotal = 0;
         dyTotal = 0;
-        console.log(menu.style.opacity);
-        if (direction == 0) {
+        if (direction == 0 || dxTotal < 20) {
             return;
         }
 
         // At the end of the touch, decide if we should fully expand or fully contract
         // the menu. No intermediate states.
-        let left = parseInt(menu.style.left);
+        let left = parseInt(menu.style.left) || parseInt(getComputedStyle(menu).left);
         let threshold = direction == 1 ? -100 : -60;
         if (left < threshold) {
             Animation.queue({"opacity" : 0, "left": "-170px"}, menu, ((170 - Math.abs(left)) / 170) * 200); 
