@@ -91,7 +91,7 @@ A = function()
     let fireNext = function(element)
     {
         animationQueue[element.id][0].shift();
-        if (animationQueue[element.id][0].length === 0)
+        if (animationQueue[element.id][0].length == 0)
         {
             // Clear it from our dictionary to save some space
             animationQueue[element.id].shift();
@@ -102,7 +102,7 @@ A = function()
             return;
         }
 
-        if (animationQueue[element.id].length === 0)
+        if (animationQueue[element.id].length == 0)
         {
             delete animationQueue[element.id];
         }
@@ -128,82 +128,85 @@ A = function()
             case "backgroundColor":
             case "color":
                 return function(element, prop, newColor, duration, deleteAfterTransition = false)
-			    {
-			        const steps = Math.round(duration / (50 / 3)); // 1000 / 60 -> 60Hz
-			        let oldColor = new Color(getComputedStyle(element)[prop]);
+                {
+                    // '(x + .5) | 0' == Math.round.
+                    // 'y || 1' because we need at least one step
+                    const steps = (duration / (50 / 3) + 0.5) | 0 || 1; // 1000 / 60 -> 60Hz
+                    let oldColor = new Color(getStyle(element)[prop]);
 
-			        // If newColor is a string, try to parse a hex value. Otherwise it needs to be 'transparent'
-			        if (typeof(newColor) === "string")
-			        {
-			            if ((newColor = newColor.toLowerCase()) === "transparent")
-			            {
-			                newColor = oldColor.clone();
-			                newColor.a = 0;
-			            }
-			            else if (newColor[0] == '#')
-			            {
-			                newColor = new Color(newColor);
-			            }
-			            else
-			            {
-			                // Create an element with our color and use whatever the document
-			                // tells us the color should be. If it's invalid, the default
-			                // body color will be returned
-			                let tempElement = document.createElement("q");
-			                tempElement.style.color = newColor;
-			                document.body.append(tempElement); // Some browsers need the element to be attached
-			                newColor = new Color(getComputedStyle(tempElement)[prop]);
-			                document.body.removeChild(tempElement);
-			            }
-			        }
+                    // If newColor is a string, try to parse a hex value. Otherwise it needs to be 'transparent'
+                    if (typeof(newColor) == "string")
+                    {
+                        if ((newColor = newColor.toLowerCase()) == "transparent")
+                        {
+                            newColor = new Color(oldColor.toString());
+                            newColor.a = 0;
+                        }
+                        else if (newColor[0] == '#')
+                        {
+                            newColor = new Color(newColor);
+                        }
+                        else
+                        {
+                            // Create an element with our color and use whatever the document
+                            // tells us the color should be. If it's invalid, the default
+                            // body color will be returned
+                            let tempElement = document.createElement("q");
+                            tempElement.style.color = newColor;
+                            document.body.append(tempElement); // Some browsers need the element to be attached
+                            newColor = new Color(getStyle(tempElement)[prop]);
+                            document.body.removeChild(tempElement);
+                        }
+                    }
 
-			        logTmi("Animating " + prop + " of " + element.id + " from " + oldColor.toString() + " to " + newColor.toString());
+                    logTmi("Animating " + prop + " of " + element.id + " from " + oldColor.toString() + " to " + newColor.toString() + " in " + duration + "ms");
 
-			        let animationFunc = function(element, oldColor, newColor, i, steps, prop, deleteAfterTransition)
-			        {
-			            element.style[prop] = "rgba(" +
-			                Math.round(oldColor.r + (((newColor.r - oldColor.r) / steps) * i)) + "," +
-			                Math.round(oldColor.g + (((newColor.g - oldColor.g) / steps) * i)) + "," +
-			                Math.round(oldColor.b + (((newColor.b - oldColor.b) / steps) * i)) + "," +
-			                (oldColor.a + (((newColor.a - oldColor.a) / steps) * i)) + ")";
+                    let animationFunc = function(element, oldColor, newColor, i, steps, prop, deleteAfterTransition)
+                    {
+                        element.style[prop] = new Color(
+                            oldColor.r + (((newColor.r - oldColor.r) / steps) * i),
+                            oldColor.g + (((newColor.g - oldColor.g) / steps) * i),
+                            oldColor.b + (((newColor.b - oldColor.b) / steps) * i),
+                            oldColor.a + (((newColor.a - oldColor.a) / steps) * i)).toString();
 
-			            if (i === steps)
-			            {
-			                if (deleteAfterTransition)
-			                {
-			                    element.style[prop] = null;
-			                }
+                        if (i == steps)
+                        {
+                            if (deleteAfterTransition)
+                            {
+                                element.style[prop] = null;
+                            }
 
-			                // Always need to call this once a particular animation is done!
-			                fireNext(element);
-			            }
-			        }
+                            // Always need to call this once a particular animation is done!
+                            fireNext(element);
+                        }
+                    }
 
-			        for (var i = 1; i <= steps; i++)
-			        {
-			            setTimeout(animationFunc, (50 / 3) * i, element, oldColor, newColor, i, steps, prop, deleteAfterTransition);
-			        }
-			    }
+                    for (var i = 1; i <= steps; i++)
+                    {
+                        setTimeout(animationFunc, (50 / 3) * i, element, oldColor, newColor, i, steps, prop, deleteAfterTransition);
+                    }
+                }
             case "opacity":
             case "left":
                 return function(element, prop, newValue, duration, deleteAfterTransition = false)
                 {
-                    var steps = Math.round(duration / (50 / 3));
-                    const percent = newValue[newValue.length - 1] == '%';
-                    let px = newValue[newValue.length - 1] == 'x';
+                    var steps = (duration / (50 / 3) + 0.5) | 0 || 1;
+                    let lastChar = newValue[newValue.length - 1];
+                    const percent = lastChar == '%';
+                    let px = lastChar == 'x';
                     const newVal = parseFloat(newValue);
 
-                    let oldVal = parseFloat(getComputedStyle(element)[prop]);
+                    let oldVal = parseFloat(getStyle(element)[prop]);
                     if (percent)
                     {
-                        oldVal = oldVal / parseInt(getComputedStyle(document.body).width);
+                        oldVal = oldVal / parseInt(getStyle(document.body).width);
                     }
 
                     logTmi("Animating " + prop + " of " + element.id + " from " + oldVal + " to " + newVal + " in " + duration + "ms");
                     let animationFunc = function(element, prop, oldVal, newVal, percent, px, i, steps, deleteAfterTransition)
                     {
                         element.style[prop] = oldVal + (((newVal - oldVal) / steps) * i) + (percent ? "%" : px ? "px" : "");
-                        if (i === steps)
+                        if (i == steps)
                         {
                             if (deleteAfterTransition)
                             {
@@ -225,6 +228,14 @@ A = function()
                 return;
         }
     }
+
+    /// <summary>
+    /// Helps with the basic minification I run this script through
+    /// </summary>
+    let getStyle = function(element)
+    {
+        return getComputedStyle(element);
+    }
 }
 
 Animation = new A();
@@ -234,12 +245,14 @@ Animation = new A();
 /// </summary>
 function Color(r, g, b, a)
 {
-    if (g === undefined && r.startsWith("#"))
+    // if g is undefined, r better be a string
+    if (g === undefined && r[0] == "#")
     {
         // Better be a hex string!
         let result;
         if (r.length == 4)
         {
+            // Cheap (character-count-wise) conversion from "#ABC" to "#AABBCC"
             r = r[0] + r[1] + r[1] + r[2] + r[2] + r[3] + r[3];
         }
 
@@ -263,20 +276,6 @@ function Color(r, g, b, a)
         this.g = g ? parseInt(g) : 0;
         this.b = b ? parseInt(b) : 0;
         this.a = a ? parseFloat(a) : 1; // Opaque by default
-    }
-
-    /// <summary>
-    /// Return a copy of this color
-    /// </summary>
-    this.clone = function() {
-        return new Color(this.r, this.g, this.b, this.a);
-    }
-
-    /// <summary>
-    /// Returns whether the given color is equal to this one
-    /// </summary>
-    this.equals = function(other) {
-        return this.r == other.r && this.g == other.g && this.b == other.b && this.a == other.a;
     }
 
     /// <summary>
