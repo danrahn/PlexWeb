@@ -59,6 +59,7 @@
     top: 40px;
     left: -170px;
     border-right: 1px solid #808080;
+    z-index: 1;
 }
 
 #leftMenu button {
@@ -154,6 +155,7 @@
     </button>
 </div>
 <script>
+(function() {
     document.getElementById("mainMenu").addEventListener("click", function() {
         let menu = document.getElementById("leftMenu");
         if (menu) {
@@ -192,5 +194,95 @@
             Animation.queue({"opacity" : 0, "left": "-170px"}, menu, 200);
         }
 
-    })
+    });
+
+    // Keep track of where our touch started
+    let touchStart = { "x" : 0, "y" : 0 };
+
+    // Our last known touch position
+    let lastMove = { "x" : 0, "y" : 0 };
+
+    // Our total x movement for a single touch event. Used in conjunction with
+    // dyTotal to determine whether we should attempt to expand/contract the menu
+    let dxTotal = 0;
+
+    // Our total y movement for a single touch event
+    let dyTotal = 0;
+
+    // The direction we're moving. 1 for expansion, -1 for contraction, 0 for nothing
+    let direction = 0;
+
+    window.addEventListener("touchstart", function(e) {
+        touchStart.x = e.touches[0].clientX;
+        touchStart.y = e.touches[0].clientY;
+        lastMove.x = touchStart.x;
+        lastMove.y = touchStart.y;
+
+        let opacity = parseFloat(document.getElementById("leftMenu").style.opacity) || 0;
+        if (touchStart.x < 50 && opacity <= 0) {
+            direction = 1;
+        } else if (touchStart.x >= 100 && opacity > 0) {
+            direction = -1;
+        } else {
+            direction = 0;
+        }
+    });
+
+    window.addEventListener("touchmove", function(e) {
+        if (direction == 0) {
+            // Touch didn't start in a valid position. Nothing to do
+            return;
+        }
+
+        let menu = document.getElementById("leftMenu");
+        let visible = !!menu.style.opacity;
+
+        // Update our total movement
+        dxTotal += Math.abs(lastMove.x - e.touches[0].clientX);
+        dyTotal += Math.abs(lastMove.y - e.touches[0].clientY);
+        let dx = direction * (e.touches[0].clientX - touchStart.x);
+
+        // If we haven't moved a decent amount on the x-axis, or we've moved
+        // along the y-axis, do nothing
+        if (dx < 20 || dyTotal > dxTotal * 3) {
+            return;
+        }
+
+        // Expand/contract at a rate 1.3x the movement of the touch
+        let diff = (dx - 20) * 1.3;
+
+        if (direction == 1) {
+            // Maximizing
+            menu.style.opacity = Math.max(0, 1 - (170 - diff) / 170);
+            menu.style.left = "-" + (170 - diff) + "px";
+        } else {
+            // Minimizing
+            menu.style.opacity = Math.max(0, (170 - diff) / 170);
+            menu.style.left = "-" + Math.min(170, diff) + "px";
+        }
+
+    });
+
+    window.addEventListener("touchend", function(e) {
+        let menu = document.getElementById("leftMenu");
+        dxTotal = 0;
+        dyTotal = 0;
+        console.log(menu.style.opacity);
+        if (direction == 0) {
+            return;
+        }
+
+        // At the end of the touch, decide if we should fully expand or fully contract
+        // the menu. No intermediate states.
+        let left = parseInt(menu.style.left);
+        let threshold = direction == 1 ? -100 : -60;
+        if (left < threshold) {
+            Animation.queue({"opacity" : 0, "left": "-170px"}, menu, ((170 - Math.abs(left)) / 170) * 200); 
+        } else {
+            Animation.queue({"opacity" : 1, "left": "0px"}, menu, (Math.abs(left) / 170) * 200);
+        }
+
+        touchStart = { "time" : 0, "x" : 0, "y" : 0 }; 
+    });
+})();
 </script>
