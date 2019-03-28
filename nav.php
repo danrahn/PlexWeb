@@ -267,20 +267,31 @@
 
     window.addEventListener("touchend", function(e) {
         let menu = document.getElementById("leftMenu");
+        let dxFinal = dxTotal;
         dxTotal = 0;
         dyTotal = 0;
-        if (direction == 0 || dxTotal < 20) {
+        if (direction == 0 || dxFinal < 20) {
             return;
         }
 
         // At the end of the touch, decide if we should fully expand or fully contract
         // the menu. No intermediate states.
         let left = parseInt(menu.style.left) || parseInt(getComputedStyle(menu).left);
+        if (isNaN(left)) {
+            left = -170;
+        }
+
         let threshold = direction == 1 ? -100 : -60;
         if (left < threshold) {
-            Animation.queue({"opacity" : 0, "left": "-170px"}, menu, ((170 - Math.abs(left)) / 170) * 200); 
+            let duration = Math.round(((170 - Math.abs(left)) / 170) * 200);
+            if (duration != 0) {
+                Animation.queue({"opacity" : 0, "left": "-170px"}, menu, duration);
+            }
         } else {
-            Animation.queue({"opacity" : 1, "left": "0px"}, menu, (Math.abs(left) / 170) * 200);
+            let duration = Math.round((Math.abs(left) / 170) * 200);
+            if (duration != 0) {
+                Animation.queue({"opacity" : 1, "left": "0px"}, menu, duration);
+            }
         }
 
         touchStart = { "time" : 0, "x" : 0, "y" : 0 }; 
