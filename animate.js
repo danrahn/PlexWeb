@@ -57,9 +57,11 @@ A = function()
         if (animationQueue[element.id].length !== 1)
         {
             // Can't fire immediately
+            logTmi("Adding animation for " + element.id + " to queue");
             return;
         }
 
+        logTmi("Firing animation for " + element.id + " immediately");
         for (let i = 0; i < animations.length; ++i)
         {
             setTimeout(function(func, element, prop, ...args) {
@@ -126,9 +128,62 @@ A = function()
             case "backgroundColor":
             case "color":
                 return function(element, prop, newColor, duration, deleteAfterTransition = false)
-                {
-                    animateColorProperty(element, prop, newColor, duration, deleteAfterTransition);
-                }
+			    {
+			        const steps = Math.round(duration / (50 / 3)); // 1000 / 60 -> 60Hz
+			        let oldColor = new Color(getComputedStyle(element)[prop]);
+
+			        // If newColor is a string, try to parse a hex value. Otherwise it needs to be 'transparent'
+			        if (typeof(newColor) === "string")
+			        {
+			            if ((newColor = newColor.toLowerCase()) === "transparent")
+			            {
+			                newColor = oldColor.clone();
+			                newColor.a = 0;
+			            }
+			            else if (newColor[0] == '#')
+			            {
+			                newColor = new Color(newColor);
+			            }
+			            else
+			            {
+			                // Create an element with our color and use whatever the document
+			                // tells us the color should be. If it's invalid, the default
+			                // body color will be returned
+			                let tempElement = document.createElement("q");
+			                tempElement.style.color = newColor;
+			                document.body.append(tempElement); // Some browsers need the element to be attached
+			                newColor = new Color(getComputedStyle(tempElement)[prop]);
+			                document.body.removeChild(tempElement);
+			            }
+			        }
+
+			        logTmi("Animating " + prop + " of " + element.id + " from " + oldColor.toString() + " to " + newColor.toString());
+
+			        let animationFunc = function(element, oldColor, newColor, i, steps, prop, deleteAfterTransition)
+			        {
+			            element.style[prop] = "rgba(" +
+			                Math.round(oldColor.r + (((newColor.r - oldColor.r) / steps) * i)) + "," +
+			                Math.round(oldColor.g + (((newColor.g - oldColor.g) / steps) * i)) + "," +
+			                Math.round(oldColor.b + (((newColor.b - oldColor.b) / steps) * i)) + "," +
+			                (oldColor.a + (((newColor.a - oldColor.a) / steps) * i)) + ")";
+
+			            if (i === steps)
+			            {
+			                if (deleteAfterTransition)
+			                {
+			                    element.style[prop] = null;
+			                }
+
+			                // Always need to call this once a particular animation is done!
+			                fireNext(element);
+			            }
+			        }
+
+			        for (var i = 1; i <= steps; i++)
+			        {
+			            setTimeout(animationFunc, (50 / 3) * i, element, oldColor, newColor, i, steps, prop, deleteAfterTransition);
+			        }
+			    }
             case "opacity":
             case "left":
                 return function(element, prop, newValue, duration, deleteAfterTransition = false)
@@ -144,7 +199,7 @@ A = function()
                         oldVal = oldVal / parseInt(getComputedStyle(document.body).width);
                     }
 
-                    var oldOpacity = parseFloat(getComputedStyle(element).opacity);
+                    logTmi("Animating " + prop + " of " + element.id + " from " + oldVal + " to " + newVal + " in " + duration + "ms");
                     let animationFunc = function(element, prop, oldVal, newVal, percent, px, i, steps, deleteAfterTransition)
                     {
                         element.style[prop] = oldVal + (((newVal - oldVal) / steps) * i) + (percent ? "%" : px ? "px" : "");
@@ -168,65 +223,6 @@ A = function()
             default:
                 logError("Bad:" + func);
                 return;
-        }
-    }
-
-    /// <summary>
-    /// Generic method to animate the color value of a given element
-    /// </summary>
-    let animateColorProperty = function(element, prop, newColor, duration, deleteAfterTransition)
-    {
-        const steps = Math.round(duration / (50 / 3)); // 1000 / 60 -> 60Hz
-        let oldColor = new Color(getComputedStyle(element)[prop]);
-
-        // If newColor is a string, try to parse a hex value. Otherwise it needs to be 'transparent'
-        if (typeof(newColor) === "string")
-        {
-            if ((newColor = newColor.toLowerCase()) === "transparent")
-            {
-                newColor = oldColor.clone();
-                newColor.a = 0;
-            }
-            else if (newColor[0] == '#')
-            {
-                newColor = new Color(newColor);
-            }
-            else
-            {
-                // Create an element with our color and use whatever the document
-                // tells us the color should be. If it's invalid, the default
-                // body color will be returned
-                let tempElement = document.createElement("q");
-                tempElement.style.color = newColor;
-                document.body.append(tempElement); // Some browsers need the element to be attached
-                newColor = new Color(getComputedStyle(tempElement)[prop]);
-                document.body.removeChild(tempElement);
-            }
-        }
-
-        let animationFunc = function(element, oldColor, newColor, i, steps, prop, deleteAfterTransition)
-        {
-            element.style[prop] = "rgba(" +
-                Math.round(oldColor.r + (((newColor.r - oldColor.r) / steps) * i)) + "," +
-                Math.round(oldColor.g + (((newColor.g - oldColor.g) / steps) * i)) + "," +
-                Math.round(oldColor.b + (((newColor.b - oldColor.b) / steps) * i)) + "," +
-                (oldColor.a + (((newColor.a - oldColor.a) / steps) * i)) + ")";
-
-            if (i === steps)
-            {
-                if (deleteAfterTransition)
-                {
-                    element.style[prop] = null;
-                }
-
-                // Always need to call this once a particular animation is done!
-                fireNext(element);
-            }
-        }
-
-        for (var i = 1; i <= steps; i++)
-        {
-            setTimeout(animationFunc, (50 / 3) * i, element, oldColor, newColor, i, steps, prop, deleteAfterTransition);
         }
     }
 }
