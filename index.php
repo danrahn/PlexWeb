@@ -18,7 +18,7 @@ $plex_ok = does_plex_exist();
 
 function does_plex_exist()
 {
-    return !!(@get_headers('http://127.0.0.1:32400'));
+    return !!(@get_headers(PLEX_SERVER));
 }
 
 function get_plex_status($class)
@@ -64,7 +64,7 @@ function get_username()
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#3C5260" />
     <script src="resource/consolelog.js"></script>
-    <script src="resource/min/animate.min.js"></script>
+    <script src="resource/animate.js"></script>
     <title>Plex Status</title>
 </head>
 <body>
@@ -96,6 +96,14 @@ function plexOk()
                     <option value="audiobook">Audiobook</option>
                     <option value="music">Music</option>
                 </select></div><hr />
+                <div id="suggestions">
+                    <div id="existingSuggestions">
+                        <h4>Existing Items</h4>
+                    </div>
+                    <div id="outsideSuggestions">
+                        <h4>Outside Suggestions</h4>
+                    </div>
+                </div>
                 <div class="formInput"><label for="comment">Comments:</label><textarea name="comment" id="comment" maxlength=1024></textarea></div>
                 <div class="formInput"><input type="button" value="Submit" id="go"></input></div>
             </form>

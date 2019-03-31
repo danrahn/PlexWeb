@@ -175,7 +175,7 @@ function get_sesh_id($sesh)
 /// </summary>
 function get_all_progress()
 {
-    $sessions = simplexml_load_string(curl('127.0.0.1:32400/status/sessions?' . PLEX_TOKEN));
+    $sessions = simplexml_load_string(curl(PLEX_SERVER . '/status/sessions?' . PLEX_TOKEN));
     $progress = array();
     foreach ($sessions as $sesh)
     {
@@ -202,7 +202,7 @@ function get_all_progress()
 /// <param name="sid">The id to lookup, in the form of [sessionKey]-[title]</param>
 function get_single_session($sid)
 {
-    $sessions = simplexml_load_string(curl('127.0.0.1:32400/status/sessions?' . PLEX_TOKEN));
+    $sessions = simplexml_load_string(curl(PLEX_SERVER . '/status/sessions?' . PLEX_TOKEN));
     $sesh = NULL;
     foreach ($sessions as $sesh)
     {
@@ -221,7 +221,7 @@ function get_single_session($sid)
 /// </summary>
 function get_all_sessions()
 {
-    $sessions = simplexml_load_string(curl('127.0.0.1:32400/status/sessions?' . PLEX_TOKEN));
+    $sessions = simplexml_load_string(curl(PLEX_SERVER . '/status/sessions?' . PLEX_TOKEN));
     $slim_sessions = array();
     foreach ($sessions as $sesh)
     {
@@ -245,7 +245,7 @@ function build_sesh($sesh)
     if (MediaType::is_audio($sesh_type))
     {
         // For audiobooks/music grab the parent thumb, which correlates to the book cover/album art
-        $parent = simplexml_load_string(curl('127.0.0.1:32400' . $sesh['parentKey'] . '?' . PLEX_TOKEN))[0]->xpath("Directory")[0];
+        $parent = simplexml_load_string(curl(PLEX_SERVER . $sesh['parentKey'] . '?' . PLEX_TOKEN))[0]->xpath("Directory")[0];
         $slim_sesh->art_path = 'art' . $parent['thumb'];
     }
     else

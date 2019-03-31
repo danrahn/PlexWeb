@@ -83,6 +83,8 @@ switch ($type)
         return;
     case "members":
         get_members();
+    case "search":
+        search();
     default:
         error_and_exit(400);
 }
@@ -683,5 +685,120 @@ function get_members()
     $result->close();
 
     json_message_and_exit(json_encode($users));
+}
+
+/// <summary>
+/// Perform a search against the plex server
+/// </summary>
+function search()
+{
+    if ((int)$_SESSION['level'] < 20)
+    {
+        json_error_and_exit("Not authorized");
+    }
+
+    $query = param_or_json_exit('query');
+    $type = strtolower(RequestType::get_type_from_str(param_or_json_exit('kind')));
+
+    $libraries = simplexml_load_string(curl(PLEX_SERVER . '/library/sections?' . PLEX_TOKEN))->xpath("Directory");
+
+    $type_str = "";
+    if ($type == RequestType::Movie)
+    {
+        $type_str = "movies";
+    }
+    else if ($type == RequestType::TVShow)
+    {
+        $type_str = "tv shows";
+    }
+    else if ($type == RequestType::AudioBook)
+    {
+        $type_str = "audiobooks";
+    }
+    else if ($type == RequestType::Music)
+    {
+        $type_str = "music";
+    }
+    else
+    {
+        json_error_and_exit("Unknown media category: " . $type);
+    }
+
+    $section = -1;
+    foreach ($libraries as $library)
+    {
+        if (strtolower($library['title']) == $type_str)
+        {
+            $section = $library['key'];
+        }
+    }
+
+    if ($section == -1)
+    {
+        json_error_and_exit("Could not find category '" . $type_str . "'");
+    }
+
+    $prefix = ($type == RequestType::AudioBook ? "albums" : "all");
+    $url = PLEX_SERVER . "/library/sections/" . $section . "/" . $prefix . "?" . PLEX_TOKEN;
+    $url .= '&title=' . urlencode($query) . '&sort=addedAt:desc';
+    $results = simplexml_load_string(curl($url));
+    $existing = array();
+
+    foreach ($results as $result)
+    {
+        $item = new \stdClass();
+        $item->title = (string)$result['title'];
+        $item->thumb = 'thumb' . $result['thumb'];
+        $item->year = (string)$result['year'];
+        if (RequestType::is_audio($type))
+        {
+
+        }
+        else
+        {
+            $copies = $result->xpath('Media');
+            $res = "";
+            foreach ($copies as $file)
+            {
+                $newRes = $file['videoResolution'];
+                if ($newRes)
+                {
+                    $res .= $newRes . ", ";
+                }
+            }
+
+            $len = strlen($res);
+            if ($len > 0)
+            {
+                $res = substr($res, 0, $len - 2);
+                $item->resolution = $res;
+            }
+        }
+
+        array_push($existing, $item);
+        if (sizeof($existing) == 5)
+        {
+            break;
+        }
+    }
+
+    $final_obj = new \stdClass();
+    $final_obj->length = sizeof($results);
+    $final_obj->top = $existing;
+    json_message_and_exit(json_encode($final_obj));
+}
+
+/// <summary>
+/// Get the contents of the given url
+/// </summary>
+function curl($url)
+{
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+
+    $return = curl_exec($ch);
+    curl_close($ch);
+    return $return;
 }
 ?>

@@ -783,6 +783,9 @@
         name.addEventListener("focus", focusInEvent);
         document.querySelector("input[type='button']").addEventListener("focus", focusInEvent);
         type.addEventListener("focus", focusInEvent);
+
+        name.addEventListener("input", onSuggestionInput);
+        type.addEventListener("change", onSuggestionInput);
     }
 
     /// <summary>
@@ -802,5 +805,109 @@
     /// </summary>
     function focusInEvent() {
         this.style.backgroundColor = "rgb(63, 66, 69)";
+    }
+
+    let inputTimer;
+    /// <summary>
+    /// After a delay in the user typing something into the suggestion box, search to see whether the item already exists
+    /// </summary>
+    function onSuggestionInput(e)
+    {
+        if (inputTimer)
+        {
+            clearTimeout(inputTimer);
+        }
+
+        inputTimer = setTimeout(searchSuggestion, 300);
+    }
+
+    function searchSuggestion()
+    {
+        let name = document.querySelector("input[name='name']");
+        let type = document.querySelector("select[name='type']");
+        let suggestion = name.value;
+        if (!suggestion)
+        {
+            buildExistingItems({"length": 0});
+            return;
+        }
+
+        let query = "&type=search&kind=" + type.value + "&query=" + name.value;
+            
+        http = new XMLHttpRequest();
+        http.open("POST", "process_request.php", true /*async*/);
+        http.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+        http.onreadystatechange = function() {
+            if (this.readyState != 4 || this.status != 200) {
+                return;
+            }
+
+            try {
+                let response = JSON.parse(this.responseText);
+                logJson(response, LOG.Verbose);
+                if (response.Error)
+                {
+                    throw "Unexpected error - printing response text";
+                }
+
+                buildExistingItems(response);
+            } catch (ex) {
+                logError(ex, true);
+                logError(this.responseText);
+            }
+        }
+
+        http.send(query);
+    }
+
+    function buildExistingItems(results)
+    {
+        if (results.length === 0)
+        {
+            document.querySelector("#suggestions").style.display = "none";
+            return;
+        }
+
+        let existing = document.querySelector("#existingSuggestions");
+        while (existing.children.length > 1)
+        {
+            existing.removeChild(existing.children[existing.children.length - 1]);
+        }
+
+        for (let i = 0; i < results.top.length; ++i)
+        {
+            const result = results.top[i];
+            let div = document.createElement("div");
+            div.style.height = "50px";
+            div.className = "suggestionHolder";
+            let img = document.createElement("img");
+            img.src = result.thumb;
+            img.className = "suggestionImg";
+            let title = document.createElement("div");
+            title.innerHTML = result.title + (result.year ? (" (" + result.year + ")") : "");
+            title.className = "suggestionText";
+
+            div.appendChild(img);
+            div.appendChild(title);
+
+            existing.appendChild(div);
+        }
+
+        if (results.length > results.top.length)
+        {
+            let div = document.createElement("div");
+            div.className = "suggestionHolder";
+            let title = document.createElement("div");
+            title.innerHTML = "(" + (results.length - results.top.length) + " more)";
+            title.style.textAlign = "center";
+            title.className = "suggestionText";
+
+            div.appendChild(title);
+
+            existing.appendChild(div);
+        }
+
+        document.querySelector("#suggestions").style.display = "block";
+        document.querySelector("#existingSuggestions").style.display = "block";
     }
 })();

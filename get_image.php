@@ -29,7 +29,7 @@ if (file_exists($filename))
     // Could have an automated task to re-run this every few hours, but probably overkill.
     // I can just zap the cache dir if I want things to refresh
     $ch = curl_init();
-    curl_setopt($ch, CURLOPT_URL, "127.0.0.1:32400" . $img_path . "?" . PLEX_TOKEN);
+    curl_setopt($ch, CURLOPT_URL, PLEX_SERVER . $img_path . "?" . PLEX_TOKEN);
     curl_setopt($ch, CURLOPT_NOBODY, true);
     curl_setopt($ch, CURLOPT_HEADER, true);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -76,7 +76,7 @@ else
 function serve_new_image($img_path, $filename, $isThumb)
 {
     $img = new Imagick();
-    $img->readImageBlob(curl("127.0.0.1:32400" . $img_path . '?' . PLEX_TOKEN));
+    $img->readImageBlob(curl(PLEX_SERVER . $img_path . '?' . PLEX_TOKEN));
 
     if ($isThumb)
     {

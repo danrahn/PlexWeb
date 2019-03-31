@@ -255,6 +255,18 @@ abstract class RequestType
                 return RequestType::None;
         }
     }
+
+    static function is_audio($type)
+    {
+        switch ($type)
+        {
+            case RequestType::AudioBook:
+            case RequestType::Music:
+                return TRUE;
+            default:
+                return FALSE;
+        }
+    }
 }
 
 /// <summary>
