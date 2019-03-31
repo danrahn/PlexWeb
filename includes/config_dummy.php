@@ -13,6 +13,7 @@ define('MAIL_PASS', 'emailpassword');
 define('MAIL_HOST', 'emailhost');
 define('ADMIN_PHONE', 'adminphone@carrier');
 define("PLEX_TOKEN", 'plexApiToken');
+define('PLEX_SERVER', 'http://127.0.0.1:32400');
 
 $db = new mysqli(DB_SERVER, DB_USERNAME, DB_PASSWORD, DB_NAME);
 if ($db->connect_error)
