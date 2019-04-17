@@ -694,6 +694,7 @@
         }
     }
 
+    let inputTimer;
     /// <summary>
     /// Setup event handlers for the suggestion form
     /// </summary>
@@ -769,6 +770,27 @@
         
         var inputs = document.querySelectorAll("input, select");
         for (var i = 0; i < inputs.length; i++) {
+            if (inputs[i].name == "name")
+            {
+                // If "enter" is pressed here, immediately do a search instead of submitting the suggestion
+
+                console.log("Setting separate");
+                console.log(inputs[i]);
+                inputs[i].addEventListener("keyup", function(e) {
+                    if (e.keyCode === 13 && !e.shiftKey && !e.ctrlKey && !e.altKey) {
+                        e.preventDefault();
+                        if (inputTimer)
+                        {
+                            clearTimeout(inputTimer);
+                        }
+
+                        searchSuggestion();
+                    }
+                });
+
+                continue;
+            }
+
             inputs[i].addEventListener("keyup", function(e) {
                 if (e.keyCode === 13 && !e.shiftKey && !e.ctrlKey && !e.altKey) {
                     document.getElementById("go").click();
@@ -807,7 +829,6 @@
         this.style.backgroundColor = "rgb(63, 66, 69)";
     }
 
-    let inputTimer;
     /// <summary>
     /// After a delay in the user typing something into the suggestion box, search to see whether the item already exists
     /// </summary>
@@ -818,21 +839,65 @@
             clearTimeout(inputTimer);
         }
 
-        inputTimer = setTimeout(searchSuggestion, 300);
+        inputTimer = setTimeout(searchSuggestion, 1000);
     }
 
     function searchSuggestion()
     {
         let name = document.querySelector("input[name='name']");
         let type = document.querySelector("select[name='type']");
-        let suggestion = name.value;
+        let suggestion = name.value.replace("&", "%26");
         if (!suggestion)
         {
-            buildExistingItems({"length": 0});
+            buildItems("existingSuggestions", {"length": 0});
+            buildItems("outsideSuggestions", {"length": 0});
             return;
         }
 
-        let query = "&type=search&kind=" + type.value + "&query=" + name.value;
+        let query = "&type=search&kind=" + type.value + "&query=" + suggestion;
+            
+        http = new XMLHttpRequest();
+        http.open("POST", "process_request.php", true /*async*/);
+        http.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+        http.onreadystatechange = function() {
+            if (this.readyState != 4 || this.status != 200) {
+                return;
+            }
+
+            try {
+                let response = JSON.parse(this.responseText);
+                logJson(response, response.Error ? LOG.Error : LOG.Verbose);
+
+                if (!response.Error)
+                {
+                    buildItems("existingSuggestions", response);
+                }
+
+                searchExternal();
+
+            } catch (ex) {
+                logError(ex, true);
+                logError(this.responseText);
+            }
+        }
+
+        logVerbose("Sending query: " + encodeURI(query));
+        http.send(encodeURI(query));
+    }
+
+    function searchExternal()
+    {
+        let name = document.querySelector("input[name='name']");
+        let type = document.querySelector("select[name='type']");
+        let suggestion = name.value;
+
+        if (type.value != "movie" && type.value != "tv")
+        {
+            // Only search for movies and tv shows for now (imdb)
+            return;
+        }
+
+        let externalQuery = "&type=search_external&kind=" + type.value + "&query=" + name.value;
             
         http = new XMLHttpRequest();
         http.open("POST", "process_request.php", true /*async*/);
@@ -850,50 +915,97 @@
                     throw "Unexpected error - printing response text";
                 }
 
-                buildExistingItems(response);
+                buildItems("outsideSuggestions", response);
             } catch (ex) {
                 logError(ex, true);
                 logError(this.responseText);
             }
         }
 
-        http.send(query);
+        http.send(externalQuery);
     }
 
-    function buildExistingItems(results)
+    function buildItems(id, results)
     {
+        const external = id == "outsideSuggestions";
+        id = "#" + id;
+
+        let suggestions = document.querySelector(id);
+        while (suggestions.children.length > 1)
+        {
+            suggestions.removeChild(suggestions.children[suggestions.children.length - 1]);
+        }
+
         if (results.length === 0)
         {
-            document.querySelector("#suggestions").style.display = "none";
+            document.querySelector(id).style.display = "none";
+            if (document.querySelector("#existingSuggestions").style.display == "none" &&
+                document.querySelector("#outsideSuggestions").style.display == "none")
+            {
+                document.querySelector("#suggestions").style.display = "none";
+            }
             return;
         }
 
-        let existing = document.querySelector("#existingSuggestions");
-        while (existing.children.length > 1)
-        {
-            existing.removeChild(existing.children[existing.children.length - 1]);
-        }
+        logVerbose("Done removing items for " + id);
+
+        let len = results.top.length;
 
         for (let i = 0; i < results.top.length; ++i)
         {
             const result = results.top[i];
+
+            if (external)
+            {
+                // Check if we have an existing item that matches this. If we do, skip it
+                let existing = document.querySelector("#existingSuggestions div[title='" +
+                    result.title.replace("'", "") + "'][year='" + result.year + "']");
+                if (existing)
+                {
+                    --len;
+                    continue;
+                }
+            }
+
             let div = document.createElement("div");
-            div.style.height = "50px";
             div.className = "suggestionHolder";
+            div.setAttribute("title", result.title.replace("'", ""));
+            div.setAttribute("realtitle", result.title);
+            div.setAttribute("year", result.year);
             let img = document.createElement("img");
             img.src = result.thumb;
             img.className = "suggestionImg";
             let title = document.createElement("div");
-            title.innerHTML = result.title + (result.year ? (" (" + result.year + ")") : "");
+            const text = result.title + (result.year ? (" (" + result.year + ")") : "");
+
+            if (external)
+            {
+                title.innerHTML = "<a href='https://imdb.com/title/" + result.id + "'>" + text + "</a>";
+                div.style.cursor = "pointer";
+                div.addEventListener("click", function(e) {
+                    document.querySelector("input[name='name']").value = this.getAttribute("realtitle");
+                    searchSuggestion();
+                });
+            }
+            else
+            {
+                title.innerHTML = text;
+            }
+
             title.className = "suggestionText";
 
             div.appendChild(img);
             div.appendChild(title);
 
-            existing.appendChild(div);
+            suggestions.appendChild(div);
         }
 
-        if (results.length > results.top.length)
+        if (external && len == 0)
+        {
+            document.querySelector("#outsideSuggestions").style.display = "none";
+        }
+
+        if (results.length > results.top.length && !external)
         {
             let div = document.createElement("div");
             div.className = "suggestionHolder";
@@ -904,10 +1016,15 @@
 
             div.appendChild(title);
 
-            existing.appendChild(div);
+            suggestions.appendChild(div);
+        }
+
+        if (len != 0)
+        {
+            suggestions.appendChild(document.createElement("hr"));
         }
 
         document.querySelector("#suggestions").style.display = "block";
-        document.querySelector("#existingSuggestions").style.display = "block";
+        document.querySelector(id).style.display = "block";
     }
 })();

@@ -440,7 +440,6 @@ function get_tv_hyperlink($show_guid)
     {
         // Log errors to a file, since it's much more likely to be buggy than the better
         // supported package this replaced
-        echo $episode->getError();
         file_put_contents("includes/tvdberror.txt", $episode->getError(), FILE_APPEND);
         return "";
     }

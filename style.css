@@ -1,17 +1,15 @@
 #plexFrame {
     background: rgba(0,0,0,0) url("res/noise.8b05ce45d0df59343e206bc9ae78d85d.png") repeat scroll 0% 0%;
-    width : 100%;
-    height : 100%;
     margin: 0;
     border: 0;
     overflow: auto;
+    display: block;
+    min-height: 100vh;
 }
 
 body {
     background-image: url("res/preset-light.770a0981b66e038d3ffffbcc4f5a26a4.png");
     background-size: cover;
-    background-position: center center;
-    background-repeat: no repeat;
     margin: 0;
     padding: 0;
     font-family: sans-serif;
@@ -72,7 +70,7 @@ h1, h2, h3 {
     width: 30%;
 }
 
-#login, #register, #info {
+#login, #register, #info, #pwReset {
     width: 30%;
     max-width: 400px;
 }
@@ -346,17 +344,17 @@ hr {
     display: none;
 }
 
-#existingSuggestions {
-    width: 90%;
-    margin: auto;
-}
-
 .suggestionHolder {
     border: 1px solid #2e2e2e;
     overflow: hidden;
     width: 100%;
     height: 50px;
     vertical-align: middle;
+    background-color: rgba(0,0,0,0.1);
+}
+
+.suggestionHolder:hover {
+    background-color: rgba(0,0,0,0.2);
 }
 
 .suggestionImg {

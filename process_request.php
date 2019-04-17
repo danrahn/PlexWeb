@@ -83,8 +83,20 @@ switch ($type)
         return;
     case "members":
         get_members();
+        break;
     case "search":
         search();
+        break;
+    case "search_external":
+        search_external();
+        break;
+    case "update_pass":
+        $error = "";
+        if (!update_password(param_or_json_exit("old_pass"), param_or_json_exit("new_pass"), param_or_json_exit("conf_pass"), $error))
+        {
+            json_error_and_exit($error);
+        }
+        json_success();
     default:
         error_and_exit(400);
 }
@@ -786,6 +798,133 @@ function search()
     $final_obj->length = sizeof($results);
     $final_obj->top = $existing;
     json_message_and_exit(json_encode($final_obj));
+}
+
+function search_external()
+{
+    $query = strtolower(trim(param_or_json_exit('query')));
+    $letter = substr($query, 0, 1);
+    $type = strtolower(RequestType::get_type_from_str(param_or_json_exit('kind')));
+
+    if ($type != RequestType::Movie && $type != RequestType::TVShow)
+    {
+        json_error_and_exit("Only Movie and TV shows supported ATM");
+    }
+
+    $url = "https://v2.sg.media-imdb.com/suggests/" . urlencode($letter) . "/" . urlencode($query) . ".json";
+    $response = curl($url);
+    if (strtolower(substr($response, 0, 5)) == "imdb$")
+    {
+        $index = strpos($response, "(") + 1;
+        $length = strlen($response) - $index;
+        $response = substr($response, $index, $length - 1);
+
+        $results = array();
+        $response = json_decode($response, true)['d'];
+
+        $len = sizeof($response);
+
+        foreach ($response as $result)
+        {
+            if (substr($result['id'], 0, 2) != "tt" || !isset($result['q']))
+            {
+                // Not a movie/show
+                --$len;
+                continue;
+            }
+
+            if ($type == RequestType::Movie && $result['q'] != "feature")
+            {
+                // Movie type (q) is 'feature'
+                --$len;
+                continue;
+            }
+            else if ($type == RequestType::TVShow && strtolower($result['q']) != "tv series")
+            {
+                --$len;
+                continue;
+            }
+
+            if (!isset($result['y']) || !isset($result['i']))
+            {
+                // No year/thumbnail == no entry
+                --$len;
+                continue;
+            }
+
+            $item = new \stdClass();
+            $item->title = $result['l'];
+            $item->year = $result['y'];
+            $item->thumb = $result['i'][0];
+            $item->id = $result['id'];
+            array_push($results, $item);
+
+            if (sizeof($results) == 5)
+            {
+                break;
+            }
+        }
+
+        $final_obj = new \stdClass();
+        $final_obj->length = $len;
+        $final_obj->top = $results;
+        json_message_and_exit(json_encode($final_obj));
+
+        json_message_and_exit(json_encode($results));
+    }
+    else
+    {
+        json_error_and_exit("Unknown IMDb error: " . $response);
+    }
+}
+
+/// <summary>
+/// Attempt to update a user's password, failing if the old password is incorrect,
+/// the old password matches the new password, or the new password doesn't match it's confirmation
+/// </summary>
+function update_password($old_pass, $new_pass, $conf_pass, &$error)
+{
+    global $db;
+
+    // First, verify that the old password they entered is correct
+    $escaped_user_preserved = $db->real_escape_string($_SESSION['username']);
+    $query = "SELECT password FROM users WHERE username='$escaped_user_preserved'";
+    $result = $db->query($query);
+    if (!$result || $result->num_rows != 1)
+    {
+        $error = "Error updating password. Please try again";
+    }
+
+    $old_hash = $result->fetch_row()[0];
+    $result->close();
+    if (!password_verify($old_pass, $old_hash))
+    {
+        $error = "Old password is incorrect!";
+        return FALSE;
+    }
+
+    if ($old_pass == $new_pass)
+    {
+        $error = "New password must be different from current password!";
+        return FALSE;
+    }
+
+    if ($new_pass != $conf_pass)
+    {
+        $error = "Passwords don't match!";
+        return FALSE;
+    }
+
+    $new_pass_hash = password_hash($new_pass, PASSWORD_DEFAULT);
+    $query = "UPDATE users SET password='$new_pass_hash' WHERE username='$escaped_user_preserved'";
+    $result = $db->query($query);
+    if (!$result)
+    {
+        $error = "Error updating password. Please try again";
+        return FALSE;
+    }
+
+    return TRUE;
 }
 
 /// <summary>

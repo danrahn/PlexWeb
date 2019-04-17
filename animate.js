@@ -223,6 +223,13 @@ A = function()
                         setTimeout(animationFunc, (50 / 3) * i, element, prop, oldVal, newVal, percent, px, i, steps, deleteAfterTransition);
                     }
                 }
+            case "display":
+            	return function(element, prop, newValue)
+            	{
+            		// Not really an animation, but being able to queue this is nice
+            		element.style.display = newValue;
+            		fireNext(element);
+            	}
             default:
                 logError("Bad:" + func);
                 return;

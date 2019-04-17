@@ -27,6 +27,7 @@
 #nav .rightbutton {
     border-left: 2px solid #808080;
     float: right;
+    height: 40px;
 }
 
 #navholder button:hover, #mainMenu:hover, #pageName:hover {

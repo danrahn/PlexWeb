@@ -5,6 +5,7 @@ verify_loggedin(TRUE /*redirect*/);
 requireSSL();
 ?>
 
+<!DOCTYPE html>
 <html>
 <head>
     <meta http-equiv="Content-Type" content="text/html;charset=ISO-8859-1">
@@ -23,6 +24,11 @@ requireSSL();
   width: 30%;
   max-width: 400px;
   margin-top: 20px;
+  display: none;
+}
+
+#formStatus {
+    opacity: 0;
 }
 
 input[type=checkbox] {
@@ -43,7 +49,7 @@ input[type=checkbox]:focus {
 }
     </style>
     <script src="resource/consolelog.js"></script>
-    <script src="resource/min/animate.min.js"></script>
+    <script src="resource/animate.js"></script>
 </head>
 <body>
 <div id="plexFrame">
@@ -74,6 +80,18 @@ input[type=checkbox]:focus {
             </form>
         </div>
         <div id="formError" class="formContainer">...</div>
+        <div id="pwReset" class="formContainer">
+            <div id="pwTitle">Change Password</div>
+            <form id="pwForm">
+                <hr />
+                <div class="formInput"><label for="oldPass" id="oldPassLabel">Old Password: </label><input type="password" name="oldPass" id="oldPass"></div>
+                <hr />
+                <div class="formInput"><label for="newPass" id="newPassLabel">New Password: </label><input type="password" name="newPass" id="newPass"></div>
+                <div class="formInput"><label for="newPassConf" id="newPassConfLabel">Confirm Password: </label><input type="password" name="newPassConf" id="newPassConf"></div>
+                <div class="formInput"><input type="button" value="update" id="pwGo"></input></div>
+            </form>
+        </div>
+        <div id="formStatus" class="formContainer">...</div>
     </div>
 </div>
 </body>
@@ -92,6 +110,7 @@ input[type=checkbox]:focus {
         setupEmailListeners();
         setupPhoneListeners();
         setupLabelListeners();
+        setupPwListeners();
 
         let checkboxes = document.querySelectorAll("input[type=checkbox]");
         for (let i = 0; i < checkboxes.length; ++i) {
@@ -141,8 +160,10 @@ input[type=checkbox]:focus {
                     logError(response["Error"]);
                     let error = document.getElementById("formError");
                     error.innerHTML = response["Error"];
+                    error.style.display = "block";
                     Animation.queue({"opacity" : 1}, error, 500);
-                    queuDelayedAnimation({"opacity" : 0}, error, 3000, 1000);
+                    Animation.queuDelayedAnimation({"opacity" : 0}, error, 3000, 1000);
+                    Animation.queue({"display" : "none"}, error);
                     return;
                 }
 
@@ -349,8 +370,10 @@ input[type=checkbox]:focus {
                             logError(response["Error"]);
                             let error = document.getElementById("formError");
                             error.innerHTML = response["Error"];
+                            error.style.display = "block";
                             Animation.queue({"opacity" : 1}, error, 500);
                             Animation.queueDelayed({"opacity" : 0}, error, 3000, 500);
+                            Animation.queue({"display" : "none"}, error);
                         } else {
                             let inputs = [
                                 document.querySelector("input[name=firstname]"),
@@ -391,6 +414,105 @@ input[type=checkbox]:focus {
 
     function getField(name, field="value", type="input") {
         return document.querySelector(type + "[name=" + name + "]")[field];
+    }
+
+    function setupPwListeners() {
+        document.querySelectorAll("#pwForm input").forEach(function(e) {
+            e.addEventListener("keydown", function(e) {
+                if (e.keyCode == 13 && !e.ctrlKey && !e.shiftKey && !e.altKey) {
+                    document.querySelector("#pwGo").click();
+                }
+            });
+        });
+
+        document.querySelector("#newPassConf").addEventListener("input", function() {
+            if (this.value && this.value != document.querySelector("#newPass").value) {
+                this.style.backgroundColor = "rgb(100, 66, 69)";
+            } else {
+                this.style.backgroundColor = "";
+            }
+        });
+
+        // If the field is red due to a blank entry upon submission, clear it out on the next input
+        document.querySelector("#newPass").addEventListener("input", function() {
+            this.style.backgroundColor = "";
+        });
+        document.querySelector("#oldPass").addEventListener("input", function() {
+            this.style.backgroundColor = "";
+        });
+
+        document.querySelector("#pwGo").addEventListener("click", function() {
+            submitPasswordChange();
+        });
+    }
+
+    function submitPasswordChange() {
+        let oldPass = document.querySelector("#oldPass");
+        let newPass = document.querySelector("#newPass");
+        let conf = document.querySelector("#newPassConf");
+
+        if (!verifyFields(oldPass, newPass, conf)) {
+            return;
+        }
+
+        if (newPass.value != conf.value) {
+            flashField(conf);
+            return;
+        }
+
+        var http = new XMLHttpRequest();
+        http.open("POST", "process_request.php", true);
+        http.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+        http.onreadystatechange = function() {
+            if (this.readyState != 4 || this.status != 200) {
+                return;
+            }
+
+            try {
+                let response = JSON.parse(this.responseText);
+                logJson(response, LOG.Info);
+                let status = document.getElementById("formStatus");
+                if (response["Error"]) {
+                    status.className = "formContainer statusFail";
+                    status.innerHTML = response["Error"];
+                    Animation.queue({"opacity" : 1}, status, 500);
+                    Animation.queueDelayed({"opacity" : 0}, status, 5000, 1000);
+                    return;
+                }
+
+                status.className = "formContainer statusSuccess";
+                status.innerHTML = "Password changed!";
+                Animation.queue({"opacity" : 1}, status, 500);
+                Animation.queueDelayed({"opacity" : 0}, status, 2000, 500);
+            } catch (ex) {
+                logError(ex);
+                logError(this.responseText);
+            }
+        }
+
+        http.send(`&type=update_pass&old_pass=${oldPass.value}&new_pass=${newPass.value}&conf_pass=${conf.value}`);
+    }
+
+    function verifyFields(...fields) {
+        ret = true;
+        for (index in fields) {
+            ret = ret & verifyField(fields[index]);
+        }
+
+        return ret;
+    }
+
+    function verifyField(field) {
+        if (!field.value) {
+            flashField(field);
+        }
+
+        return !!field.value;
+    }
+
+    function flashField(field) {
+        Animation.queue({"backgroundColor" : new Color(140, 66, 69)}, field, 500);
+        Animation.queueDelayed({"backgroundColor" : new Color(100, 66, 69)}, field, 500, 500);
     }
 })();
 </script>

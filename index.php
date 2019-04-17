@@ -56,6 +56,7 @@ function get_username()
 }
 ?>
 
+<!DOCTYPE html>
 <html>
 <head>
     <meta http-equiv="Content-Type" content="text/html;charset=ISO-8859-1">
@@ -87,7 +88,7 @@ function plexOk()
         <div id="invalid">Please fill out all fields!</div>
         <div id="suggest" class="formContainer">
             <div id="formTitle">Media Request</div>
-            <form id="suggestForm">
+            <form id="suggestForm" action="javascript:void(0);">
                 <hr />
                 <div class="formInput"><label for="name">Suggestion:</label><input type="text" name="name" id="name" maxlength=64></div>
                 <div class="formInput"><label for="type">Suggestion Type: </label><select name="type" id="type">
@@ -97,11 +98,11 @@ function plexOk()
                     <option value="music">Music</option>
                 </select></div><hr />
                 <div id="suggestions">
+                    <div id="outsideSuggestions">
+                        <h4>Matches</h4>
+                    </div>
                     <div id="existingSuggestions">
                         <h4>Existing Items</h4>
-                    </div>
-                    <div id="outsideSuggestions">
-                        <h4>Outside Suggestions</h4>
                     </div>
                 </div>
                 <div class="formInput"><label for="comment">Comments:</label><textarea name="comment" id="comment" maxlength=1024></textarea></div>
