@@ -32,7 +32,7 @@
                     try
                     {
                         const response = JSON.parse(this.responseText);
-                        console.log(response);
+                        logVerbose(response, true);
                         if (response['Error'])
                         {
                             // User doesn't have access to active streams
@@ -63,8 +63,8 @@
                     }
                     catch (ex)
                     {
-                        console.log(ex);
-                        console.log(this.responseText);
+                        logError(ex, true);
+                        logError(this.responseText);
                     }
                 }
             };
@@ -91,7 +91,7 @@
                 const newString = this.responseText == '0' ? "Request Pending" : "Request Access";
                 if (this.responseText !== '1' && this.responseText !== '0')
                 {
-                    console.log("Error: " + this.responseText);
+                    logError(this.responseText);
                 }
 
                 let streamAccess = document.getElementById("streamAccess");
@@ -121,7 +121,7 @@
             {
                 let streamAccess = document.getElementById("streamAccess");
                 let newString = this.responseText == '1' ? "Access Requested!" : "Request Already Pending";
-                console.log("Response: " + this.responseText);
+                logVerbose("Response: " + this.responseText);
                 if (this.responseText !== '1' && this.responseText !== '0')
                 {
                     streamAccess.innerHTML = "error processing request";
@@ -243,8 +243,8 @@
         }
         catch (ex)
         {
-            console.log(ex);
-            console.log(responseText);
+            logError(ex, true);
+            logError(responseText);
         }
     }
 
@@ -270,7 +270,7 @@
             if (!found)
             {
                 // An existing session is no longer active, remove it
-                console.log("Attempting to remove session# " + session.id);
+                logVerbose("Attempting to remove session# " + session.id);
                 document.querySelector("#" + session.id).remove();
                 existingSessions.splice(i /*index*/, 1 /*howmany*/);
                 --i;
@@ -379,7 +379,7 @@
         for (let i = 0; i < newIds.length; ++i)
         {
             const id = newIds[i];
-            console.log("Attempting to add session# " + id);
+            logVerbose("Attempting to add session# " + id);
             const url = 'get_status.php';
             const params = 'type=2&id=' + id;
             let http = new XMLHttpRequest();
@@ -420,13 +420,13 @@
                     }
                     catch (ex)
                     {
-                        console.log(ex);
-                        console.log(this.responseText);
+                        logError(ex, true);
+                        logError(this.responseText);
                     }
                 }
                 else if (this.readyState == 4 && this.status == 400)
                 {
-                    console.log(this.responseText);
+                    logError(this.responseText);
                 }
             };
 
@@ -720,7 +720,7 @@
                 setTimeout(function() {
                     var invalid = document.getElementById("invalid");
                     if (!invalid) {
-                        console.log("oops, someone deleted #invalid before timeout!");
+                        logWarn("oops, someone deleted #invalid before timeout!");
                         return;
                     }
                     
@@ -773,9 +773,6 @@
             if (inputs[i].name == "name")
             {
                 // If "enter" is pressed here, immediately do a search instead of submitting the suggestion
-
-                console.log("Setting separate");
-                console.log(inputs[i]);
                 inputs[i].addEventListener("keyup", function(e) {
                     if (e.keyCode === 13 && !e.shiftKey && !e.ctrlKey && !e.altKey) {
                         e.preventDefault();

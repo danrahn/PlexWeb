@@ -800,6 +800,11 @@ function search()
     json_message_and_exit(json_encode($final_obj));
 }
 
+/// <summary>
+/// Search for a movie or tv show via IMDb.
+///
+/// This method does _not_ return on success or failure, but sends a message to the output stream and exits
+/// </summary>
 function search_external()
 {
     $query = strtolower(trim(param_or_json_exit('query')));
@@ -893,6 +898,7 @@ function update_password($old_pass, $new_pass, $conf_pass, &$error)
     if (!$result || $result->num_rows != 1)
     {
         $error = "Error updating password. Please try again";
+        return FALSE;
     }
 
     $old_hash = $result->fetch_row()[0];

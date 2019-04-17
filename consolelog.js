@@ -10,12 +10,12 @@ const LOG = {
 
 const g_logStr = ["TMI", "VERBOSE", "INFO", "WARN", "ERROR", "CRITICAL"];
 const g_levelColors = [
-    ["#00CC00", "#AAA"],
-    ["#B74BDB", "black"],
-    ["blue", "black"],
-    ["#E50", "black"],
-    ["inherit", "#800"],
-    ["inherit", "#800; font-size: 2em"]
+    ["#00CC00", "#AAA", "#666"],
+    ["#B74BDB", "inherit", "inherit"],
+    ["#88C", "inherit", "inherit"],
+    ["#E50", "inherit", "inherit"],
+    ["inherit", "#800", "#C88"],
+    ["inherit", "#800; font-size: 2em", "#C33; font-size: 2em"]
 ];
 
 let g_logLevel = parseInt(sessionStorage.getItem("loglevel"));
@@ -23,9 +23,22 @@ if (isNaN(g_logLevel)) {
     g_logLevel = LOG.Warn;
 }
 
+let g_darkConsole = parseInt(sessionStorage.getItem("darkconsole"));
+if (isNaN(g_darkConsole)) {
+    logInfo("Welcome to the console!")
+    logInfo("For best debugging results, set whether you're using a light or dark themed console via setDarkConsole(isDark), ");
+    logInfo("where isDark is 1 (true) or 0 (false)");
+    g_darkConsole = false;
+}
+
 function setLogLevel(level) {
     sessionStorage.setItem("loglevel", level);
     g_logLevel = level;
+}
+
+function setDarkConsole(dark) {
+    sessionStorage.setItem("darkconsole", dark);
+    g_darkConsole = dark;
 }
 
 function logTmi(text, isObject = false) {
@@ -60,7 +73,7 @@ function log(text, level, isObject = false) {
     if (g_logLevel === LOG.Extreme) {
         console.log("%c[TMI] " + "%cCalled log with (" + text + ", " + level + ", " + isObject + ")",
             "color: " + g_levelColors[0][0],
-            "color: " + g_levelColors[0][1]);
+            "color: " + g_levelColors[0][g_darkConsole ? 2 : 1]);
     }
 
     let output;
@@ -77,6 +90,6 @@ function log(text, level, isObject = false) {
         output("%c[" + g_logStr[level] + "]", "color : " + g_levelColors[level][0]);
         output(text);
     } else {
-        output("%c[" + g_logStr[level] + "] " + "%c" + text, "color : " + g_levelColors[level][0], "color : " + g_levelColors[level][1]);
+        output("%c[" + g_logStr[level] + "] " + "%c" + text, "color : " + g_levelColors[level][0], "color : " + g_levelColors[level][g_darkConsole ? 2 : 1]);
     }
 }

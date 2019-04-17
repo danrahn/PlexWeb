@@ -191,8 +191,6 @@ function print_status_options($status, $rid)
         {
             if (comments[i].getAttribute("modified") === "true")
             {
-                console.log(comments[i]);
-                console.log(comments[i].id.substring(7) + " " + comments[i].className);
                 updateRequest(comments[i], comments[i].id.substring(7), comments[i].className);
             }
         }
