@@ -492,6 +492,12 @@
         {
             list.appendChild(getListItem("User", sesh['user']));
         }
+        if (sesh['ip'])
+        {
+            let ipId = sesh['session_id'] + "_ip";
+            list.appendChild(getListItem("IP", sesh['ip'], ipId));
+            getIPInfo(sesh['ip'], ipId);
+        }
 
         if (sesh['video'])
         {
@@ -577,9 +583,13 @@
     /// <summary>
     /// Returns a formatted list item in the form of "key: value"
     /// </summary>
-    function getListItem(key, value)
+    function getListItem(key, value, id)
     {
         let item = document.createElement("li");
+        if (id)
+        {
+            item.id = id;
+        }
         let title = document.createElement("strong");
         title.innerHTML = key + ": ";
         let span = document.createElement("span");
@@ -587,6 +597,46 @@
         item.appendChild(title);
         item.appendChild(span);
         return item;
+    }
+
+    /// <summary>
+    /// Grab the geo information for the given ip, adding it as list item after the
+    /// IP address entry in the media info. It probably isn't super necessary to
+    /// have this as a separate API call, but making any calls to external API's
+    /// async to the main get_status call will make things a bit more responsive.
+    /// </summary>
+    /// <param name="id">The geo information will be inserted after this id</param>
+    function getIPInfo(ip, id)
+    {
+        http = new XMLHttpRequest();
+        http.open("POST", "process_request.php", true /*async*/);
+        http.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+        http.attachId = id;
+        http.onreadystatechange = function() {
+            if (this.readyState != 4 || this.status != 200) {
+                return;
+            }
+
+            try {
+                let response = JSON.parse(this.responseText);
+                logJson(response, LOG.Verbose);
+                if (response["Error"]) {
+                    logError(response["Error"]);
+                    return;
+                }
+
+                const geoInfoString = `${response.city}, ${response.state} - ${response.isp}`;
+                const geoInfo = getListItem("Location", geoInfoString);
+                let ipItem = document.getElementById(this.attachId);
+                ipItem.parentNode.insertBefore(geoInfo, ipItem.nextSibling);
+
+            } catch (ex) {
+                logError(ex, true);
+                logError(this.responseText);
+            }
+        }
+
+        http.send(`&type=geoip&ip=${ip}`);
     }
 
     /// <summary>

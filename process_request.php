@@ -97,6 +97,14 @@ switch ($type)
             json_error_and_exit($error);
         }
         json_success();
+    case "geoip":
+        $error = "";
+        $response = get_geo_ip(param_or_die("ip"), $error);
+        if (!$response)
+        {
+            json_error_and_exit($error);
+        }
+        json_message_and_exit($response);
     default:
         error_and_exit(400);
 }
@@ -931,6 +939,27 @@ function update_password($old_pass, $new_pass, $conf_pass, &$error)
     }
 
     return TRUE;
+}
+
+/// <summary>
+/// Return the location and ISP (sorta) information for the given IP address
+/// </summary>
+function get_geo_ip($ip, &$error)
+{
+    $json = json_decode(curl(GEOIP_URL . $ip));
+    if ($json == NULL)
+    {
+        $error = "Failed to parse geoip response";
+        return FALSE;
+    }
+
+    // We only care about certain fields
+    $trimmed_json = new \stdClass();
+    $trimmed_json->country = $json->country_name;
+    $trimmed_json->state = $json->state_prov;
+    $trimmed_json->city = $json->city;
+    $trimmed_json->isp = $json->isp;
+    return json_encode($trimmed_json);
 }
 
 /// <summary>

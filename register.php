@@ -33,7 +33,7 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === TRUE)
     <div id="container">
         <div id="register" class="formContainer">
             <div id="registerSuccess" style="display: none;"></div>
-            <div id="formTitle">Register (<a href="login.php">login</a>)</div>
+            <div class="formTitle">Register (<a href="login.php">login</a>)</div>
             <form id="registerForm" action="<?php echo htmlspecialchars($_SERVER['PHP_SELF']) ?>" method="POST">
                 <div class="formInput"><label for="username">Username: </label><input type="text" name="username"></div>
                 <hr />

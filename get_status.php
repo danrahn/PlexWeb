@@ -277,6 +277,11 @@ function build_sesh($sesh)
     $slim_sesh->paused = strcmp($player['state'], 'paused') == 0;
     $slim_sesh->playback_device = get_playback_device($player);
 
+    if ($_SESSION['level'] >= 100)
+    {
+        $slim_sesh->ip = (string)$player['remotePublicAddress'];
+    }
+
     // We don't always have a 'selected' media item for some reason, or a stream with a decision
     $media = $sesh->xpath('Media[@selected="1"]');
     $media = $media ? $media[0] : $sesh->xpath('Media')[0];

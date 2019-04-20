@@ -56,7 +56,7 @@ input[type=checkbox]:focus {
     <?php include "nav.php" ?>
     <div id="container">
         <div id="info" class="formContainer">
-            <div id="formTitle">User Information and Settings</div>
+            <div class="formTitle">User Information and Settings</div>
             <form id="infoForm">
                 <hr />
                 <div class="formInput"><label for="firstname" id="firstnamelabel">First Name: </label><input type="text" name="firstname" id="firstname" maxlength=1280></div>
@@ -81,7 +81,7 @@ input[type=checkbox]:focus {
         </div>
         <div id="formError" class="formContainer">...</div>
         <div id="pwReset" class="formContainer">
-            <div id="pwTitle">Change Password</div>
+            <div class="formTitle">Change Password</div>
             <form id="pwForm">
                 <hr />
                 <div class="formInput"><label for="oldPass" id="oldPassLabel">Old Password: </label><input type="password" name="oldPass" id="oldPass"></div>

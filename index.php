@@ -87,7 +87,7 @@ function plexOk()
         </div>
         <div id="invalid">Please fill out all fields!</div>
         <div id="suggest" class="formContainer">
-            <div id="formTitle">Media Request</div>
+            <div class="formTitle">Media Request</div>
             <form id="suggestForm" action="javascript:void(0);">
                 <hr />
                 <div class="formInput"><label for="name">Suggestion:</label><input type="text" name="name" id="name" maxlength=64></div>

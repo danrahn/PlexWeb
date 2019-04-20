@@ -30,7 +30,7 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === TRUE)
 <div id="plexFrame">
     <div id="container">
         <div id="login" class="formContainer">
-            <div id="formTitle">Login (<a href="register.php">register</a>)</div>
+            <div class="formTitle">Login (<a href="register.php">register</a>)</div>
             <form id="loginForm">
                 <div class="formInput"><label for="username">Username: </label><input type="text" name="username" id="username"></div>
                 <hr />
@@ -38,6 +38,7 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === TRUE)
                 <hr />
                 <div class="formInput"><input type="button" value="submit" id="go"></input></div>
             </form>
+            <div class="smallDiv">View the source code <a href="https://github.com/danrahn/plexweb" target="_blank">here!</a></div>
         </div>
         <div id="formStatus" class="formContainer"></div>
     </div>
