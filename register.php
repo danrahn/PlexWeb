@@ -73,26 +73,41 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === TRUE)
                 http.onreadystatechange = function() {
                     if (this.readyState == 4 && this.status == 200)
                     {
-                        username = document.querySelector("input[name='username']");
-                        if (lastUsername === username.value)
+                        try
                         {
-                            // Username hasn't changed
-                            if (this.responseText == '1')
+                            let response = JSON.parse(this.responseText);
+                            logVerbose(response, true);
+                            if (response.value != '0' && response.value != '1')
                             {
-                                // It's available!
-                                username.style.backgroundColor = "rgb(63, 100, 69)";
+                                logError(response, true);
+                                return;
                             }
-                            else
+
+                            username = document.querySelector("input[name='username']");
+                            if (lastUsername === username.value)
                             {
-                                // It exists!
-                                logVerbose(this.responseText);
-                                username.style.backgroundColor = "rgb(100, 66, 69)";
+                                // Username hasn't changed
+                                if (response.value == '1')
+                                {
+                                    // It's available!
+                                    username.style.backgroundColor = "rgb(63, 100, 69)";
+                                }
+                                else
+                                {
+                                    // It exists!
+                                    username.style.backgroundColor = "rgb(100, 66, 69)";
+                                }
                             }
+                        }
+                        catch (ex)
+                        {
+                            logError(ex, true);
+                            logError(this.responseText);
                         }
 
                     }
                 }
-                http.send('type=check_username&username=' + user.value);
+                http.send(buildQuery({"type" : "check_username", "username" : user.value}));
             }
 
             hasUserChanged = false;
@@ -163,7 +178,7 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === TRUE)
                 }
             };
             
-            http.send(`&type=register&username=${user.value}&password=${pass.value}&confirm=${conf.value}`);
+            http.send(buildQuery({"type" : "register", "username" : user.value, "password" : pass.value, "confirm" : conf.value}));
             
         });
         
@@ -195,6 +210,20 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === TRUE)
         conf.addEventListener("keyup", keyDownEvent);
 
         user.focus();
+    }
+
+    /// <summary>
+    /// Builds up a query string, ensuring the components are encoded properly
+    /// </summary>
+    function buildQuery(parameters)
+    {
+        let queryString = "";
+        for (parameter in parameters)
+        {
+            queryString += `&${parameter}=${encodeURIComponent(parameters[parameter])}`;
+        }
+
+        return queryString;
     }
 
     /// <summary>

@@ -245,7 +245,12 @@ function print_status_options($status, $rid)
             }
         };
 
-        http.send(`&type=req_update&id=${reqId}&kind=${requestType}&content=${element[field]}`);
+        http.send(
+            "&type=req_update" +
+            "&id=" + encodeURIComponent(reqId) +
+            "&kind=" + encodeURIComponent(requestType) +
+            "&content=" + encodeURIComponent(element[field])
+        );
     }
 
     function setCommentListeners(className, requestType, field="value") {

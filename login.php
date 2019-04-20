@@ -102,7 +102,7 @@ function setupLoginForm()
             }
         };
         
-        http.send(`&type=login&username=${user.value}&password=${pass.value}`);
+        http.send(`&type=login&username=${encodeURIComponent(user.value)}&password=${encodeURIComponent(pass.value)}`);
         
     });
     

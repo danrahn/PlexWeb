@@ -75,12 +75,16 @@ switch ($type)
     case "check_username":
         $check = $db->real_escape_string(strtolower(param_or_die('username')));
         $result = $db->query("SELECT username FROM users where username_normalized='$check'");
-        echo (!$result || $result->num_rows !== 0) ? '0' : '1';
-        if ($result)
+        if (!$result || $result->num_rows !== 0)
+        {
+            json_message_and_exit('{ "value" : 0 }');
+        }
+        else
         {
             $result->close();
+            json_message_and_exit('{ "value" : 1, "name" : "' . param_or_die('username') . '" }');
         }
-        return;
+
     case "members":
         get_members();
         break;

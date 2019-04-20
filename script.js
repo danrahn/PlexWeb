@@ -21,7 +21,10 @@
         // Don't attempt to grab session information if we can't even connect to plex
         if (plexOk())
         {
-            sendHtmlJsonRequest("get_status.php", "&type=1",
+            sendHtmlJsonRequest("get_status.php",
+                {
+                    "type" : "1"
+                },
                 function(response)
                 {
                     writeSessions(response);
@@ -151,7 +154,10 @@
     function startUpdates()
     {
         contentUpdater = setInterval(function() {
-            sendHtmlJsonRequest("get_status.php", "&type=4",
+            sendHtmlJsonRequest("get_status.php",
+                {
+                    "type" : "4"
+                },
                 function(response)
                 {
                     processUpdate(response);
@@ -359,7 +365,11 @@
         {
             const id = newIds[i];
             logVerbose("Attempting to add session# " + id);
-            sendHtmlJsonRequest("get_status.php", "&type=2&id=" + id,
+            sendHtmlJsonRequest("get_status.php",
+                {
+                    "type" : 2,
+                    "id" : id
+                },
                 function(response)
                 {
                     const currentSessions = $(".mediainfo");
@@ -565,7 +575,11 @@
     /// <param name="id">The geo information will be inserted after this id</param>
     function getIPInfo(ip, id)
     {
-        sendHtmlJsonRequest("process_request.php", `"&type=geoip&ip=${ip}`,
+        sendHtmlJsonRequest("process_request.php",
+            {
+                "type" : "geoip",
+                "ip" : ip
+            },
             function(response, request)
             {
                 const geoInfoString = `${response.city}, ${response.state} - ${response.isp}`;
@@ -718,7 +732,13 @@
                 return;
             }
             
-            sendHtmlJsonRequest("process_request.php", `&type=request&name=${name.value}&mediatype=${type.value}&comment=${comment.value}`,
+            sendHtmlJsonRequest("process_request.php",
+                {
+                    "type" : "request",
+                    "name" : name.value,
+                    "mediatype" : type.value,
+                    "comment" : comment.value
+                },
                 function()
                 {
                     // Clear out current values
@@ -826,11 +846,13 @@
             buildItems("outsideSuggestions", {"length": 0});
             return;
         }
-
-        let query = "&type=search&kind=" + type.value + "&query=" + suggestion;
-        logVerbose("Sending query: " + encodeURI(query));
             
-        sendHtmlJsonRequest("process_request.php", encodeURI(query),
+        sendHtmlJsonRequest("process_request.php",
+            {
+                "type" : "search",
+                "kind" : type.value,
+                "query" : suggestion
+            },
             function(response)
             {
                 buildItems("existingSuggestions", response);
@@ -857,10 +879,13 @@
             // Only search for movies and tv shows for now (imdb)
             return;
         }
-
-        let externalQuery = "&type=search_external&kind=" + type.value + "&query=" + name.value;
             
-        sendHtmlJsonRequest("process_request.php", externalQuery,
+        sendHtmlJsonRequest("process_request.php",
+            {
+                "type" : "search_external",
+                "kind" : type.value,
+                "query" : name.value
+            },
             function(response)
             {
                 buildItems("outsideSuggestions", response);
@@ -1037,6 +1062,20 @@
             }
         }
 
-        http.send(parameters);
+        http.send(buildQuery(parameters));
+    }
+
+    /// <summary>
+    /// Builds up a query string, ensuring the components are encoded properly
+    /// </summary>
+    function buildQuery(parameters)
+    {
+        let queryString = "";
+        for (parameter in parameters)
+        {
+            queryString += `&${parameter}=${encodeURIComponent(parameters[parameter])}`;
+        }
+
+        return queryString;
     }
 })();

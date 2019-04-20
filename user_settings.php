@@ -400,14 +400,17 @@ input[type=checkbox]:focus {
                     }
                 }
 
-                const firstName = getField("firstname");
-                const lastName = getField("lastname");
-                const emailStr = getField("email");
-                const emailAlerts = getField("emailalerts", "checked");
-                const phoneNum = getField("phone").replace(/[^\d]/g, "");
-                const phoneAlerts = getField("phonealerts", "checked");
-                const carrier = getField("carrier", "value", "select");
-                http.send(`&type=set_usr_info&fn=${firstName}&ln=${lastName}&e=${emailStr}&ea=${emailAlerts}&p=${phoneNum}&pa=${phoneAlerts}&c=${carrier}`);
+                http.send(buildQuery(
+                {
+                    "type" : "set_usr_info",
+                    "fn"   : getField("firstname"),
+                    "ln"   : getField("lastname"),
+                    "e"    : getField("email"),
+                    "ea"   : getField("emailalerts", "checked"),
+                    "p"    : getField("phone").replace(/[^\d]/g, ""),
+                    "pa"   : getField("phonealerts", "checked"),
+                    "c"    : getField("carrier", "value", "select")
+                }));
             }
         });
     }
@@ -490,7 +493,27 @@ input[type=checkbox]:focus {
             }
         }
 
-        http.send(`&type=update_pass&old_pass=${oldPass.value}&new_pass=${newPass.value}&conf_pass=${conf.value}`);
+        http.send(buildQuery(
+        {
+            "type" : "update_pass",
+            "old_pass" : oldPass.value,
+            "new_pass" : newPass.value,
+            "conf_pass" : conf.value
+        }));
+    }
+
+    /// <summary>
+    /// Builds up a query string, ensuring the components are encoded properly
+    /// </summary>
+    function buildQuery(parameters)
+    {
+        let queryString = "";
+        for (parameter in parameters)
+        {
+            queryString += `&${parameter}=${encodeURIComponent(parameters[parameter])}`;
+        }
+
+        return queryString;
     }
 
     function verifyFields(...fields) {
