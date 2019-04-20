@@ -21,54 +21,13 @@
         // Don't attempt to grab session information if we can't even connect to plex
         if (plexOk())
         {
-            const url = 'get_status.php';
-            const params = 'type=1'; // 1 == all sessions
-            let http = new XMLHttpRequest();
-            http.open('POST', url, true /*async*/);
-            http.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
-            http.onreadystatechange = function() {
-                if (this.readyState == 4 && this.status == 200)
+            sendHtmlJsonRequest("get_status.php", "&type=1",
+                function(response)
                 {
-                    try
-                    {
-                        const response = JSON.parse(this.responseText);
-                        logVerbose(response, true);
-                        if (response['Error'])
-                        {
-                            // User doesn't have access to active streams
-                            let spanOpen = document.createElement('span');
-                            spanOpen.innerHTML = '[';
-
-                            let requestLink = document.createElement('a');
-                            requestLink.href = '#';
-                            requestLink.id = "streamAccess";
-                            requestLink.innerHTML = "No Access";
-                            getStreamAccessString();
-
-                            let spanClose = document.createElement('span');
-                            spanClose.innerHTML = ']';
-
-                            let active = $("#activeNum");
-                            active.innerHTML = "";
-                            active.append(spanOpen);
-                            active.append(requestLink);
-                            active.append(spanClose);
-                            return;
-                        }
-                        else
-                        {
-                            writeSessions(JSON.parse(this.responseText));
-                            startUpdates();
-                        }
-                    }
-                    catch (ex)
-                    {
-                        logError(ex, true);
-                        logError(this.responseText);
-                    }
-                }
-            };
-            http.send(params);
+                    writeSessions(response);
+                    startUpdates();
+                },
+                getStatusFailure);
         }
         else
         {
@@ -79,6 +38,40 @@
 
     });
 
+    /// <summary>
+    /// Function invoked when we fail to grab status information
+    /// due to permission issues
+    /// </summary>
+    function getStatusFailure()
+    {
+        // User doesn't have access to active streams
+        let spanOpen = document.createElement('span');
+        spanOpen.innerHTML = '[';
+
+        let requestLink = document.createElement('a');
+        requestLink.href = '#';
+        requestLink.id = "streamAccess";
+        requestLink.innerHTML = "No Access";
+        getStreamAccessString();
+
+        let spanClose = document.createElement('span');
+        spanClose.innerHTML = ']';
+
+        let active = $("#activeNum");
+        active.innerHTML = "";
+        active.append(spanOpen);
+        active.append(requestLink);
+        active.append(spanClose);
+    }
+
+    /// <summary>
+    /// Sets the string if the user does not have authorization to view active streams
+    /// 'Request Pending' if the user has requested access, 'Request Access' if access
+    /// has not been requested.
+    ///
+    /// Doesn't use 'sendHtmlJsonRequest' because it's a "legacy" function that doesn't
+    /// return JSON (yet*)
+    /// </summary>
     function getStreamAccessString()
     {
         let http = new XMLHttpRequest();
@@ -110,6 +103,9 @@
         http.send("type=pr&req_type=10&which=get");
     }
 
+    /// <summary>
+    /// Updates the access string after the user requests access to stream information
+    /// </summary>
     function requestStreamAccess(element)
     {
         let http = new XMLHttpRequest();
@@ -155,97 +151,80 @@
     function startUpdates()
     {
         contentUpdater = setInterval(function() {
-            const url = 'get_status.php';
-            const params = 'type=4';
-            let http = new XMLHttpRequest();
-            http.open('POST', url, true /*async*/);
-            http.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
-            http.onreadystatechange = function() {
-                if (this.readyState == 4 && this.status == 200)
+            sendHtmlJsonRequest("get_status.php", "&type=4",
+                function(response)
                 {
-                    processUpdate(this.responseText);
-                }
-            };
-            http.send(params);
+                    processUpdate(response);
+                });
         }, 10000);
     }
 
     /// <summary>
     /// Process our update response. Add/remove, reorder, switch between playing/paused
     /// </summary>
-    function processUpdate(responseText)
+    function processUpdate(sessions)
     {
-        try
+        $("#activeNum").innerHTML = sessions.length;
+
+        // moving existingSessions to an actual array makes it easier to .splice() below
+        let existingSessions = $(".mediainfo");
+        let existingArray = [];
+        for (let i = 0; i < existingSessions.length; ++i)
         {
-            let sessions = JSON.parse(responseText);
-            logVerbose(sessions, true);
-            $("#activeNum").innerHTML = sessions.length;
-
-            // moving existingSessions to an actual array makes it easier to .splice() below
-            let existingSessions = $(".mediainfo");
-            let existingArray = [];
-            for (let i = 0; i < existingSessions.length; ++i)
-            {
-                existingArray.push(existingSessions[i]);
-            }
-            existingSessions = existingArray;
-
-            // The new order our elements should be in
-            let newOrder = [];
-
-            // Any new session ids that we need to retrieve stream information for
-            let newIds = [];
-
-            // Sort our sessions so we can later reorder them in the list if necessary
-            sessions = sessions.sort(sessionSort);
-
-            for (let i = 0; i < sessions.length; ++i)
-            {
-                let sesh = sessions[i];
-                let id = sesh['id'];
-                let item = $("#id" + id);
-                if (item)
-                {
-                    // The stream already exists - update the progress
-                    item.querySelector(".time").innerHTML = msToHms(sesh['progress']) + "/" + msToHms(sesh['duration']);
-                    item.querySelector('.progressHolder').setAttribute('progress', sesh['progress']);
-                    item.querySelector('.progressHolder').setAttribute('tcprogress', 'transcode_progress' in sesh ? sesh['transcode_progress'] : 0);
-
-                    item.querySelector(".ppbutton").className = "ppbutton fa fa-" + (sesh['paused'] ? "pause" : "play");
-                    if (sesh['paused'])
-                    {
-                        // Transocde progress may still be updated, so do a one-off here
-                        innerUpdate(id);
-                    }
-                    if (sesh['paused'] && innerProgressTimers[id])
-                    {
-                        clearInterval(innerProgressTimers[id]);
-                        delete innerProgressTimers[id];
-                    }
-                    else if (!sesh['paused'] && !innerProgressTimers[id])
-                    {
-                        // Create a new timer to simulate progress while we wait for an actual update
-                        innerProgressTimers[id] = setInterval(innerUpdate, 1000, id);
-                    }
-
-                    newOrder.push(item);
-                }
-                else
-                {
-                    // Add it to our pending queue (with another ajax request)
-                    newIds.push(id);
-                }
-            }
-
-            trimSessions(sessions, existingSessions);
-            reorderSessions(newOrder, existingSessions);
-            addNewSessions(newIds);
+            existingArray.push(existingSessions[i]);
         }
-        catch (ex)
+        existingSessions = existingArray;
+
+        // The new order our elements should be in
+        let newOrder = [];
+
+        // Any new session ids that we need to retrieve stream information for
+        let newIds = [];
+
+        // Sort our sessions so we can later reorder them in the list if necessary
+        sessions = sessions.sort(sessionSort);
+
+        for (let i = 0; i < sessions.length; ++i)
         {
-            logError(ex, true);
-            logError(responseText);
+            let sesh = sessions[i];
+            let id = sesh['id'];
+            let item = $("#id" + id);
+            if (item)
+            {
+                // The stream already exists - update the progress
+                item.querySelector(".time").innerHTML = msToHms(sesh['progress']) + "/" + msToHms(sesh['duration']);
+                item.querySelector('.progressHolder').setAttribute('progress', sesh['progress']);
+                item.querySelector('.progressHolder').setAttribute('tcprogress', 'transcode_progress' in sesh ? sesh['transcode_progress'] : 0);
+
+                item.querySelector(".ppbutton").className = "ppbutton fa fa-" + (sesh['paused'] ? "pause" : "play");
+                if (sesh['paused'])
+                {
+                    // Transocde progress may still be updated, so do a one-off here
+                    innerUpdate(id);
+                }
+                if (sesh['paused'] && innerProgressTimers[id])
+                {
+                    clearInterval(innerProgressTimers[id]);
+                    delete innerProgressTimers[id];
+                }
+                else if (!sesh['paused'] && !innerProgressTimers[id])
+                {
+                    // Create a new timer to simulate progress while we wait for an actual update
+                    innerProgressTimers[id] = setInterval(innerUpdate, 1000, id);
+                }
+
+                newOrder.push(item);
+            }
+            else
+            {
+                // Add it to our pending queue (with another ajax request)
+                newIds.push(id);
+            }
         }
+
+        trimSessions(sessions, existingSessions);
+        reorderSessions(newOrder, existingSessions);
+        addNewSessions(newIds);
     }
 
     /// <summary>
@@ -380,57 +359,35 @@
         {
             const id = newIds[i];
             logVerbose("Attempting to add session# " + id);
-            const url = 'get_status.php';
-            const params = 'type=2&id=' + id;
-            let http = new XMLHttpRequest();
-            http.open('POST', url, true);
-            http.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
-            http.onreadystatechange = function() {
-                if (this.readyState == 4 && this.status == 200)
+            sendHtmlJsonRequest("get_status.php", "&type=2&id=" + id,
+                function(response)
                 {
-                    try
+                    const currentSessions = $(".mediainfo");
+                    if (currentSessions.length === 0)
                     {
-                        const response = JSON.parse(this.responseText);
-                        const currentSessions = $(".mediainfo");
-                        if (currentSessions.length === 0)
+                        // No active streams in our current session list. Add it
+                        $("#mediaentries").append(buildMediaInfo(response));
+                        return;
+                    }
+
+                    // If we have existing sessions, find its place in the list
+                    for (let i = 0; i < currentSessions.length; ++i)
+                    {
+                        if (!response['paused'] && currentSessions[i].querySelector("i").className.indexOf("pause") != -1 ||
+                            (response['progress'] / response['duration']) * 100 < parseFloat(currentSessions[i].querySelector(".progress").style.width))
                         {
-                            // No active streams in our current session list. Add it
+                            // Found our position if this item is playing and the next is paused, or this item has less
+                            // time to completion.
+                            currentSessions[i].parentElement.insertBefore(buildMediaInfo(response), currentSessions[i]);
+                            break;
+                        }
+                        else if (i === currentSessions.length - 1)
+                        {
+                            // This item belongs at the end of the list
                             $("#mediaentries").append(buildMediaInfo(response));
                         }
-                        else
-                        {
-                            // If we have existing sessions, find its place in the list
-                            for (let i = 0; i < currentSessions.length; ++i)
-                            {
-                                if (!response['paused'] && currentSessions[i].querySelector("i").className.indexOf("pause") != -1 ||
-                                    (response['progress'] / response['duration']) * 100 < parseFloat(currentSessions[i].querySelector(".progress").style.width))
-                                {
-                                    // Found our position if this item is playing and the next is paused, or this item has less
-                                    // time to completion.
-                                    currentSessions[i].parentElement.insertBefore(buildMediaInfo(response), currentSessions[i]);
-                                    break;
-                                }
-                                else if (i === currentSessions.length - 1)
-                                {
-                                    // This item belongs at the end of the list
-                                    $("#mediaentries").append(buildMediaInfo(response));
-                                }
-                            }
-                        }
                     }
-                    catch (ex)
-                    {
-                        logError(ex, true);
-                        logError(this.responseText);
-                    }
-                }
-                else if (this.readyState == 4 && this.status == 400)
-                {
-                    logError(this.responseText);
-                }
-            };
-
-            http.send(params);
+                });
         }
     }
 
@@ -608,35 +565,16 @@
     /// <param name="id">The geo information will be inserted after this id</param>
     function getIPInfo(ip, id)
     {
-        http = new XMLHttpRequest();
-        http.open("POST", "process_request.php", true /*async*/);
-        http.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
-        http.attachId = id;
-        http.onreadystatechange = function() {
-            if (this.readyState != 4 || this.status != 200) {
-                return;
-            }
-
-            try {
-                let response = JSON.parse(this.responseText);
-                logJson(response, LOG.Verbose);
-                if (response["Error"]) {
-                    logError(response["Error"]);
-                    return;
-                }
-
+        sendHtmlJsonRequest("process_request.php", `"&type=geoip&ip=${ip}`,
+            function(response, request)
+            {
                 const geoInfoString = `${response.city}, ${response.state} - ${response.isp}`;
                 const geoInfo = getListItem("Location", geoInfoString);
-                let ipItem = document.getElementById(this.attachId);
+                let ipItem = document.getElementById(request.attachId);
                 ipItem.parentNode.insertBefore(geoInfo, ipItem.nextSibling);
-
-            } catch (ex) {
-                logError(ex, true);
-                logError(this.responseText);
-            }
-        }
-
-        http.send(`&type=geoip&ip=${ip}`);
+            },
+            undefined /*failFunc*/,
+            { "attachId" : id });
     }
 
     /// <summary>
@@ -780,42 +718,26 @@
                 return;
             }
             
-            http = new XMLHttpRequest();
-            http.open("POST", "process_request.php", true /*async*/);
-            http.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
-            http.onreadystatechange = function() {
-                if (this.readyState != 4 || this.status != 200) {
-                    return;
-                }
-
-                try {
-                    let response = JSON.parse(this.responseText);
-                    logJson(response, LOG.Verbose);
-                    let status = $("#formStatus");
-                    if (response["Error"]) {
-                        logError(response["Error"]);
-                        status.className = "formContainer statusFail";
-                        status.innerHTML = "Error processing request: " + response["Error"];
-                        Animation.queue({"opacity" : 1}, status, 500);
-                        Animation.queueDelayed({"opacity" : 0}, status, 3000, 1000);
-                        return;
-                    }
-
+            sendHtmlJsonRequest("process_request.php", `&type=request&name=${name.value}&mediatype=${type.value}&comment=${comment.value}`,
+                function()
+                {
                     // Clear out current values
+                    let status = $("#formStatus");
                     $("input[name='name']")[0].value = "";
                     $("#comment").value = "";
                     status.className = "formContainer statusSuccess";
                     status.innerHTML = "Request submitted!<br/><a href=view_requests.php>View Requests</a>";
                     Animation.queue({"opacity" : 1}, status, 500);
                     Animation.queueDelayed({"opacity" : 0}, status, 5000, 1000);
-                } catch (ex) {
-                    logError(ex, true);
-                    logError(this.responseText);
-                }
-            }
-
-            http.send(`&type=request&name=${name.value}&mediatype=${type.value}&comment=${comment.value}`);
-            
+                },
+                function(response)
+                {
+                    logError(response["Error"]);
+                    status.className = "formContainer statusFail";
+                    status.innerHTML = "Error processing request: " + response["Error"];
+                    Animation.queue({"opacity" : 1}, status, 500);
+                    Animation.queueDelayed({"opacity" : 0}, status, 3000, 1000);
+                });
         });
         
         var inputs = $("input, select");
@@ -889,6 +811,10 @@
         inputTimer = setTimeout(searchSuggestion, 1000);
     }
 
+    /// <summary>
+    /// Search the plex database for the given suggestion, returning the most
+    /// relevant results and subsequently triggering an external IMDb search
+    /// </summary>
     function searchSuggestion()
     {
         let name = $("input[name='name']")[0];
@@ -902,36 +828,24 @@
         }
 
         let query = "&type=search&kind=" + type.value + "&query=" + suggestion;
-            
-        http = new XMLHttpRequest();
-        http.open("POST", "process_request.php", true /*async*/);
-        http.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
-        http.onreadystatechange = function() {
-            if (this.readyState != 4 || this.status != 200) {
-                return;
-            }
-
-            try {
-                let response = JSON.parse(this.responseText);
-                logJson(response, response.Error ? LOG.Error : LOG.Verbose);
-
-                if (!response.Error)
-                {
-                    buildItems("existingSuggestions", response);
-                }
-
-                searchExternal();
-
-            } catch (ex) {
-                logError(ex, true);
-                logError(this.responseText);
-            }
-        }
-
         logVerbose("Sending query: " + encodeURI(query));
-        http.send(encodeURI(query));
+            
+        sendHtmlJsonRequest("process_request.php", encodeURI(query),
+            function(response)
+            {
+                buildItems("existingSuggestions", response);
+                searchExternal();
+            },
+            function(response)
+            {
+                logError(response['Error']);
+                searchExternal();
+            });
     }
 
+    /// <summary>
+    /// Trigger an external query that will grab IMDb results based on the current suggestion
+    /// </summary>
     function searchExternal()
     {
         let name = $("input[name='name']")[0];
@@ -946,32 +860,20 @@
 
         let externalQuery = "&type=search_external&kind=" + type.value + "&query=" + name.value;
             
-        http = new XMLHttpRequest();
-        http.open("POST", "process_request.php", true /*async*/);
-        http.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
-        http.onreadystatechange = function() {
-            if (this.readyState != 4 || this.status != 200) {
-                return;
-            }
-
-            try {
-                let response = JSON.parse(this.responseText);
-                logJson(response, LOG.Verbose);
-                if (response.Error)
-                {
-                    throw "Unexpected error - printing response text";
-                }
-
+        sendHtmlJsonRequest("process_request.php", externalQuery,
+            function(response)
+            {
                 buildItems("outsideSuggestions", response);
-            } catch (ex) {
-                logError(ex, true);
-                logError(this.responseText);
-            }
-        }
-
-        http.send(externalQuery);
+            },
+            function()
+            {
+                throw "Unexpected error - printing response text";
+            });
     }
 
+    /// <summary>
+    /// Build a list of either internal (plex) or external (imdb) suggestions
+    /// </summary>
     function buildItems(id, results)
     {
         const external = id == "outsideSuggestions";
@@ -1077,7 +979,7 @@
 
     /// <summary>
     /// Custom jQuery-like selector method.
-    /// If the selector starts with '#' and contains no spaces, return th
+    /// If the selector starts with '#' and contains no spaces, return the
     /// result of querySelector, otherwise return the result of querySelectorAll
     /// </summary>
     function $(selector)
@@ -1088,5 +990,53 @@
         }
 
         return document.querySelectorAll(selector);
+    }
+
+    /// <summary>
+    /// Generic method to sent an async request that expects JSON in return
+    /// </summary>
+    function sendHtmlJsonRequest(url, parameters, successFunc, failFunc, additionalParams)
+    {
+        http = new XMLHttpRequest();
+        http.open("POST", url, true /*async*/);
+        http.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+        if (additionalParams)
+        {
+            for (param in additionalParams)
+            {
+                http[param] = additionalParams[param];
+            }   
+        }
+
+        http.onreadystatechange = function() {
+            if (this.readyState != 4 || this.status != 200) {
+                return;
+            }
+
+            try {
+                let response = JSON.parse(this.responseText);
+                logJson(response, LOG.Verbose);
+                if (response["Error"]) {
+                    if (failFunc)
+                    {
+                        failFunc(response);
+                    }
+                    else
+                    {
+                        logError(response["Error"]);
+                    }
+
+                    return;
+                }
+
+                successFunc(response, this);
+
+            } catch (ex) {
+                logError(ex, true);
+                logError(this.responseText);
+            }
+        }
+
+        http.send(parameters);
     }
 })();
