@@ -48,7 +48,7 @@
                             let spanClose = document.createElement('span');
                             spanClose.innerHTML = ']';
 
-                            let active = document.getElementById("activeNum");
+                            let active = $("#activeNum");
                             active.innerHTML = "";
                             active.append(spanOpen);
                             active.append(requestLink);
@@ -72,7 +72,7 @@
         }
         else
         {
-            document.querySelector("#activeNum").innerHTML = 0;
+            $("#activeNum").innerHTML = 0;
         }
         
         setupSuggestionForm();
@@ -94,7 +94,7 @@
                     logError(this.responseText);
                 }
 
-                let streamAccess = document.getElementById("streamAccess");
+                let streamAccess = $("#streamAccess");
                 streamAccess.innerHTML = newString;
                 if (this.responseText != '0')
                 {
@@ -119,7 +119,7 @@
         http.onreadystatechange = function() {
             if (this.readyState == 4 && this.status == 200)
             {
-                let streamAccess = document.getElementById("streamAccess");
+                let streamAccess = $("#streamAccess");
                 let newString = this.responseText == '1' ? "Access Requested!" : "Request Already Pending";
                 logVerbose("Response: " + this.responseText);
                 if (this.responseText !== '1' && this.responseText !== '0')
@@ -143,10 +143,10 @@
     {
         for (let i = 0; i < activeSessions.length; ++i)
         {
-            document.querySelector('#mediaentries').appendChild(buildMediaInfo(activeSessions[i]));
+            $("#mediaentries").appendChild(buildMediaInfo(activeSessions[i]));
         }
 
-        document.querySelector("#activeNum").innerHTML = activeSessions.length;
+        $("#activeNum").innerHTML = activeSessions.length;
     }
 
     /// <summary>
@@ -179,10 +179,10 @@
         {
             let sessions = JSON.parse(responseText);
             logVerbose(sessions, true);
-            document.querySelector("#activeNum").innerHTML = sessions.length;
+            $("#activeNum").innerHTML = sessions.length;
 
             // moving existingSessions to an actual array makes it easier to .splice() below
-            let existingSessions = document.querySelectorAll(".mediainfo");
+            let existingSessions = $(".mediainfo");
             let existingArray = [];
             for (let i = 0; i < existingSessions.length; ++i)
             {
@@ -203,7 +203,7 @@
             {
                 let sesh = sessions[i];
                 let id = sesh['id'];
-                let item = document.querySelector("#id" + id);
+                let item = $("#id" + id);
                 if (item)
                 {
                     // The stream already exists - update the progress
@@ -271,7 +271,7 @@
             {
                 // An existing session is no longer active, remove it
                 logVerbose("Attempting to remove session# " + session.id);
-                document.querySelector("#" + session.id).remove();
+                $("#" + session.id).remove();
                 existingSessions.splice(i /*index*/, 1 /*howmany*/);
                 --i;
             }
@@ -328,7 +328,7 @@
     /// </summary>
     function innerUpdate(sesh, addTime=true)
     {
-        let element = document.querySelector("#id" + sesh);
+        let element = $("#id" + sesh);
         if (!element)
         {
             // We've lost our element! remove it from the active timers
@@ -367,7 +367,7 @@
 
         if (progressHolder.hasAttribute('hovered'))
         {
-            document.getElementById("tooltip").innerHTML = getHoverText(progressHolder);
+            $("#tooltip").innerHTML = getHoverText(progressHolder);
         }
     }
 
@@ -391,11 +391,11 @@
                     try
                     {
                         const response = JSON.parse(this.responseText);
-                        const currentSessions = document.querySelectorAll(".mediainfo");
+                        const currentSessions = $(".mediainfo");
                         if (currentSessions.length === 0)
                         {
                             // No active streams in our current session list. Add it
-                            document.querySelector("#mediaentries").append(buildMediaInfo(response));
+                            $("#mediaentries").append(buildMediaInfo(response));
                         }
                         else
                         {
@@ -413,7 +413,7 @@
                                 else if (i === currentSessions.length - 1)
                                 {
                                     // This item belongs at the end of the list
-                                    document.querySelector("#mediaentries").append(buildMediaInfo(response));
+                                    $("#mediaentries").append(buildMediaInfo(response));
                                 }
                             }
                         }
@@ -526,7 +526,7 @@
         progressHolder.addEventListener("mouseleave", function()
         {
             this.removeAttribute("hovered");
-            document.querySelector("#tooltip").style.display = "none";
+            $("#tooltip").style.display = "none";
         });
         let progress = document.createElement("div");
         progress.className = "progress";
@@ -647,7 +647,7 @@
         this.setAttribute("hovered", true);
         const left = e.clientX + "px";
         const top = (e.clientY + 20) + "px";
-        let tooltip = document.getElementById("tooltip");
+        let tooltip = $("#tooltip");
         tooltip.style.left = left;
         tooltip.style.top = top;
 
@@ -750,25 +750,25 @@
     /// </summary>
     function setupSuggestionForm()
     {
-        var type = document.querySelector("select[name='type']");
-        var name = document.querySelector("input[name='name']");
-        var comment = document.querySelector("#comment");
+        var type = $("select[name='type']")[0];
+        var name = $("input[name='name']")[0];
+        var comment = $("#comment");
         
         name.setAttribute("autocomplete", "off");
         comment.setAttribute("autocomplete", "off");
         
-        document.getElementById("go").addEventListener("click", function() {
+        $("#go").addEventListener("click", function() {
             // Infallible client-side validation
             logVerbose("Submitting Request");
             if (!type.value || !name.value) {
-                var invalid = document.getElementById("invalid");
+                var invalid = $("#invalid");
                 if (!invalid) {
                     logError("oops, someone deleted #invalid!");
                     return;
                 }
                 invalid.style.display = "block";
                 setTimeout(function() {
-                    var invalid = document.getElementById("invalid");
+                    var invalid = $("#invalid");
                     if (!invalid) {
                         logWarn("oops, someone deleted #invalid before timeout!");
                         return;
@@ -791,7 +791,7 @@
                 try {
                     let response = JSON.parse(this.responseText);
                     logJson(response, LOG.Verbose);
-                    let status = document.querySelector("#formStatus");
+                    let status = $("#formStatus");
                     if (response["Error"]) {
                         logError(response["Error"]);
                         status.className = "formContainer statusFail";
@@ -802,8 +802,8 @@
                     }
 
                     // Clear out current values
-                    document.querySelector("input[name='name'").value = "";
-                    document.querySelector("#comment").value = "";
+                    $("input[name='name']")[0].value = "";
+                    $("#comment").value = "";
                     status.className = "formContainer statusSuccess";
                     status.innerHTML = "Request submitted!<br/><a href=view_requests.php>View Requests</a>";
                     Animation.queue({"opacity" : 1}, status, 500);
@@ -818,7 +818,7 @@
             
         });
         
-        var inputs = document.querySelectorAll("input, select");
+        var inputs = $("input, select");
         for (var i = 0; i < inputs.length; i++) {
             if (inputs[i].name == "name")
             {
@@ -840,17 +840,17 @@
 
             inputs[i].addEventListener("keyup", function(e) {
                 if (e.keyCode === 13 && !e.shiftKey && !e.ctrlKey && !e.altKey) {
-                    document.getElementById("go").click();
+                    $("#go").click();
                 }
             });
         }
         
         name.addEventListener("focusout", focusOutEvent);
-        document.querySelector("input[type='button']").addEventListener("focusout", focusOutEvent);
+        $("input[type='button']")[0].addEventListener("focusout", focusOutEvent);
         type.addEventListener("focusout", focusOutEvent);
         
         name.addEventListener("focus", focusInEvent);
-        document.querySelector("input[type='button']").addEventListener("focus", focusInEvent);
+        $("input[type='button']")[0].addEventListener("focus", focusInEvent);
         type.addEventListener("focus", focusInEvent);
 
         name.addEventListener("input", onSuggestionInput);
@@ -891,8 +891,8 @@
 
     function searchSuggestion()
     {
-        let name = document.querySelector("input[name='name']");
-        let type = document.querySelector("select[name='type']");
+        let name = $("input[name='name']")[0];
+        let type = $("select[name='type']")[0];
         let suggestion = name.value.replace("&", "%26");
         if (!suggestion)
         {
@@ -934,8 +934,8 @@
 
     function searchExternal()
     {
-        let name = document.querySelector("input[name='name']");
-        let type = document.querySelector("select[name='type']");
+        let name = $("input[name='name']")[0];
+        let type = $("select[name='type']")[0];
         let suggestion = name.value;
 
         if (type.value != "movie" && type.value != "tv")
@@ -977,7 +977,7 @@
         const external = id == "outsideSuggestions";
         id = "#" + id;
 
-        let suggestions = document.querySelector(id);
+        let suggestions = $(id);
         while (suggestions.children.length > 1)
         {
             suggestions.removeChild(suggestions.children[suggestions.children.length - 1]);
@@ -985,11 +985,11 @@
 
         if (results.length === 0)
         {
-            document.querySelector(id).style.display = "none";
-            if (document.querySelector("#existingSuggestions").style.display == "none" &&
-                document.querySelector("#outsideSuggestions").style.display == "none")
+            suggestions.style.display = "none";
+            if ($("#existingSuggestions").style.display == "none" &&
+                $("#outsideSuggestions").style.display == "none")
             {
-                document.querySelector("#suggestions").style.display = "none";
+                $("#suggestions").style.display = "none";
             }
             return;
         }
@@ -1005,8 +1005,8 @@
             if (external)
             {
                 // Check if we have an existing item that matches this. If we do, skip it
-                let existing = document.querySelector("#existingSuggestions div[title='" +
-                    result.title.replace("'", "") + "'][year='" + result.year + "']");
+                let existing = $("#existingSuggestions div[title='" +
+                    result.title.replace("'", "") + "'][year='" + result.year + "']")[0];
                 if (existing)
                 {
                     --len;
@@ -1030,7 +1030,7 @@
                 title.innerHTML = "<a href='https://imdb.com/title/" + result.id + "'>" + text + "</a>";
                 div.style.cursor = "pointer";
                 div.addEventListener("click", function(e) {
-                    document.querySelector("input[name='name']").value = this.getAttribute("realtitle");
+                    $("input[name='name']")[0].value = this.getAttribute("realtitle");
                     searchSuggestion();
                 });
             }
@@ -1049,7 +1049,7 @@
 
         if (external && len == 0)
         {
-            document.querySelector("#outsideSuggestions").style.display = "none";
+            $("#outsideSuggestions").style.display = "none";
         }
 
         if (results.length > results.top.length && !external)
@@ -1071,7 +1071,22 @@
             suggestions.appendChild(document.createElement("hr"));
         }
 
-        document.querySelector("#suggestions").style.display = "block";
-        document.querySelector(id).style.display = "block";
+        $("#suggestions").style.display = "block";
+        suggestions.style.display = "block";
+    }
+
+    /// <summary>
+    /// Custom jQuery-like selector method.
+    /// If the selector starts with '#' and contains no spaces, return th
+    /// result of querySelector, otherwise return the result of querySelectorAll
+    /// </summary>
+    function $(selector)
+    {
+        if (selector.indexOf("#") === 0 && selector.indexOf(" ") === -1)
+        {
+            return document.querySelector(selector);
+        }
+
+        return document.querySelectorAll(selector);
     }
 })();
