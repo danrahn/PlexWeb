@@ -28,16 +28,13 @@
         // Don't attempt to grab session information if we can't even connect to plex
         if (plexOk())
         {
-            sendHtmlJsonRequest("get_status.php",
-                {
-                    "type" : "1"
-                },
-                function(response)
-                {
-                    writeSessions(response);
-                    startUpdates();
-                },
-                getStatusFailure);
+            let parameters = { "type" : "1" };
+            let successFunc = function(response)
+            {
+                writeSessions(response);
+                startUpdates();
+            };
+            sendHtmlJsonRequest("get_status.php", parameters, successFunc, getStatusFailure);
         }
         else
         {
@@ -78,19 +75,17 @@
     /// Sets the string if the user does not have authorization to view active streams
     /// 'Request Pending' if the user has requested access, 'Request Access' if access
     /// has not been requested.
-    ///
-    /// Doesn't use 'sendHtmlJsonRequest' because it's a "legacy" function that doesn't
-    /// return JSON (yet*)
     /// </summary>
     function getStreamAccessString()
     {
-        sendHtmlJsonRequest("process_request.php",
+        let parameters =
         {
             "type" : "pr",
             "req_type" : 10,
             "which" : "get"
-        },
-        function(response)
+        };
+
+        let successFunc = function(response)
         {
             const isPending = response.value == "0";
             const newString = isPending ? "Request Pending" : "Request Access";
@@ -105,7 +100,14 @@
                     requestStreamAccess();
                 })
             }
-        });
+        };
+
+        let failureFunc = function(/*response*/)
+        {
+            $("#streamAccess").innerHTML = "Error getting stream permissions";
+        };
+
+        sendHtmlJsonRequest("process_request.php", parameters, successFunc, failureFunc);
     }
 
     /// <summary>
@@ -113,23 +115,26 @@
     /// </summary>
     function requestStreamAccess(element)
     {
-        sendHtmlJsonRequest("process_request.php",
+        let parameters =
         {
             "type" : "pr",
             "req_type" : 10,
             "which" : "req"
-        },
-        function(response)
+        };
+
+        let successFunc = function(response)
         {
             const alreadyPending = (response.value == '0');
             const newString = alreadyPending ? "Request Already Pending" : "Access Requested!";
             $("#streamAccess").innerHTML = alreadyPending ? "Request Already Pending" : "Access Requested!";
-        },
-        function(response)
+        };
+
+        let failureFunc = function(/*response*/)
         {
-            logError(response);
             $("#streamAccess").innerHTML = "Error processing request";
-        });
+        };
+
+        sendHtmlJsonRequest("process_request.php", parameters, successFunc, failureFunc);
     }
 
     /// <summary>
@@ -152,14 +157,9 @@
     {
         contentUpdater = setInterval(function()
         {
-            sendHtmlJsonRequest("get_status.php",
-                {
-                    "type" : "4"
-                },
-                function(response)
-                {
-                    processUpdate(response);
-                });
+            let parameters = { "type" : "4" };
+            let successFunc = function(response) { processUpdate(response); };
+            sendHtmlJsonRequest("get_status.php", parameters, successFunc);
         }, 10000);
     }
 
@@ -363,39 +363,44 @@
         {
             const id = newIds[i];
             logVerbose("Attempting to add session# " + id);
-            sendHtmlJsonRequest("get_status.php",
-                {
-                    "type" : 2,
-                    "id" : id
-                },
-                function(response)
-                {
-                    const currentSessions = $(".mediainfo");
-                    if (currentSessions.length === 0)
-                    {
-                        // No active streams in our current session list. Add it
-                        $("#mediaentries").append(buildMediaInfo(response));
-                        return;
-                    }
+            let parameters =
+            {
+                "type" : 2,
+                "id" : id
+            }
+            sendHtmlJsonRequest("get_status.php", parameters, addSession);
+        }
+    }
 
-                    // If we have existing sessions, find its place in the list
-                    for (let i = 0; i < currentSessions.length; ++i)
-                    {
-                        if (!response.paused && currentSessions[i].querySelector("i").className.indexOf("pause") != -1 ||
-                            (response.progress / response.duration) * 100 < parseFloat(currentSessions[i].querySelector(".progress").style.width))
-                        {
-                            // Found our position if this item is playing and the next is paused, or this item has less
-                            // time to completion.
-                            currentSessions[i].parentElement.insertBefore(buildMediaInfo(response), currentSessions[i]);
-                            break;
-                        }
-                        else if (i === currentSessions.length - 1)
-                        {
-                            // This item belongs at the end of the list
-                            $("#mediaentries").append(buildMediaInfo(response));
-                        }
-                    }
-                });
+    /// <summary>
+    /// Callback method that creates a new session from the given response
+    /// </summary>
+    function addSession(response)
+    {
+        const currentSessions = $(".mediainfo");
+        if (currentSessions.length === 0)
+        {
+            // No active streams in our current session list. Add it
+            $("#mediaentries").append(buildMediaInfo(response));
+            return;
+        }
+
+        // If we have existing sessions, find its place in the list
+        for (let i = 0; i < currentSessions.length; ++i)
+        {
+            if (!response.paused && currentSessions[i].querySelector("i").className.indexOf("pause") != -1 ||
+                (response.progress / response.duration) * 100 < parseFloat(currentSessions[i].querySelector(".progress").style.width))
+            {
+                // Found our position if this item is playing and the next is paused, or this item has less
+                // time to completion.
+                currentSessions[i].parentElement.insertBefore(buildMediaInfo(response), currentSessions[i]);
+                break;
+            }
+            else if (i === currentSessions.length - 1)
+            {
+                // This item belongs at the end of the list
+                $("#mediaentries").append(buildMediaInfo(response));
+            }
         }
     }
 
@@ -575,20 +580,24 @@
     /// <param name="id">The geo information will be inserted after this id</param>
     function getIPInfo(ip, id)
     {
-        sendHtmlJsonRequest("process_request.php",
-            {
-                "type" : "geoip",
-                "ip" : ip
-            },
-            function(response, request)
-            {
-                const geoInfoString = `${response.city}, ${response.state} - ${response.isp}`;
-                const geoInfo = getListItem("Location", geoInfoString);
-                let ipItem = document.getElementById(request.attachId);
-                ipItem.parentNode.insertBefore(geoInfo, ipItem.nextSibling);
-            },
-            undefined /*failFunc*/,
-            { "attachId" : id });
+        let parameters =
+        {
+            "type" : "geoip",
+            "ip" : ip
+        };
+
+        let successFunc = function(response, request)
+        {
+            const geoInfoString = `${response.city}, ${response.state} - ${response.isp}`;
+            const geoInfo = getListItem("Location", geoInfoString);
+            let ipItem = document.getElementById(request.attachId);
+            ipItem.parentNode.insertBefore(geoInfo, ipItem.nextSibling);
+        };
+
+        // Values that we'll append to our http object directly
+        let attachedParameters = { "attachId" : id };
+
+        sendHtmlJsonRequest("process_request.php", parameters, successFunc, undefined /*failFunc*/, attachedParameters);
     }
 
     /// <summary>
@@ -737,32 +746,35 @@
                 return;
             }
             
-            sendHtmlJsonRequest("process_request.php",
-                {
-                    "type" : "request",
-                    "name" : name.value,
-                    "mediatype" : type.value,
-                    "comment" : comment.value
-                },
-                function()
-                {
-                    // Clear out current values
-                    let status = $("#formStatus");
-                    $("input[name='name']")[0].value = "";
-                    $("#comment").value = "";
-                    status.className = "formContainer statusSuccess";
-                    status.innerHTML = "Request submitted!<br/><a href=view_requests.php>View Requests</a>";
-                    Animation.queue({"opacity" : 1}, status, 500);
-                    Animation.queueDelayed({"opacity" : 0}, status, 5000, 1000);
-                },
-                function(response)
-                {
-                    logError(response.Error);
-                    status.className = "formContainer statusFail";
-                    status.innerHTML = "Error processing request: " + response.Error;
-                    Animation.queue({"opacity" : 1}, status, 500);
-                    Animation.queueDelayed({"opacity" : 0}, status, 3000, 1000);
-                });
+            let parameters =
+            {
+                "type" : "request",
+                "name" : name.value,
+                "mediatype" : type.value,
+                "comment" : comment.value
+            };
+
+            let successFunc = function()
+            {
+                // Clear out current values
+                let status = $("#formStatus");
+                $("input[name='name']")[0].value = "";
+                $("#comment").value = "";
+                status.className = "formContainer statusSuccess";
+                status.innerHTML = "Request submitted!<br/><a href=view_requests.php>View Requests</a>";
+                Animation.queue({"opacity" : 1}, status, 500);
+                Animation.queueDelayed({"opacity" : 0}, status, 5000, 1000);
+            };
+
+            let failureFunc = function(response)
+            {
+                status.className = "formContainer statusFail";
+                status.innerHTML = "Error processing request: " + response.Error;
+                Animation.queue({"opacity" : 1}, status, 500);
+                Animation.queueDelayed({"opacity" : 0}, status, 3000, 1000);
+            }
+
+            sendHtmlJsonRequest("process_request.php", parameters, successFunc, failureFunc);
         });
         
         var inputs = $("input, select");
@@ -860,22 +872,28 @@
             return;
         }
             
-        sendHtmlJsonRequest("process_request.php",
-            {
-                "type" : "search",
-                "kind" : type.value,
-                "query" : suggestion
-            },
-            function(response)
-            {
-                buildItems("existingSuggestions", response);
-                searchExternal();
-            },
-            function(response)
-            {
-                logError(response.Error);
-                searchExternal();
-            });
+        let parameters =
+        {
+            "type" : "search",
+            "kind" : type.value,
+            "query" : suggestion
+        };
+
+        let successFunc = function(response)
+        {
+            // Build our list of existing items, then search for external items
+            buildItems("existingSuggestions", response);
+            searchExternal();
+        };
+
+        let failureFunc = function(response)
+        {
+            // Even if we fail to grab existing suggestions, we can still try
+            // to return external ones
+            searchExternal();
+        };
+
+        sendHtmlJsonRequest("process_request.php", parameters, successFunc, failureFunc);
     }
 
     /// <summary>
@@ -891,21 +909,17 @@
             // Only search for movies and tv shows for now (imdb)
             return;
         }
-            
-        sendHtmlJsonRequest("process_request.php",
-            {
-                "type" : "search_external",
-                "kind" : type.value,
-                "query" : name.value
-            },
-            function(response)
-            {
-                buildItems("outsideSuggestions", response);
-            },
-            function()
-            {
-                throw "Unexpected error - printing response text";
-            });
+         
+         let parameters =
+        {
+            "type" : "search_external",
+            "kind" : type.value,
+            "query" : name.value
+        };
+
+        let successFunc = function(response) { buildItems("outsideSuggestions", response); };
+        let failureFunc = function() { throw "Unexpected error - printing response text"; };
+        sendHtmlJsonRequest("process_request.php", parameters, successFunc, failureFunc);
     }
 
     /// <summary>
@@ -1064,13 +1078,10 @@
                 logJson(response, LOG.Verbose);
                 if (response.Error)
                 {
+                    logError(response.Error);
                     if (failFunc)
                     {
                         failFunc(response);
-                    }
-                    else
-                    {
-                        logError(response.Error);
                     }
 
                     return;
