@@ -215,7 +215,22 @@ function print_status_options($status, $rid)
 
             logVerbose("Updated content request!");
             logVerbose("Response: " + this.responseText);
-            if (this.responseText !== '1')
+            let response = null;
+            try
+            {
+                response = JSON.parse(this.responseText);
+                if (response.Error)
+                {
+                    logError(response.Error);
+                }
+            }
+            catch (ex)
+            {
+                logError(ex, true);
+                logError(this.responseText);
+            }
+
+            if (!response.Success)
             {
                 // Reset the modified flag so we can retry
                 element.setAttribute("modified", "true");
@@ -227,9 +242,9 @@ function print_status_options($status, $rid)
                 return;
             }
 
-            const bgColor = this.responseText == "1" ? new Color(63, 100, 69) : new Color(100, 66, 69);
+            const bgColor = response.Success ? new Color(63, 100, 69) : new Color(100, 66, 69);
             Animation.queue({"backgroundColor" : bgColor }, this.attachedElement, 500);
-            if (this.responseText == "1")
+            if (response.Success)
             {
                 initialValues[this.attachedElement.id] = this.submittedValue;
 

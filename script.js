@@ -1,15 +1,20 @@
-(function() {
+(function()
+{
     let contentUpdater = null;
     let innerProgressTimers = {};
 
     // Easier way to remove DOM elements
-    Element.prototype.remove = function() {
+    Element.prototype.remove = function()
+    {
         this.parentElement.removeChild(this);
     };
 
-    NodeList.prototype.remove = HTMLCollection.prototype.remove = function() {
-        for(let i = this.length - 1; i >= 0; i--) {
-             if(this[i] && this[i].parentElement) {
+    NodeList.prototype.remove = HTMLCollection.prototype.remove = function()
+    {
+        for (let i = this.length - 1; i >= 0; i--)
+        {
+             if (this[i] && this[i].parentElement)
+             {
                 this[i].parentElement.removeChild(this[i]);
              }
         }
@@ -18,7 +23,8 @@
     /// <summary>
     /// On load, request the active streams (if it's running) and set up the suggestion form handlers
     /// </summary>
-    window.addEventListener('load', function() {
+    window.addEventListener('load', function()
+    {
         // Don't attempt to grab session information if we can't even connect to plex
         if (plexOk())
         {
@@ -78,33 +84,28 @@
     /// </summary>
     function getStreamAccessString()
     {
-        let http = new XMLHttpRequest();
-        http.open('POST', 'process_request.php', true /*async*/);
-        http.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
-
-        http.onreadystatechange = function() {
-            if (this.readyState == 4 && this.status == 200)
+        sendHtmlJsonRequest("process_request.php",
+        {
+            "type" : "pr",
+            "req_type" : 10,
+            "which" : "get"
+        },
+        function(response)
+        {
+            const isPending = response.value == "0";
+            const newString = isPending ? "Request Pending" : "Request Access";
+            let streamAccess = $("#streamAccess");
+            streamAccess.innerHTML = newString;
+            if (!isPending)
             {
-                const newString = this.responseText == '0' ? "Request Pending" : "Request Access";
-                if (this.responseText !== '1' && this.responseText !== '0')
+                // Need to request access
+                streamAccess.addEventListener("click", function()
                 {
-                    logError(this.responseText);
-                }
-
-                let streamAccess = $("#streamAccess");
-                streamAccess.innerHTML = newString;
-                if (this.responseText != '0')
-                {
-                    // Need to request access
-                    streamAccess.addEventListener("click", function() {
-                        this.innerHTML = '...';
-                        requestStreamAccess();
-                    });
-                }
+                    this.innerHTML = "...";
+                    requestStreamAccess();
+                })
             }
-        };
-
-        http.send("type=pr&req_type=10&which=get");
+        });
     }
 
     /// <summary>
@@ -112,28 +113,23 @@
     /// </summary>
     function requestStreamAccess(element)
     {
-        let http = new XMLHttpRequest();
-        http.open('POST', 'process_request.php', true /*async*/);
-        http.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
-
-        http.onreadystatechange = function() {
-            if (this.readyState == 4 && this.status == 200)
-            {
-                let streamAccess = $("#streamAccess");
-                let newString = this.responseText == '1' ? "Access Requested!" : "Request Already Pending";
-                logVerbose("Response: " + this.responseText);
-                if (this.responseText !== '1' && this.responseText !== '0')
-                {
-                    streamAccess.innerHTML = "error processing request";
-                }
-                else
-                {
-                    streamAccess.innerHTML = newString;
-                }
-            }
-        };
-
-        http.send("type=pr&req_type=10&which=req");
+        sendHtmlJsonRequest("process_request.php",
+        {
+            "type" : "pr",
+            "req_type" : 10,
+            "which" : "req"
+        },
+        function(response)
+        {
+            const alreadyPending = (response.value == '0');
+            const newString = alreadyPending ? "Request Already Pending" : "Access Requested!";
+            $("#streamAccess").innerHTML = alreadyPending ? "Request Already Pending" : "Access Requested!";
+        },
+        function(response)
+        {
+            logError(response);
+            $("#streamAccess").innerHTML = "Error processing request";
+        });
     }
 
     /// <summary>
@@ -154,7 +150,8 @@
     /// </summary>
     function startUpdates()
     {
-        contentUpdater = setInterval(function() {
+        contentUpdater = setInterval(function()
+        {
             sendHtmlJsonRequest("get_status.php",
                 {
                     "type" : "4"
@@ -535,12 +532,14 @@
         }
 
         // Darken/lighten the background when entering/leaving the entry
-        container.addEventListener("mouseenter", function(e) {
+        container.addEventListener("mouseenter", function(e)
+        {
             let style = e.target.style.backgroundImage;
             e.target.style.backgroundImage = "linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6))," + style.substring(style.indexOf(" url("));
         });
 
-        container.addEventListener("mouseleave", function(e) {
+        container.addEventListener("mouseleave", function(e)
+        {
             let style = e.target.style.backgroundImage;
             e.target.style.backgroundImage = "linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4))," + style.substring(style.indexOf(" url("));
         });
@@ -710,19 +709,24 @@
         name.setAttribute("autocomplete", "off");
         comment.setAttribute("autocomplete", "off");
         
-        $("#go").addEventListener("click", function() {
+        $("#go").addEventListener("click", function()
+        {
             // Infallible client-side validation
             logVerbose("Submitting Request");
-            if (!type.value || !name.value) {
+            if (!type.value || !name.value)
+            {
                 var invalid = $("#invalid");
-                if (!invalid) {
+                if (!invalid)
+                {
                     logError("oops, someone deleted #invalid!");
                     return;
                 }
                 invalid.style.display = "block";
-                setTimeout(function() {
+                setTimeout(function()
+                {
                     var invalid = $("#invalid");
-                    if (!invalid) {
+                    if (!invalid)
+                    {
                         logWarn("oops, someone deleted #invalid before timeout!");
                         return;
                     }
@@ -762,12 +766,15 @@
         });
         
         var inputs = $("input, select");
-        for (var i = 0; i < inputs.length; i++) {
+        for (var i = 0; i < inputs.length; i++)
+        {
             if (inputs[i].name == "name")
             {
                 // If "enter" is pressed here, immediately do a search instead of submitting the suggestion
-                inputs[i].addEventListener("keyup", function(e) {
-                    if (e.keyCode === 13 && !e.shiftKey && !e.ctrlKey && !e.altKey) {
+                inputs[i].addEventListener("keyup", function(e)
+                {
+                    if (e.keyCode === 13 && !e.shiftKey && !e.ctrlKey && !e.altKey)
+                    {
                         e.preventDefault();
                         if (inputTimer)
                         {
@@ -781,8 +788,10 @@
                 continue;
             }
 
-            inputs[i].addEventListener("keyup", function(e) {
-                if (e.keyCode === 13 && !e.shiftKey && !e.ctrlKey && !e.altKey) {
+            inputs[i].addEventListener("keyup", function(e)
+            {
+                if (e.keyCode === 13 && !e.shiftKey && !e.ctrlKey && !e.altKey)
+                {
                     $("#go").click();
                 }
             });
@@ -804,8 +813,10 @@
     /// If a suggestion form box is required and is empty when it loses
     /// focus, change the background color to indicate the error
     /// </summary>
-    function focusOutEvent() {
-        if (!this.value) {
+    function focusOutEvent()
+    {
+        if (!this.value)
+        {
             this.style.backgroundColor = "rgb(100, 66, 69)";
             return;
         }
@@ -815,7 +826,8 @@
     /// When a suggestion input is selected, highlight the border and clear
     /// any background formatting
     /// </summary>
-    function focusInEvent() {
+    function focusInEvent()
+    {
         this.style.backgroundColor = "rgb(63, 66, 69)";
     }
 
@@ -956,7 +968,8 @@
             {
                 title.innerHTML = "<a href='https://imdb.com/title/" + result.id + "'>" + text + "</a>";
                 div.style.cursor = "pointer";
-                div.addEventListener("click", function(e) {
+                div.addEventListener("click", function(e)
+                {
                     $("input[name='name']")[0].value = this.getAttribute("realtitle");
                     searchSuggestion();
                 });
@@ -1038,15 +1051,19 @@
             }   
         }
 
-        http.onreadystatechange = function() {
-            if (this.readyState != 4 || this.status != 200) {
+        http.onreadystatechange = function()
+        {
+            if (this.readyState != 4 || this.status != 200)
+            {
                 return;
             }
 
-            try {
+            try
+            {
                 let response = JSON.parse(this.responseText);
                 logJson(response, LOG.Verbose);
-                if (response.Error) {
+                if (response.Error)
+                {
                     if (failFunc)
                     {
                         failFunc(response);
@@ -1061,7 +1078,9 @@
 
                 successFunc(response, this);
 
-            } catch (ex) {
+            }
+            catch (ex)
+            {
                 logError(ex, true);
                 logError(this.responseText);
             }

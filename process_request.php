@@ -3,12 +3,16 @@
 /// The main class for processing requests. Monolithic, but IMO better than a bunch of different php files
 /// 
 /// The only required field is 'type', everything else is dependant on the specified type
+///
+/// The expected pattern for methods is to have them return a JSON string on success or failure.
+/// If a GET/POST parameter is set incorrectly, it's very likely that the method will not return
+/// and the process will `exit` immediately.
 /// </summary>
 
 require_once "includes/common.php";
 require_once "includes/config.php";
 
-$type = param_or_die('type');
+$type = get('type');
 
 // For requests that are only made when not logged in, don't session_start or verify login state
 switch ($type)
@@ -23,108 +27,79 @@ switch ($type)
         break;
 }
 
-// pr === permission_request
-switch ($type)
+json_message_and_exit(process_request($type));
+
+/// <summary>
+/// Our main entrypoint. Returns a json message (on success or failure)
+/// </summary>
+function process_request($type)
 {
-    case "login":
-        $error = "";
-        if (!login($error))
-        {
-            json_error_and_exit($error);
-        }
-        json_success();
-    case "register":
-        $error = "";
-        if (!register($error))
-        {
-            json_error_and_exit($error);
-        }
-        json_success();
-    case "request":
-        process_suggestion();
-        json_success();
-    case "pr":
-        process_permission_request();
-        return;
-    case "req_update":
-        process_request_update();
+    $message = "";
+    switch ($type)
+    {
+        case "login":
+            $message = login(get("username"), get("password"));
+            break;
+        case "register":
+            $message = register(get("username"), get("password"), get("confirm"));
+            break;
+        case "request":
+            $message = process_suggestion(get("name"), get("mediatype"), get("comment"));
+            break;
+        case "pr": // pr === permission_request
+            $message = process_permission_request();
+            break;
+        case "req_update":
+            $message = process_request_update(get("kind"), get("content"), get("id"));
+            break;
+        case "set_usr_info":
+            $message = update_user_settings(
+                get('fn'),
+                get('ln'),
+                get('e'),
+                get('ea'),
+                get('p'),
+                get('pa'),
+                get('c'));
+            break;
+        case "get_usr_info":
+            $message = get_user_settings();
+            break;
+        case "check_username":
+            $message = check_username(get("username"));
+            break;
+        case "members":
+            $message = get_members();
+            break;
+        case "search":
+            $message = search(get("query"), get("kind"));
+            break;
+        case "search_external":
+            $message = search_external(get("query"), get("kind"));
+            break;
+        case "update_pass":
+            $message = update_password(get("old_pass"), get("new_pass"), get("conf_pass"));
+            break;
+        case "geoip":
+            $message = get_geo_ip(get("ip"));
+            break;
+        default:
+            return json_error("Unknown request type: " . $type);
+    }
 
-        // If we've returned here we succeeded. '1' === success for req_update
-        echo "1";
-        return;
-    case "set_usr_info":
-        $error = "";
-        if (!update_user_settings(
-            param_or_json_exit('fn'),
-            param_or_json_exit('ln'),
-            param_or_json_exit('e'),
-            param_or_json_exit('ea'),
-            param_or_json_exit('p'),
-            param_or_json_exit('pa'),
-            param_or_json_exit('c'),
-            $error))
-        {
-            json_error_and_exit($error);
-        }
-        json_success();
-    case "get_usr_info":
-        $json = get_user_settings();
-        header("Content-Type: application/json; charset-UTF=8");
-        echo $json;
-        return;
-    case "check_username":
-        $check = $db->real_escape_string(strtolower(param_or_die('username')));
-        $result = $db->query("SELECT username FROM users where username_normalized='$check'");
-        if (!$result || $result->num_rows !== 0)
-        {
-            json_message_and_exit('{ "value" : 0 }');
-        }
-        else
-        {
-            $result->close();
-            json_message_and_exit('{ "value" : 1, "name" : "' . param_or_die('username') . '" }');
-        }
-
-    case "members":
-        get_members();
-        break;
-    case "search":
-        search();
-        break;
-    case "search_external":
-        search_external();
-        break;
-    case "update_pass":
-        $error = "";
-        if (!update_password(param_or_json_exit("old_pass"), param_or_json_exit("new_pass"), param_or_json_exit("conf_pass"), $error))
-        {
-            json_error_and_exit($error);
-        }
-        json_success();
-    case "geoip":
-        $error = "";
-        $response = get_geo_ip(param_or_die("ip"), $error);
-        if (!$response)
-        {
-            json_error_and_exit($error);
-        }
-        json_message_and_exit($response);
-    default:
-        error_and_exit(400);
+    return $message;
 }
 
 /// <summary>
 /// Attempts to login, returning an error on failure
 /// </summary>
-function login(&$error)
+function login($username, $password)
 {
     global $db;
-    $username = trim(param_or_die("username"));
-    $password = param_or_die("password");
+    $username = trim($username);
     if (empty($username) || empty($password))
     {
-        $error = "Username/password cannot be empty!";
-        return FALSE;
+        return json_error("Username/password cannot be empty!");
     }
 
     $username = trim($username);
@@ -135,14 +110,12 @@ function login(&$error)
     $result = $db->query($query);
     if (!$result)
     {
-        $error = "Unexpected server error. Please try again";
-        return FALSE;
+        return json_error("Unexpected server error. Please try again");
     }
 
     if ($result->num_rows === 0)
     {
-        $error = "User does not exist. Would you like to <a href=register.php>register</a>?";
-        return FALSE;
+        return json_error("User does not exist. Would you like to <a href=register.php>register</a>?");
     }
 
     $row = $result->fetch_row();
@@ -154,8 +127,7 @@ function login(&$error)
 
     if (!password_verify($password, $hashed_pass))
     {
-        $error = "Incorrect password!";
-        return FALSE;
+        return json_error("Incorrect password!");
     }
 
     session_start();
@@ -172,49 +144,45 @@ function login(&$error)
     $_SESSION['username'] = $user;
     $_SESSION['level'] = $level;
 
-    return TRUE;
+    return json_success();
 }
 
-function register(&$error)
+/// <summary>
+/// Attempt to register a user
+/// </summary>
+function register($username, $password, $confirm)
 {
     global $db;
-    $username = trim(param_or_die("username"));
+    $username = trim($username);
     $normalized = $db->real_escape_string(strtolower($username));
-    $password = param_or_die("password");
-    $confirm = param_or_die("confirm");
 
     if (empty($username) || empty($password))
     {
-        $error = "Username/password cannot be empty!";
-        return FALSE;
+        return json_error("Username/password cannot be empty!");
     }
 
     if (strlen($username) > 50)
     {
-        $error = "Username must be under 50 characters";
-        return FALSE;
+        return json_error("Username must be under 50 characters");
     }
 
     $query = "SELECT username_normalized FROM users WHERE username_normalized = '$normalized'";
     $result = $db->query($query);
     if (!$result)
     {
-        $error = "Unexpected server error. Please try again";
-        return FALSE;
+        return json_error("Unexpected server error. Please try again");
     }
 
     if ($result->num_rows > 0)
     {
         $result->close();
-        $error = "This user already exists!";
-        return FALSE;
+        return json_error("This user already exists!");
     }
 
     $result->close();
     if (strcmp($password, $confirm))
     {
-        $error = "Passwords do not match!";
-        return FALSE;
+        return json_error("Passwords do not match!");
     }
 
     $pass_hash = password_hash($password, PASSWORD_DEFAULT);
@@ -223,36 +191,33 @@ function register(&$error)
     $result = $db->query($query);
     if (!$result)
     {
-        $error = "Error entering name into database. Please try again";
-        return FALSE;
+        return json_error("Error entering name into database. Please try again");
     }
 
     $text_msg = "New user registered on plexweb!\r\n\r\nUsername: " . $username . "\r\nIP: " . $_SERVER["REMOTE_ADDR"];
     send_email_forget(ADMIN_PHONE, $text_msg, "" /*subject*/);
-    return TRUE;
+    return json_success();
 }
 
 /// <summary>
 /// Processes the given suggestion and alerts admins as necessary
 /// </summary>
-function process_suggestion()
+function process_suggestion($suggestion, $type, $comment)
 {
-    $suggestion = param_or_json_exit('name');
-    $type = RequestType::get_type_from_str(param_or_json_exit('mediatype'));
-    $comment = param_or_json_exit('comment');
+    $type = RequestType::get_type_from_str($type);
     if (strlen($suggestion) > 64)
     {
-        json_error_and_exit("Suggestion must be less than 64 characters");
+        return json_error("Suggestion must be less than 64 characters");
     }
 
     if (strlen($comment) > 1024)
     {
-        json_error_and_exit("Comment must be less than 1024 characters");
+        return json_error("Comment must be less than 1024 characters");
     }
 
     if ($type === RequestType::None)
     {
-        json_error_and_exit("Unknown media type: " . $_POST['mediatype']);
+        return json_error("Unknown media type: " . $_POST['mediatype']);
     }
 
     global $db;
@@ -262,8 +227,10 @@ function process_suggestion()
     $query = "INSERT INTO user_requests (username_id, request_type, request_name, comment) VALUES ($userid, $type, '$suggestion', '$comment')";
     if (!$db->query($query))
     {
-        json_error_and_exit($db->error);
+        return json_error($db->error);
     }
+
+    return json_success();
 }
 
 /// <summary>
@@ -274,20 +241,19 @@ function process_permission_request()
     $rt = RequestType::None;
     try
     {
-        $rt = RequestType::get_type((int)param_or_die('req_type'));
+        $rt = RequestType::get_type((int)get("req_type"));
     }
     catch (Exception $ex)
     {
-        error_and_exit(400);
+        return json_error("Unable to process request type: " . get("req_type"));
     }
 
     switch ($rt)
     {
         case RequestType::StreamAccess:
-            process_stream_access_request(param_or_die('which'));
-            break;
+            return process_stream_access_request(get("which"));
         default:
-            error_and_exit(400);
+            return json_error("Unknown request type: " . get("req_type"));
     }
 }
 
@@ -302,7 +268,7 @@ function process_stream_access_request($which)
     global $db;
     if ($which != 'get' && $which != 'req')
     {
-        error_and_exit(400);
+        return json_error("Invalid 'which' parameter '" . $which . "' - must be 'get' or 'req'");
     }
 
     $get_only = strcmp($which, 'get') === 0;
@@ -311,7 +277,7 @@ function process_stream_access_request($which)
     $result = $db->query($query);
     if ($result === FALSE)
     {
-        error_and_exit(500);
+        return json_error("Error querying database");
     }
 
     if ($result->num_rows == 0)
@@ -319,87 +285,80 @@ function process_stream_access_request($which)
         $result->close();
         if ($get_only)
         {
-            header('Content-Type: text/plain');
-            echo "1";
-            return;
+            return '{ "value" : "1" }';
         }
 
         $query = "INSERT INTO user_requests (username_id, request_type, request_name, comment) VALUES ($userid, 10, 'ViewStream', '')";
         $result = $db->query($query);
         if ($result === FALSE)
         {
-            echo "ugh2";
-            error_and_exit(500);
+            return json_error("Error querying database");
         }
 
-        header('Content-Type: text/plain');
-        echo "1";
-        return;
+        return '{ "value" : "1" }';
     }
     else
     {
         $result->close();
-        header('Content-Type: text/plain');
-        echo "0";
+        return '{ "value" : "0" }';
     }
 }
 
 /// <summary>
 /// Processes a request to update a user request. 'kind', id' and 'content' must be set
 /// </summary>
-function process_request_update()
+function process_request_update($kind, $content, $id)
 {
-    $content = param_or_die('content');
-    $req_id = (int)param_or_die('id');
+    $req_id = (int)$id;
     $level = (int)$_SESSION['level'];
     $sesh_id = (int)$_SESSION['id'];
     $requester = get_user_from_request($req_id);
     if ($requester->id === -1)
     {
         // Bad request id passed in
-        error_and_exit(400);
+        return json_error("Bad request");
     }
 
     if ($level < 100 && $requester->$id != $sesh_id)
     {
         // Only superadmins can edit all requests
-        error_and_exit(401);
+        return json_error("Not authorized");
     }
 
-    switch (param_or_die('kind'))
+    switch ($kind)
     {
         case "adm_cm":
             if ($level < 100)
             {
-                error_and_exit(401);
+                return json_error("Not authorized");
             }
 
-            update_admin_comment($req_id, $content, $requester);
-            break;
+            return update_admin_comment($req_id, $content, $requester);
         case "usr_cm":
             if ($requester->id != $sesh_id)
             {
                 // Only the requester can update the user comment
-                error_and_exit(401);
+                return json_error("Not authorized");
             }
 
-            update_user_comment($req_id, $content);
-            break;
+            return update_user_comment($req_id, $content);
         case "status":
             if ($level < 100)
             {
                 // Only admins can change status
-                error_and_exit(401);
+                return json_error("Not authorized");
             }
 
-            update_req_status($req_id, (int)$content, $requester);
+            return update_req_status($req_id, (int)$content, $requester);
+        default:
+            return json_error("Unknown request update type: " . $kind);
     }
 }
 
 /// <summary>
 /// Updates the user information. Populates $error on failure
 /// </summary>
-function update_user_settings($firstname, $lastname, $email, $emailalerts, $phone, $phonealerts, $carrier, &$error)
+function update_user_settings($firstname, $lastname, $email, $emailalerts, $phone, $phonealerts, $carrier)
 {
     global $db;
     try
@@ -408,32 +367,27 @@ function update_user_settings($firstname, $lastname, $email, $emailalerts, $phon
         // Just show one error at a time
         if (strlen($firstname) > 128)
         {
-            $error = "First name must be less than 128 characters";
+            return json_error("First name must be less than 128 characters");
         }
         else if (strlen($lastname) > 128)
         {
-            $error = "Last name must be less than 128 characters";
+            return json_error("Last name must be less than 128 characters");
         }
         else if (strlen($email) > 256)
         {
-            $error = "Email must be less than 256 characters";
+            return json_error("Email must be less than 256 characters");
         }
         else if (!empty($email) && !preg_match($emailRegex, $email))
         {
-            $error = "Invalid email address";
+            return json_error("Invalid email address");
         }
         else if (!empty($phone) && strlen($phone) != 10 && strlen($phone) != 11)
         {
-            $error = "Invalid phone number";
+            return json_error("Invalid phone number");
         }
         else if (strcmp($carrier, "verizon") && strcmp($carrier, "att") && strcmp($carrier, "tmobile") && strcmp($carrier, "sprint"))
         {
-            $error = "Invalid phone carrier";
-        }
-
-        if (!empty($error))
-        {
-            return FALSE;
+            return json_error("Invalid phone carrier");
         }
 
         $firstname = $db->real_escape_string($firstname);
@@ -449,15 +403,14 @@ function update_user_settings($firstname, $lastname, $email, $emailalerts, $phon
         $result = $db->query($query);
         if (!$result)
         {
-            $error = "Failed to update information<br/>" . $db->error;
-            return FALSE;
+            return db_error();
         }
 
-        return TRUE;
+        return json_success();
     }
     catch (Exception $e)
     {
-        return FALSE;
+        return json_error("Unexpected error occurred. Please try again later");
     }
 }
 
@@ -472,7 +425,7 @@ function update_admin_comment($req_id, $content, $requester)
     $result = $db->query($query);
     if (!$result || $result->num_rows === 0)
     {
-        error_and_exit(500);
+        return db_error();
     }
 
     $row = $result->fetch_row();
@@ -482,16 +435,18 @@ function update_admin_comment($req_id, $content, $requester)
     if (strcmp($old_comment, $content) === 0)
     {
         // Comments are the same, do nothing
-        return;
+        return json_success();
     }
 
     $query = "UPDATE user_requests SET admin_comment = '$content' WHERE id=$req_id";
     if (!$db->query($query))
     {
-        error_and_exit(500);
+        return db_error();
     }
 
+    // Failure to send notificactions won't be considered a failure
     send_notifications_if_needed("comment", $requester, $req_name, $content);
+    return json_success();
 }
 
 /// <summary>
@@ -505,8 +460,10 @@ function update_user_comment($req_id, $content)
     $query = "UPDATE user_requests SET comment = '$content' WHERE id=$req_id";
     if (!$db->query($query))
     {
-        error_and_exit(500);
+        return db_error();
     }
+
+    return json_success();
 }
 
 /// <summary>
@@ -519,7 +476,7 @@ function update_req_status($req_id, $status, $requester)
     $result = $db->query($request_query);
     if (!$result)
     {
-        error_and_exit(400);
+        return db_error();
     }
 
     $row = $result->fetch_row();
@@ -535,7 +492,7 @@ function update_req_status($req_id, $status, $requester)
             $update_level = "UPDATE users SET level=20 WHERE id=$requester->id";
             if (!$db->query($update_level))
             {
-                error_and_exit(500);
+                return db_error();
             }
         }
         else if ($status == 2 && $requester->level >= 20)
@@ -546,7 +503,7 @@ function update_req_status($req_id, $status, $requester)
 
         if (!empty($update_level) && !$db->query($update_level))
         {
-            error_and_exit(500);
+            return db_error();
         }
     }
 
@@ -554,11 +511,12 @@ function update_req_status($req_id, $status, $requester)
     $query = "UPDATE user_requests SET satisfied=$status WHERE id=$req_id";
     if (!$db->query($query))
     {
-		json_error_and_exit($db->error);
+        return db_error();
     }
 
     $status_str = ($status == 0 ? "pending" : ($status == 1 ? "approved" : "denied"));
     send_notifications_if_needed("status", $requester, $req_name, $status_str);
+    return json_success();
 }
 
 /// <summary>
@@ -576,7 +534,7 @@ function send_notifications_if_needed($type, $requester, $req_name, $content)
             $text = "The status of your request has changed:\nRequest: " . $req_name . "\nStatus: " . $content;
             break;
         default:
-            error_and_exit(500);
+            return json_error("Unknown notification type: " . $type);
     }
 
     if ($requester->info->phone_alerts && $requester->info->phone != 0)
@@ -597,8 +555,7 @@ function send_notifications_if_needed($type, $requester, $req_name, $content)
                 $to = $phone . "@messaging.sprintpcs.com";
                 break;
             default:
-                error_and_exit(400);
-                break;
+                return json_error("Unknown carrier: " . $requester->info->carrier);
         }
 
         $subject = "";
@@ -610,6 +567,8 @@ function send_notifications_if_needed($type, $requester, $req_name, $content)
         $subject = "Plex Request Update";
         send_email_forget($requester->info->email, $text, $subject);
     }
+    
+    return json_success();
 }
 
 /// <summary>
@@ -659,7 +618,7 @@ function get_user_settings()
     $result = $db->query($query);
     if (!$result || $result->num_rows != 1)
     {
-        json_error_and_exit("Failed to retrieve user settings");
+        return json_error("Failed to retrieve user settings");
     }
 
     $row = $result->fetch_row();
@@ -678,13 +637,31 @@ function get_user_settings()
 }
 
 /// <summary>
+/// Checks whether a given username exists
+/// </summary>
+function check_username($username)
+{
+    $check = $db->real_escape_string(strtolower(get("username")));
+    $result = $db->query("SELECT username FROM users where username_normalized='$check'");
+    if (!$result || $result->num_rows !== 0)
+    {
+        return '{ "value" : 0 }';
+    }
+    else
+    {
+        $result->close();
+        return '{ "value" : 1, "name" : "' . get("username") . '" }';
+    }
+}
+
+/// <summary>
 /// Returns a json string of members, sorted by the last time they logged in
 /// </summary>
 function get_members()
 {
     if ((int)$_SESSION['level'] < 100)
     {
-        json_error_and_exit("Not authorized");
+        return json_error("Not authorized");
     }
 
     global $db;
@@ -692,7 +669,7 @@ function get_members()
     $result = $db->query($query);
     if (!$result)
     {
-        json_error_and_exit("Error getting member list");
+        return db_error();
     }
 
     $users = array();
@@ -708,21 +685,21 @@ function get_members()
 
     $result->close();
 
-    json_message_and_exit(json_encode($users));
+    return json_encode($users);
 }
 
 /// <summary>
 /// Perform a search against the plex server
 /// </summary>
-function search()
+function search($query, $kind)
 {
     if ((int)$_SESSION['level'] < 20)
     {
-        json_error_and_exit("Not authorized");
+        return json_error("Not authorized");
     }
 
-    $query = param_or_json_exit('query');
-    $type = strtolower(RequestType::get_type_from_str(param_or_json_exit('kind')));
+    $query = strtolower(trim($query));
+    $type = strtolower(RequestType::get_type_from_str($kind));
 
     $libraries = simplexml_load_string(curl(PLEX_SERVER . '/library/sections?' . PLEX_TOKEN))->xpath("Directory");
 
@@ -745,7 +722,7 @@ function search()
     }
     else
     {
-        json_error_and_exit("Unknown media category: " . $type);
+        return json_error("Unknown media category: " . $type);
     }
 
     $section = -1;
@@ -759,7 +736,7 @@ function search()
 
     if ($section == -1)
     {
-        json_error_and_exit("Could not find category '" . $type_str . "'");
+        return json_error("Could not find category '" . $type_str . "'");
     }
 
     $prefix = ($type == RequestType::AudioBook ? "albums" : "all");
@@ -776,7 +753,7 @@ function search()
         $item->year = (string)$result['year'];
         if (RequestType::is_audio($type))
         {
-
+            // Todo - search Audible/music apis?
         }
         else
         {
@@ -809,23 +786,21 @@ function search()
     $final_obj = new \stdClass();
     $final_obj->length = sizeof($results);
     $final_obj->top = $existing;
-    json_message_and_exit(json_encode($final_obj));
+    return json_encode($final_obj);
 }
 
 /// <summary>
 /// Search for a movie or tv show via IMDb.
-///
-/// This method does _not_ return on success or failure, but sends a message to the output stream and exits
 /// </summary>
-function search_external()
+function search_external($query, $kind)
 {
-    $query = strtolower(trim(param_or_json_exit('query')));
+    $query = strtolower(trim($query));
     $letter = substr($query, 0, 1);
-    $type = strtolower(RequestType::get_type_from_str(param_or_json_exit('kind')));
+    $type = strtolower(RequestType::get_type_from_str($kind));
 
     if ($type != RequestType::Movie && $type != RequestType::TVShow)
     {
-        json_error_and_exit("Only Movie and TV shows supported ATM");
+        return json_error("Only Movie and TV shows supported ATM");
     }
 
     $url = "https://v2.sg.media-imdb.com/suggests/" . urlencode($letter) . "/" . urlencode($query) . ".json";
@@ -885,13 +860,11 @@ function search_external()
         $final_obj = new \stdClass();
         $final_obj->length = $len;
         $final_obj->top = $results;
-        json_message_and_exit(json_encode($final_obj));
-
-        json_message_and_exit(json_encode($results));
+        return json_encode($final_obj);
     }
     else
     {
-        json_error_and_exit("Unknown IMDb error: " . $response);
+        return json_error("Unknown IMDb error: " . $response);
     }
 }
 
@@ -899,7 +872,7 @@ function search_external()
 /// Attempt to update a user's password, failing if the old password is incorrect,
 /// the old password matches the new password, or the new password doesn't match it's confirmation
 /// </summary>
-function update_password($old_pass, $new_pass, $conf_pass, &$error)
+function update_password($old_pass, $new_pass, $conf_pass)
 {
     global $db;
 
@@ -909,28 +882,24 @@ function update_password($old_pass, $new_pass, $conf_pass, &$error)
     $result = $db->query($query);
     if (!$result || $result->num_rows != 1)
     {
-        $error = "Error updating password. Please try again";
-        return FALSE;
+        return db_error();
     }
 
     $old_hash = $result->fetch_row()[0];
     $result->close();
     if (!password_verify($old_pass, $old_hash))
     {
-        $error = "Old password is incorrect!";
-        return FALSE;
+        return json_error("Old password is incorrect!");
     }
 
     if ($old_pass == $new_pass)
     {
-        $error = "New password must be different from current password!";
-        return FALSE;
+        return json_error("New password must be different from current password!");
     }
 
     if ($new_pass != $conf_pass)
     {
-        $error = "Passwords don't match!";
-        return FALSE;
+        return json_error("Passwords don't match!");
     }
 
     $new_pass_hash = password_hash($new_pass, PASSWORD_DEFAULT);
@@ -938,23 +907,21 @@ function update_password($old_pass, $new_pass, $conf_pass, &$error)
     $result = $db->query($query);
     if (!$result)
     {
-        $error = "Error updating password. Please try again";
-        return FALSE;
+        return db_error();
     }
 
-    return TRUE;
+    return json_success();
 }
 
 /// <summary>
 /// Return the location and ISP (sorta) information for the given IP address
 /// </summary>
-function get_geo_ip($ip, &$error)
+function get_geo_ip($ip)
 {
     $json = json_decode(curl(GEOIP_URL . $ip));
     if ($json == NULL)
     {
-        $error = "Failed to parse geoip response";
-        return FALSE;
+        return json_error("Failed to parse geoip response");
     }
 
     // We only care about certain fields

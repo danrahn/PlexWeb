@@ -27,34 +27,6 @@ function verify_loggedin($redirect = FALSE) {
 }
 
 /// <summary>
-/// Return a 400 error if any of the given POST parameters are unset
-/// </summary>
-function exit_if_unset(...$fields)
-{
-    foreach ($fields as $field)
-    {
-        if (!isset($_POST[$field]))
-        {
-            error_and_exit(400);
-        }
-    }
-}
-
-/// <summary>
-/// Return a 400 error if any of the given GET parameters are unset
-/// </summary>
-function exit_if_unset_get(...$fields)
-{
-    foreach ($fields as $field)
-    {
-        if (!isset($_GET[$field]))
-        {
-            error_and_exit(400);
-        }
-    }
-}
-
-/// <summary>
 /// Print a simple JSON error and exit the script
 /// </summary>
 function json_error_and_exit($error)
@@ -71,29 +43,34 @@ function json_error_and_exit($error)
 }
 
 /// <summary>
-/// Exits the script and returns a JSON error if any of the POST fields are not set
-/// </summary>
-function json_exit_if_unset(...$fields)
-{
-    foreach ($fields as $field)
-    {
-        if (!isset($_POST[$field]))
-        {
-            json_error_and_exit($field . " is not set!");
-        }
-    }
-}
-
-/// <summary>
-/// Print a simple JSON success object and exit the script
+/// Returns the default Success JSON string
 /// </summary>
 function json_success()
 {
-    header("Content-Type: application/json; charset=UTF-8");
-    echo '{ "Success" : true }';
-    exit;
+    return '{ "Success" : true }';
 }
 
+/// <summary>
+/// Returns a JSON string with a single 'Error' field, set to the given message
+/// </summary>
+function json_error($message)
+{
+    $message = str_replace('"', '\\"');
+    return '{ "Error" : "' . $message . '" }';
+}
+
+/// <summary>
+/// Returns a json message that includes the database error for admins
+/// </summary>
+function db_error()
+{
+    global $db;
+    return json_error("Error querying database" . ($_SESSION["level"] >= 100 ? (": " .  $db->error) : ""));
+}
+
+/// <summary>
+/// Echos the given message as JSON and exits
+/// </summary>
 function json_message_and_exit($message)
 {
     header("Content-Type: application/json; charset=UTF-8");
@@ -139,6 +116,14 @@ function param_or_json_exit($param)
 
     // Not set as a GET or POST parameter, fail
     json_error_and_exit($param . " is not set!");
+}
+
+/// <summary>
+/// Alias for param_or_json_exit because I'm lazy and that's a lot to type out
+/// </summary>
+function get($param)
+{
+    return param_or_json_exit($param);
 }
 
 /// <summary>
