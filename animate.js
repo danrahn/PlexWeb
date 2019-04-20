@@ -8,7 +8,7 @@
 /// The main animation class, responsible for synchronous execution
 /// </summary>
 /// <todo>When required, support multiple properties at once, i.e. { "backgroundColor" : "#AAA", "color": "#BBB" }</todo>
-A = function()
+let A = function()
 {
     /// <summary>
     /// Queue an animation of the given element
@@ -16,7 +16,7 @@ A = function()
     this.queue = function(func, element, ...args)
     {
         this.queueDelayed(func, element, 0, ...args);
-    }
+    };
 
     /// <summary>
     /// Queue an animation that once queued for exexcution will fire after the specified delay
@@ -68,7 +68,7 @@ A = function()
                 func(element, prop, ...args);
             }, delay, animations[i].func, element, animations[i].prop, ...animations[i].args);
         }
-    }
+    };
 
     // Our animation queue allows us to keep track of the current animations that are pending execution
     let animationQueue = {};
@@ -82,7 +82,7 @@ A = function()
         this.prop = prop;
         this.delay = delay;
         this.args = args;
-    }
+    };
 
     /// <summary>
     /// Should only be called after an animation completes. Removes the current
@@ -116,7 +116,7 @@ A = function()
                 }, nextAnimations[i].delay, element, nextAnimations[i]);
             }
         }
-    }
+    };
 
     /// <summary>
     /// The list of supported animations and their subsequent implementations
@@ -179,13 +179,13 @@ A = function()
                             // Always need to call this once a particular animation is done!
                             fireNext(element);
                         }
-                    }
+                    };
 
                     for (var i = 1; i <= steps; i++)
                     {
                         setTimeout(animationFunc, (50 / 3) * i, element, oldColor, newColor, i, steps, prop, deleteAfterTransition);
                     }
-                }
+                };
             case "opacity":
             case "left":
                 return function(element, prop, newValue, duration, deleteAfterTransition = false)
@@ -216,25 +216,25 @@ A = function()
                             // Always need to call this once a particular animation is done!
                             fireNext(element);
                         }
-                    }
+                    };
 
                     for (var i = 1; i <= steps; i++)
                     {
                         setTimeout(animationFunc, (50 / 3) * i, element, prop, oldVal, newVal, percent, px, i, steps, deleteAfterTransition);
                     }
-                }
+                };
             case "display":
             	return function(element, prop, newValue)
             	{
             		// Not really an animation, but being able to queue this is nice
             		element.style.display = newValue;
             		fireNext(element);
-            	}
+            	};
             default:
                 logError("Bad:" + func);
                 return;
         }
-    }
+    };
 
     /// <summary>
     /// Helps with the basic minification I run this script through
@@ -242,10 +242,10 @@ A = function()
     let getStyle = function(element)
     {
         return getComputedStyle(element);
-    }
-}
+    };
+};
 
-Animation = new A();
+let Animation = new A();
 
 /// <summary>
 /// Simple class to represent an rgba color. Takes either rgba value or a valid hex string (#AAA, #C1D1E1)
@@ -290,5 +290,5 @@ function Color(r, g, b, a)
     /// </summary>
     this.toString = function() {
         return "rgba(" + this.r + ", " + this.g + ", " + this.b + ", " + this.a + ")";
-    }
+    };
 }

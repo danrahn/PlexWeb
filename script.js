@@ -5,14 +5,15 @@
     // Easier way to remove DOM elements
     Element.prototype.remove = function() {
         this.parentElement.removeChild(this);
-    }
+    };
+
     NodeList.prototype.remove = HTMLCollection.prototype.remove = function() {
-        for(var i = this.length - 1; i >= 0; i--) {
+        for(let i = this.length - 1; i >= 0; i--) {
              if(this[i] && this[i].parentElement) {
                 this[i].parentElement.removeChild(this[i]);
              }
         }
-    }
+    };
 
     /// <summary>
     /// On load, request the active streams (if it's running) and set up the suggestion form handlers
@@ -101,7 +102,7 @@
                     });
                 }
             }
-        }
+        };
 
         http.send("type=pr&req_type=10&which=get");
     }
@@ -130,7 +131,7 @@
                     streamAccess.innerHTML = newString;
                 }
             }
-        }
+        };
 
         http.send("type=pr&req_type=10&which=req");
     }
@@ -193,27 +194,27 @@
         for (let i = 0; i < sessions.length; ++i)
         {
             let sesh = sessions[i];
-            let id = sesh['id'];
+            let id = sesh.id;
             let item = $("#id" + id);
             if (item)
             {
                 // The stream already exists - update the progress
-                item.querySelector(".time").innerHTML = msToHms(sesh['progress']) + "/" + msToHms(sesh['duration']);
-                item.querySelector('.progressHolder').setAttribute('progress', sesh['progress']);
-                item.querySelector('.progressHolder').setAttribute('tcprogress', 'transcode_progress' in sesh ? sesh['transcode_progress'] : 0);
+                item.querySelector(".time").innerHTML = msToHms(sesh.progress) + "/" + msToHms(sesh.duration);
+                item.querySelector('.progressHolder').setAttribute('progress', sesh.progress);
+                item.querySelector('.progressHolder').setAttribute('tcprogress', 'transcode_progress' in sesh ? sesh.transcode_progress : 0);
 
-                item.querySelector(".ppbutton").className = "ppbutton fa fa-" + (sesh['paused'] ? "pause" : "play");
-                if (sesh['paused'])
+                item.querySelector(".ppbutton").className = "ppbutton fa fa-" + (sesh.paused ? "pause" : "play");
+                if (sesh.paused)
                 {
                     // Transocde progress may still be updated, so do a one-off here
                     innerUpdate(id);
                 }
-                if (sesh['paused'] && innerProgressTimers[id])
+                if (sesh.paused && innerProgressTimers[id])
                 {
                     clearInterval(innerProgressTimers[id]);
                     delete innerProgressTimers[id];
                 }
-                else if (!sesh['paused'] && !innerProgressTimers[id])
+                else if (!sesh.paused && !innerProgressTimers[id])
                 {
                     // Create a new timer to simulate progress while we wait for an actual update
                     innerProgressTimers[id] = setInterval(innerUpdate, 1000, id);
@@ -245,7 +246,7 @@
             let found = false;
             for (let j = 0; j < newSessions.length; ++j)
             {
-                if (newSessions[j]['id'] === session.id.substring(2)) // substring to remove the 'id' that we add
+                if (newSessions[j].id === session.id.substring(2)) // substring to remove the 'id' that we add
                 {
                     found = true;
                     break;
@@ -299,12 +300,12 @@
     /// </summary>
     function sessionSort(a, b)
     {
-        if (a['paused'] != b['paused'])
+        if (a.paused != b.paused)
         {
-            return a['paused'] ? 1 : -1;
+            return a.paused ? 1 : -1;
         }
 
-        return (a['duration'] - a['progress']) - (b['duration'] - b['progress']);
+        return (a.duration - a.progress) - (b.duration - b.progress);
     }
 
     /// <summary>
@@ -383,8 +384,8 @@
                     // If we have existing sessions, find its place in the list
                     for (let i = 0; i < currentSessions.length; ++i)
                     {
-                        if (!response['paused'] && currentSessions[i].querySelector("i").className.indexOf("pause") != -1 ||
-                            (response['progress'] / response['duration']) * 100 < parseFloat(currentSessions[i].querySelector(".progress").style.width))
+                        if (!response.paused && currentSessions[i].querySelector("i").className.indexOf("pause") != -1 ||
+                            (response.progress / response.duration) * 100 < parseFloat(currentSessions[i].querySelector(".progress").style.width))
                         {
                             // Found our position if this item is playing and the next is paused, or this item has less
                             // time to completion.
@@ -411,8 +412,8 @@
         logVerbose(sesh, true);
         let container = document.createElement("div");
         container.className = "mediainfo";
-        container.id = "id" + sesh['session_id'];
-        container.style.backgroundImage = "linear-gradient(rgba(0,0,0,0.4),rgba(0,0,0,0.4)), url(" + sesh['art_path'] + ")";
+        container.id = "id" + sesh.session_id;
+        container.style.backgroundImage = "linear-gradient(rgba(0,0,0,0.4),rgba(0,0,0,0.4)), url(" + sesh.art_path + ")";
 
         const innerHolder = document.createElement("div");
         innerHolder.className = "innerHolder";
@@ -421,7 +422,7 @@
         let thumbholder = document.createElement("div");
         thumbholder.className = "thumbholder";
         let img = document.createElement("img");
-        img.src = sesh['thumb_path'];
+        img.src = sesh.thumb_path;
         img.style.width = "100px";
 
         thumbholder.appendChild(img);
@@ -432,47 +433,47 @@
         details.className = "details";
         // link to imdb/audible
         let link = document.createElement("a");
-        link.href = sesh['hyperlink'];
+        link.href = sesh.hyperlink;
         link.target = '_blank';
         let icon = document.createElement('i');
-        icon.className = "ppbutton fa fa-" + (sesh['paused'] ? "pause" : "play");
+        icon.className = "ppbutton fa fa-" + (sesh.paused ? "pause" : "play");
         icon.style.fontSize = "smaller";
         icon.style.color = "$AADDAA";
         let span = document.createElement('span');
-        span.innerHTML = "  " + sesh['title'];
+        span.innerHTML = "  " + sesh.title;
 
         link.appendChild(icon);
         link.appendChild(span);
 
         // Bulleted list
         let list = document.createElement("ul");
-        list.appendChild(getListItem("Media type", sesh['media_type']));
-        if (sesh['album']) // special handling for music
+        list.appendChild(getListItem("Media type", sesh.media_type));
+        if (sesh.album) // special handling for music
         {
-            list.appendChild(getListItem("Album", sesh['album']));
+            list.appendChild(getListItem("Album", sesh.album));
         }
-        const date = new Date(sesh['release_date']);
+        const date = new Date(sesh.release_date);
         const dateOpts = { year: 'numeric', month: 'long', day: 'numeric' };
         list.appendChild(getListItem("Release Date", date.toLocaleDateString("en-US", dateOpts)));
-        list.appendChild(getListItem("Playback Device", sesh['playback_device']));
-        if (sesh['user'])
+        list.appendChild(getListItem("Playback Device", sesh.playback_device));
+        if (sesh.user)
         {
-            list.appendChild(getListItem("User", sesh['user']));
+            list.appendChild(getListItem("User", sesh.user));
         }
-        if (sesh['ip'])
+        if (sesh.ip)
         {
-            let ipId = sesh['session_id'] + "_ip";
-            list.appendChild(getListItem("IP", sesh['ip'], ipId));
-            getIPInfo(sesh['ip'], ipId);
+            let ipId = sesh.session_id + "_ip";
+            list.appendChild(getListItem("IP", sesh.ip, ipId));
+            getIPInfo(sesh.ip, ipId);
         }
 
-        if (sesh['video'])
+        if (sesh.video)
         {
-            list.appendChild(getListItem("Video", getVideoString(sesh['video'])));
+            list.appendChild(getListItem("Video", getVideoString(sesh.video)));
         }
-        list.appendChild(getListItem("Audio", getAudioString(sesh['audio'])));
+        list.appendChild(getListItem("Audio", getAudioString(sesh.audio)));
 
-        if (sesh['video'])
+        if (sesh.video)
         {
             // If we have audio and video, also include the total bitrate
             let bitrate = (sesh.audio ? sesh.audio.bitrate : 0) + (sesh.video.bitrate);
@@ -486,8 +487,8 @@
         // Progress indicator at the bottom of the container
         let progressHolder = document.createElement("div");
         progressHolder.className = "progressHolder";
-        progressHolder.setAttribute('progress', sesh['progress']);
-        progressHolder.setAttribute('duration', sesh['duration']);
+        progressHolder.setAttribute('progress', sesh.progress);
+        progressHolder.setAttribute('duration', sesh.duration);
 
         progressHolder.addEventListener("mousemove", progressHover);
         progressHolder.addEventListener("mouseleave", function()
@@ -497,11 +498,11 @@
         });
         let progress = document.createElement("div");
         progress.className = "progress";
-        const progressPercent = (sesh['progress'] / sesh['duration'] * 100)
+        const progressPercent = (sesh.progress / sesh.duration * 100);
         progress.style.width =  progressPercent + "%";
         let transcodeDiff = document.createElement("div");
         transcodeDiff.className = "tcdiff";
-        let tcprogress = 'transcode_progress' in sesh ? sesh['transcode_progress'] : 0;
+        let tcprogress = 'transcode_progress' in sesh ? sesh.transcode_progress : 0;
 
         progressHolder.setAttribute('tcprogress', tcprogress);
         if (tcprogress < progressPercent)
@@ -514,7 +515,7 @@
         remaining.style.width = (100 - tcprogress) + "%";
         let time = document.createElement("div");
         time.className = "time";
-        time.innerHTML = msToHms(sesh['progress']) + "/" + msToHms(sesh['duration']);
+        time.innerHTML = msToHms(sesh.progress) + "/" + msToHms(sesh.duration);
 
 
         progressHolder.appendChild(progress);
@@ -528,19 +529,19 @@
         container.append(progressHolder);
 
         // Event to simulate play progress. Updates only come in every 10 seconds, so pretend like we're updating every second
-        if (!sesh['paused'])
+        if (!sesh.paused)
         {
-            innerProgressTimers[sesh['session_id']] = setInterval(innerUpdate, 1000, sesh['session_id']);
+            innerProgressTimers[sesh.session_id] = setInterval(innerUpdate, 1000, sesh.session_id);
         }
 
         // Darken/lighten the background when entering/leaving the entry
         container.addEventListener("mouseenter", function(e) {
-            style = e.target.style.backgroundImage;
+            let style = e.target.style.backgroundImage;
             e.target.style.backgroundImage = "linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6))," + style.substring(style.indexOf(" url("));
         });
 
         container.addEventListener("mouseleave", function(e) {
-            style = e.target.style.backgroundImage;
+            let style = e.target.style.backgroundImage;
             e.target.style.backgroundImage = "linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4))," + style.substring(style.indexOf(" url("));
         });
 
@@ -642,16 +643,16 @@
     function getVideoString(video)
     {
         let videoString = "";
-        if (video['transcode'])
+        if (video.transcode)
         {
-            videoString = "Transcode - " + video['original'] + " &#8594; " + video['transcoded_codec'] + " " + video['transcoded_resolution'];
+            videoString = "Transcode - " + video.original + " &#8594; " + video.transcoded_codec + " " + video.transcoded_resolution;
         }
         else
         {
-            videoString = "Direct Play - " + video['original'];
+            videoString = "Direct Play - " + video.original;
         }
 
-        return videoString += " (" + video['bitrate'] + " kbps)";
+        return videoString += " (" + video.bitrate + " kbps)";
     }
 
     /// <summary>
@@ -660,21 +661,21 @@
     function getAudioString(audio)
     {
         let audioString = "";
-        if (audio['transcode'])
+        if (audio.transcode)
         {
-            audioString = "Transcode - " + audio['original'] + " &#8594; " + audio['transcoded_codec'] + " " + audio['transcoded_channels'];
+            audioString = "Transcode - " + audio.original + " &#8594; " + audio.transcoded_codec + " " + audio.transcoded_channels;
         }
         else
         {
-            audioString = "Direct Play - " + audio['original'];
+            audioString = "Direct Play - " + audio.original;
         }
 
-        if (parseInt(audio['bitrate']) === 0)
+        if (parseInt(audio.bitrate) === 0)
         {
             return audioString;
         }
 
-        return audioString += " (" + audio['bitrate'] + " kbps)";
+        return audioString += " (" + audio.bitrate + " kbps)";
     }
 
     /// <summary>
@@ -752,9 +753,9 @@
                 },
                 function(response)
                 {
-                    logError(response["Error"]);
+                    logError(response.Error);
                     status.className = "formContainer statusFail";
-                    status.innerHTML = "Error processing request: " + response["Error"];
+                    status.innerHTML = "Error processing request: " + response.Error;
                     Animation.queue({"opacity" : 1}, status, 500);
                     Animation.queueDelayed({"opacity" : 0}, status, 3000, 1000);
                 });
@@ -860,7 +861,7 @@
             },
             function(response)
             {
-                logError(response['Error']);
+                logError(response.Error);
                 searchExternal();
             });
     }
@@ -872,7 +873,6 @@
     {
         let name = $("input[name='name']")[0];
         let type = $("select[name='type']")[0];
-        let suggestion = name.value;
 
         if (type.value != "movie" && type.value != "tv")
         {
@@ -1022,13 +1022,18 @@
     /// </summary>
     function sendHtmlJsonRequest(url, parameters, successFunc, failFunc, additionalParams)
     {
-        http = new XMLHttpRequest();
+        let http = new XMLHttpRequest();
         http.open("POST", url, true /*async*/);
         http.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
         if (additionalParams)
         {
-            for (param in additionalParams)
+            for (let param in additionalParams)
             {
+                if (!additionalParams.hasOwnProperty(param))
+                {
+                    continue;
+                }
+
                 http[param] = additionalParams[param];
             }   
         }
@@ -1041,14 +1046,14 @@
             try {
                 let response = JSON.parse(this.responseText);
                 logJson(response, LOG.Verbose);
-                if (response["Error"]) {
+                if (response.Error) {
                     if (failFunc)
                     {
                         failFunc(response);
                     }
                     else
                     {
-                        logError(response["Error"]);
+                        logError(response.Error);
                     }
 
                     return;
@@ -1060,7 +1065,7 @@
                 logError(ex, true);
                 logError(this.responseText);
             }
-        }
+        };
 
         http.send(buildQuery(parameters));
     }
@@ -1071,8 +1076,13 @@
     function buildQuery(parameters)
     {
         let queryString = "";
-        for (parameter in parameters)
+        for (let parameter in parameters)
         {
+            if (!parameters.hasOwnProperty(parameter))
+            {
+                continue;
+            }
+
             queryString += `&${parameter}=${encodeURIComponent(parameters[parameter])}`;
         }
 

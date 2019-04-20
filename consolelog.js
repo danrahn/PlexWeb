@@ -25,7 +25,7 @@ if (isNaN(g_logLevel)) {
 
 let g_darkConsole = parseInt(sessionStorage.getItem("darkconsole"));
 if (isNaN(g_darkConsole)) {
-    logInfo("Welcome to the console!")
+    logInfo("Welcome to the console!");
     logInfo("For best debugging results, set whether you're using a light or dark themed console via setDarkConsole(isDark), ");
     logInfo("where isDark is 1 (true) or 0 (false)");
     g_darkConsole = false;
