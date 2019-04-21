@@ -537,6 +537,7 @@ hr {
     position: fixed;
     left: 0;
     top: 0;
+    z-index: 2;
 }
 
 #nav .navButton {
@@ -602,6 +603,10 @@ hr {
     border: none;
     font-size: 12pt;
     border-bottom: 2px solid #808080;
+}
+
+#leftMenu .navButton img {
+    margin-top: 5px;
 }
 
 .btnimg {

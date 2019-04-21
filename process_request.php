@@ -962,7 +962,7 @@ function get_geo_ip($ip)
     $trimmed_json->state = $json->state_prov;
     $trimmed_json->city = $json->city;
     $trimmed_json->isp = $json->isp;
-    $trimmed_json->cached = TRUE;
+    $trimmed_json->cached = FALSE;
 
     $country = $db->real_escape_string($trimmed_json->country);
     $state = $db->real_escape_string($trimmed_json->state);

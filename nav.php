@@ -22,29 +22,29 @@
 <div id="leftMenu">
     <div class="navButton" onclick="window.location = 'index.php'">
         <div class=btntxt>Home</div>
-        <div class=btnimg><image src='resource/home.png' alt='Home' style='filter: invert(80%);margin-top:3px'/></div>
+        <div class=btnimg><image src='resource/home.png' alt='Home' style='filter: invert(80%);'/></div>
     </div>
 <?php if (isset($_SESSION['level']) && (int)$_SESSION['level'] >= 100) { ?>
     <div class="navButton" onclick="window.location = 'members.php'">
         <div class=btntxt>Members</div>
-        <div class=btnimg><image src='resource/members.png' alt='Home' style='filter: invert(80%);margin-top:3px'/></div>
+        <div class=btnimg><image src='resource/members.png' alt='Home' style='filter: invert(80%);'/></div>
     </div>
 <?php } ?>
     <div class="navButton rightbutton" onclick="window.location = 'user_settings.php'">
         <div class=btntxt>Settings</div>
-        <div class=btnimg><image src='resource/settings.png' alt='Settings' style='filter: invert(80%);margin-top:3px'/></div>
+        <div class=btnimg><image src='resource/settings.png' alt='Settings' style='filter: invert(80%);'/></div>
     </div>
     <div class="navButton" onclick="window.location = 'view_requests.php'">
         <div class=btntxt>Requests</div>
-        <div class=btnimg><image src='resource/requests.png' alt='Requests' style='filter: invert(80%);margin-top:3px'/></div>
+        <div class=btnimg><image src='resource/requests.png' alt='Requests' style='filter: invert(80%);'/></div>
     </div>
     <div class="navButton" onclick="window.location = 'logout.php'">
         <div class=btntxt>Logout</div>
-        <div class=btnimg><image src='resource/logout.png' alt='Logout' style='filter: invert(80%);margin-top:3px'/></div>
+        <div class=btnimg><image src='resource/logout.png' alt='Logout' style='filter: invert(80%);'/></div>
     </div>
     <div class="navButton" onclick="window.open('https://github.com/danrahn/plexweb', '_blank')">
         <div class=btntxt>Source Code</div>
-        <div class=btnimg><image src='resource/github.png' alt='Github' style='filter: invert(80%);margin-top:3px'/></div>
+        <div class=btnimg><image src='resource/github.png' alt='Github' style='filter: invert(80%);'/></div>
     </div>
 </div>
 <script>
