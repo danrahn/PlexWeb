@@ -14,9 +14,9 @@ if ((int)$_SESSION['level'] < 100)
 ?>
 
 <!DOCTYPE html>
-<html>
+<html lang="en-us">
 <head>
-    <meta http-equiv="Content-Type" content="text/html;charset=ISO-8859-1">
+    <meta http-equiv="Content-Type" content="text/html;charset=utf-8">
     <link rel="stylesheet" type="text/css" href="resource/style.css">
     <link rel="stylesheet" type="text/css" href="resource/request.css">
     <link rel="shortcut icon" href="favicon.ico">

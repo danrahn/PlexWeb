@@ -132,7 +132,7 @@ function print_td($d, $class=NULL)
 
 function print_input_td($d, $rid, $idstr)
 {
-    print("<td><textarea class='$idstr' id='" . $idstr . "_" . $rid . "' maxlength=1024 value='" . htmlspecialchars($d, ENT_QUOTES) . "' placeholder='Ctrl+Enter to submit'>" . htmlspecialchars($d, ENT_QUOTES) . "</textarea></td>");
+    print("<td><textarea class='$idstr' id='" . $idstr . "_" . $rid . "' maxlength=1024 placeholder='Ctrl+Enter to submit'>" . htmlspecialchars($d, ENT_QUOTES) . "</textarea></td>");
 }
 
 function print_status_options($status, $rid)
@@ -157,13 +157,13 @@ function print_status_options($status, $rid)
 ?>
 
 <!DOCTYPE html>
-<html>
+<html lang=en-us>
 <head>
-    <meta http-equiv="Content-Type" content="text/html;charset=ISO-8859-1">
+    <meta http-equiv="Content-Type" content="text/html;charset=utf-8">
     <link rel="stylesheet" type="text/css" href="resource/style.css">
     <link rel="stylesheet" type="text/css" href="resource/request.css">
     <link rel="shortcut icon" href="favicon.ico">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#3C5260" />
     <script src="resource/min/animate.min.js"></script>
     <script src="resource/consolelog.js"></script>

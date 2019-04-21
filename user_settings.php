@@ -6,9 +6,9 @@ requireSSL();
 ?>
 
 <!DOCTYPE html>
-<html>
+<html lang="en-us">
 <head>
-    <meta http-equiv="Content-Type" content="text/html;charset=ISO-8859-1">
+    <meta http-equiv="Content-Type" content="text/html;charset=utf-8">
     <link rel="stylesheet" type="text/css" href="resource/style.css">
     <link rel="shortcut icon" href="favicon.ico">
     <meta name="viewport" content="width=device-width, initial-scale=1">

@@ -1,10 +1,14 @@
+html, body {
+    height: 100%;
+}
+
 #plexFrame {
     background: rgba(0,0,0,0) url("res/noise.8b05ce45d0df59343e206bc9ae78d85d.png") repeat scroll 0% 0%;
     margin: 0;
     border: 0;
     overflow: auto;
     display: block;
-    min-height: 100vh;
+    height: 100%;
 }
 
 body {
@@ -117,6 +121,10 @@ input:focus, select:focus, textarea:focus {
 
 input:hover, select:hover, textarea:hover {
     background-color: rgb(83, 86, 89);
+}
+
+input[type=checkbox]:checked:hover {
+    background-color: rgb(143, 146, 149);
 }
 
 .formInput {
@@ -334,10 +342,6 @@ hr {
     position: absolute;
 }
 
-#suggestions {
-    display: auto;
-}
-
 #suggestions,
 #existingSuggestions,
 #outsideSuggestions {
@@ -436,7 +440,7 @@ hr {
 
     .mediainfo li {
         list-style-type: none;
-        margin: none;
+        margin: 0;
     }
 
     .thumbholder {
@@ -467,7 +471,7 @@ hr {
         height: 2px;
     }
 
-    .tableholder td {
+    .tableHolder td {
     	font-size: smaller;
     }
 }
@@ -519,4 +523,117 @@ hr {
 /* Handle on hover */
 ::-webkit-scrollbar-thumb:hover {
      background: #818181; 
+}
+
+
+/***************
+ * Navbar Style
+ ***************/
+#nav {
+    width: 100%;
+    height: 40px;
+    background-color: #2E5E3E;
+    opacity: 0.8;
+    position: fixed;
+    left: 0;
+    top: 0;
+}
+
+#nav .navButton {
+    height: 100%;
+    color: #C1C1C1;
+    font-weight: bold;
+    padding-left: 10px;
+    padding-right: 10px;
+    border: none;
+}
+
+#nav .leftbutton {
+    border-right: 2px solid #808080;
+    float: left;
+}
+
+#nav .rightbutton {
+    border-left: 2px solid #808080;
+    float: right;
+    height: 40px;
+}
+
+.navButton:hover, #mainMenu:hover, #pageName:hover {
+    background-color: #0E3E1E;
+}
+
+.ham {
+    width: 30px;
+    height: 5px;
+    background-color: #c1c1c1;
+    margin-top: 5px;
+}
+
+#mainMenu {
+    height: 37px;
+    padding: 3px 10px 0 10px;
+    margin: auto;
+}
+
+#mainMenu:hover .ham {
+    background-color: #A1A1A1;
+}
+
+#leftMenu {
+    background-color: rgb(46, 94, 62);
+    color: #C1C1C1;
+    width: 169px;
+    height: calc(100vh - 40px);
+    position: fixed;
+    top: 40px;
+    left: -170px;
+    border-right: 1px solid #808080;
+    z-index: 1;
+}
+
+#leftMenu .navButton {
+    height: 35px;
+    width: calc(100% - 30px);
+    color: #C1C1C1;
+    font-weight: bold;
+    padding-left: 15px;
+    padding-right: 15px;
+    border: none;
+    font-size: 12pt;
+    border-bottom: 2px solid #808080;
+}
+
+.btnimg {
+    float: right;
+}
+
+.btnimg img {
+    height: 24px;
+}
+
+.btntxt {
+    float: left;
+    line-height: 35px;
+}
+
+#pageName {
+    color: #c1c1c1;
+    float: left;
+    display: inline-block;
+    vertical-align: center;
+    line-height: 40px;
+    padding: 0 10px;
+    font-size: 14pt;
+    cursor: pointer;
+}
+
+#pageName:hover {
+    color: #a1a1a1;
+}
+
+@media all and (orientation: portrait) and (max-width: 767px) {
+    #navShort {
+        display: none;
+    }
 }

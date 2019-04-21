@@ -426,6 +426,7 @@
         let img = document.createElement("img");
         img.src = sesh.thumb_path;
         img.style.width = "100px";
+        img.alt = "thumbnail";
 
         thumbholder.appendChild(img);
 
