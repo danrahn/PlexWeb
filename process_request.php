@@ -920,7 +920,9 @@ function get_geo_ip($ip)
 {
     global $db;
     $ip_safe = $db->real_escape_string($ip);
-    $query = "SELECT city, state, country, isp, timestamp FROM ip_cache WHERE ip='$ip_safe'";
+
+    # timestamp will return the local time by default, but 'new DateTime' returns UTC
+    $query = "SELECT city, state, country, isp, CONVERT_TZ(timestamp, @@session.time_zone, '+00:00') AS `utc_timestamp` FROM ip_cache WHERE ip='$ip_safe'";
     $exists = FALSE;
     $result = $db->query($query);
     if ($result && $result->num_rows == 1)
@@ -928,14 +930,15 @@ function get_geo_ip($ip)
         $exists = TRUE;
         $row = $result->fetch_row();
         $result->close();
+
         $timestamp = new DateTime($row[4]);
         $now = new DateTime(date("Y-m-d H:i:s"));
-        $diff = $timestamp->diff($now);
+        $diff = ($now->getTimestamp() - $timestamp->getTimestamp()) / 60;
 
         // Free tier is limited to 1500 api calls a day, so don't continuously ping them
-        // 30 minutes = 0.5/24 days = 1/48. This gives us a large buffer of ~31 unique IP
-        // addresses every 30 minutes.
-        if ($timestamp->diff($now)->days < (1/48))
+        // Keeping the value around for 30 minutes gives us a large buffer of ~31 unique
+        // IP addresses per 30 minute chunk.
+        if ($diff <= 30)
         {
             // Less than 30 minutes since our last query. Use the cached value
             $json = new \stdClass();
@@ -969,8 +972,9 @@ function get_geo_ip($ip)
     $city = $db->real_escape_string($trimmed_json->city);
     $isp = $db->real_escape_string($trimmed_json->isp);
     $query = $exists ?
-        "UPDATE ip_cache SET city='$city', state='$state', country='$country', isp='$isp' WHERE ip='$ip_safe'" :
+        "UPDATE ip_cache SET city='$city', state='$state', country='$country', isp='$isp', query_count=query_count+1 WHERE ip='$ip_safe'" :
         "INSERT INTO ip_cache (ip, city, state, country, isp) VALUES ('$ip_safe', '$city', '$state', '$country', '$isp')";
+
     $db->query($query);
     return json_encode($trimmed_json);
 }
