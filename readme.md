@@ -12,10 +12,10 @@ This repository contains (most of) the source code for danrahn.com/plexweb. Some
                     thumb\
                 thumb\
 3. There are some additional requirements that are not included in this repository:
-  * [adrenth/thetvdb2](https://github.com/adrenth/thetvdb2) - I'm hoping to remove this dependency, it brings in way too much for what I'm using it for
-  * [PHPMailer](https://github.com/PHPMailer/PHPMailer) - For email/text alerts
+  * ~~[adrenth/thetvdb2](https://github.com/adrenth/thetvdb2) - I'm hoping to remove this dependency, it brings in way too much for what I'm using it for~~ Dependency removed!
+  * [PHPMailer](https://github.com/PHPMailer/PHPMailer) - For email/text alerts. I'd love to remove this dependency, since having this project be completely self-contained would be nice (I'm fully aware that for a "real" website, it's best to utilize well documented and tested libraries vs reinventing the wheel)
   * fontawesome-webfont may or may not be necessary. It's used for play/pause icons in active streams
-4. The following SQL tables are required:
+4. The following SQL tables are required (created via phpmyadmin UI, recreated below via `SHOW CREATE TABLE xyz`):
 
     ```SQL
     CREATE TABLE `users` (
@@ -82,6 +82,19 @@ This repository contains (most of) the source code for danrahn.com/plexweb. Some
      `date_added` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
      PRIMARY KEY (`entry`)
     ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci
+
+
+    CREATE TABLE `ip_cache` (
+     `id` int(11) NOT NULL AUTO_INCREMENT,
+     `ip` varchar(45) COLLATE utf8_unicode_ci NOT NULL,
+     `city` varchar(64) COLLATE utf8_unicode_ci NOT NULL,
+     `state` varchar(64) COLLATE utf8_unicode_ci NOT NULL,
+     `country` varchar(64) COLLATE utf8_unicode_ci NOT NULL,
+     `isp` varchar(128) COLLATE utf8_unicode_ci NOT NULL,
+     `query_count` int(11) NOT NULL DEFAULT '1',
+     `timestamp` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+     PRIMARY KEY (`id`)
+    ) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci
 
 
     CREATE DEFINER=`root`@`localhost` TRIGGER `create_user_info` AFTER INSERT ON `users` FOR EACH ROW INSERT INTO user_info (userid, firstname, lastname, email, email_alerts, phone, phone_alerts, carrier)

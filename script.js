@@ -762,7 +762,7 @@
                 $("input[name='name']")[0].value = "";
                 $("#comment").value = "";
                 status.className = "formContainer statusSuccess";
-                status.innerHTML = "Request submitted!<br/><a href=view_requests.php>View Requests</a>";
+                status.innerHTML = "Request submitted!<br/><a href=requests.php>View Requests</a>";
                 Animation.queue({"opacity" : 1}, status, 500);
                 Animation.queueDelayed({"opacity" : 0}, status, 5000, 1000);
             };

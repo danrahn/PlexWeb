@@ -622,23 +622,37 @@ hr {
     line-height: 35px;
 }
 
-#pageName {
+.navPageInfo {
     color: #c1c1c1;
     float: left;
     display: inline-block;
     vertical-align: center;
     line-height: 40px;
-    padding: 0 10px;
     font-size: 14pt;
+}
+
+#pageName, #pageDetail {
     cursor: pointer;
 }
 
-#pageName:hover {
+#pageName {
+    padding: 0 5px 0 10px;
+}
+
+#pageDetail {
+    padding: 0 10px 0 5px;
+}
+
+#pageName:hover, #pageDetail:hover {
     color: #a1a1a1;
 }
 
 @media all and (orientation: portrait) and (max-width: 767px) {
     #navShort {
         display: none;
+    }
+
+    .navPageInfo {
+        font-size: 12pt;
     }
 }

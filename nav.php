@@ -9,14 +9,24 @@
         <div class="navButton rightbutton" onclick="window.location = 'logout.php'">
             <div class=btnimg><image src='resource/logout.png' alt='Logout' style='filter: invert(80%);margin-top:8px'/></div>
         </div>
-        <div class="navButton rightbutton"onclick="window.location = 'view_requests.php'">
+        <div class="navButton rightbutton"onclick="window.location = 'requests.php'">
             <div class=btnimg><image src='resource/requests.png' alt='Requests' style='filter: invert(80%);margin-top:8px'/></div>
         </div>
         <div class="navButton rightbutton" onclick="window.location = 'user_settings.php'">
             <div class=btnimg><image src='resource/settings.png' alt='Settings' style='filter: invert(80%);margin-top:8px'/></div>
         </div>
     </div>
-    <div id="pageName" onclick="window.location = 'index.php'">Plex Web</div>
+    <div id="pageName" class="navPageInfo" onclick="window.location = 'index.php'">Plex Web</div>
+    <?php
+        if (isset($_SESSION['level']) && (int)$_SESSION['level'] >= 100 && $_SERVER['REQUEST_URI'] != '/plexweb/index.php') {
+            $location = $_SERVER['REQUEST_URI'];
+            $start = strrpos($location, '/') + 1;
+            $end = strrpos($location, '.');
+            $location = ucwords(str_replace('_', ' ', substr($location, $start, $end - $start)));
+    ?>
+    <div class="navPageInfo">&#x2192;</div>
+    <div id="pageDetail" class="navPageInfo" onclick="window.location = '<?= $_SERVER['REQUEST_URI'] ?>'"><?= $location ?></div>
+    <?php } ?>
 </div>
 </div>
 <div id="leftMenu">
@@ -34,7 +44,7 @@
         <div class=btntxt>Settings</div>
         <div class=btnimg><image src='resource/settings.png' alt='Settings' style='filter: invert(80%);'/></div>
     </div>
-    <div class="navButton" onclick="window.location = 'view_requests.php'">
+    <div class="navButton" onclick="window.location = 'requests.php'">
         <div class=btntxt>Requests</div>
         <div class=btnimg><image src='resource/requests.png' alt='Requests' style='filter: invert(80%);'/></div>
     </div>
