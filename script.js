@@ -87,11 +87,10 @@
 
         let successFunc = function(response)
         {
-            const isPending = response.value == "0";
-            const newString = isPending ? "Request Pending" : "Request Access";
+            const canRequest = response.value == "Request Access";
             let streamAccess = $("#streamAccess");
-            streamAccess.innerHTML = newString;
-            if (!isPending)
+            streamAccess.innerHTML = response.value;
+            if (canRequest)
             {
                 // Need to request access
                 streamAccess.addEventListener("click", function()
@@ -99,6 +98,10 @@
                     this.innerHTML = "...";
                     requestStreamAccess();
                 })
+            }
+            if (response.value == "Request Denied")
+            {
+                streamAccess.innerHTML = "<a href='requests.php'>Request Denied</a>";
             }
         };
 

@@ -13,7 +13,7 @@ This repository contains (most of) the source code for danrahn.com/plexweb. Some
                 thumb\
 3. There are some additional requirements that are not included in this repository:
   * ~~[adrenth/thetvdb2](https://github.com/adrenth/thetvdb2) - I'm hoping to remove this dependency, it brings in way too much for what I'm using it for~~ Dependency removed!
-  * [PHPMailer](https://github.com/PHPMailer/PHPMailer) - For email/text alerts. I'd love to remove this dependency, since having this project be completely self-contained would be nice (I'm fully aware that for a "real" website, it's best to utilize well documented and tested libraries vs reinventing the wheel)
+  * [PHPMailer](https://github.com/PHPMailer/PHPMailer) - For email/text alerts. I'd love to remove this dependency, since having this project be completely self-contained would be nice (for my own learning, since obviously it's best to utilize well documented and tested libraries vs reinventing the wheel)
   * fontawesome-webfont may or may not be necessary. It's used for play/pause icons in active streams
 4. The following SQL tables are required (created via phpmyadmin UI, recreated below via `SHOW CREATE TABLE xyz`):
 

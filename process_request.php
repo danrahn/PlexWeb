@@ -273,7 +273,7 @@ function process_stream_access_request($which)
 
     $get_only = strcmp($which, 'get') === 0;
     $userid = $_SESSION['id'];
-    $query = "SELECT id FROM user_requests WHERE username_id=$userid AND request_type=10";
+    $query = "SELECT id, satisfied FROM user_requests WHERE username_id=$userid AND request_type=10";
     $result = $db->query($query);
     if ($result === FALSE)
     {
@@ -285,7 +285,7 @@ function process_stream_access_request($which)
         $result->close();
         if ($get_only)
         {
-            return '{ "value" : "1" }';
+            return '{ "value" : "Request Access" }';
         }
 
         $query = "INSERT INTO user_requests (username_id, request_type, request_name, comment) VALUES ($userid, 10, 'ViewStream', '')";
@@ -295,12 +295,24 @@ function process_stream_access_request($which)
             return json_error("Error querying database");
         }
 
-        return '{ "value" : "1" }';
+        return '{ "value" : "Access Requested!" }';
     }
     else
     {
+        $str = "";
+        $status = (int)$result->fetch_row()[1];
         $result->close();
-        return '{ "value" : "0" }';
+        switch($status)
+        {
+            case 0:
+                return '{ "value" : "Request Pending" }';
+            case 1:
+                return '{ "value" : "Request Approved" }';
+            case 2:
+                return '{ "value" : "Request Denied" }';
+            default:
+                return json_error("Unknown request status");
+        }
     }
 }
 

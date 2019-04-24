@@ -55,7 +55,7 @@ function json_success()
 /// </summary>
 function json_error($message)
 {
-    $message = str_replace('"', '\\"');
+    $message = str_replace('"', '\\"', $message);
     return '{ "Error" : "' . $message . '" }';
 }
 
