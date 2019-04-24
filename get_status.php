@@ -522,6 +522,10 @@ function get_playback_device($player)
     {
         $device = $device . " (" . $player["title"] . ")";
     }
+    else if (!strcmp($device, "Plex for Android") && $player["title"] && $player["vendor"])
+    {
+        $device = $player["vendor"] . " " . $player["title"];
+    }
 
     return $device;
 }
