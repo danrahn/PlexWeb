@@ -90,6 +90,14 @@ function process_request($type)
     return $message;
 }
 
+class LoginResult
+{
+    const Success = 1;
+    const IncorrectPassword = 2;
+    const BadUsername = 3;
+    const ServerError = 4;
+}
+
 /// <summary>
 /// Attempts to login, returning an error on failure
 /// </summary>
@@ -97,8 +105,12 @@ function login($username, $password)
 {
     global $db;
     $username = trim($username);
+    $ip = $db->real_escape_string($_SERVER['REMOTE_ADDR']);
+    $user_agent = $db->real_escape_string($_SERVER['HTTP_USER_AGENT']);
+
     if (empty($username) || empty($password))
     {
+        record_login($username, $ip, $user_agent, LoginResult::BadUsername);
         return json_error("Username/password cannot be empty!");
     }
 
@@ -110,32 +122,31 @@ function login($username, $password)
     $result = $db->query($query);
     if (!$result)
     {
+        record_login($normalized, $ip, $user_agent, LoginResult::ServerError);
         return json_error("Unexpected server error. Please try again");
     }
 
     if ($result->num_rows === 0)
     {
+        record_login($normalized, $ip, $user_agent, LoginResult::BadUsername);
         return json_error("User does not exist. Would you like to <a href=register.php>register</a>?");
     }
 
     $row = $result->fetch_row();
     $result->close();
-    $id = $row[0];
+    $id = (int)$row[0];
     $user = $row[1];
     $hashed_pass = $row[3];
     $level = $row[4];
 
     if (!password_verify($password, $hashed_pass))
     {
+        record_login($id, $ip, $user_agent, LoginResult::IncorrectPassword);
         return json_error("Incorrect password!");
     }
 
     session_start();
-
-    $ip = $db->real_escape_string($_SERVER['REMOTE_ADDR']);
-    $user_agent = $db->real_escape_string($_SERVER['HTTP_USER_AGENT']);
-    $query = "INSERT INTO logins (userid, ip, user_agent) VALUES ($id, '$ip', '$user_agent')";
-    $db->query($query);
+    record_login($id, $ip, $user_agent, LoginResult::Success);
     $query = "UPDATE users SET last_login=CURRENT_TIMESTAMP WHERE id=$id";
     $db->query($query);
 
@@ -145,6 +156,26 @@ function login($username, $password)
     $_SESSION['level'] = $level;
 
     return json_success();
+}
+
+/// <summary>
+/// Record a login attempt on success or failure
+/// </summary>
+function record_login($userid, $ip, $user_agent, $status)
+{
+    global $db;
+    $query = "";
+    if (is_string($userid))
+    {
+        // Invalid username that we can't map to an id - set the "invalid_username" field instead
+        $query = "INSERT INTO logins (userid, invalid_username, ip, user_agent, status) VALUES (-1, '$userid', '$ip', '$user_agent', $status)";
+    }
+    else
+    {
+        $query = "INSERT INTO logins (userid, ip, user_agent, status) VALUES ($userid, '$ip', '$user_agent', $status)";
+    }
+
+    $db->query($query);
 }
 
 /// <summary>

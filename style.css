@@ -93,6 +93,11 @@ textarea {
     min-height: 20px;
 }
 
+td textarea {
+    width: 100%;
+    min-width: 150px;
+}
+
 #suggest:hover {
     background: rgba(63, 66, 69, .3);
 }
