@@ -46,7 +46,9 @@ abstract class MediaType {
     const TVShow = 2;
     const Audiobook = 3;
     const Music = 4;
-    const Unknown = 5;
+    const Featurette = 5;
+    const Preroll = 6;
+    const Unknown = 7;
 
     /// <summary>
     /// Converts the Plex library name to its MediaType
@@ -83,6 +85,10 @@ abstract class MediaType {
                 return "Audiobook";
             case MediaType::Music:
                 return "Music";
+            case MediaType::Featurette:
+                return "Featurette";
+            case MediaType::Preroll:
+                return "Pre-Roll";
             default:
                 return "Unknown media type";
         }
@@ -238,6 +244,18 @@ function get_all_sessions()
 function build_sesh($sesh)
 {
     $sesh_type = MediaType::get_media_type($sesh['librarySectionTitle']);
+    if ($sesh_type == MediaType::Unknown)
+    {
+        if ($sesh['subtype'])
+        {
+            $sesh_type = MediaType::Featurette;
+        }
+        else if ($sesh['guid'] && strpos($sesh['guid'], "prerolls"))
+        {
+            $sesh_type = MediaType::Preroll;
+        }
+    }
+
     $slim_sesh = new \stdClass();
     $slim_sesh->media_type = MediaType::to_string($sesh_type);
 
@@ -342,6 +360,7 @@ function get_title($sesh, $type)
     switch ($type)
     {
         case MediaType::Movie:
+        case MediaType::Featurette:
             return (string)$sesh['title'];
         case MediaType::TVShow:
         {
@@ -356,6 +375,8 @@ function get_title($sesh, $type)
             return $sesh['parentTitle'] . ' by ' . $sesh['grandparentTitle'] . ': ' . $sesh['title'];
         case MediaType::Music:
             return $sesh['title'] . ' - ' . $sesh['grandparentTitle'];
+        case MediaType::Preroll:
+            return "Pre-Roll";
         default:
             return "<span style='color: red'>ERROR: Unknown MediaType</span>";
     }

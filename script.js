@@ -617,7 +617,7 @@
             "ip" : ip
         };
 
-        let successFunc = function(response, request)~
+        let successFunc = function(response, request)
         {
             const locString = ` (${response.city}, ${response.state})`;
             const ispInfo = getListItem("ISP", response.isp);
