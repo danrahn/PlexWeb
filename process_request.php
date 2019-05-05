@@ -684,6 +684,7 @@ function get_user_settings()
 /// </summary>
 function check_username($username)
 {
+    global $db;
     $check = $db->real_escape_string(strtolower(get("username")));
     $result = $db->query("SELECT username FROM users where username_normalized='$check'");
     if (!$result || $result->num_rows !== 0)
