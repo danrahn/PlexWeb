@@ -38,7 +38,7 @@ function json_error_and_exit($error)
     }
 
     header("Content-Type: application/json; charset=UTF-8");
-    echo "{\"Error\": \"" . $error . "\"}";
+    echo json_error($error);
     exit;
 }
 
@@ -55,8 +55,9 @@ function json_success()
 /// </summary>
 function json_error($message)
 {
-    $message = str_replace('"', '\\"', $message);
-    return '{ "Error" : "' . $message . '" }';
+    $err = new \stdClass();
+    $err->Error = $message;
+    return json_encode($err);
 }
 
 /// <summary>
@@ -124,6 +125,23 @@ function param_or_json_exit($param)
 function get($param)
 {
     return param_or_json_exit($param);
+}
+
+function param($param, &$value)
+{
+    if (isset($_POST[$param]))
+    {
+        $value = $_POST[$param];
+        return TRUE;
+    }
+
+    if (isset($_GET[$param]))
+    {
+        $value = $_POST[$param];
+        return TRUE;
+    }
+
+    return FALSE;
 }
 
 /// <summary>
@@ -238,6 +256,20 @@ abstract class RequestType
                 return RequestType::Music;
             default:
                 return RequestType::None;
+        }
+    }
+
+    static function is_media_request($type)
+    {
+        switch ($type)
+        {
+            case RequestType::Movie:
+            case RequestType::TVShow:
+            case RequestType::AudioBook:
+            case RequestType::Music:
+                return TRUE;
+            default:
+                return FALSE;
         }
     }
 
