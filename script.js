@@ -20,6 +20,8 @@
         }
     };
 
+    let hideTooltipTimer = null;
+
     /// <summary>
     /// On load, request the active streams (if it's running) and set up the suggestion form handlers
     /// </summary>
@@ -42,6 +44,18 @@
         }
         
         setupSuggestionForm();
+
+        $("#plexFrame").addEventListener("scroll", function(e) {
+            // On scroll, hide the tooltip (mainly for mobile devices)
+            // Add a bit of delay, as it is a bit jarring to have it immediately go away
+            if (hideTooltipTimer) {
+                clearTimeout(hideTooltipTimer);
+            }
+
+            hideTooltipTimer = setTimeout(function() {
+                $("#tooltip").style.display = "none";
+            }, 100);
+        });
 
     });
 
@@ -257,6 +271,14 @@
             {
                 // An existing session is no longer active, remove it
                 logVerbose("Attempting to remove session# " + session.id);
+
+                if ($("#" + session.id + " .progressHolder")[0].hasAttribute("hovered"))
+                {
+                    // If this is the currently hovered item, make sure we remove the tooltip,
+                    // otherwise it won't go away until another progress bar is hovered
+                    $("#tooltip").style.display = "none";
+                }
+
                 $("#" + session.id).remove();
                 existingSessions.splice(i /*index*/, 1 /*howmany*/);
                 --i;
@@ -469,6 +491,11 @@
         if (sesh.ip)
         {
             let ipId = sesh.session_id + "_ip";
+            if (sesh.ip.toLowerCase().startsWith("::ffff:"))
+            {
+                sesh.ip = sesh.ip.substring(7);
+            }
+
             list.appendChild(getListItem("IP", sesh.ip, ipId));
             getIPInfo(sesh.ip, ipId);
         }
@@ -590,12 +617,13 @@
             "ip" : ip
         };
 
-        let successFunc = function(response, request)
+        let successFunc = function(response, request)~
         {
-            const geoInfoString = `${response.city}, ${response.state} - ${response.isp}`;
-            const geoInfo = getListItem("Location", geoInfoString);
+            const locString = ` (${response.city}, ${response.state})`;
+            const ispInfo = getListItem("ISP", response.isp);
             let ipItem = document.getElementById(request.attachId);
-            ipItem.parentNode.insertBefore(geoInfo, ipItem.nextSibling);
+            ipItem.innerHTML += locString;
+            ipItem.parentNode.insertBefore(ispInfo, ipItem.nextSibling);
         };
 
         // Values that we'll append to our http object directly
@@ -833,8 +861,12 @@
     {
         if (!this.value)
         {
-            this.style.backgroundColor = "rgb(100, 66, 69)";
+            this.className = "badInput";
             return;
+        }
+        else
+        {
+            this.className = "";
         }
     }
     
@@ -844,7 +876,7 @@
     /// </summary>
     function focusInEvent()
     {
-        this.style.backgroundColor = "rgb(63, 66, 69)";
+        this.className = "";
     }
 
     /// <summary>
@@ -984,7 +1016,7 @@
 
             if (external)
             {
-                title.innerHTML = "<a href='https://imdb.com/title/" + result.id + "'>" + text + "</a>";
+                title.innerHTML = "<a href='https://imdb.com/title/" + result.id + "' target='_blank'>" + text + "</a>";
                 div.style.cursor = "pointer";
                 div.addEventListener("click", function(e)
                 {

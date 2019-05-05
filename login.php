@@ -132,8 +132,10 @@ function setupLoginForm()
 /// </summary>
 function focusOutEvent() {
     if (!this.value) {
-        this.style.backgroundColor = "rgb(100, 66, 69)";
+        this.className = "badInput";
         return;
+    } else {
+        this.className = "";
     }
 }
 
@@ -142,7 +144,7 @@ function focusOutEvent() {
 /// any background formatting
 /// </summary>
 function focusInEvent() {
-    this.style.backgroundColor = "rgb(63, 66, 69)";
+    this.className = "";
 }
 </script>
 </body>
