@@ -54,12 +54,15 @@ function write_rows()
     {
         print("<tr>");
 
+        $is_media_req = FALSE;
         for ($i = 0; $i < 8; ++$i)
         {
             switch ($i)
             {
                 case 2:
-                    print_td(RequestType::get_str($row[$i]));
+                    $req_type = $row[$i];
+                    $is_media_req = RequestType::is_media_request($req_type);
+                    print_td(RequestType::get_str($req_type));
                     break;
                 case 4:
                     if ($row[9] == $_SESSION['id'])
@@ -75,7 +78,7 @@ function write_rows()
                     if ($level == 100)
                     {
                         // If the status is pending, let admins change it
-                        print_status_options((int)$row[$i], $row[8]);
+                        print_status_options((int)$row[$i], $row[8], $is_media_req);
                     }
                     else
                     {
@@ -85,7 +88,7 @@ function write_rows()
                                 print_td("Pending");
                                 break;
                             case 1:
-                                print_td("Approved", "approved_request");
+                                print_td($is_media_req ? "Complete" : "Approved", "approved_request");
                                 break;
                             default:
                                 print_td("Denied", "denied_request");
@@ -135,11 +138,11 @@ function print_input_td($d, $rid, $idstr)
     print("<td><textarea class='$idstr' id='" . $idstr . "_" . $rid . "' maxlength=1024 placeholder='Ctrl+Enter to submit'>" . htmlspecialchars($d, ENT_QUOTES) . "</textarea></td>");
 }
 
-function print_status_options($status, $rid)
+function print_status_options($status, $rid, $is_media)
 {
     $class = ($status === 1 ? "approved_request" : ($status === 2 ? "denied_request" : ""));
     print("<td class='$class'><select class='status' name='status_$rid' id='status_" . $rid . "'>");
-    $options = ["Pending", "Approved", "Denied"];
+    $options = ["Pending", $is_media ? "Complete" : "Approved", "Denied"];
     for ($i = 0; $i < 3; ++$i)
     {
         print("<option value='$i'");
