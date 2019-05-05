@@ -18,7 +18,11 @@
     </div>
     <div id="pageName" class="navPageInfo" onclick="window.location = 'index.php'">Plex Web</div>
     <?php
-        if (isset($_SESSION['level']) && (int)$_SESSION['level'] >= 100 && $_SERVER['REQUEST_URI'] != '/plexweb/index.php') {
+        if (isset($_SESSION['level']) &&
+            (int)$_SESSION['level'] >= 100 &&
+            $_SERVER['REQUEST_URI'] != '/plexweb/index.php' &&
+            $_SERVER['REQUEST_URI'] != '/plexweb/')
+        {
             $location = $_SERVER['REQUEST_URI'];
             $start = strrpos($location, '/') + 1;
             $end = strrpos($location, '.');
