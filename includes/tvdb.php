@@ -13,7 +13,7 @@ class Episode
     private $episode;
     private $name;
     private $imdb;
-    public function __construct($data)
+    public function __construct($tvdb, $data)
     {
         if (!isset($data['data']) || count($data['data']) != 1)
         {
@@ -38,6 +38,13 @@ class Episode
         $this->episode = $data['airedEpisodeNumber'];
         $this->name = $data['episodeName'] ?? "";
         $this->imdb = $data['imdbId'] ?? "";
+
+        // If we have no imdbId, attempt to get the imdbId of the series to at
+        // least link to something
+        if (strlen($this->imdb) == 0 && isset($data['seriesId']))
+        {
+            $this->imdb = $this->getBackupId($tvdb, $data['seriesId']);
+        }
     }
 
     public function isError()
@@ -73,6 +80,20 @@ class Episode
     public function getImdbLink()
     {
         return $this->imdb;
+    }
+
+    /// <summary>
+    /// If we don't have an episode-specific IMdB id, attempt to grab the id of
+    /// the series itself to avoid 404 errors
+    /// </summary>
+    private function getBackupId($tvdb, $seriesId)
+    {
+        if (!$tvdb->ready())
+        {
+            $tvdb->login();
+        }
+
+        return $tvdb->get_series($seriesId)['imdbId'];
     }
 }
 
@@ -120,7 +141,14 @@ class Tvdb
     {
         $data = [ "airedSeason" => $season, "airedEpisode" => $episode ];
         $response = json_decode($this->apiCall('GET', 'series/' . $showId . "/episodes/query", $data), true);
-        return new Episode($response);
+        return new Episode($this, $response);
+    }
+
+    function get_series($showId)
+    {
+        $data = [];
+        $response = json_decode($this->apiCall('GET', 'series/' . $showId, $data), true);
+        return $response['data'];
     }
 
     /// <summary>
