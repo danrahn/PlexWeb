@@ -362,7 +362,7 @@ function process_request_update($kind, $content, $id)
         return json_error("Bad request");
     }
 
-    if ($level < 100 && $requester->$id != $sesh_id)
+    if ($level < 100 && $requester->id != $sesh_id)
     {
         // Only superadmins can edit all requests
         return json_error("Not authorized");
@@ -583,6 +583,7 @@ function send_notifications_if_needed($type, $requester, $req_name, $content)
     if ($requester->info->phone_alerts && $requester->info->phone != 0)
     {
         $to = "";
+        $phone = $requester->info->phone;
         switch ($requester->info->carrier)
         {
             case "verizon":
