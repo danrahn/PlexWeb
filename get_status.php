@@ -47,8 +47,9 @@ abstract class MediaType {
     const Audiobook = 3;
     const Music = 4;
     const Featurette = 5;
-    const Preroll = 6;
-    const Unknown = 7;
+    const Trailer = 6;
+    const Preroll = 7;
+    const Unknown = 8;
 
     /// <summary>
     /// Converts the Plex library name to its MediaType
@@ -89,6 +90,8 @@ abstract class MediaType {
                 return "Featurette";
             case MediaType::Preroll:
                 return "Pre-Roll";
+            case MediaType::Trailer:
+                return "Trailer";
             default:
                 return "Unknown media type";
         }
@@ -248,7 +251,7 @@ function build_sesh($sesh)
     {
         if ($sesh['subtype'])
         {
-            $sesh_type = MediaType::Featurette;
+            $sesh_type = strcmp($sesh['subtype'], "trailer") ? MediaType::Featurette : MediaType::Trailer;
         }
         else if ($sesh['guid'] && strpos($sesh['guid'], "prerolls"))
         {
@@ -377,6 +380,13 @@ function get_title($sesh, $type)
             return $sesh['title'] . ' - ' . $sesh['grandparentTitle'];
         case MediaType::Preroll:
             return "Pre-Roll";
+        case MediaType::Trailer:
+            // Don't prepend 'trailer' if it's already in the title
+            if (strpos(strtolower((string)$sesh['title']), "trailer") === FALSE)
+            {
+                return "Trailer - " . (string)$sesh['title'];
+            }
+            return (string)$sesh['title'];
         default:
             return "<span style='color: red'>ERROR: Unknown MediaType</span>";
     }
