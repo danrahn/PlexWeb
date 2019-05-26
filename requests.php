@@ -190,13 +190,95 @@ function print_status_options($status, $rid, $is_media)
     {
         logVerbose("Updating all items");
         let comments = document.querySelectorAll(".usr_cm, .adm_cm, .status");
+        let newUpdateMethod = <?php if ($_SESSION['level'] < 100) { echo 'false'; } else { echo 'true'; } ?>;
+        let data = { "type" : "req_update", "data" : [] };
+        let attachedElements = [];
+        let submittedValues = [];
         for (let i = 0; i < comments.length; ++i)
         {
             if (comments[i].getAttribute("modified") === "true")
             {
-                updateRequest(comments[i], comments[i].id.substring(7), comments[i].className);
+                if (newUpdateMethod)
+                {
+                    comments[i].setAttribute("modified", "false");
+                    data.data.push({ "id" : comments[i].id.substring(7), "kind" : comments[i].className, "content" : comments[i].value });
+                    attachedElements.push(comments[i]);
+                    submittedValues.push(comments[i].value);
+                }
+                else
+                {
+                    updateRequest(comments[i], comments[i].id.substring(7), comments[i].className);
+                }
             }
         }
+
+        if (newUpdateMethod)
+        {
+            logInfo(data, true);
+            batchUpdate(data, attachedElements, submittedValues);
+        }
+    }
+
+    /// <summary>
+    /// Update multiple items at once, sending a single batched notification instead of multiple separate ones
+    /// </summary>
+    function batchUpdate(data, elements, submittedValues)
+    {
+        let http = new XMLHttpRequest();
+        http.open("POST", "update_request.php", true);
+        http.setRequestHeader("Content-type", "application/json; charset=UTF-8");
+        http.attachedElements = elements;
+        http.submittedValues = submittedValues;
+        http.onreadystatechange = function() {
+            if (this.readyState != 4 || this.status != 200) {
+                logVerbose(this.readyState + " - " + this.status);
+                return;
+            }
+
+            let response;
+            try {
+                response = JSON.parse(this.responseText);
+                if (response.Error) {
+                    logError(response.Error);
+                }
+                logVerbose(response, true);
+            } catch (ex) {
+                logError(ex, true);
+                logError(this.responseText);
+                return;
+            }
+
+            if (!response.Success)
+            {
+                logVerbose("No success!");
+                for (let i = 0; i < this.attachedElements.length; ++i)
+                {
+                    this.attachedElements[i].setAttribute("modified", "true");
+                }
+            }
+
+            const bgColor = response.Success ? new Color(63, 100, 69) : new Color(100, 66, 69);
+            for (let i = 0; i < this.attachedElements.length; ++i)
+            {
+                if (this.attachedElements[i].getAttribute("modified") === "true") {
+                    continue;
+                }
+
+                Animation.queue({ "backgroundColor" : bgColor }, this.attachedElements[i], 500);
+                if (response.Success) {
+                    initialValues[this.attachedElements[i].id] = this.submittedValues[i];
+
+                    const oldBg = new Color(63, 66, 69);
+                    setTimeout(function(ele, oldBg) {
+                        if (ele.getAttribute("modified") != "true") {
+                            Animation.queue({"backgroundColor" : oldBg}, ele, 500);
+                        }
+                    }, 1000, this.attachedElements[i], oldBg);
+                }
+            }
+        }
+
+        http.send(JSON.stringify(data));
     }
 
     function updateRequest(element, reqId, requestType, field="value")
@@ -236,7 +318,7 @@ function print_status_options($status, $rid, $is_media)
             if (!response.Success)
             {
                 // Reset the modified flag so we can retry
-                element.setAttribute("modified", "true");
+                this.attachedElement.setAttribute("modified", "true");
             }
 
             if (this.attachedElement.getAttribute("modified") === "true")
