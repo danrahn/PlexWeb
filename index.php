@@ -90,13 +90,13 @@ function plexOk()
             <div class="formTitle">Media Request</div>
             <form id="suggestForm" action="javascript:void(0);">
                 <hr />
-                <div class="formInput"><label for="name">Suggestion:</label><input type="text" name="name" id="name" maxlength=64></div>
                 <div class="formInput"><label for="type">Suggestion Type: </label><select name="type" id="type">
                     <option value="movie">Movie</option>
                     <option value="tv">TV Show</option>
                     <option value="audiobook">Audiobook</option>
                     <option value="music">Music</option>
-                </select></div><hr />
+                </select></div>
+                <div class="formInput"><label for="name">Suggestion:</label><input type="text" name="name" id="name" maxlength=64></div><hr />
                 <div id="suggestions">
                     <div id="outsideSuggestions">
                         <h4>Matches</h4>

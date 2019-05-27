@@ -845,7 +845,58 @@ function search_external($query, $kind)
 
     if ($type != RequestType::Movie && $type != RequestType::TVShow)
     {
-        return json_error("Only Movie and TV shows supported ATM");
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, "https://www.audible.com/search?keywords=" . $query);
+        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        $text = curl_exec($ch);
+        curl_close($ch);
+        $find = strpos($text, "productListItem");
+        if ($find === FALSE)
+        {
+            $obj = new \stdClass();
+            $obj->length = 0;
+            $obj->top = array();
+            return json_encode($obj);
+        }
+
+        $results = array();
+        while ($find !== FALSE && sizeof($results) < 5)
+        {
+            $title_start = strpos($text, "aria-label='", $find) + 12;
+            $title_end = strpos($text, "'", $title_start);
+            $title = substr($text, $title_start, $title_end - $title_start);
+
+            $ref_find = strpos($text, "bc-color-link", $title_end);
+            $ref_start = strpos($text, "href=\"", $ref_find) + 6;
+            $ref_end = strpos($text, "\"", $ref_start);
+            $ref = "https://audible.com" . substr($text, $ref_start, $ref_end - $ref_start);
+
+            $img_find = strpos($text, "bc-image-inset-border", $find);
+            $img_start = strpos($text, "src=", $img_find) + 5;
+            $img_end = strpos($text, "\"", $img_start);
+            $img = substr($text, $img_start, $img_end - $img_start);
+
+            $rel_start = strpos($text, "Release date:", $img_find) + 13;
+            $rel_end = strpos($text, "</span", $rel_start);
+            $rel = str_replace("\n", "", str_replace(" ", "", substr($text, $rel_start, $rel_end - $rel_start)));
+
+            $item = new \stdClass();
+            $item->title = $title;
+            $item->year = $rel;
+            $item->thumb = $img;
+            $item->id = $ref;
+
+            array_push($results, $item);
+
+            $find = strpos($text, "productListItem", $rel_end);
+        }
+
+        $final_obj = new \stdClass();
+        $final_obj->length = sizeof($results);
+        $final_obj->top = $results;
+
+        return json_encode($final_obj);
     }
 
     $url = "https://v2.sg.media-imdb.com/suggests/" . urlencode($letter) . "/" . urlencode($query) . ".json";
@@ -893,7 +944,7 @@ function search_external($query, $kind)
             $item->title = $result['l'];
             $item->year = $result['y'];
             $item->thumb = $result['i'][0];
-            $item->id = $result['id'];
+            $item->id = "https://imdb.com/title/" . $result['id'];
             array_push($results, $item);
 
             if (sizeof($results) == 5)

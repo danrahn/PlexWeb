@@ -851,6 +851,22 @@
 
         name.addEventListener("input", onSuggestionInput);
         type.addEventListener("change", onSuggestionInput);
+        type.addEventListener("change", removeAllSuggestions);
+    }
+
+    function removeAllSuggestions()
+    {
+        let categories = ["#outsideSuggestions", "#existingSuggestions"];
+        for (let i = 0; i < categories.length; ++i)
+        {
+            let suggestions = $(categories[i]);
+            while (suggestions.children.length > 1)
+            {
+                suggestions.removeChild(suggestions.children[suggestions.children.length - 1]);
+            }
+
+            suggestions.style.display = "none";
+        }
     }
 
     /// <summary>
@@ -894,7 +910,7 @@
 
     /// <summary>
     /// Search the plex database for the given suggestion, returning the most
-    /// relevant results and subsequently triggering an external IMDb search
+    /// relevant results and subsequently triggering an external IMDb/Audible search
     /// </summary>
     function searchSuggestion()
     {
@@ -933,16 +949,15 @@
     }
 
     /// <summary>
-    /// Trigger an external query that will grab IMDb results based on the current suggestion
+    /// Trigger an external query that will grab IMDb or Audible results based on the current suggestion
     /// </summary>
     function searchExternal()
     {
         let name = $("input[name='name']")[0];
         let type = $("select[name='type']")[0];
 
-        if (type.value != "movie" && type.value != "tv")
+        if (type.value != "movie" && type.value != "tv" && type.value != "audiobook")
         {
-            // Only search for movies and tv shows for now (imdb)
             return;
         }
          
@@ -959,7 +974,7 @@
     }
 
     /// <summary>
-    /// Build a list of either internal (plex) or external (imdb) suggestions
+    /// Build a list of either internal (plex) or external (imdb/Audible) suggestions
     /// </summary>
     function buildItems(id, results)
     {
@@ -1016,7 +1031,7 @@
 
             if (external)
             {
-                title.innerHTML = "<a href='https://imdb.com/title/" + result.id + "' target='_blank'>" + text + "</a>";
+                title.innerHTML = "<a href='" + result.id + "' target='_blank'>" + text + "</a>";
                 div.style.cursor = "pointer";
                 div.addEventListener("click", function(e)
                 {
