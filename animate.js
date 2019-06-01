@@ -62,13 +62,35 @@ let A = function()
         }
 
         logTmi("Firing animation for " + element.id + " immediately");
+        animationQueue[element.id][0].timers = [];
         for (let i = 0; i < animations.length; ++i)
         {
-            setTimeout(function(func, element, prop, ...args) {
+            animationQueue[element.id][0].timers.push(setTimeout(function(func, element, prop, ...args) {
                 func(element, prop, ...args);
-            }, delay, animations[i].func, element, animations[i].prop, ...animations[i].args);
+            }, delay, animations[i].func, element, animations[i].prop, ...animations[i].args));
         }
     };
+
+    /// <summary>
+    /// Immediately stop any active animations and queues this one to be fired
+    /// </summary>
+    this.fireNow = function(func, element, ...args)
+    {
+        let queue = animationQueue[element.id];
+        if (queue)
+        {
+            for (let i = 0; i < queue[0].timers.length; ++i)
+            {
+                clearTimeout(queue[0].timers[i]);
+            }
+
+            // Otherwise splice out everything except what's currently firing
+            queue = queue.splice(0, 1);
+            queue[0].canceled = true;
+        }
+
+        this.queue(func, element, ...args);
+    }
 
     // Our animation queue allows us to keep track of the current animations that are pending execution
     let animationQueue = {};
@@ -86,15 +108,16 @@ let A = function()
 
     /// <summary>
     /// Should only be called after an animation completes. Removes the current
-    /// animation from the queue and firest the next one if applicable
+    /// animation from the queue and fires the next one if applicable
     /// </summary>
     let fireNext = function(element)
     {
-        animationQueue[element.id][0].shift();
-        if (animationQueue[element.id][0].length == 0)
+    	let queue = animationQueue[element.id];
+        queue[0].shift();
+        if (queue[0].length == 0)
         {
             // Clear it from our dictionary to save some space
-            animationQueue[element.id].shift();
+            queue.shift();
         }
         else
         {
@@ -102,16 +125,17 @@ let A = function()
             return;
         }
 
-        if (animationQueue[element.id].length == 0)
+        if (queue.length == 0)
         {
             delete animationQueue[element.id];
         }
         else
         {
-            let nextAnimations = animationQueue[element.id][0];
+            let nextAnimations = queue[0];
+            nextAnimations.timers = [];
             for (let i = 0; i < nextAnimations.length; ++i)
             {
-                setTimeout(function(element, nextAnimation) {
+                nextAnimations.timers[i] = setTimeout(function(element, nextAnimation) {
                     nextAnimation.func(element, nextAnimation.prop, ...nextAnimation.args);
                 }, nextAnimations[i].delay, element, nextAnimations[i]);
             }
@@ -161,8 +185,13 @@ let A = function()
 
                     logTmi("Animating " + prop + " of " + element.id + " from " + oldColor.toString() + " to " + newColor.toString() + " in " + duration + "ms");
 
-                    let animationFunc = function(element, oldColor, newColor, i, steps, prop, deleteAfterTransition)
+                    let animationFunc = function(func, element, oldColor, newColor, i, steps, prop, deleteAfterTransition)
                     {
+                        if (animationQueue[element.id][0].canceled)
+                        {
+                            i = steps;
+                        }
+
                         element.style[prop] = new Color(
                             oldColor.r + (((newColor.r - oldColor.r) / steps) * i),
                             oldColor.g + (((newColor.g - oldColor.g) / steps) * i),
@@ -179,12 +208,14 @@ let A = function()
                             // Always need to call this once a particular animation is done!
                             fireNext(element);
                         }
+                        else
+                        {
+                            setTimeout(func, 50 / 3, func, element, oldColor, newColor, i + 1, steps, prop, deleteAfterTransition);
+                        }
                     };
 
-                    for (var i = 1; i <= steps; i++)
-                    {
-                        setTimeout(animationFunc, (50 / 3) * i, element, oldColor, newColor, i, steps, prop, deleteAfterTransition);
-                    }
+
+                    setTimeout(animationFunc, 50 / 3, animationFunc, element, oldColor, newColor, 1, steps, prop, deleteAfterTransition);
                 };
             case "opacity":
             case "left":
@@ -203,8 +234,13 @@ let A = function()
                     }
 
                     logTmi("Animating " + prop + " of " + element.id + " from " + oldVal + " to " + newVal + " in " + duration + "ms");
-                    let animationFunc = function(element, prop, oldVal, newVal, percent, px, i, steps, deleteAfterTransition)
+                    let animationFunc = function(func, element, prop, oldVal, newVal, percent, px, i, steps, deleteAfterTransition)
                     {
+                        if (animationQueue[element.id][0].canceled)
+                        {
+                            i = steps;
+                        }
+
                         element.style[prop] = oldVal + (((newVal - oldVal) / steps) * i) + (percent ? "%" : px ? "px" : "");
                         if (i == steps)
                         {
@@ -216,20 +252,21 @@ let A = function()
                             // Always need to call this once a particular animation is done!
                             fireNext(element);
                         }
+                        else
+                        {
+                            setTimeout(func, 50 / 3, func, element, prop, oldVal, newVal, percent, px, i + 1, steps, deleteAfterTransition);
+                        }
                     };
 
-                    for (var i = 1; i <= steps; i++)
-                    {
-                        setTimeout(animationFunc, (50 / 3) * i, element, prop, oldVal, newVal, percent, px, i, steps, deleteAfterTransition);
-                    }
+                    setTimeout(animationFunc, 50 / 3, animationFunc, element, prop, oldVal, newVal, percent, px, 1, steps, deleteAfterTransition);
                 };
             case "display":
-            	return function(element, prop, newValue)
-            	{
-            		// Not really an animation, but being able to queue this is nice
-            		element.style.display = newValue;
-            		fireNext(element);
-            	};
+                return function(element, prop, newValue)
+                {
+                    // Not really an animation, but being able to queue this is nice
+                    element.style.display = newValue;
+                    fireNext(element);
+                };
             default:
                 logError("Bad:" + func);
                 return;

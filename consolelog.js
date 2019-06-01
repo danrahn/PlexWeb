@@ -14,13 +14,13 @@ const g_levelColors = [
     ["#B74BDB", "inherit", "inherit"],
     ["#88C", "inherit", "inherit"],
     ["#E50", "inherit", "inherit"],
-    ["inherit", "#800", "#C88"],
+    ["inherit", "inherit", "inherit"],
     ["inherit", "#800; font-size: 2em", "#C33; font-size: 2em"]
 ];
 
 let g_logLevel = parseInt(sessionStorage.getItem("loglevel"));
 if (isNaN(g_logLevel)) {
-    g_logLevel = LOG.Warn;
+    g_logLevel = LOG.Info;
 }
 
 let g_darkConsole = parseInt(sessionStorage.getItem("darkconsole"));
