@@ -10,12 +10,13 @@ const LOG = {
 
 const g_logStr = ["TMI", "VERBOSE", "INFO", "WARN", "ERROR", "CRITICAL"];
 const g_levelColors = [
-    ["#00CC00", "#AAA", "#666"],
-    ["#B74BDB", "inherit", "inherit"],
+    ["#00CC00", "#AAA", "#888"],
+    ["#c661e8", "inherit", "inherit"],
     ["#88C", "inherit", "inherit"],
     ["#E50", "inherit", "inherit"],
     ["inherit", "inherit", "inherit"],
-    ["inherit", "#800; font-size: 2em", "#C33; font-size: 2em"]
+    ["inherit; font-size: 2em", "#800; font-size: 2em", "#C33; font-size: 2em"],
+    ["#009900", "#AAA", "#888"]
 ];
 
 let g_logLevel = parseInt(sessionStorage.getItem("loglevel"));
@@ -70,26 +71,32 @@ function log(text, level, isObject = false) {
         return;
     }
 
-    if (g_logLevel === LOG.Extreme) {
-        console.log("%c[TMI] " + "%cCalled log with (" + text + ", " + level + ", " + isObject + ")",
-            "color: " + g_levelColors[0][0],
-            "color: " + g_levelColors[0][g_darkConsole ? 2 : 1]);
+    const print = function(output, text, level)
+    {
+        textColor = `color: ${g_levelColors[level][g_darkConsole ? 2 : 1]}`;
+        titleColor = `color: ${g_levelColors[level][0]}`;
+        output(text, textColor, titleColor, textColor, titleColor, textColor);
     }
 
-    let output;
-    if (level < LOG.Warn) {
-        output = console.log;
-    } else if (level < LOG.Error) {
-        output = console.warn;
-    } else {
-        output = console.error;
+    let d = getTimestring();
+    if (g_logLevel === LOG.Extreme) {
+        print(console.log, `%c[%cEXTREME%c][%c${d}%c] Called log with (${text}, ${level}, ${isObject})`, 6);
     }
+
+    let output = level < LOG.Warn ? console.log : level < LOG.Error ? console.warn : console.error;
+    print(output, `%c[%c${g_logStr[level]}%c][%c${d}%c]${isObject ? '' : ' ' + text}`, level);
 
     if (isObject) {
         // If we want to output an object directly (dict, array, element), don't format it
-        output("%c[" + g_logStr[level] + "]", "color : " + g_levelColors[level][0]);
         output(text);
-    } else {
-        output("%c[" + g_logStr[level] + "] " + "%c" + text, "color : " + g_levelColors[level][0], "color : " + g_levelColors[level][g_darkConsole ? 2 : 1]);
+    }
+
+    function getTimestring() {
+        let z = function(n,x=2) {
+            return ('00' + n).substr(-x);
+        }
+
+        let d = new Date();
+        return `${d.getFullYear()}.${z(d.getMonth()+1)}.${z(d.getDate())} ${z(d.getHours())}:${z(d.getMinutes())}:${z(d.getSeconds())}.${z(d.getMilliseconds(),3)}`;
     }
 }
