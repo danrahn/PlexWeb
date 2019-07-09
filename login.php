@@ -90,7 +90,7 @@ function setupLoginForm()
                 if (response["Error"]) {
                     status.className = "formContainer statusFail";
                     status.innerHTML = response["Error"];
-                    Animation.queue({"opacity" : 1}, status, 500);
+                    Animation.fireNow({"opacity" : 1}, status, 500);
                     Animation.queueDelayed({"opacity" : 0}, status, 5000, 1000);
                     return;
                 }

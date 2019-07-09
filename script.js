@@ -852,8 +852,12 @@
         name.addEventListener("input", onSuggestionInput);
         type.addEventListener("change", onSuggestionInput);
         type.addEventListener("change", removeAllSuggestions);
+        type.addEventListener("change", setExternalId);
     }
 
+    /// <summary>
+    /// Removes all current search suggestions
+    /// </summary>
     function removeAllSuggestions()
     {
         let categories = ["#outsideSuggestions", "#existingSuggestions"];
@@ -866,6 +870,28 @@
             }
 
             suggestions.style.display = "none";
+        }
+    }
+
+    function setExternalId()
+    {
+        logInfo("Type changed to " + $("#type").value);
+        $("#externalid").value = "";
+        $("#externalIdHolder").style.display = "none";
+        let label = $("label[for='externalid']")[0];
+        switch ($("#type").value)
+        {
+            case "movie":
+            case "tv":
+                label.innerHTML = "IMDb Id:";
+                break;
+            case "audiobook":
+                label.innerHTML = "Audible Id:";
+                break;
+            default:
+                label.innerHTML = "";
+                break;
+
         }
     }
 
@@ -919,10 +945,13 @@
         let suggestion = name.value.replace("&", "%26");
         if (!suggestion)
         {
+            $("#externalIdHolder").style.display = "none";
             buildItems("existingSuggestions", {"length": 0});
             buildItems("outsideSuggestions", {"length": 0});
             return;
         }
+
+        // $("#externalIdHolder").style.display = "block";
             
         let parameters =
         {
@@ -1023,6 +1052,7 @@
             div.setAttribute("title", result.title.replace("'", ""));
             div.setAttribute("realtitle", result.title);
             div.setAttribute("year", result.year);
+            div.setAttribute("externalid", result.id);
             let img = document.createElement("img");
             img.src = result.thumb;
             img.className = "suggestionImg";
@@ -1031,11 +1061,13 @@
 
             if (external)
             {
-                title.innerHTML = "<a href='" + result.id + "' target='_blank'>" + text + "</a>";
+                title.innerHTML = "<a href='" + result.ref + "' target='_blank'>" + text + "</a>";
                 div.style.cursor = "pointer";
                 div.addEventListener("click", function(e)
                 {
+                    logVerbose("Clicked " + this.getAttribute("realtitle"));
                     $("input[name='name']")[0].value = this.getAttribute("realtitle");
+                    $("input[name='externalid']")[0].value = this.getAttribute("externalid");
                     searchSuggestion();
                 });
             }

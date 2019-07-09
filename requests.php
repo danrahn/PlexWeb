@@ -37,11 +37,11 @@ function write_rows()
     if ($level != 100)
     {
         // Only level 100 sees every request
-        $query = "SELECT request_date, u.username AS username, request_type, request_name, comment, satisfied, satisfied_date, admin_comment, user_requests.id, u.id FROM user_requests INNER JOIN users u ON user_requests.username_id=u.id WHERE user_requests.username_id=$id";
+        $query = "SELECT request_date, u.username AS username, request_type, request_name, comment, satisfied, satisfied_date, admin_comment, user_requests.id, u.id FROM user_requests INNER JOIN users u ON user_requests.username_id=u.id WHERE user_requests.username_id=$id ORDER BY request_date DESC";
     }
     else
     {
-        $query = "SELECT request_date, u.username AS username, request_type, request_name, comment, satisfied, satisfied_date, admin_comment, user_requests.id, u.id FROM user_requests INNER JOIN users u ON user_requests.username_id=u.id";
+        $query = "SELECT request_date, u.username AS username, request_type, request_name, comment, satisfied, satisfied_date, admin_comment, user_requests.id, u.id FROM user_requests INNER JOIN users u ON user_requests.username_id=u.id ORDER BY request_date DESC";
     }
 
     $result = $db->query($query);

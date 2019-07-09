@@ -865,12 +865,15 @@ function search_external($query, $kind)
         {
             $title_start = strpos($text, "aria-label='", $find) + 12;
             $title_end = strpos($text, "'", $title_start);
-            $title = substr($text, $title_start, $title_end - $title_start);
+            $title = html_entity_decode(substr($text, $title_start, $title_end - $title_start), ENT_QUOTES | ENT_HTML5);
 
             $ref_find = strpos($text, "bc-color-link", $title_end);
             $ref_start = strpos($text, "href=\"", $ref_find) + 6;
-            $ref_end = strpos($text, "\"", $ref_start);
+            $ref_end = strpos($text, "?", $ref_start);
             $ref = "https://audible.com" . substr($text, $ref_start, $ref_end - $ref_start);
+
+            $id_start = strrpos($ref, "/") + 1;
+            $id = substr($ref, $id_start);
 
             $img_find = strpos($text, "bc-image-inset-border", $find);
             $img_start = strpos($text, "src=", $img_find) + 5;
@@ -885,7 +888,8 @@ function search_external($query, $kind)
             $item->title = $title;
             $item->year = $rel;
             $item->thumb = $img;
-            $item->id = $ref;
+            $item->id = $id;
+            $item->ref = $ref;
 
             array_push($results, $item);
 
@@ -944,7 +948,8 @@ function search_external($query, $kind)
             $item->title = $result['l'];
             $item->year = $result['y'];
             $item->thumb = $result['i'][0];
-            $item->id = "https://imdb.com/title/" . $result['id'];
+            $item->id = $result['id'];
+            $item->ref = "https://imdb.com/title/" . $result['id'];
             array_push($results, $item);
 
             if (sizeof($results) == 5)

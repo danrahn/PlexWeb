@@ -49,7 +49,7 @@ input[type=checkbox]:focus {
 }
     </style>
     <script src="resource/consolelog.js"></script>
-    <script src="resource/animate.js"></script>
+    <script src="resource/min/animate.min.js"></script>
 </head>
 <body>
 <div id="plexFrame">

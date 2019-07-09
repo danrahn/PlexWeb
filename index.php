@@ -65,7 +65,7 @@ function get_username()
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#3C5260" />
     <script src="resource/consolelog.js"></script>
-    <script src="resource/animate.js"></script>
+    <script src="resource/min/animate.min.js"></script>
     <title>Plex Status</title>
 </head>
 <body>
@@ -96,7 +96,8 @@ function plexOk()
                     <option value="audiobook">Audiobook</option>
                     <option value="music">Music</option>
                 </select></div>
-                <div class="formInput"><label for="name">Suggestion:</label><input type="text" name="name" id="name" maxlength=64></div><hr />
+                <div class="formInput"><label for="name">Suggestion:</label><input type="text" name="name" id="name" maxlength=64></div>
+                <div class="formInput" id="externalIdHolder" style="display: none"><label for="externalid">IMDb Id:</label><input type="text" name="externalid" id="externalid" maxLength=64></div><hr />
                 <div id="suggestions">
                     <div id="outsideSuggestions">
                         <h4>Matches</h4>
