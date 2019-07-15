@@ -274,7 +274,8 @@ function build_sesh($sesh)
         $slim_sesh->art_path = 'art' . $sesh['art'];
     }
 
-    $slim_sesh->thumb_path = 'thumb' . ($sesh_type == MediaType::TVShow ? $sesh['parentThumb'] : $sesh['thumb']);
+    $slim_sesh->thumb_path = 'thumb' . ($sesh_type == MediaType::TVShow ? ($sesh['parentThumb'] ? $sesh['parentThumb'] : $sesh['grandparentThumb']) : $sesh['thumb']);
+    if ($slim_sesh->thumb_path)
     $slim_sesh->duration = (int)$sesh['duration'];
     $slim_sesh->progress = (int)$sesh['viewOffset'];
     $slim_sesh->release_date = MediaType::is_audio($sesh_type) ? (string)$parent['originallyAvailableAt'] : (string)$sesh['originallyAvailableAt'];

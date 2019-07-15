@@ -15,15 +15,16 @@ function fill_request_table()
 
 function write_headers()
 {
+    $new_style = true;
     print("<tr>");
-    print_th("Request Date");
+    print_th("Request Name");
     print_th("User");
     print_th("Request Type");
-    print_th("Request Name");
-    print_th("Request Comment");
     print_th("Status");
+    print_th("Request Date");
+    if (!$new_style) print_th("Request Comment");
     print_th("Last Updated");
-    print_th("Admin Comment");
+    if (!$new_style) print_th("Admin Comment");
     print("</tr>");
 }
 
@@ -31,17 +32,19 @@ function write_rows()
 {
     global $db;
 
+    $new_style = true;
+
     $query = "";
     $id = (int)$_SESSION['id'];
     $level = (int)$_SESSION['level'];
     if ($level != 100)
     {
         // Only level 100 sees every request
-        $query = "SELECT request_date, u.username AS username, request_type, request_name, comment, satisfied, satisfied_date, admin_comment, user_requests.id, u.id FROM user_requests INNER JOIN users u ON user_requests.username_id=u.id WHERE user_requests.username_id=$id ORDER BY request_date DESC";
+        $query = "SELECT request_name, u.username AS username, request_type, satisfied, request_date, comment, satisfied_date, admin_comment, user_requests.id, u.id FROM user_requests INNER JOIN users u ON user_requests.username_id=u.id WHERE user_requests.username_id=$id ORDER BY request_date DESC";
     }
     else
     {
-        $query = "SELECT request_date, u.username AS username, request_type, request_name, comment, satisfied, satisfied_date, admin_comment, user_requests.id, u.id FROM user_requests INNER JOIN users u ON user_requests.username_id=u.id ORDER BY request_date DESC";
+        $query = "SELECT request_name, u.username AS username, request_type, satisfied, request_date, comment, satisfied_date, admin_comment, user_requests.id, u.id FROM user_requests INNER JOIN users u ON user_requests.username_id=u.id ORDER BY request_date DESC";
     }
 
     $result = $db->query($query);
@@ -54,27 +57,26 @@ function write_rows()
     {
         print("<tr>");
 
-        $is_media_req = FALSE;
+        $is_media_req = RequestType::is_media_request($row[2]);
         for ($i = 0; $i < 8; ++$i)
         {
             switch ($i)
             {
-                case 2:
-                    $req_type = $row[$i];
-                    $is_media_req = RequestType::is_media_request($req_type);
-                    print_td(RequestType::get_str($req_type));
-                    break;
-                case 4:
-                    if ($row[9] == $_SESSION['id'])
-                    {
-                        print_input_td($row[4], $row[8], "usr_cm");
-                    }
-                    else
+                case 0:
+                    if (!$is_media_req)
                     {
                         print_td($row[$i]);
                     }
+                    else
+                    {
+                        print_td("<a href='request.php?id=" . $row[8] . "'>" . $row[$i] . '</a>');
+                    }
                     break;
-                case 5:
+                case 2:
+                    $req_type = $row[$i];
+                    print_td(RequestType::get_str($req_type));
+                    break;
+                case 3:
                     if ($level == 100)
                     {
                         // If the status is pending, let admins change it
@@ -96,11 +98,29 @@ function write_rows()
                         }
                     }
                     break;
+                case 5:
+                    if ($new_style)
+                    {
+                        break;
+                    }
+                    if ($row[9] == $_SESSION['id'])
+                    {
+                        print_input_td($row[4], $row[8], "usr_cm");
+                    }
+                    else
+                    {
+                        print_td($row[$i]);
+                    }
+                    break;
                 case 6:
                     print_td($row[6] == $row[0] ? "N/A" : $row[6]);
                     break;
                 case 7:
-                    if ($level == 100)
+                    if ($new_style)
+                    {
+                        break;
+                    }
+                    else if ($level == 100)
                     {
                         print_input_td($row[7], $row[8], "adm_cm"); // Row 8 == request id
                         break;

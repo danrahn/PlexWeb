@@ -26,6 +26,14 @@ tr:hover {
     background-color: rgba(0,0,0,0.2);
 }
 
+a {
+    color: #80A020;
+}
+
+a:hover {
+    color: #608020;
+}
+
 .approved_request {
     background-color: rgb(63, 100, 69);
 }

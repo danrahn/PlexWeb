@@ -18,9 +18,7 @@
     </div>
     <div id="pageName" class="navPageInfo" onclick="window.location = 'index.php'">Plex Web</div>
     <?php
-        if (isset($_SESSION['level']) &&
-            (int)$_SESSION['level'] >= 100 &&
-            $_SERVER['REQUEST_URI'] != '/plexweb/index.php' &&
+        if ($_SERVER['REQUEST_URI'] != '/plexweb/index.php' &&
             $_SERVER['REQUEST_URI'] != '/plexweb/')
         {
             $location = $_SERVER['REQUEST_URI'];
@@ -28,8 +26,12 @@
             $end = strrpos($location, '.');
             $location = ucwords(str_replace('_', ' ', substr($location, $start, $end - $start)));
     ?>
+    <?php if ($location == "Request") {?>
     <div class="navPageInfo">&#x2192;</div>
-    <div id="pageDetail" class="navPageInfo" onclick="window.location = '<?= $_SERVER['REQUEST_URI'] ?>'"><?= $location ?></div>
+    <div class="navPageInfo pageDetail" onclick="window.location = 'requests.php'">Requests</div>
+    <?php } ?>
+    <div class="navPageInfo">&#x2192;</div>
+    <div class="navPageInfo pageDetail" onclick="window.location = '<?= $_SERVER['REQUEST_URI'] ?>'"><?= $location ?></div>
     <?php } ?>
 </div>
 </div>
@@ -37,6 +39,10 @@
     <div class="navButton" onclick="window.location = 'index.php'">
         <div class=btntxt>Home</div>
         <div class=btnimg><image src='resource/home.png' alt='Home' style='filter: invert(80%);'/></div>
+    </div>
+    <div class="navButton rightbutton" onclick="window.location = 'new_request.php'">
+        <div class=btntxt>New Request</div>
+        <div class=btnimg><image src='resource/new_request.png' alt='NewRequest' style='filter: invert(80%);'/></div>
     </div>
 <?php if (isset($_SESSION['level']) && (int)$_SESSION['level'] >= 100) { ?>
     <div class="navButton" onclick="window.location = 'members.php'">

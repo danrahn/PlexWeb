@@ -40,7 +40,7 @@ h1, h2, h3 {
     color: rgb(192, 189, 186);
 }
 
-.formContainer a {
+.formContainer a, #newRequestLink, #newRequestLink:visited {
     color: #80A020;
 }
 
@@ -48,8 +48,13 @@ h1, h2, h3 {
     color: #80A020;
 }
 
-.formContainer a:hover {
+.formContainer a:hover, #newRequestLink:hover {
     color: #608020;
+}
+
+#newRequestLink {
+    margin-top: 50px;
+    display: block;
 }
 
 #formStatus {
@@ -113,7 +118,7 @@ input, select, textarea {
 input, select, textarea {
     border-radius: 5px;
     padding: 2px;
-    border: 1px solid #2e2e2e;
+    border: 1px solid rgb(83, 87, 90);
     background-color: rgba(63, 66, 69);
     color: rgb(192, 189, 186);
     outline: none;
@@ -146,7 +151,7 @@ input[type=checkbox]:checked:hover {
 }
 
 hr {
-    border: 1px solid rgb(63, 66, 69);
+    border: 1px solid rgb(83, 87, 90);
 }
 
 .formInput:hover {
@@ -644,7 +649,7 @@ hr {
     font-size: 14pt;
 }
 
-#pageName, #pageDetail {
+#pageName, .pageDetail {
     cursor: pointer;
 }
 
@@ -652,11 +657,11 @@ hr {
     padding: 0 5px 0 10px;
 }
 
-#pageDetail {
+.pageDetail {
     padding: 0 10px 0 5px;
 }
 
-#pageName:hover, #pageDetail:hover {
+#pageName:hover, .pageDetail:hover {
     color: #a1a1a1;
 }
 

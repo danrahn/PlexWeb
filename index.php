@@ -86,6 +86,7 @@ function plexOk()
         <div id="mediaentries">
         </div>
         <div id="invalid">Please fill out all fields!</div>
+        <?php if (FALSE) { ?>
         <div id="suggest" class="formContainer">
             <div class="formTitle">Media Request</div>
             <form id="suggestForm" action="javascript:void(0);">
@@ -111,6 +112,9 @@ function plexOk()
             </form>
             <a href="user_settings.php">Change notification settings</a>
         </div>
+        <?php } else { ?>
+            <h2><a href="new_request.php" id="newRequestLink">&gt; New Media Request &lt;</a></h2>
+        <?php } ?>
         <div id="formStatus" class="formContainer"></div>
     </div>
     <div id="tooltip"></div>

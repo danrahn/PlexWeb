@@ -46,6 +46,9 @@ function process_request($type)
         case "request":
             $message = process_suggestion(get("name"), get("mediatype"), get("comment"));
             break;
+        case "request_new":
+            $message = process_suggestion_new(get("name"), get("mediatype"), get("external_id"));
+            break;
         case "pr": // pr === permission_request
             $message = process_permission_request();
             break;
@@ -82,6 +85,15 @@ function process_request($type)
             break;
         case "geoip":
             $message = get_geo_ip(get("ip"));
+            break;
+        case "set_external_id":
+            $message = set_external_id((int)get("req_id"), (int)get("id"));
+            break;
+        case "add_comment":
+            $message = add_request_comment((int)get("req_id"), get("content"));
+            break;
+        case "get_comments":
+            $message = get_request_comments((int)get("req_id"));
             break;
         default:
             return json_error("Unknown request type: " . $type);
@@ -264,6 +276,40 @@ function process_suggestion($suggestion, $type, $comment)
     return json_success();
 }
 
+function process_suggestion_new($suggestion, $type, $external_id)
+{
+    $type = RequestType::get_type_from_str($type);
+    $external_id = (int)$external_id;
+    if (strlen($suggestion) > 128)
+    {
+        return json_error("Suggestion must be less than 128 characters");
+    }
+
+    if ($type === RequestType::None)
+    {
+        return json_error("Unknown media type: " . $_POST['mediatype']);
+    }
+
+    global $db;
+    $suggestion = $db->real_escape_string($suggestion);
+    $userid = (int)$_SESSION['id'];
+    $query = "INSERT INTO user_requests (username_id, request_type, request_name, external_id, comment) VALUES ($userid, $type, '$suggestion', $external_id, '')";
+    if (!$db->query($query))
+    {
+        return json_error($db->error);
+    }
+
+    // Return the new entry's id
+    $query = "SELECT id, request_date FROM user_requests WHERE request_name='$suggestion' AND username_id=$userid AND request_type=$type AND external_id=$external_id ORDER BY request_date DESC";
+    $result = $db->query($query);
+    if ($result === FALSE)
+    {
+        return json_error($db->error);
+    }
+
+    return "{ \"req_id\" : " . $result->fetch_row()[0] . " }";
+}
+
 /// <summary>
 /// Process the given permission request. Currently only StreamAccess is supported
 /// </summary>
@@ -398,6 +444,70 @@ function process_request_update($kind, $content, $id)
     }
 }
 
+function add_request_comment($req_id, $content)
+{
+    global $db;
+    $query = "SELECT username_id, request_name FROM user_requests WHERE id=$req_id";
+    $result = $db->query($query);
+    if ($result === FALSE || $result->num_rows === 0)
+    {
+        return json_error("bad request id");
+    }
+
+    $row = $result->fetch_row();
+    $req_userid = (int)$row[0];
+    $req_name = $row[1];
+    if ($_SESSION['level'] < 100 && $_SESSION['id'] != $req_userid)
+    {
+        return json_error("Not Authorized");
+    }
+
+    (int)$userid = $_SESSION['id'];
+    $content = $db->real_escape_string($content);
+    $query = "INSERT INTO request_comments (req_id, user_id, content) VALUES ($req_id, $userid, '$content')";
+    if (!$db->query($query))
+    {
+        return json_error($db->error);
+    }
+
+    send_notifications_if_needed("comment", get_user_from_request($req_id), $req_name, $content, $req_id);
+
+    return json_success();
+}
+
+function get_request_comments($req_id)
+{
+    global $db;
+    $query = "SELECT username_id FROM user_requests WHERE id=$req_id";
+    $result = $db->query($query);
+    if ($result === FALSE || $result->num_rows === 0)
+    {
+        return json_error("bad request id");
+    }
+
+    $req_userid = (int)$result->fetch_row()[0];
+    if ($_SESSION['level'] < 100 && $_SESSION['id'] != $req_userid)
+    {
+        return json_error("Not Authorized");
+    }
+
+    $query = "SELECT u.username AS user, c.content AS content, c.timestamp AS time FROM `request_comments` c INNER JOIN `users` u ON c.user_id=u.id WHERE c.req_id=$req_id ORDER BY c.timestamp ASC";
+    $result = $db->query($query);
+    if ($result === FALSE)
+    {
+        return json_error($db->error);
+    }
+
+    $rows = array();
+    while ($r = $result->fetch_row())
+    {
+        $rows[] = $r;
+    }
+
+    return json_encode($rows);
+
+}
+
 /// <summary>
 /// Updates the user information. Populates $error on failure
 /// </summary>
@@ -488,7 +598,7 @@ function update_admin_comment($req_id, $content, $requester)
     }
 
     // Failure to send notificactions won't be considered a failure
-    send_notifications_if_needed("comment", $requester, $req_name, $content);
+    send_notifications_if_needed("comment", $requester, $req_name, $content, $req_id);
     return json_success();
 }
 
@@ -558,23 +668,35 @@ function update_req_status($req_id, $status, $requester)
     }
 
     $status_str = ($status == 0 ? "pending" : ($status == 1 ? "approved" : "denied"));
-    send_notifications_if_needed("status", $requester, $req_name, $status_str);
+    send_notifications_if_needed("status", $requester, $req_name, $status_str, $req_id);
     return json_success();
 }
 
 /// <summary>
 /// Send email and text notifications if the user has requested them
 /// </summary>
-function send_notifications_if_needed($type, $requester, $req_name, $content)
+function send_notifications_if_needed($type, $requester, $req_name, $content, $req_id)
 {
+    if ($requester->id == $_SESSION['id'] && $_SESSION['level'] != 100)
+    {
+        return;
+    }
+
     $text = "";
+    $email = "<html><body style='background-color:#313131;color=#c1c1c1'><div>";
     switch ($type)
     {
         case "comment":
-            $text = "A comment has been added to your request for " . $req_name . ": " . $content;
+            $text = "A comment has been added to your request for " . $req_name . ":\n\t" . $content . "\n\nhttps://plex.danrahn.com/request.php?id=" . $req_id;
+            $email .= "<div>A comment has been added to your request for " . $req_name . ":\n" . $content . "</div><br />";
+            $email .= "<br />View your request here: https://plex.danrahn.com/request.php?id=" . $req_id;
+            $email .= "</div></body></html>";
             break;
         case "status":
-            $text = "The status of your request has changed:\nRequest: " . $req_name . "\nStatus: " . $content;
+            $text = "The status of your request has changed:\nRequest: " . $req_name . "\nStatus: " . $content . "\n\nhttps://plex.danrahn.com/request.php?id=" . $req_id;
+            $email = "<div>The status of your request for " . $req_name . " has changed: " . $content . "</div><br />";
+            $email .= "<br />View your request here: https://plex.danrahn.com/request.php?id=" . $req_id;
+            $email .= "</div></body></html>";
             break;
         default:
             return json_error("Unknown notification type: " . $type);
@@ -587,16 +709,16 @@ function send_notifications_if_needed($type, $requester, $req_name, $content)
         switch ($requester->info->carrier)
         {
             case "verizon":
-                $to = $phone . "@vtext.com";
+                $to = $phone . "@vzwpix.com";
                 break;
             case "tmobile":
                 $to = $phone . "@tmomail.net";
                 break;
             case "att":
-                $to = $phone . "@txt.att.net";
+                $to = $phone . "@mms.att.net";
                 break;
             case "sprint":
-                $to = $phone . "@messaging.sprintpcs.com";
+                $to = $phone . "@pm.sprint.com";
                 break;
             default:
                 return json_error("Unknown carrier: " . $requester->info->carrier);
@@ -609,7 +731,7 @@ function send_notifications_if_needed($type, $requester, $req_name, $content)
     if ($requester->info->email_alerts && !empty($requester->info->email))
     {
         $subject = "Plex Request Update";
-        send_email_forget($requester->info->email, $text, $subject);
+        send_email_forget($requester->info->email, $email, $subject);
     }
 
     return json_success();
@@ -1078,6 +1200,14 @@ function get_geo_ip($ip)
 
     $db->query($query);
     return json_encode($trimmed_json);
+}
+
+function set_external_id($req_id, $ext_id)
+{
+    global $db;
+    $query = "UPDATE user_requests SET external_id=$ext_id WHERE id=$req_id";
+    $db->query($query);
+    return json_success();
 }
 
 /// <summary>

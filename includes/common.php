@@ -13,12 +13,17 @@ function requireSSL() {
 /// <summary>
 /// Ensure the user is logged in. If they're not, either return 401 or redirect to the login page
 /// </summary>
-function verify_loggedin($redirect = FALSE) {
+function verify_loggedin($redirect = FALSE, $return = "") {
     if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== TRUE)
     {
         if ($redirect)
         {
-            header("Location: login.php");
+            $loc = "login.php";
+            if (strlen($return) > 0)
+            {
+                $loc .= "?return=" . $return;
+            }
+            header("Location: " . $loc);
             exit;
         }
 
@@ -127,6 +132,17 @@ function get($param)
     return param_or_json_exit($param);
 }
 
+function try_get($param)
+{
+    $value;
+    if (param($param, $value))
+    {
+        return $value;
+    }
+
+    return FALSE;
+}
+
 function param($param, &$value)
 {
     if (isset($_POST[$param]))
@@ -150,7 +166,7 @@ function param($param, &$value)
 /// http_response_code appears to bypass ErrorDocument, so if we want our error to be displayed
 /// by our error handler, we need this trickery, which has essentially the same effect as ErrorDocument.
 /// </summary>
-function error_and_exit($status)
+function error_and_exit($status, $message='')
 {
     global $db;
     if ($db)
@@ -159,6 +175,7 @@ function error_and_exit($status)
     }
 
     $_GET['r'] = $status;
+    $_GET['m'] = $message;
     $_SERVER['REDIRECT_URL'] = "plexweb/get_status.php";
     include "C:/wamp64/www/error.php";
     exit;
