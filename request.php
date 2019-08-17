@@ -5,7 +5,7 @@ require_once "includes/common.php";
 
 requireSSL();
 $req_id = (int)param_or_die("id");
-verify_loggedin(TRUE /*redirect*/, "request.php-id_" . $req_id);
+verify_loggedin(TRUE /*redirect*/, "request.php?id=" . $req_id);
 
 $details = get_details($req_id);
 

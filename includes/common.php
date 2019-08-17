@@ -21,7 +21,7 @@ function verify_loggedin($redirect = FALSE, $return = "") {
             $loc = "login.php";
             if (strlen($return) > 0)
             {
-                $loc .= "?return=" . $return;
+                $loc .= "?return=" . urlencode($return);
             }
             header("Location: " . $loc);
             exit;

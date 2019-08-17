@@ -98,9 +98,7 @@ function setupLoginForm()
                 if (window.location.href.indexOf("?") > 0)
                 {
                     let goto = window.location.href.substring(window.location.href.indexOf("return=") + 7);
-                    goto = goto.replace(/-/g, '?');
-                    goto = goto.replace(/_/g, '=');
-                    goto = goto.replace(/|/g, '&');
+                    goto = decodeURIComponent(goto);
                     window.location = goto;
                     return;
                 }
