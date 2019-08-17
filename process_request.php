@@ -368,11 +368,39 @@ function process_stream_access_request($which)
             return '{ "value" : "Request Access" }';
         }
 
-        $query = "INSERT INTO user_requests (username_id, request_type, request_name, comment) VALUES ($userid, 10, 'ViewStream', '')";
+        $msg = try_get("msg");
+        if (!$msg)
+        {
+            $msg = "";
+        }
+
+        $msg = $db->real_escape_string(mb_strimwidth($msg, 0, 1024));
+
+        $query = "INSERT INTO user_requests (username_id, request_type, request_name, comment) VALUES ($userid, 10, 'ViewStream', '$msg')";
         $result = $db->query($query);
         if ($result === FALSE)
         {
             return json_error("Error querying database");
+        }
+
+        if (strlen($msg) != 0)
+        {
+            $query = "SELECT id FROM user_requests WHERE username_id=$userid AND request_type=10 AND request_name='ViewStream' ORDER BY request_date DESC";
+
+            $result = $db->query($query);
+
+            if (!$result)
+            {
+                return json_error("Error adding user comment");
+            }
+
+            $req_id = $result->fetch_row()[0];
+
+            $query = "INSERT INTO request_comments (req_id, user_id, content) VALUES ($req_id, $userid, '$msg')";
+            if (!$db->query($query))
+            {
+                return json_error("Error adding user comment");
+            }
         }
 
         return '{ "value" : "Access Requested!" }';

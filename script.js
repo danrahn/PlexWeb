@@ -42,7 +42,7 @@
         {
             $("#activeNum").innerHTML = 0;
         }
-        
+
         setupSuggestionForm();
 
         $("#plexFrame").addEventListener("scroll", function(e) {
@@ -106,12 +106,47 @@
             streamAccess.innerHTML = response.value;
             if (canRequest)
             {
+                let textbox = document.createElement("textarea");
+                textbox.id = "RequestText";
+                textbox.style.display = "block";
                 // Need to request access
                 streamAccess.addEventListener("click", function()
                 {
-                    this.innerHTML = "...";
-                    requestStreamAccess();
-                })
+                    let overlay = document.createElement("div");
+                    overlay.id = "requestOverlay";
+                    let html = `
+<div id="requestContainer">
+    <div>Add a message for the admins to let them know who you are (optional)</div>
+    <textarea maxlength="1024"></textarea>
+    <input id="requestButton" type="button" value="Request" />
+</div>
+                    `
+                    overlay.innerHTML = html;
+                    document.body.appendChild(overlay);
+                    document.body.addEventListener("keyup", function(e)
+                    {
+                        if (e.keyCode == 27 /*esc*/)
+                        {
+                            let overlay = $("#requestOverlay");
+                            if (overlay)
+                            {
+                                document.body.removeChild(overlay);
+                            }
+                        }
+                    });
+                    overlay.addEventListener("click", function(e)
+                    {
+                        if (e.target.id == "requestOverlay")
+                        {
+                            document.body.removeChild(overlay);
+                        }
+                    })
+
+                    $("#requestButton").addEventListener("click", function(e)
+                    {
+                        requestStreamAccess();
+                    });
+                });
             }
             if (response.value == "Request Denied")
             {
@@ -136,11 +171,19 @@
         {
             "type" : "pr",
             "req_type" : 10,
-            "which" : "req"
+            "which" : "req",
+            "msg" : $("#requestContainer textarea")[0].value
         };
 
         let successFunc = function(response)
         {
+            let overlay = $("#requestOverlay");
+            if (overlay)
+            {
+                Animation.queue({"backgroundColor": "rgba(0,25,0,0.5)"}, overlay, 500);
+                Animation.queueDelayed({"backgroundColor": "rgba(0,0,0,0.5)", "opacity": "0"}, overlay, 500, 500, true);
+            }
+
             const alreadyPending = (response.value == '0');
             const newString = alreadyPending ? "Request Already Pending" : "Access Requested!";
             $("#streamAccess").innerHTML = alreadyPending ? "Request Already Pending" : "Access Requested!";
@@ -148,6 +191,7 @@
 
         let failureFunc = function(/*response*/)
         {
+            if ($("#requestOverlay")) document.body.removeChild($("#requestOverlay"));
             $("#streamAccess").innerHTML = "Error processing request";
         };
 
@@ -746,6 +790,11 @@
         var type = $("select[name='type']")[0];
         var name = $("input[name='name']")[0];
         var comment = $("#comment");
+
+        if (!name)
+        {
+            return;
+        }
         
         name.setAttribute("autocomplete", "off");
         comment.setAttribute("autocomplete", "off");

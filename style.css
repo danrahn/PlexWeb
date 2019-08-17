@@ -403,6 +403,49 @@ hr {
     font-size: smaller;
 }
 
+#requestOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0,0,0,0.6);
+}
+
+#requestContainer {
+    margin: auto;
+    width: auto;
+    height: auto;
+    padding: 20px;
+    background-color: rgba(0,0,0,0.3);
+    color: rgb(196, 196, 196);
+    margin-top: 25vh;
+}
+
+#requestContainer div {
+    padding-bottom: 20px;
+    margin: auto;
+    display: block;
+    text-align: center;
+}
+
+#requestContainer textarea {
+    display: block;
+    width: 50%;
+    min-width: 200px;
+    margin: auto;
+    float: none;
+    height: 50px;
+}
+
+#requestContainer input {
+    display: block;
+    float: none;
+    margin: auto;
+    margin-top: 10px;
+    padding: 10px;
+}
+
 @media (orientation: landscape), (min-width: 767px) {
     .mediainfo {
         min-width: 630px;
