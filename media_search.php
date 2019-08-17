@@ -33,7 +33,9 @@ if ($by_id)
         case RequestType::TVShow:
             $endpoint = "tv/" . $query;
             $params = [ ];
-            json_message_and_exit(run_query($endpoint, $params));
+
+            // TV shows don't list imdb id in the main results page. Query for that as well and append it to the object
+            json_message_and_exit(json_encode(parse_single_tv_show(run_query($endpoint, $params))));
         default:
             json_error_and_exit("Unsupported media type");
     }
@@ -52,6 +54,22 @@ switch ($type)
     default:
         json_error_and_exit("Unsupported media type");
 
+}
+
+function parse_single_tv_show($show)
+{
+    $show = json_decode($show);
+    $id = $show->id;
+    $show->imdb_id = get_imdb_id_for_tv($show->id);
+    return $show;
+}
+
+function get_imdb_id_for_tv($id)
+{
+    $endpoint = "tv/" . $id . "/external_ids";
+    $parameters = [];
+    $result = json_decode(run_query($endpoint, $parameters));
+    return $result->imdb_id;
 }
 
 function run_query($endpoint, $params)
