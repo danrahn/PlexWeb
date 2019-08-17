@@ -166,20 +166,19 @@ let A = function()
                             newColor = new Color(oldColor.toString());
                             newColor.a = 0;
                         }
-                        else if (newColor[0] == '#')
-                        {
-                            newColor = new Color(newColor);
-                        }
                         else
                         {
-                            // Create an element with our color and use whatever the document
-                            // tells us the color should be. If it's invalid, the default
-                            // body color will be returned
-                            let tempElement = document.createElement("q");
-                            tempElement.style.color = newColor;
-                            document.body.append(tempElement); // Some browsers need the element to be attached
-                            newColor = new Color(getStyle(tempElement)[prop]);
-                            document.body.removeChild(tempElement);
+                            // If we ever want to support built-in colors (e.g. 'red'), uncomment
+                            // this block, which will create a temporary element with the desired color,
+                            // then read the style the document returns
+
+                            // let tempElement = document.createElement("q");
+                            // tempElement.style.color = newColor;
+                            // document.body.append(tempElement); // Some browsers need the element to be attached
+                            // newColor = new Color(getStyle(tempElement)[prop]);
+                            // document.body.removeChild(tempElement);
+
+                            newColor = new Color(newColor);
                         }
                     }
 
