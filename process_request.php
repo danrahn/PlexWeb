@@ -307,7 +307,10 @@ function process_suggestion_new($suggestion, $type, $external_id)
         return json_error($db->error);
     }
 
-    return "{ \"req_id\" : " . $result->fetch_row()[0] . " }";
+    $row = $result->fetch_row();
+    send_notifications_if_needed("create", get_user_from_request($row[0]), $suggestion, "", $row[0]);
+
+    return "{ \"req_id\" : " . $row[0] . " }";
 }
 
 /// <summary>
@@ -677,7 +680,7 @@ function update_req_status($req_id, $status, $requester)
 /// </summary>
 function send_notifications_if_needed($type, $requester, $req_name, $content, $req_id)
 {
-    if ($requester->id == $_SESSION['id'] && $_SESSION['level'] != 100)
+    if ($type != "create" && $requester->id == $_SESSION['id'] && $_SESSION['level'] != 100)
     {
         return;
     }
@@ -698,10 +701,33 @@ function send_notifications_if_needed($type, $requester, $req_name, $content, $r
             $email .= "<br />View your request here: https://plex.danrahn.com/request.php?id=" . $req_id;
             $email .= "</div></body></html>";
             break;
+        case "create":
+            $text = $requester->username . " created a request for " . $req_name . ". See it here: https://plex.danrahn.com/request.php?id=" . $req_id;
+            $email = $text;
+            break;
         default:
             return json_error("Unknown notification type: " . $type);
     }
 
+    if ($type != "create")
+    {
+        send_notification($requester, $text, $email);
+        return json_success();
+    }
+    else
+    {
+        $admins = get_admins();
+        foreach ($admins as $admin)
+        {
+            send_notification($admin, $text, $email);
+        }
+    }
+
+    return json_success();
+}
+
+function send_notification($requester, $text, $email)
+{
     if ($requester->info->phone_alerts && $requester->info->phone != 0)
     {
         $to = "";
@@ -734,7 +760,6 @@ function send_notifications_if_needed($type, $requester, $req_name, $content, $r
         send_email_forget($requester->info->email, $email, $subject);
     }
 
-    return json_success();
 }
 
 /// <summary>
@@ -771,6 +796,39 @@ function get_user_from_request($req_id)
 
     $result->close();
     return $user;
+}
+
+function get_admins()
+{
+    global $db;
+    $admins = array();
+    $query = "SELECT u.id, u.username, u.level, i.firstname, i.lastname, i.email, i.email_alerts, i.phone, i.phone_alerts, i.carrier
+              FROM users u
+                INNER JOIN user_info i on u.id=i.userid
+              WHERE u.level >= 100";
+    $result = $db->query($query);
+
+    while ($row = $result->fetch_row())
+    {
+        $user = new \stdClass();
+        $user->id = $row[0];
+        $user->username = $row[1];
+        $user->level = $row[2];
+        $user->info = new \stdClass();
+        $user->info->firstname = $row[3];
+        $user->info->lastname = $row[4];
+        $user->info->email = $row[5];
+        $user->info->email_alerts = $row[6];
+        $user->info->phone = $row[7];
+        $user->info->phone_alerts = $row[8];
+        $user->info->carrier = $row[9];
+
+        $admins[] = $user;
+    }
+
+    $result->close();
+
+    return $admins;
 }
 
 /// <summary>
