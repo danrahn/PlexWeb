@@ -63,14 +63,7 @@ function write_rows()
             switch ($i)
             {
                 case 0:
-                    if (!$is_media_req)
-                    {
-                        print_td($row[$i]);
-                    }
-                    else
-                    {
-                        print_td("<a href='request.php?id=" . $row[8] . "'>" . $row[$i] . '</a>');
-                    }
+                    print_td("<a href='request.php?id=" . $row[8] . "'>" . $row[$i] . '</a>');
                     break;
                 case 2:
                     $req_type = $row[$i];
@@ -409,7 +402,7 @@ function print_status_options($status, $rid, $is_media)
         setCommentListeners(".adm_cm", "adm_cm");
         setCommentListeners(".usr_cm", "usr_cm");
         setCommentListeners(".status", "status", "selectedIndex");
-        if (document.querySelector(".usr_cm, .adm_cm")) {
+        if (document.querySelector(".usr_cm, .adm_cm, .status")) {
             let updateButton = document.createElement("input");
             let updateDiv = document.createElement("div");
             updateDiv.style.textAlign = "center";

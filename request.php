@@ -36,11 +36,7 @@ function get_details($req_id)
     $details->request_type = RequestType::get_type($row[2]);
     $details->request_name = $row[3];
     $details->status = $row[4];
-
-    if (!RequestType::is_media_request($details->request_type))
-    {
-        error_and_exit(400, "Invalid request type!");
-    }
+    $details->is_media_request = RequestType::is_media_request($details->request_type);
 
     return $details;
 }
@@ -297,6 +293,7 @@ function get_details($req_id)
                 margin-top: 20px;
                 font-size: 12pt;
                 text-shadow: -1px 0 #313131, 0 1px #313131, 1px 0 #313131, 0 -1px #313131;
+                margin-bottom: 20px;
             }
 
             #commentsHolder {
@@ -334,7 +331,17 @@ function get_details($req_id)
 <body>
     <div id="plexFrame">
         <?php include "nav.php" ?>
-        <?php if (!$details->external_id) { ?>
+        <?php if (!$details->is_media_request) { ?>
+            <div id="infoContainer">Getting info...</div>
+            <div id="commentsHolder">
+                <div style="margin-bottom: 10px">Comments:</div>
+                <div id="comments">
+                    
+                </div>
+                <textarea id="newComment" placeholder="Add comment..."></textarea>
+                <input type="button" id="newCommentButton" value="Add Comment" style="float: left; clear: both; margin-top: 5px; padding: 10px" />
+            </div>
+        <?php } else if (!$details->external_id) { ?>
             <div class="formContainer" id="info">
                 <div class="formTitle">The request for <?= $details->request_name ?> was made with an older version of this website. Please choose the correct item below</div>
                 <form id="searchForm" style="overflow: auto">
@@ -368,9 +375,23 @@ function get_details($req_id)
             searchForMedia();
             $("#external_id").addEventListener("input", searchImdb);
         }
-        else if (!!$("#infoContainer"))
+        else if (<?php echo ($details->is_media_request ? "true" : "false")?>)
         {
             getMediaInfo();
+            $("#newComment").addEventListener("focus", function() { this.className = "newCommentFocus"; });
+            $("#newComment").addEventListener("blur", function() {  this.className = ""; });
+            $("#newComment").addEventListener("keydown", function(e) {
+                if (e.ctrlKey && e.which === 13) {
+                    addComment();
+                }
+            });
+
+            $("#newCommentButton").addEventListener("click", addComment);
+            getComments();
+        }
+        else
+        {
+            getNonMediaInfo();
             $("#newComment").addEventListener("focus", function() { this.className = "newCommentFocus"; });
             $("#newComment").addEventListener("blur", function() {  this.className = ""; });
             $("#newComment").addEventListener("keydown", function(e) {
@@ -621,6 +642,21 @@ function get_details($req_id)
                 $("#infoContainer").innerHTML = "Unable to query request information";
             };
             sendHtmlJsonRequest("media_search.php", parameters, successFunc, failureFunc);
+        }
+
+        function getNonMediaInfo()
+        {
+            let outerContainer = document.createElement("div");
+            outerContainer.id = "innerInfoContainer";
+            let container = document.createElement("div");
+            container.id = "mediaDetails";
+            let div = document.createElement("div");
+            div.id = "mediaTitle";
+            div.innerHTML = "Request: <?= $details->request_name ?>";
+            container.appendChild(div);
+            outerContainer.appendChild(container);
+            $("#infoContainer").innerHTML = "";
+            $("#infoContainer").appendChild(outerContainer);
         }
 
         function buildPage(data)
