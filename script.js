@@ -208,7 +208,44 @@
             $("#mediaentries").appendChild(buildMediaInfo(activeSessions[i]));
         }
 
+        writeTitle(activeSessions);
+
         $("#activeNum").innerHTML = activeSessions.length;
+    }
+
+    /// <summary>
+    /// Write the number of active streams to the titlebar
+    /// </summary>
+    function writeTitle(streams)
+    {
+        let playing = 0;
+        let paused = 0;
+
+        for (let i = 0; i < streams.length; ++i)
+        {
+            if (streams[i].paused)
+            {
+                ++paused;
+            }
+            else
+            {
+                ++playing;
+            }
+        }
+
+
+        let append = "";
+        if (playing > 0)
+        {
+            append += " - " + playing + " &#9654;";
+        }
+        
+        if (paused > 0)
+        {
+            append += " - " + paused + " &#10073;&#10073;";
+        }
+
+        $('title')[0].innerHTML = "Plex Status" + append;
     }
 
     /// <summary>
@@ -290,6 +327,7 @@
         trimSessions(sessions, existingSessions);
         reorderSessions(newOrder, existingSessions);
         addNewSessions(newIds);
+        writeTitle(sessions);
     }
 
     /// <summary>
