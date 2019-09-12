@@ -375,23 +375,17 @@ function get_details($req_id)
             searchForMedia();
             $("#external_id").addEventListener("input", searchImdb);
         }
-        else if (<?php echo ($details->is_media_request ? "true" : "false")?>)
-        {
-            getMediaInfo();
-            $("#newComment").addEventListener("focus", function() { this.className = "newCommentFocus"; });
-            $("#newComment").addEventListener("blur", function() {  this.className = ""; });
-            $("#newComment").addEventListener("keydown", function(e) {
-                if (e.ctrlKey && e.which === 13) {
-                    addComment();
-                }
-            });
-
-            $("#newCommentButton").addEventListener("click", addComment);
-            getComments();
-        }
         else
         {
-            getNonMediaInfo();
+            if (<?php echo ($details->is_media_request ? "true" : "false")?>)
+            {
+                getMediaInfo();
+            }
+            else
+            {
+                getNonMediaInfo();
+            }
+
             $("#newComment").addEventListener("focus", function() { this.className = "newCommentFocus"; });
             $("#newComment").addEventListener("blur", function() {  this.className = ""; });
             $("#newComment").addEventListener("keydown", function(e) {
@@ -401,10 +395,43 @@ function get_details($req_id)
             });
 
             $("#newCommentButton").addEventListener("click", addComment);
+            addNavListener();
             getComments();
         }
 
         let selectedSuggestion;
+
+        function addNavListener()
+        {
+            document.body.addEventListener("keydown", function(e)
+            {
+                if (e.target.id && e.target.id.toLowerCase() == "newcomment")
+                {
+                    return;
+                }
+
+                if (!e.ctrlKey || (e.which !== 37 && e.which !== 39))
+                {
+                    return;
+                }
+
+                logVerbose("Searching for next id");
+                let parameters = { "type" : "req_nav", "id" : <?= $req_id ?>, "dir" : e.which === 37 ? "0" : "1" };
+                let successFunc = function(response)
+                {
+                    if (response.new_id == -1)
+                    {
+                        logInfo("No more requests in that direction!");
+                        return;
+                    }
+
+                    window.location = "request.php?id=" + response.new_id;
+                };
+
+                sendHtmlJsonRequest("process_request.php", parameters, successFunc);
+
+            });
+        }
 
         function searchForMedia()
         {

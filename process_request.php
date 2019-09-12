@@ -95,6 +95,9 @@ function process_request($type)
         case "get_comments":
             $message = get_request_comments((int)get("req_id"));
             break;
+        case "req_nav":
+            $message = get_next_req((int)get("id"), (int)get("dir"));
+            break;
         default:
             return json_error("Unknown request type: " . $type);
     }
@@ -1294,6 +1297,35 @@ function set_external_id($req_id, $ext_id)
     $query = "UPDATE user_requests SET external_id=$ext_id WHERE id=$req_id";
     $db->query($query);
     return json_success();
+}
+
+function get_next_req($cur_id, $forward)
+{
+    global $db;
+    if ($forward != 0 && $forward != 1)
+    {
+        return json_error("Bad direction. Expecting 0 or 1");
+    }
+
+    $query = "";
+    $sort = $forward == 0 ? "DESC" : "ASC";
+    $cmp = $forward == 0 ? "<" : ">";
+    if ($_SESSION["level"] >= 100)
+    {
+        $query = "SELECT id FROM user_requests WHERE id " . $cmp . $cur_id . " ORDER BY id " . $sort . " LIMIT 1";
+    }
+    else
+    {
+        $query = "SELECT id FROM user_requests WHERE id " . $cmp . $cur_id . " AND username_id = " . $_SESSION["id"] . " ORDER BY id " . $sort . " LIMIT 1";
+    }
+
+    $result = $db->query($query);
+    if (!$result || $result->num_rows == 0)
+    {
+        return '{"new_id":-1}';
+    }
+
+    return '{"new_id":' . $result->fetch_row()[0] . "}";
 }
 
 /// <summary>
