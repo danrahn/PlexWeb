@@ -41,7 +41,7 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === TRUE)
                 <hr />
                 <div class="formInput"><label for="confirm">Confirm Password: </label><input type="password" name="confirm"></div>
                 <hr />
-                <div class="formInput"><input type="button" value="submit" id="go"></input></div>
+                <div class="formInput"><input type="button" value="Register" id="go"></input></div>
             </form>
         </div>
         <div id="formStatus" class="formContainer"></div>

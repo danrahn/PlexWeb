@@ -122,23 +122,26 @@
 </div>
                     `
                     overlay.innerHTML = html;
+                    overlay.style.opacity = "0";
                     document.body.appendChild(overlay);
                     document.body.addEventListener("keyup", function(e)
                     {
                         if (e.keyCode == 27 /*esc*/)
                         {
                             let overlay = $("#requestOverlay");
-                            if (overlay)
+                            if (overlay && overlay.style.opacity == "1")
                             {
-                                document.body.removeChild(overlay);
+                                Animation.queue({"opacity": 0}, overlay, 250, true);
+                                // document.body.removeChild(overlay);
                             }
                         }
                     });
                     overlay.addEventListener("click", function(e)
                     {
-                        if (e.target.id == "requestOverlay")
+                        if (e.target.id == "requestOverlay" && e.target.style.opacity == 1)
                         {
-                            document.body.removeChild(overlay);
+                            Animation.queue({"opacity": 0}, overlay, 250, true);
+                            //document.body.removeChild(overlay);
                         }
                     })
 
@@ -146,6 +149,8 @@
                     {
                         requestStreamAccess();
                     });
+
+                    Animation.queue({"opacity": 1}, overlay, 250);
                 });
             }
             if (response.value == "Request Denied")
@@ -237,9 +242,9 @@
         let append = "";
         if (playing > 0)
         {
-            append += " - " + playing + " &#9654;";
+            append += " - " + playing + "&#9205;";
         }
-        
+
         if (paused > 0)
         {
             append += " - " + paused + " &#10073;&#10073;";

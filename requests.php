@@ -183,7 +183,8 @@ function print_status_options($status, $rid, $is_media)
     <meta name="theme-color" content="#3C5260" />
     <script src="resource/min/animate.min.js"></script>
     <script src="resource/consolelog.js"></script>
-    <title>Plex Status: Requests</title>
+    <script src="resource/queryStatus.js"></script>
+    <title>Plex Requests</title>
 </head>
 <body>
 

@@ -13,7 +13,7 @@ requireSSL();
     <link rel="shortcut icon" href="favicon.ico">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#3C5260" />
-    <title>Plex Web - User Information</title>
+    <title>User Settings</title>
     <style>
 #formError {
   background-color: rgb(100, 66, 69);
@@ -50,6 +50,7 @@ input[type=checkbox]:focus {
     </style>
     <script src="resource/consolelog.js"></script>
     <script src="resource/min/animate.min.js"></script>
+    <script src="resource/queryStatus.js"></script>
 </head>
 <body>
 <div id="plexFrame">

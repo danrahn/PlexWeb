@@ -53,7 +53,8 @@ function get_details($req_id)
     <meta name="theme-color" content="#3C5260" />
     <script src="resource/min/animate.min.js"></script>
     <script src="resource/consolelog.js"></script>
-    <title>Plex Status: Request</title>
+    <script src="resource/queryStatus.js"></script>
+    <title>Plex Request</title>
     <style>
         .searchResult {
             border: 1px solid #2e2e2e;

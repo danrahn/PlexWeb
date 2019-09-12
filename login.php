@@ -36,9 +36,9 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === TRUE)
                 <hr />
                 <div class="formInput"><label for="password">Password: </label><input type="password" name="password" id="password"></div>
                 <hr />
-                <div class="formInput"><input type="button" value="submit" id="go"></input></div>
+                <div class="formInput"><input type="button" value="Login" id="go"></input></div>
             </form>
-            <div class="smallDiv">View the source code <a href="https://github.com/danrahn/plexweb" target="_blank">here!</a></div>
+            <!-- <div class="smallDiv">View the source code <a href="https://github.com/danrahn/plexweb" target="_blank">here!</a></div> -->
         </div>
         <div id="formStatus" class="formContainer"></div>
     </div>

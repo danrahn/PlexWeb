@@ -18,7 +18,8 @@ abstract class QueryType {
     const SingleSession = 2; // Get all information for a single session
     const ActiveSessions = 3; // Get the currently active session ids
     const Progress = 4; // Get the current play progress for the given session ids
-    const Unknown = 5; // Invalid query
+    const Status = 5; // Get the number of playing/paused sessions
+    const Unknown = 6; // Invalid query
 
     static function get_query_type($type)
     {
@@ -32,6 +33,8 @@ abstract class QueryType {
                 return QueryType::ActiveSessions;
             case "4":
                 return QueryType::Progress;
+            case "5":
+                return QueryType::Status;
             default:
                 return QueryType::Unknown;
         }
@@ -156,10 +159,11 @@ function process()
             $payload = get_all_progress();
             break;
         case QueryType::SingleSession:
-        {
             $payload = get_single_session(param_or_die('id'));
             break;
-        }
+        case QueryType::Status:
+            $payload = get_status();
+            break;
         default:
             error_and_exit("400");
     }
@@ -205,6 +209,28 @@ function get_all_progress()
 
     return json_encode($progress);
 }
+
+function get_status()
+{
+    $sessions = simplexml_load_string(curl(PLEX_SERVER . '/status/sessions?' . PLEX_TOKEN));
+    $status = new \stdClass();
+    $status->play = 0;
+    $status->pause = 0;
+    foreach ($sessions as $sesh)
+    {
+        if (strcmp($sesh->xpath("Player")[0]['state'], 'paused') == 0)
+        {
+            $status->pause++;
+        }
+        else
+        {
+            $status->play++;
+        }
+    }
+
+    return json_encode($status);
+}
+
 /// <summary>
 /// Retrieve the full stream information for a single session id
 /// </summary>

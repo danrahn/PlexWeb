@@ -19,7 +19,8 @@ requireSSL();
     <meta name="theme-color" content="#3C5260" />
     <script src="resource/consolelog.js"></script>
     <script src="resource/min/animate.min.js"></script>
-    <title>Plex Status: New Request</title>
+    <script src="resource/queryStatus.js"></script>
+    <title>New Plex Request</title>
     <style>
         form select {
             width: 50%;
