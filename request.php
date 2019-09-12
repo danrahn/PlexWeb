@@ -11,7 +11,7 @@ $details = get_details($req_id);
 
 if ($_SESSION['level'] != 100 && !$details->is_author)
 {
-    error_and_exit(403, "You don't have access to this request!");
+    error_and_exit(403, "You don't have access to this request!<br><br><a href='requests.php'>Take me back!</a>");
 }
 
 function get_details($req_id)

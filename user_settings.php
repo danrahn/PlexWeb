@@ -1,7 +1,7 @@
 <?php
 session_start();
 require_once "includes/common.php";
-verify_loggedin(TRUE /*redirect*/);
+verify_loggedin(TRUE /*redirect*/, "user_settings.php");
 requireSSL();
 ?>
 

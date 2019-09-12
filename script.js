@@ -104,6 +104,11 @@
             const canRequest = response.value == "Request Access";
             let streamAccess = $("#streamAccess");
             streamAccess.innerHTML = response.value;
+            if (response.id)
+            {
+                streamAccess.href = "request.php?id=" + response.id;
+            }
+            
             if (canRequest)
             {
                 let textbox = document.createElement("textarea");

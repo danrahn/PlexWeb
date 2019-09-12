@@ -4,7 +4,7 @@ require_once "includes/config.php";
 require_once "includes/common.php";
 
 requireSSL();
-verify_loggedin(TRUE /*redirect*/);
+verify_loggedin(TRUE /*redirect*/, "requests.php");
 
 function fill_request_table()
 {

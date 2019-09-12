@@ -411,12 +411,14 @@ function process_stream_access_request($which)
     else
     {
         $str = "";
-        $status = (int)$result->fetch_row()[1];
+        $row = $result->fetch_row();
+        $id = $row[0];
+        $status = (int)$row[1];
         $result->close();
         switch($status)
         {
             case 0:
-                return '{ "value" : "Request Pending" }';
+                return '{ "value" : "Request Pending", "id" : ' . $id . ' }';
             case 1:
                 return '{ "value" : "Request Approved" }';
             case 2:
