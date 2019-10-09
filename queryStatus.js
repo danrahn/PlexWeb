@@ -1,6 +1,7 @@
 (function()
 {
     let baseTitle = "";
+    let hasChanged = false;
     function queryStatus()
     {
         let http = new XMLHttpRequest();
@@ -19,8 +20,16 @@
                 logVerbose(response, true);
                 if (response.play == 0 && response.pause == 0)
                 {
+                    // Only reset the title if we've previously changed it to avoid constant title updates
+                    if (hasChanged)
+                    {
+                        hasChanged = false;
+                        document.querySelector('title').innerHTML = baseTitle;
+                    }
                     return;
                 }
+
+                hasChanged = true;
 
                 let newTitle = baseTitle;
                 if (response.play > 0)
