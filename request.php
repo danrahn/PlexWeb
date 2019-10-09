@@ -123,6 +123,10 @@ function get_details($req_id)
             z-index: 999;
         }
 
+        .statusSpan {
+            user-select: none;
+        }
+
         .status0 {
             color: #C84;
         }
@@ -711,7 +715,11 @@ function get_details($req_id)
             let statusSpan = document.createElement("span");
             statusSpan.className = "status" + status;
             statusSpan.innerHTML = status == 0 ? "Pending" : status == 1 ? "Approved" : "Denied";
-            title.innerHTML = (data.title || data.name) + " - " + statusSpan.outerHTML;
+<?php if($_SESSION['level'] >= 100) { ?>
+            setupSpanDoubleClick(statusSpan);
+<?php } ?>
+            title.innerHTML = (data.title || data.name) + " - ";
+            title.appendChild(statusSpan);
             title.id = "mediaTitle";
 
             let year = document.createElement("div");
@@ -749,6 +757,58 @@ function get_details($req_id)
             container.appendChild(backdrop);
             container.appendChild(innerContainer);
         }
+
+<?php if($_SESSION['level'] >= 100) { ?>
+        function setupSpanDoubleClick(statusSpan)
+        {
+            statusSpan.className += " statusSpan";
+            statusSpan.addEventListener("dblclick", function(e) {
+                let data = prompt("Data ((A)pproved (1), (D)enied (0), or (P)ending):");
+                let valid = false;
+                let status = -1;
+                let first = data.toLowerCase()[0];
+                if (data == "1" || first == "a")
+                {
+                    status = 1;
+                }
+                else if (data == "0" || first == "d")
+                {
+                    status = 2;
+                }
+                else if (first == "p")
+                {
+                    status = 0;
+                }
+                else
+                {
+                    alert("Invalid status: Must be '(A)pproved' (1), '(D)enied' (0), or '(P)ending'");
+                }
+
+                if (status != -1)
+                {
+                    let params = {
+                        "type" : "req_update",
+                        "data" : [{ "id" : "<?= $req_id ?>", "kind" : "status", "content" : status}]
+                    }
+
+                    let successFunc = function() {
+                        let span = $(".statusSpan")[0];
+                        if (span)
+                        {
+                            span.className = "statusSpan status" + status;
+                            span.innerHTML = status == 0 ? "Pending" : status == 1 ? "Approved" : "Denied";
+                        }
+                    };
+
+                    let failureFunc = function() {
+                        alert("Failed to update. See console for details");
+                    };
+
+                    sendHtmlJsonRequest("update_request.php", JSON.stringify(params), successFunc, failureFunc, null, true /*dataIsString*/);
+                }
+            });
+        }
+<?php } ?>
 
         function getComments()
         {
@@ -822,18 +882,23 @@ function get_details($req_id)
                     second: "numeric" });
 
                 let content = document.createElement("div");
-                content.innerHTML = comment[1].replace(/[&<>"'\/]/g, function(s) {
+                let fixedupContent = comment[1].replace(/[&<>"\/]/g, function(s) {
                     const entityMap = {
                         "&": "&amp;",
                         "<": "&lt;",
                         ">": "&gt;",
                         '"': '&quot;',
-                        "'": '&#39;',
+                        // "'": '&#39;',
                         "/": '&#x2F;'
                     };
 
                     return entityMap[s];
                 });
+
+                let markdownUrlRegex = /(?:__|[*#])|\[(.*?)\]\((.*?)\)/gm;
+                fixedupContent = "<span>" + fixedupContent.replace(markdownUrlRegex, '<a href="$2" target="_blank">$1</a>') + "</span>";
+
+                content.innerHTML = fixedupContent;
                 content.classList.add("commentContent");
 
                 info.appendChild(name);
@@ -860,7 +925,7 @@ function get_details($req_id)
         /// <summary>
         /// Generic method to sent an async request that expects JSON in return
         /// </summary>
-        function sendHtmlJsonRequest(url, parameters, successFunc, failFunc, additionalParams)
+        function sendHtmlJsonRequest(url, parameters, successFunc, failFunc, additionalParams, dataIsString)
         {
             let http = new XMLHttpRequest();
             http.open("POST", url, true /*async*/);
@@ -910,7 +975,7 @@ function get_details($req_id)
                 }
             };
 
-            http.send(buildQuery(parameters));
+            http.send(dataIsString ? parameters : buildQuery(parameters));
         }
 
         /// <summary>

@@ -15,7 +15,7 @@ table {
     background-color: rgba(0,0,0,.3);
     color: #C1C1C1;
     margin: auto;
-    margin-top: 50px;
+    margin-top: 5px;
 }
 
 th {
@@ -41,3 +41,43 @@ a:hover {
 .denied_request {
     background-color: rgb(100, 66, 69);
 }
+
+input[type=checkbox] {
+    appearance: none;
+    -webkit-appearance: none;
+    padding: 6px;
+    margin: auto;
+    display: inline-block;
+}
+
+input[type=checkbox]:checked {
+    background-color: rgb(192, 189, 186);
+}
+
+input[type=checkbox]:focus {
+    outline: none;
+    border: 1px solid rgb(255, 127, 0);
+}
+
+#filterControls {
+    margin: auto;
+    text-align: center;
+    margin-top: 50px;
+    display: block;
+}
+
+.filterItem {
+    float: none;
+    color: #C1C1C1;
+    display: inline;
+}
+
+.filterItem input, .filterItem label {
+    float: none;
+}
+
+#filterPendingLabel, #filterCompleteLabel {
+    margin-right: 20px;
+}
+
+

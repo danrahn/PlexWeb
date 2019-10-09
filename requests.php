@@ -191,6 +191,20 @@ function print_status_options($status, $rid, $is_media)
 <div id="plexFrame">
     <?php include "nav.php" ?>
     <div id="container">
+        <div id="filterControls">
+            <div class="filterItem">
+                <input type="checkbox" id="filterPending" checked="checked" />
+                <label for="filterPending" id="filterPendingLabel">Pending</label>
+            </div>
+            <div class="filterItem">
+                <input type="checkbox" id="filterComplete" checked="checked" />
+                <label for="filterComplete" id="filterCompleteLabel">Complete</label>
+            </div>
+            <div class="filterItem">
+                <input type="checkbox" id="filterDenied" checked="checked" />
+                <label for="filterDenied" id="filterDeniedLabel">Denied</label>
+            </div>
+        </div>
         <div class="tableHolder">
             <?php fill_request_table() ?>
         </div>
@@ -399,6 +413,23 @@ function print_status_options($status, $rid, $is_media)
         logVerbose(initialValues, true);
     }
 
+    function setFilterListeners() {
+        let mappings = { "filterPending" : 0, "filterComplete" : 1, "filterDenied" : 2 };
+        logInfo(document.querySelectorAll(".filterItem input"), true);
+        document.querySelectorAll(".filterItem input").forEach(function(e) {
+            logInfo(e, true);
+            e.addEventListener("change", function() {
+                let index = mappings[this.id];
+                let checked = this.checked;
+                document.querySelectorAll('.status').forEach(function(element) {
+                    if (element.selectedIndex == index) {
+                        element.parentNode.parentNode.style.display = checked ? "" : "none";
+                    }
+                });
+            });
+        });
+    }
+
     window.addEventListener("load", function() {
         setCommentListeners(".adm_cm", "adm_cm");
         setCommentListeners(".usr_cm", "usr_cm");
@@ -427,6 +458,8 @@ function print_status_options($status, $rid, $is_media)
                 this.parentNode.className = this.selectedIndex === 0 ? "" : this.selectedIndex === 1 ? "approved_request" : "denied_request";
             });
         }
+
+        setFilterListeners();
     });
 })();
 </script>
