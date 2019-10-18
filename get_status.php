@@ -251,16 +251,29 @@ function get_single_session($sid)
     error_and_exit("400");
 }
 
+function get_library_names()
+{
+    $names = [];
+    $sections = simplexml_load_string(curl(PLEX_SERVER . '/library/sections?' . PLEX_TOKEN));
+    foreach ($sections as $section)
+    {
+        $names[(string)$section['key']] = (string)$section['title'];
+    }
+
+    return $names;
+}
+
 /// <summary>
 /// Retrieve the full stream information for all active streams
 /// </summary>
 function get_all_sessions()
 {
     $sessions = simplexml_load_string(curl(PLEX_SERVER . '/status/sessions?' . PLEX_TOKEN));
+    $library_names = get_library_names();
     $slim_sessions = array();
     foreach ($sessions as $sesh)
     {
-        array_push($slim_sessions, build_sesh($sesh));
+        array_push($slim_sessions, build_sesh($sesh, $library_names));
     }
 
     usort($slim_sessions, "session_sort");
@@ -270,9 +283,9 @@ function get_all_sessions()
 /// <summary>
 /// Our main processing - builds up the session with all necessary information
 /// </summary>
-function build_sesh($sesh)
+function build_sesh($sesh, $library_names)
 {
-    $sesh_type = MediaType::get_media_type($sesh['librarySectionTitle']);
+    $sesh_type = MediaType::get_media_type($library_names[(string)$sesh['librarySectionID']]);
     if ($sesh_type == MediaType::Unknown)
     {
         if ($sesh['subtype'])
