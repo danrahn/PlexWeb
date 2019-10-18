@@ -85,36 +85,26 @@ function plexOk()
         <h2 id="active">Active Streams: <span id="activeNum">loading...</span></h2>
         <div id="mediaentries">
         </div>
-        <div id="invalid">Please fill out all fields!</div>
-        <?php if (FALSE) { ?>
-        <div id="suggest" class="formContainer">
-            <div class="formTitle">Media Request</div>
-            <form id="suggestForm" action="javascript:void(0);">
-                <hr />
-                <div class="formInput"><label for="type">Suggestion Type: </label><select name="type" id="type">
-                    <option value="movie">Movie</option>
-                    <option value="tv">TV Show</option>
-                    <option value="audiobook">Audiobook</option>
-                    <option value="music">Music</option>
-                </select></div>
-                <div class="formInput"><label for="name">Suggestion:</label><input type="text" name="name" id="name" maxlength=64></div>
-                <div class="formInput" id="externalIdHolder" style="display: none"><label for="externalid">IMDb Id:</label><input type="text" name="externalid" id="externalid" maxLength=64></div><hr />
-                <div id="suggestions">
-                    <div id="outsideSuggestions">
-                        <h4>Matches</h4>
-                    </div>
-                    <div id="existingSuggestions">
-                        <h4>Existing Items</h4>
-                    </div>
-                </div>
-                <div class="formInput"><label for="comment">Comments:</label><textarea name="comment" id="comment" maxlength=1024></textarea></div>
-                <div class="formInput"><input type="button" value="Submit" id="go"></input></div>
-            </form>
-            <a href="user_settings.php">Change notification settings</a>
+        <div id="actions">
+            <div class="action actionLeft">
+                <a href="new_request.php" class="actionLink">
+                    <img src="resource/new_request.png" class="actionImg" style="filter: invert(80)">
+                    <span>New Request</span>
+                </a>
+            </div>
+            <div class="action actionRight">
+                <a href="requests.php" class="actionLink">
+                    <img src="resource/requests_large.png" class="actionImg" style="filter: invert(80)">
+                    <span>View Requests</span>
+                </a>
+            </div>
+            <div class="action actionRight">
+                <a href="user_settings.php" class="actionLink">
+                    <img src="resource/settings_large.png" class="actionImg" style="filter: invert(80)">
+                    <span>Settings</span>
+                </a>
+            </div>
         </div>
-        <?php } else { ?>
-            <h2><a href="new_request.php" id="newRequestLink">&gt; New Media Request &lt;</a></h2>
-        <?php } ?>
         <div id="formStatus" class="formContainer"></div>
     </div>
     <div id="tooltip"></div>

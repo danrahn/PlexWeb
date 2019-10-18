@@ -40,7 +40,7 @@ h1, h2, h3 {
     color: rgb(192, 189, 186);
 }
 
-.formContainer a, #newRequestLink, #newRequestLink:visited {
+.formContainer a, .actionLink, .actionLink:visited {
     color: #80A020;
 }
 
@@ -48,13 +48,8 @@ h1, h2, h3 {
     color: #80A020;
 }
 
-.formContainer a:hover, #newRequestLink:hover {
+.formContainer a:hover, .actionLink:hover {
     color: #608020;
-}
-
-#newRequestLink {
-    margin-top: 50px;
-    display: block;
 }
 
 #formStatus {
@@ -96,6 +91,10 @@ textarea {
     font-family: sans-serif;
     resize: vertical;
     min-height: 20px;
+}
+
+textarea::placeholder {
+    color: #c1c1c1;
 }
 
 td textarea {
@@ -251,6 +250,48 @@ hr {
     color: white;
     font-size: 8pt;
     padding: 5px;
+}
+
+#actions {
+    width: 30%;
+    min-width: 125px;
+    margin-left: auto;
+    margin-right: auto;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+}
+
+.action {
+    min-width: 150px;
+    border: 2px solid black;
+    margin: 10px;
+    overflow: auto;
+    border: 2px solid #222;
+    border-radius: 10px;
+    margin-left: auto;
+    margin-right: auto;
+    margin-top: 10px;
+    margin-bottom: 10px;
+    background-color: #00000033;
+}
+
+.action:hover {
+    background-color: #00000055;
+}
+
+.actionImg {
+    display: block;
+    margin: auto;
+    width: 100px;
+    padding-top: 20px;
+    padding-bottom: 5px;
+}
+
+.action a {
+    text-align: center;
+    display: block;
+    margin-bottom: 20px;
 }
 
 .mediainfo {
@@ -447,7 +488,8 @@ hr {
 }
 
 @media (orientation: landscape), (min-width: 767px) {
-    .mediainfo {
+    .mediainfo,
+    #actions {
         min-width: 630px;
     }
 
@@ -488,7 +530,8 @@ hr {
 }
 
 @media all and (orientation: portrait) and (max-width: 767px) {
-    .mediainfo {
+    .mediainfo,
+    #actions {
         min-width: 80%;
         text-align: center;
     }
