@@ -153,7 +153,7 @@ function param($param, &$value)
 
     if (isset($_GET[$param]))
     {
-        $value = $_POST[$param];
+        $value = $_GET[$param];
         return TRUE;
     }
 
