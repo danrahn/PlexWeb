@@ -244,18 +244,18 @@
         }
 
 
-        let append = "";
+        let prepend = "";
         if (playing > 0)
         {
-            append += " - " + playing + "&#9205;";
+            prepend = `${playing}&#9205; - `;
         }
 
         if (paused > 0)
         {
-            append += " - " + paused + " &#10073;&#10073;";
+            prepend += `${paused} &#10073;&#10073; - `;
         }
 
-        $('title')[0].innerHTML = "Plex Status" + append;
+        $('title')[0].innerHTML = prepend + "Plex Status";
     }
 
     /// <summary>
@@ -835,6 +835,8 @@
     /// </summary>
     function setupSuggestionForm()
     {
+        // TODO: Clean this up (no longer relevant) keeping in mind that the internal search (plex) might still be good,
+        // since some people don't know how to search for something before making a request.
         var type = $("select[name='type']")[0];
         var name = $("input[name='name']")[0];
         var comment = $("#comment");
