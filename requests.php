@@ -177,7 +177,7 @@ function print_status_options($status, $rid, $is_media)
     <meta http-equiv="Content-Type" content="text/html;charset=utf-8">
     <link rel="stylesheet" type="text/css" href="resource/style.css">
     <link rel="stylesheet" type="text/css" href="resource/request.css">
-    <link rel="shortcut icon" href="favicon.ico">
+    <link rel="shortcut icon" href="favicon.png">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#3C5260" />
     <script src="resource/min/animate.min.js"></script>
