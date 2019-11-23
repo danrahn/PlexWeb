@@ -40,11 +40,11 @@ function write_rows()
     if ($level != 100)
     {
         // Only level 100 sees every request
-        $query = "SELECT request_name, u.username AS username, request_type, satisfied, request_date, comment, satisfied_date, admin_comment, user_requests.id, u.id FROM user_requests INNER JOIN users u ON user_requests.username_id=u.id WHERE user_requests.username_id=$id ORDER BY request_date DESC";
+        $query = "SELECT request_name, u.username AS username, request_type, satisfied, request_date, comment, satisfied_date, admin_comment, user_requests.id, u.id, external_id FROM user_requests INNER JOIN users u ON user_requests.username_id=u.id WHERE user_requests.username_id=$id ORDER BY user_requests.id DESC";
     }
     else
     {
-        $query = "SELECT request_name, u.username AS username, request_type, satisfied, request_date, comment, satisfied_date, admin_comment, user_requests.id, u.id FROM user_requests INNER JOIN users u ON user_requests.username_id=u.id ORDER BY request_date DESC";
+        $query = "SELECT request_name, u.username AS username, request_type, satisfied, request_date, comment, satisfied_date, admin_comment, user_requests.id, u.id, external_id FROM user_requests INNER JOIN users u ON user_requests.username_id=u.id ORDER BY user_requests.id DESC";
     }
 
     $result = $db->query($query);
@@ -56,7 +56,6 @@ function write_rows()
     while ($row = $result->fetch_row())
     {
         print("<tr>");
-
         $is_media_req = RequestType::is_media_request($row[2]);
         for ($i = 0; $i < 8; ++$i)
         {
