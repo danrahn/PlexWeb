@@ -714,7 +714,7 @@ function get_details($req_id)
             let status = <?= $details->status ?>;
             let statusSpan = document.createElement("span");
             statusSpan.className = "status" + status;
-            statusSpan.innerHTML = status == 0 ? "Pending" : status == 1 ? "Approved" : "Denied";
+            statusSpan.innerHTML = status == 0 ? "Pending" : status == 1 ? "Complete" : "Denied";
 <?php if($_SESSION['level'] >= 100) { ?>
             setupSpanDoubleClick(statusSpan);
 <?php } ?>
