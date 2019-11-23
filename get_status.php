@@ -243,7 +243,7 @@ function get_single_session($sid)
     {
         if (strcmp(get_sesh_id($sesh), $sid) === 0)
         {
-            return json_encode(build_sesh($sesh));
+            return json_encode(build_sesh($sesh, get_library_names()));
         }
     }
 
@@ -285,7 +285,9 @@ function get_all_sessions()
 /// </summary>
 function build_sesh($sesh, $library_names)
 {
-    $sesh_type = MediaType::get_media_type($library_names[(string)$sesh['librarySectionID']]);
+    $section_id = (string)$sesh['librarySectionID'];
+    $validKey = array_key_exists($section_id, $library_names);
+    $sesh_type = MediaType::get_media_type($validKey ? $library_names[$section_id] : "Other");
     if ($sesh_type == MediaType::Unknown)
     {
         if ($sesh['subtype'])
@@ -428,6 +430,11 @@ function get_title($sesh, $type)
             }
             return (string)$sesh['title'];
         default:
+            // Don't know what type of media this is. If there's a title attribute use that, otherwise show an error
+            if (array_key_exists('title', $sesh))
+            {
+                return (string)$sesh['title'];
+            }
             return "<span style='color: red'>ERROR: Unknown MediaType</span>";
     }
 }
@@ -593,9 +600,9 @@ function get_playback_device($player)
     {
         $device = $device . " (" . $player["title"] . ")";
     }
-    else if (!strcmp($device, "Plex for Android") && $player["title"] && $player["vendor"])
+    else if (strpos($device, "Plex for Android") !== FALSE && $player["title"] && $player["vendor"])
     {
-        $device = $player["vendor"] . " " . $player["title"];
+        $device = ucwords($player["vendor"]) . " " . $player["title"];
     }
 
     return $device;
