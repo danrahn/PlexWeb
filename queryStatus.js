@@ -30,20 +30,19 @@
                 }
 
                 hasChanged = true;
+                let prepend = "";
 
-                let newTitle = baseTitle;
                 if (response.play > 0)
                 {
-                    newTitle += " - " + response.play + "&#9205;";
+                    prepend = `${response.play}&#9205; - `;
                 }
 
                 if (response.pause > 0)
                 {
-                    newTitle += " - " + response.pause + " &#10073;&#10073;";
+                    prepend += `${response.pause}  &#10073;&#10073; - `;
                 }
 
-
-                document.querySelector('title').innerHTML = newTitle;
+                document.querySelector('title').innerHTML = prepend + baseTitle;
             }
             catch (ex)
             {
