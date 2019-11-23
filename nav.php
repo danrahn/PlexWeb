@@ -16,7 +16,7 @@
             <div class=btnimg><image src='resource/settings.png' alt='Settings' style='filter: invert(80%);margin-top:8px'/></div>
         </div>
     </div>
-    <div id="pageName" class="navPageInfo" onclick="window.location = 'index.php'">Plex Web</div>
+    <button id="pageName" class="navPageInfo" onclick="window.location = 'index.php'">Plex Web</button>
     <?php
         if ($_SERVER['REQUEST_URI'] != '/plexweb/index.php' &&
             $_SERVER['REQUEST_URI'] != '/plexweb/')
@@ -28,42 +28,42 @@
     ?>
     <?php if ($location == "Request") {?>
     <div class="navPageInfo">&#x2192;</div>
-    <div class="navPageInfo pageDetail" onclick="window.location = 'requests.php'">Requests</div>
+    <button class="navPageInfo pageDetail" onclick="window.location = 'requests.php'">Requests</button>
     <?php } ?>
     <div class="navPageInfo">&#x2192;</div>
-    <div class="navPageInfo pageDetail" onclick="window.location = '<?= $_SERVER['REQUEST_URI'] ?>'"><?= $location ?></div>
+    <button class="navPageInfo pageDetail" onclick="window.location = '<?= $_SERVER['REQUEST_URI'] ?>'"><?= $location ?></button>
     <?php } ?>
 </div>
 </div>
 <div id="leftMenu">
     <div class="navButton" onclick="window.location = 'index.php'">
-        <div class=btntxt>Home</div>
+        <button class=btntxt>Home</button>
         <div class=btnimg><image src='resource/home.png' alt='Home' style='filter: invert(80%);'/></div>
     </div>
     <div class="navButton rightbutton" onclick="window.location = 'new_request.php'">
-        <div class=btntxt>New Request</div>
+        <button class=btntxt>New Request</button>
         <div class=btnimg><image src='resource/new_request.png' alt='NewRequest' style='filter: invert(80%);'/></div>
     </div>
 <?php if (isset($_SESSION['level']) && (int)$_SESSION['level'] >= 100) { ?>
     <div class="navButton" onclick="window.location = 'members.php'">
-        <div class=btntxt>Members</div>
+        <button class=btntxt>Members</button>
         <div class=btnimg><image src='resource/members.png' alt='Home' style='filter: invert(80%);'/></div>
     </div>
 <?php } ?>
     <div class="navButton rightbutton" onclick="window.location = 'user_settings.php'">
-        <div class=btntxt>Settings</div>
+        <button class=btntxt>Settings</button>
         <div class=btnimg><image src='resource/settings.png' alt='Settings' style='filter: invert(80%);'/></div>
     </div>
     <div class="navButton" onclick="window.location = 'requests.php'">
-        <div class=btntxt>Requests</div>
+        <button class=btntxt>Requests</button>
         <div class=btnimg><image src='resource/requests.png' alt='Requests' style='filter: invert(80%);'/></div>
     </div>
     <div class="navButton" onclick="window.location = 'logout.php'">
-        <div class=btntxt>Logout</div>
+        <button class=btntxt>Logout</button>
         <div class=btnimg><image src='resource/logout.png' alt='Logout' style='filter: invert(80%);'/></div>
     </div>
     <div class="navButton" onclick="window.open('https://github.com/danrahn/plexweb', '_blank')">
-        <div class=btntxt>Source Code</div>
+        <button class=btntxt>Source Code</button>
         <div class=btnimg><image src='resource/github.png' alt='Github' style='filter: invert(80%);'/></div>
     </div>
 </div>
