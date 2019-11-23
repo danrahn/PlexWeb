@@ -284,10 +284,13 @@ requireSSL();
             {
                 release = match.first_air_date;
             }
+            let span = document.createElement("span");
+            span.innerHTML = (match.title ? match.title : match.name) + " ";
             let href = document.createElement("a");
             href.href = "#";
             href.addEventListener("click", goToImdb);
-            href.innerHTML = (match.title ? match.title : match.name) + (release ? " (" + release.substring(0, 4) + ")" : "");
+            href.innerHTML = `(${release ? release.substring(0, 4) : "IMDb"})`;
+            div.appendChild(span);
             div.appendChild(href);
 
             if (img) item.appendChild(img);
