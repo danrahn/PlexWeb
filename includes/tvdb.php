@@ -21,7 +21,7 @@ class Episode
             {
                 $this->error = $data['Error'];
             }
-            else if (count($data['data']) != 1)
+            else if (isset($data['data']) && count($data['data']) != 1)
             {
                 $this->error = "Episode query was ambiguous";
             }
