@@ -47,7 +47,7 @@ function process_request($type)
             $message = process_suggestion(get("name"), get("mediatype"), get("comment"));
             break;
         case "request_new":
-            $message = process_suggestion_new(get("name"), get("mediatype"), get("external_id"));
+            $message = process_suggestion_new(get("name"), get("mediatype"), get("external_id"), get("poster"));
             break;
         case "pr": // pr === permission_request
             $message = process_permission_request();
@@ -97,6 +97,9 @@ function process_request($type)
             break;
         case "req_nav":
             $message = get_next_req((int)get("id"), (int)get("dir"));
+            break;
+        case "requests":
+            $message = get_requests((int)get("num"), (int)get("page"), get("filter"));
             break;
         default:
             return json_error("Unknown request type: " . $type);
@@ -276,10 +279,32 @@ function process_suggestion($suggestion, $type, $comment)
         return json_error($db->error);
     }
 
+    // If there was no user comment we can return now. Otherwise, find the request id of the item we just
+    // created and add a comment
+    if (strlen($comment) == 0)
+    {
+        return json_success();
+    }
+
+    $query = "SELECT id FROM user_requests WHERE username_id=$userid AND request_type=$type AND request_name='$suggestion' ORDER BY id DESC LIMIT 1";
+    $result = $db->query($query);
+    if (!$result || $result->num_rows == 0)
+    {
+        return db_error();
+    }
+
+    $req_id = (int)$result->fetch_row()[0];
+
+    $query = "INSERT INTO request_comments (req_id, user_id, content) VALUES ($req_id, $userid, $comment)";
+    if (!$db->query($query))
+    {
+        return db_error();
+    }
+
     return json_success();
 }
 
-function process_suggestion_new($suggestion, $type, $external_id)
+function process_suggestion_new($suggestion, $type, $external_id, $poster)
 {
     $type = RequestType::get_type_from_str($type);
     $external_id = (int)$external_id;
@@ -295,8 +320,9 @@ function process_suggestion_new($suggestion, $type, $external_id)
 
     global $db;
     $suggestion = $db->real_escape_string($suggestion);
+    $poster = $db->real_escape_string($poster);
     $userid = (int)$_SESSION['id'];
-    $query = "INSERT INTO user_requests (username_id, request_type, request_name, external_id, comment) VALUES ($userid, $type, '$suggestion', $external_id, '')";
+    $query = "INSERT INTO user_requests (username_id, request_type, request_name, external_id, comment, poster_path) VALUES ($userid, $type, '$suggestion', $external_id, '', '$poster')";
     if (!$db->query($query))
     {
         return json_error($db->error);
@@ -1328,6 +1354,201 @@ function get_next_req($cur_id, $forward)
     }
 
     return '{"new_id":' . $result->fetch_row()[0] . "}";
+}
+
+function get_requests($num, $page, $filter)
+{
+    global $db;
+    $id = (int)$_SESSION['id'];
+    $level = (int)$_SESSION['level'];
+    $offset = $num == 0 ? 0 : $num * $page;
+    $filter = json_decode($filter);
+
+    $query = "SELECT request_name, u.username AS username, request_type, satisfied, request_date, satisfied_date, user_requests.id, u.id, external_id, poster_path, comment_count FROM user_requests INNER JOIN users u ON user_requests.username_id=u.id ";
+
+    $filter_arr = array();
+    if ($filter->pending)
+    {
+        array_push($filter_arr, "satisfied=0");
+    }
+    if ($filter->complete)
+    {
+        array_push($filter_arr, "satisfied=1");
+    }
+    if ($filter->declined)
+    {
+        array_push($filter_arr, "satisfied=2");
+    }
+
+    if (count($filter_arr) == 0)
+    {
+        // Filter removes all items, just return an empty object
+        $requests = new \stdClass();
+        $requests->count = 0;
+        $requests->entries = array();
+        $requests->total = 0;
+        return json_encode($requests);
+    }
+
+    $filter_string = join(" OR ", $filter_arr);
+    if ($level != 100)
+    {
+        $filter_string = "WHERE user_requests.username_id=$id AND (" . $filter_string . ") ";
+    }
+    else
+    {
+        $filter_string = " WHERE (" . $filter_string . ") ";
+    }
+
+    $query .= $filter_string;
+
+    switch ($filter->sort)
+    {
+        case "rd":
+            $query .= "ORDER BY user_requests.id DESC";
+            break;
+        case "ra":
+            $query .= "ORDER BY user_requests.id ASC";
+            break;
+        case "ud":
+            $query .= "ORDER BY user_requests.satisfied_date DESC";
+            break;
+        case "ua":
+            $query .= "ORDER BY user_requests.satisfied_date ASC";
+            break;
+        default:
+            return json_error("Invalid sort option");
+    }
+
+    if ($num != 0)
+    {
+        $query .= " LIMIT $num";
+    }
+
+    if ($offset != 0)
+    {
+        $query .= " OFFSET $offset";
+    }
+
+    $result = $db->query($query);
+    {
+        if (!$result)
+        {
+            return db_error();
+        }
+    }
+
+    $requests = new \stdClass();
+    $requests->count = $result->num_rows;
+    $requests->entries = array();
+    while ($row = $result->fetch_row())
+    {
+        $request = new \stdClass();
+        $request->n = $row[0]; // Request Name
+        $request->r = $row[1]; // Requester
+        $request->t = $row[2]; // Request Type
+        $request->a = $row[3]; // Addressed
+        $request->rd = $row[4]; // Request Date
+        $request->ad = $row[5]; // Addressed Date
+        $request->rid = $row[6]; // Request ID
+        $request->uid = $row[7]; // Requester ID
+        $request->eid = $row[8]; // External ID
+        $request->c = $row[10]; // Comment count
+        $poster_path = $row[9];
+        if (!$row[9])
+        {
+            // If we don't have a poster path, get it
+            $poster_path = get_poster_path($request);
+        }
+
+        if ($poster_path)
+        {
+            $request->p = $poster_path;
+        }
+
+        array_push($requests->entries, $request);
+    }
+
+    $query = "SELECT COUNT(*) FROM user_requests " . $filter_string;
+    $result = $db->query($query);
+    if (!$result)
+    {
+        return db_error();
+    }
+
+    $requests->total = (int)$result->fetch_row()[0];
+
+    return json_encode($requests);
+}
+
+function get_poster_path($request)
+{
+    $type = RequestType::get_type((int)$request->t);
+    $endpoint = "";
+    $json = NULL;
+    $continue = false;
+
+    // Some early requests don't have an external id. Don't try
+    // to get a poster for a null item, as it will fail anyway
+    if ($request->eid)
+    {
+        switch ($type)
+        {
+            case RequestType::Movie:
+                $json = run_query("movie/" . $request->eid);
+                break;
+            case RequestType::TVShow:
+                $json = run_query("tv/" . $request->eid);
+                break;
+            default:
+                $continue = TRUE;
+                break;
+        }
+    }
+
+    if ($continue)
+    {
+        return "/viewstream.png";
+    }
+
+    if ($json == NULL)
+    {
+        switch ($type)
+        {
+            case RequestType::Movie:
+                return "/moviedefault.png";
+            case RequestType::TVShow:
+                return "/tvdefault.png";
+            default:
+                return "/viewstream.png";
+        }
+    }
+
+    $json = json_decode($json);
+    if (isset($json->poster_path) && $json->poster_path)
+    {
+        $poster_path = $json->poster_path;
+        $query = "UPDATE user_requests SET poster_path='$json->poster_path' WHERE id=$request->rid";
+        $inner_res = $db->query($query);
+        if ($inner_res === FALSE)
+        {
+            return db_error();
+        }
+
+        return $poster_path;
+    }
+}
+
+function run_query($endpoint)
+{
+    $query = TMDB_URL . $endpoint . TMDB_TOKEN;
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $query);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
+
+    $return = curl_exec($ch);
+    curl_close($ch);
+    return $return;
 }
 
 /// <summary>

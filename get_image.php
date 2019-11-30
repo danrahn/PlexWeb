@@ -11,17 +11,21 @@ require_once "includes/config.php";
 verify_loggedin();
 
 $img_path = param_or_die("path");
-$type = param_or_die("type");
-if ($type !== "thumb" && $type !== "background")
-{
-    error_and_exit(400);
-}
+$type = get_type();
 
-$isThumb = !strcmp($type, "thumb");
-$root_folder = $isThumb ? "" : $type . "/";
+$isThumb = $type == ImgType::Thumb;
+$root_folder = $isThumb ? "" : param_or_die("type") . "/";
 
 $filename_parts = explode("/", $img_path);
-$filename = "includes/cache/" . $root_folder . $filename_parts[count($filename_parts) - 2] . "/" . $filename_parts[count($filename_parts) - 3] . "_" . $filename_parts[count($filename_parts) - 1] . ".jpg";
+$filename = "";
+if ($type == ImgType::Poster)
+{
+    $filename = "includes/cache/poster" . $img_path;
+}
+else
+{
+    $filename = "includes/cache/" . $root_folder . $filename_parts[count($filename_parts) - 2] . "/" . $filename_parts[count($filename_parts) - 3] . "_" . $filename_parts[count($filename_parts) - 1] . ".jpg";
+}
 
 if (file_exists($filename))
 {
@@ -66,26 +70,44 @@ if (file_exists($filename))
 }
 else
 {
-    serve_new_image($img_path, $filename, $isThumb);
+    serve_new_image($img_path, $filename, $type);
+}
+
+abstract class ImgType
+{
+    const Thumb = 0;
+    const Background = 1;
+    const Poster = 2;
 }
 
 /// <summary>
 /// Grab the specified image from plex, resize it, and store it locally.
 /// If it's not a thumb, also blur the image
 /// </summary>
-function serve_new_image($img_path, $filename, $isThumb)
+function serve_new_image($img_path, $filename, $type)
 {
     $img = new Imagick();
-    $img->readImageBlob(curl(PLEX_SERVER . $img_path . '?' . PLEX_TOKEN));
 
-    if ($isThumb)
+    if ($type == ImgType::Poster)
     {
-        $img->thumbnailImage(250, 0);
+        $img->readImageBlob(curl("https://image.tmdb.org/t/p/w342" . $img_path));
     }
     else
     {
-        $img->thumbnailImage(600, 0);
-        $img->blurImage(30.0, 6);
+        $img->readImageBlob(curl(PLEX_SERVER . $img_path . '?' . PLEX_TOKEN));
+    }
+
+    switch($type)
+    {
+        case ImgType::Thumb:
+            $img->thumbnailImage(250, 0);
+            break;
+        case ImgType::Background:
+            $img->thumbnailImage(600, 0);
+            $img->blurImage(30.0, 6);
+            break;
+        default:
+            break;
     }
 
     header('Cache-Control: private');
@@ -110,6 +132,22 @@ function curl($url)
     $return = curl_exec($ch);
     curl_close($ch);
     return $return;
+}
+
+function get_type()
+{
+    $type = param_or_die("type");
+    switch ($type)
+    {
+        case "thumb":
+            return ImgType::Thumb;
+        case "background":
+            return ImgType::Background;
+        case "poster":
+            return ImgType::Poster;
+        default:
+            error_and_exit(400);
+    }
 }
 
 ?>

@@ -704,7 +704,7 @@ function get_details($req_id)
             innerContainer.id = "innerInfoContainer";
 
             let poster = document.createElement("img");
-            poster.src = "https://image.tmdb.org/t/p/w342" + data.poster_path;
+            poster.src = "poster" + data.poster_path;
             poster.id = "mediaPoster";
 
             let details = document.createElement("div");

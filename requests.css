@@ -1,0 +1,251 @@
+a {
+    color: #80A020;
+}
+
+a:hover {
+    color: #608020;
+}
+
+.tableHolder {
+    margin: auto;
+    margin-top: 50px;
+    width: 80%;
+    min-width: 300px;
+    max-width: 800px;
+    color: #c1c1c1;
+}
+
+#resultInfo {
+    background-color: rgba(0,0,0,.3);
+    text-align: center;
+    padding: 10px;
+    border-left: 2px solid #919191AA;
+    border-right: 2px solid #919191AA;
+}
+
+.tableHF {
+    border: 2px solid #919191AA;
+    background-color: rgba(0, 200, 0, 0.1);
+}
+
+#tableHeader {
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+}
+
+#tableFooter {
+    border-top: none;
+    border-bottom-left-radius: 10px;
+    border-bottom-right-radius: 10px;
+}
+
+.tableHF span {
+    padding: 0 10px 0 10px;
+}
+
+.tableHF button {
+    color: #c1c1c1;
+    background-color: transparent;
+    padding: 10px;
+    width: 50px;
+}
+
+.tableHF .ppButton {
+    margin: 0px;
+    border: none;
+    border-left: 2px solid #919191AA;
+}
+
+.tableHF button.selected {
+    background-color: #00000044;
+}
+
+.tableHF button:hover {
+    background-color: #00000022;
+}
+
+.tableHF button.cap {
+    border-right: 2px solid #919191AA;
+}
+
+.requestHolder {
+    background-color: rgba(0,0,0,.3);
+    border: 2px solid #919191AA;
+    border-top: none;
+    display: inline-block;
+    width: calc(100% - 4px);
+    margin: 0;
+}
+
+.requestHolder:hover {
+    background-color: rgba(0,0,0,0.6);
+}
+
+.requestHolder .imgHolder {
+    border: none;
+}
+
+.textHolder .requestTitle {
+    vertical-align: top;
+    font-size: 12pt;
+    display: block;
+    margin-bottom: 5px;
+    margin-top: 5px;
+}
+
+.textHolder span {
+    display: block;
+    padding-bottom: 3px;
+    font-size: 10pt;
+}
+
+.requestComplete {
+    background-color: rgb(63, 100, 69, 0.3);
+}
+
+.requestComplete:hover {
+    background-color: rgb(63, 100, 69, 0.6);
+}
+
+.requestDenied {
+    background-color: rgb(100, 66, 69, 0.3);
+}
+
+.requestDenied:hover {
+    background-color: rgb(100, 66, 69, 0.6);
+}
+
+.pageStatus {
+    display: inline-block;
+}
+
+.previousPage {
+    border: none;
+    border-right: 2px solid #919191AA;
+}
+
+.nextPage {
+    float: right;
+    border: none;
+    border-left: 2px solid #919191AA;
+}
+
+#tableHeader .previousPage {
+    border-top-left-radius: 10px
+}
+#tableHeader .nextPage {
+    border-top-right-radius: 10px
+}
+#tableFooter .previousPage {
+    border-bottom-left-radius: 10px
+}
+#tableFooter .nextPage {
+    border-bottom-right-radius: 10px
+}
+
+.filterImg {
+    display: inline;
+    height: 20px;
+    margin-top: 7px;
+    margin-right: 10px;
+    vertical-align: middle;
+    float: right;
+}
+
+.filterImg:hover {
+    filter: invert(20%);
+}
+
+#filterOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0,0,0,0.6);
+}
+
+#filterContainer {
+    margin: auto;
+    width: 80%;
+    min-width: 200px;
+    max-width: 400px;
+    height: auto;
+    padding: 20px;
+    background-color: rgba(0,0,0,0.6);
+    color: rgb(196, 196, 196);
+    margin-top: 25vh;
+}
+
+.pageSelect {
+    cursor: pointer;
+    display: inline;
+    float: none;
+    width: 20px;
+    font-size: 12pt;
+    text-align: center;
+    background-color: rgba(83, 87, 90, 0.6);
+}
+
+.pageCount {
+    padding: 0 !important;
+    margin: 0;
+}
+
+/* Desktop/landscape mode */
+@media (orientation: landscape), (min-width: 767px) {
+    .largeShow {
+        display: inline;
+    }
+
+    .requestHolder .imgHolder {
+        float: left;
+        margin: 0;
+        padding: 0;
+    }
+
+    .imgHolder img {
+        height: 120px;
+    }
+
+    .requestHolder {
+        margin-bottom: -4px;
+    }
+
+    .requestHolder .textHolder {
+        float: left;
+        margin-left: 15px;
+    }
+
+    .pageStatus {
+        margin-left: 10px;
+    }
+}
+
+/* Mobile/portrait mode */
+@media (orientation: portrait) and (max-width: 767px) {
+    .largeShow {
+        display: none;
+    }
+
+    .requestHolder .textHolder {
+        text-align: center;
+    }
+
+    .requestHolder .imgHolder {
+        margin: auto;
+        text-align: center;
+        padding-top: 10px;
+    }
+
+    .imgHolder img {
+        height: 128px;
+        border: 2px solid #919191AA;
+    }
+
+    .pageStatus {
+        text-align: center;
+        width: calc(100% - 140px);
+        margin: auto;
+    }
+}

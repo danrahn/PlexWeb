@@ -269,6 +269,7 @@ requireSSL();
             item.className = "searchResult";
             item.setAttribute("tmdbid", match.id);
             item.setAttribute("title", match.title ? match.title : match.name);
+            item.setAttribute("poster", match.poster_path);
 
             let img;
             if (match.poster_path)
@@ -378,6 +379,7 @@ requireSSL();
 
         const tmdbid = selectedSuggestion.getAttribute("tmdbid");
         const title = selectedSuggestion.getAttribute("title");
+        const poster = selectedSuggestion.getAttribute("poster");
         if (!tmdbid || !title)
         {
             logError("Required fields not set");
@@ -389,7 +391,8 @@ requireSSL();
             "type" : "request_new",
             "name" : title,
             "mediatype" : $("#type").value,
-            "external_id" : tmdbid
+            "external_id" : tmdbid,
+            "poster" : poster
         }
 
         let successFunc = function(response)
