@@ -888,14 +888,14 @@ function get_details($req_id)
                         "<": "&lt;",
                         ">": "&gt;",
                         '"': '&quot;',
-                        // "'": '&#39;',
+                        "'": '&#39;',
                         "/": '&#x2F;'
                     };
 
                     return entityMap[s];
                 });
 
-                let markdownUrlRegex = /(?:__|[*#])|\[(.*?)\]\((.*?)\)/gm;
+                let markdownUrlRegex = /\[(.*?)\]\((.*?)\)/gm;
                 fixedupContent = "<span>" + fixedupContent.replace(markdownUrlRegex, '<a href="$2" target="_blank">$1</a>') + "</span>";
 
                 content.innerHTML = fixedupContent;

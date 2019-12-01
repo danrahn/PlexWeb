@@ -1460,7 +1460,7 @@ function get_requests($num, $page, $filter)
 
     if ($num != 0)
     {
-        $query .= "LIMIT $num";
+        $query .= "LIMIT $num ";
     }
 
     if ($offset != 0)

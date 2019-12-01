@@ -25,7 +25,8 @@ input[type=checkbox]:focus {
 
 .tableHolder {
     margin: auto;
-    margin-top: 50px;
+    margin-top: 70px;
+    margin-bottom: 20px;
     width: 80%;
     min-width: 300px;
     max-width: 800px;
@@ -201,7 +202,6 @@ input[type=checkbox]:focus {
     padding: 20px;
     background-color: rgba(0,0,0,0.6);
     color: rgb(196, 196, 196);
-    margin-top: 25vh;
 }
 
 .textHolder label {
@@ -276,6 +276,10 @@ input[type=checkbox]:focus {
     .pageStatus {
         margin-left: 10px;
     }
+
+    #filterContainer {
+        margin-top: 25vh;
+    }
 }
 
 /* Mobile/portrait mode */
@@ -303,5 +307,17 @@ input[type=checkbox]:focus {
         text-align: center;
         width: calc(100% - 140px);
         margin: auto;
+    }
+
+    #filterContainer {
+        margin-top: 15vh;
+    }
+
+    #filterContainer label {
+        font-size: 10pt;
+    }
+
+    #filterContainer .formInput {
+        padding: 3px;
     }
 }
