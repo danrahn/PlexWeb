@@ -28,24 +28,24 @@ verify_loggedin(TRUE /*redirect*/, "requests.php");
         <div id="container">
             <div class="tableHolder">
                 <div id="tableHeader" class="tableHF">
-                    <button class="previousPage"><img src="arrow.png" alt="Previous Page" /></button>
+                    <button class="previousPage" title="Previous Page"><img src="arrow.png" alt="Previous Page" /></button>
                     <div class="largeShow">
                         <span>Show:</span>
                         <button class="ppButton" value="25">25</button><button class="ppButton" value="50">50</button><button class="ppButton" value="100">100</button><button class="ppButton cap" value="0">All</button>
                     </div>
-                    <div class="pageStatus">Page <input type="text" class="pageSelect" value="1"> of <span class="pageCount">1</span></div>
-                    <button class="nextPage"><img src="arrow.png" alt="Next Page" /></button>
+                    <div class="pageStatus">Page <input type="text" class="pageSelect" value="1" title="Select Page"> of <span class="pageCount">1</span></div>
+                    <button class="nextPage" title="Next Page"><img src="arrow.png" alt="Next Page" /></button>
                     <img class="filterImg" src="filter.png" alt="Filter" title="Filter Results" />
                 </div>
                 <div id="tableEntries"></div>
                 <div id="tableFooter" class="tableHF">
-                    <button class="previousPage"><img src="arrow.png" alt="Previous Page" /></button>
+                    <button class="previousPage" title="Previous Page"><img src="arrow.png" alt="Previous Page" /></button>
                     <div class="largeShow">
                         <span>Show:</span>
                         <button class="ppButton" value="25">25</button><button class="ppButton" value="50">50</button><button class="ppButton" value="100">100</button><button class="ppButton cap" value="0">All</button>
                     </div>
-                    <div class="pageStatus">Page <input type="text" class="pageSelect" value="1"> of <span class="pageCount">1</span></div>
-                    <button class="nextPage"><img src="arrow.png" alt="Next Page" /></button>
+                    <div class="pageStatus">Page <input type="text" class="pageSelect" value="1" title="Select Page"> of <span class="pageCount">1</span></div>
+                    <button class="nextPage" title="Next Page"><img src="arrow.png" alt="Next Page" /></button>
                     <img class="filterImg" src="filter.png" alt="Filter" title="Filter Results" />
                 </div>
             </div>
@@ -109,7 +109,14 @@ verify_loggedin(TRUE /*redirect*/, "requests.php");
         let now = new Date();
         for (let i = 0; i < requests.count; ++i)
         {
-            entries.appendChild(buildRequest(requests.entries[i], sortOrder));
+            const request = requests.entries[i];
+            entries.appendChild(buildRequest(request, sortOrder));
+
+<?php if (isset($_SESSION['level']) && (int)$_SESSION['level'] >= 100) {?>
+            // Only after we append the item to the DOM can we mess with our constructed combobox
+            setStatusChangeHandlers(request);
+<?php } else { ?>
+<?php } ?>
         }
 
         setPageInfo(requests.total);
@@ -156,7 +163,12 @@ verify_loggedin(TRUE /*redirect*/, "requests.php");
         let status = document.createElement("span");
         let statusVal = parseInt(request.a);
         let statusText = statusVal == 0 ? "Pending" : (statusVal == 1 ? "Complete" : "Denied");
+
+<?php if (isset($_SESSION['level']) && (int)$_SESSION['level'] >= 100) {?>
+        status.innerHTML = getStatusSelection(request.rid, statusVal);
+<?php } else { ?>
         status.innerHTML = `Status: ${statusText}`;
+<?php } ?>
 
         if (statusVal == 1 || statusVal == 2)
         {
@@ -186,6 +198,77 @@ verify_loggedin(TRUE /*redirect*/, "requests.php");
         holder.appendChild(textHolder);
         return holder;
     }
+
+<?php if (isset($_SESSION['level']) && (int)$_SESSION['level'] >= 100) {?> // Admin helper methods
+    function getStatusSelection(rid, selected)
+    {
+        return `
+<label for="status_${rid}">Status: </label><select name="status_${rid}" id="status_${rid}" class="inlineCombo">
+    <option value="0">Pending</option>
+    <option value="1">Complete</option>
+    <option value="2">Denied</option>
+</select>
+<a href='#' id='statusChange_${rid}' class='statusChange statusHidden' orig='${selected}' rid='${rid}'>Update</a>
+`
+    }
+
+    function setStatusChangeHandlers(request)
+    {
+        let select = $(`#status_${request.rid}`);
+        let changeLink = $(`#statusChange_${request.rid}`);
+        select.value = request.a;
+        select.addEventListener("change", function()
+        {
+            let newVal = select.value;
+            if (newVal != changeLink.getAttribute("orig"))
+            {
+                changeLink.classList.remove("statusHidden");
+            }
+            else if (!changeLink.classList.contains("statusHidden"))
+            {
+                changeLink.classList.add("statusHidden");
+            }
+        });
+
+        changeLink.addEventListener("click", function()
+        {
+            let params = {
+                "type" : "req_update",
+                "data" :
+                [{
+                    "id" : this.getAttribute("rid"),
+                    "kind" : "status",
+                    "content" : $(`#status_${this.getAttribute("rid")}`).value
+                }]
+            }
+
+            let successFunc = function()
+            {
+                Animation.queue({"backgroundColor": "rgb(63, 100, 69)"}, $(`#status_${request.rid}`), 500);
+                Animation.queueDelayed({"backgroundColor": "transparent"}, $(`#status_${request.rid}`), 500, 500, true);
+                setTimeout(function()
+                {
+                    clearElement("tableEntries");
+                    getRequests();
+                }, 2000)
+            }
+
+            let failureFunc = function(response, request)
+            {
+                Animation.queue({"backgroundColor": "rgb(100, 66, 69)"}, $(`#status_${request.rid}`), 500);
+                Animation.queueDelayed({"backgroundColor": "transparent"}, $(`#status_${request.rid}`), 1000, 500, true);
+            }
+
+            sendHtmlJsonRequest(
+                "update_request.php",
+                JSON.stringify(params),
+                successFunc,
+                failureFunc,
+                {"rid" : this.getAttribute("rid")},
+                true /*dataIsString*/);
+        });
+    }
+<?php } ?>
 
     /// <summary>
     /// Determine how long ago a date is from the current time.
@@ -662,7 +745,7 @@ verify_loggedin(TRUE /*redirect*/, "requests.php");
     /// <summary>
     /// Generic method to sent an async request that expects JSON in return
     /// </summary>
-    function sendHtmlJsonRequest(url, parameters, successFunc, failFunc, additionalParams)
+    function sendHtmlJsonRequest(url, parameters, successFunc, failFunc, additionalParams, dataIsString)
     {
         let http = new XMLHttpRequest();
         http.open("POST", url, true /*async*/);
@@ -696,7 +779,7 @@ verify_loggedin(TRUE /*redirect*/, "requests.php");
                     logError(response.Error);
                     if (failFunc)
                     {
-                        failFunc(response);
+                        failFunc(response, this);
                     }
 
                     return;
@@ -712,7 +795,7 @@ verify_loggedin(TRUE /*redirect*/, "requests.php");
             }
         };
 
-        http.send(buildQuery(parameters));
+        http.send(dataIsString ? parameters : buildQuery(parameters));
     }
 
     /// <summary>

@@ -143,6 +143,7 @@ input[type=checkbox]:focus {
 
 .previousPage img, .nextPage img {
     height: 15px;
+    margin-bottom: -3px;
 }
 
 .previousPage img {
@@ -201,6 +202,22 @@ input[type=checkbox]:focus {
     background-color: rgba(0,0,0,0.6);
     color: rgb(196, 196, 196);
     margin-top: 25vh;
+}
+
+.inlineCombo {
+    float: none;
+    background-color: transparent;
+    border: none;
+    padding: 0;
+    margin: 0;
+}
+
+.inlineCombo:focus {
+    border: none;
+}
+
+.statusHidden {
+    display: none;
 }
 
 #filterContainer input[type="button"] {
