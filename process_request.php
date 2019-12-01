@@ -1364,7 +1364,7 @@ function get_requests($num, $page, $filter)
     $offset = $num == 0 ? 0 : $num * $page;
     $filter = json_decode($filter);
 
-    $query = "SELECT request_name, u.username AS username, request_type, satisfied, request_date, satisfied_date, user_requests.id, u.id, external_id, poster_path, comment_count FROM user_requests INNER JOIN users u ON user_requests.username_id=u.id ";
+    $query = "SELECT request_name, users.username, request_type, satisfied, request_date, satisfied_date, user_requests.id, users.id, external_id, poster_path, comment_count FROM user_requests INNER JOIN users ON user_requests.username_id=users.id ";
 
     $filter_status = array();
     if ($filter->status->pending)
@@ -1419,6 +1419,12 @@ function get_requests($num, $page, $filter)
     else
     {
         $filter_string = " WHERE (" . $filter_status_string . ") AND (" . $filter_type_string . ") ";
+
+        $user = (int)$filter->user;
+        if ($user != -1)
+        {
+            $filter_string .= "AND (user_requests.username_id=$user) ";
+        }
     }
 
     $query .= $filter_string;
@@ -1454,12 +1460,12 @@ function get_requests($num, $page, $filter)
 
     if ($num != 0)
     {
-        $query .= " LIMIT $num";
+        $query .= "LIMIT $num";
     }
 
     if ($offset != 0)
     {
-        $query .= " OFFSET $offset";
+        $query .= "OFFSET $offset";
     }
 
     $result = $db->query($query);

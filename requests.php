@@ -296,6 +296,40 @@ verify_loggedin(TRUE /*redirect*/, "requests.php");
                 true /*dataIsString*/);
         });
     }
+
+    /// <summary>
+    /// Get a list of all the users to populate the admin-only filter option
+    /// </summary>
+    function populateUserFilter()
+    {
+        let params = { "type" : "members" };
+        let successFunc = function(response)
+        {
+            response.sort(function(a, b)
+            {
+                return a.username.toLowerCase().localeCompare(b.username.toLowerCase());
+            });
+
+            let select = $("#filterTo");
+            response.forEach(function(user)
+            {
+                let option = document.createElement("option");
+                option.value = user.id;
+                option.text = user.username;
+                select.appendChild(option);
+            });
+
+            select.value = getFilter().user;
+        };
+
+        let failureFunc = function(response)
+        {
+            Animation.queue({"backgroundColor": "rgb(100, 66, 69)"}, $("#filterTo"), 500);
+            Animation.queueDelayed({"backgroundColor": "rgb(63, 66, 69"}, $("#filterTo"), 1000, 500, true);
+        };
+
+        sendHtmlJsonRequest("process_request.php", params, successFunc, failureFunc);
+    }
 <?php } ?>
 
     /// <summary>
@@ -414,6 +448,10 @@ verify_loggedin(TRUE /*redirect*/, "requests.php");
         $("#sortBy").value = filter.sort;
         $("#sortOrder").value = filter.order;
 
+<?php if ($_SESSION['level'] >= 100) {?>
+        populateUserFilter();
+<?php } ?>
+
         setSortOrderValues();
         $("#sortBy").addEventListener("change", setSortOrderValues);
 
@@ -434,7 +472,10 @@ verify_loggedin(TRUE /*redirect*/, "requests.php");
                     "other" : $("#showOther").checked,
                 },
                 "sort" : $("#sortBy").value,
-                "order" : $("#sortOrder").value
+                "order" : $("#sortOrder").value,
+<?php if ($_SESSION['level'] >= 100) { ?>
+                "user" : $("#filterTo").value
+<?php } ?>
             }, true /*update*/);
 
             dismissFilterDialog();
@@ -533,6 +574,15 @@ verify_loggedin(TRUE /*redirect*/, "requests.php");
         </select>
     </div>
     <hr />
+<?php if (isset($_SESSION['level']) && $_SESSION['level'] >= 100) {?>
+    <div class="formInput">
+        <label for="filterTo">Filter To: </label>
+        <select name="filterTo" id="filterTo">
+            <option value="-1">All</option>
+        </select>
+    </div>
+    <hr />
+<?php } ?>
     <div class="formInput">
         <input type="button" value="Apply" id="applyFilter">
         <input type="button" value="Reset" id="resetFilter" style="margin-right: 10px">
@@ -754,7 +804,8 @@ verify_loggedin(TRUE /*redirect*/, "requests.php");
             !filter.hasOwnProperty("status") ||
             !filter.hasOwnProperty("type") ||
             !filter.hasOwnProperty("sort") ||
-            !filter.hasOwnProperty("order"))
+            !filter.hasOwnProperty("order") ||
+            !filter.hasOwnProperty("user"))
         {
             filter = defaultFilter();
             setFilter(filter, false);
@@ -781,7 +832,8 @@ verify_loggedin(TRUE /*redirect*/, "requests.php");
                 "other" : true
             },
             "sort" : "request",
-            "order" : "desc"
+            "order" : "desc",
+            "user" : -1
         };
 
         return filter;
