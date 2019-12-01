@@ -377,27 +377,66 @@ verify_loggedin(TRUE /*redirect*/, "requests.php");
         });
 
         let filter = getFilter();
-        $("#showPending").checked = filter.pending;
-        $("#showComplete").checked = filter.complete;
-        $("#showDeclined").checked = filter.declined;
+        $("#showPending").checked = filter.status.pending;
+        $("#showComplete").checked = filter.status.complete;
+        $("#showDeclined").checked = filter.status.declined;
+        $("#showMovies").checked = filter.type.movies;
+        $("#showTV").checked = filter.type.tv;
+        $("#showOther").checked = filter.type.other;
         $("#sortBy").value = filter.sort;
+        $("#sortOrder").value = filter.order;
+
+        setSortOrderValues();
+        $("#sortBy").addEventListener("change", setSortOrderValues);
 
         $("#applyFilter").addEventListener("click", function(e)
         {
             setFilter(
             {
-                "pending" : $("#showPending").checked,
-                "complete" : $("#showComplete").checked,
-                "declined" : $("#showDeclined").checked,
-                "sort" : $("#sortBy").value
+                "status" :
+                {
+                    "pending" : $("#showPending").checked,
+                    "complete" : $("#showComplete").checked,
+                    "declined" : $("#showDeclined").checked
+                },
+                "type" :
+                {
+                    "movies" : $("#showMovies").checked,
+                    "tv" : $("#showTV").checked,
+                    "other" : $("#showOther").checked,
+                },
+                "sort" : $("#sortBy").value,
+                "order" : $("#sortOrder").value
             }, true /*update*/);
 
             dismissFilterDialog();
         });
 
         $("#cancelFilter").addEventListener("click", dismissFilterDialog);
+        $("#resetFilter").addEventListener("click", function()
+        {
+            setFilter(defaultFilter(), true);
+            dismissFilterDialog();
+        });
 
         Animation.queue({"opacity": 1}, overlay, 250);
+    }
+
+    /// <summary>
+    /// Adjusts the sort order text depending on the sort field
+    /// </summary>
+    function setSortOrderValues()
+    {
+        if ($("#sortBy").value == "title")
+        {
+            $("#sortDesc").text = "A-Z";
+            $("#sortAsc").text = "Z-A";
+        }
+        else
+        {
+            $("#sortDesc").text = "Newest First";
+            $("#sortAsc").text = "Oldest First";
+        }
     }
 
     /// <summary>
@@ -440,17 +479,34 @@ verify_loggedin(TRUE /*redirect*/, "requests.php");
     </div>
     <hr />
     <div class="formInput">
-        <label for="sortOrder">Sort By: </label>
+        <label for="showMovies">Show Movies: </label><input type="checkbox" name="showMovies" id="showMovies">
+    </div>
+    <div class="formInput">
+        <label for="showTV">Show TV: </label><input type="checkbox" name="showTV" id="showTV">
+    </div>
+    <div class="formInput">
+        <label for="showOther">Show Other: </label><input type="checkbox" name="showOther" id="showOther">
+    </div>
+    <hr />
+    <div class="formInput">
+        <label for="sortBy">Sort By: </label>
         <select name="sortBy" id="sortBy">
-            <option value="rd">Request Date (newest first)</option>
-            <option value="ra">Request Date (oldest first)</option>
-            <option value="ud">Update Date (newest first)</option>
-            <option value="ua">Update Date (oldest first)</option>
+            <option value="request">Request Date</option>
+            <option value="update">Update Date</option>
+            <option value="title">Title</option>
+        </select>
+    </div>
+    <div class="formInput">
+        <label for="sortOrder">Sort By: </label>
+        <select name="sortOrder" id="sortOrder">
+            <option value="desc" id="sortDesc">Newest First</option>
+            <option value="asc" id="sortAsc">Oldest First</option>
         </select>
     </div>
     <hr />
     <div class="formInput">
         <input type="button" value="Apply" id="applyFilter">
+        <input type="button" value="Reset" id="resetFilter" style="margin-right: 10px">
         <input type="button" value="Cancel" id="cancelFilter" style="margin-right: 10px">
     </div>
 </div>
@@ -665,40 +721,40 @@ verify_loggedin(TRUE /*redirect*/, "requests.php");
             logError("Unable to parse stored filter");
         }
 
-        if (filter == null)
+        if (filter == null ||
+            !filter.hasOwnProperty("status") ||
+            !filter.hasOwnProperty("type") ||
+            !filter.hasOwnProperty("sort") ||
+            !filter.hasOwnProperty("order"))
         {
-            filter =
-            {
-                "pending" : true,
-                "complete" : true,
-                "declined" : true,
-                "sort" : "rd"
-            }
-
-            setFilter(filter, false);
-        }
-        else if (!filter.hasOwnProperty("pending"))
-        {
-            filter.pending = true;
-            setFilter(filter, false);
-        }
-        else if (!filter.hasOwnProperty("complete"))
-        {
-            filter.complete = true;
-            setFilter(filter, false);
-        }
-        else if (!filter.hasOwnProperty("declined"))
-        {
-            filter.declined = true;
-            setFilter(filter, false);
-        }
-        else if (!filter.hasOwnProperty("sort"))
-        {
-            filter.sort = "rd";
+            filter = defaultFilter();
             setFilter(filter, false);
         }
 
         logVerbose(`Got Filter: ${JSON.stringify(filter)}`);
+        return filter;
+    }
+
+    function defaultFilter()
+    {
+        let filter =
+        {
+            "status" :
+            {
+                "pending" : true,
+                "complete" : true,
+                "declined" : true
+            },
+            "type" :
+            {
+                "movies" : true,
+                "tv" : true,
+                "other" : true
+            },
+            "sort" : "request",
+            "order" : "desc"
+        };
+
         return filter;
     }
 

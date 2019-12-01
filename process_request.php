@@ -1366,21 +1366,35 @@ function get_requests($num, $page, $filter)
 
     $query = "SELECT request_name, u.username AS username, request_type, satisfied, request_date, satisfied_date, user_requests.id, u.id, external_id, poster_path, comment_count FROM user_requests INNER JOIN users u ON user_requests.username_id=u.id ";
 
-    $filter_arr = array();
-    if ($filter->pending)
+    $filter_status = array();
+    if ($filter->status->pending)
     {
-        array_push($filter_arr, "satisfied=0");
+        array_push($filter_status, "satisfied=0");
     }
-    if ($filter->complete)
+    if ($filter->status->complete)
     {
-        array_push($filter_arr, "satisfied=1");
+        array_push($filter_status, "satisfied=1");
     }
-    if ($filter->declined)
+    if ($filter->status->declined)
     {
-        array_push($filter_arr, "satisfied=2");
+        array_push($filter_status, "satisfied=2");
     }
 
-    if (count($filter_arr) == 0)
+    $filter_type = array();
+    if ($filter->type->movies)
+    {
+        array_push($filter_type, "request_type=1");
+    }
+    if ($filter->type->tv)
+    {
+        array_push($filter_type, "request_type=2");
+    }
+    if ($filter->type->other)
+    {
+        array_push($filter_type, "request_type=10");
+    }
+
+    if (count($filter_status) == 0 || count($filter_type) == 0)
     {
         // Filter removes all items, just return an empty object
         $requests = new \stdClass();
@@ -1390,34 +1404,54 @@ function get_requests($num, $page, $filter)
         return json_encode($requests);
     }
 
-    $filter_string = join(" OR ", $filter_arr);
+    $filter_status_string = join(" OR ", $filter_status);
+    $filter_type_string = join(" OR ", $filter_type);
+    $filter_string = "";
     if ($level != 100)
     {
-        $filter_string = "WHERE user_requests.username_id=$id AND (" . $filter_string . ") ";
+        $filter_string =
+        "WHERE user_requests.username_id=$id AND ("
+        . $filter_status_string
+        . ") AND ("
+        . $filter_type_string
+        . ") ";
     }
     else
     {
-        $filter_string = " WHERE (" . $filter_string . ") ";
+        $filter_string = " WHERE (" . $filter_status_string . ") AND (" . $filter_type_string . ") ";
     }
 
     $query .= $filter_string;
-
+    $query .= "ORDER BY ";
+    $reverse = FALSE;
     switch ($filter->sort)
     {
-        case "rd":
-            $query .= "ORDER BY user_requests.id DESC";
+        case "request":
+            $query .= "user_requests.id ";
             break;
-        case "ra":
-            $query .= "ORDER BY user_requests.id ASC";
+        case "update":
+            $query .= "user_requests.satisfied_date ";
             break;
-        case "ud":
-            $query .= "ORDER BY user_requests.satisfied_date DESC";
+        case "title":
+            $query .= "user_requests.request_name ";
+            $reverse = TRUE;
             break;
         case "ua":
-            $query .= "ORDER BY user_requests.satisfied_date ASC";
+            $query .= "user_requests.satisfied_date ";
             break;
         default:
             return json_error("Invalid sort option");
+    }
+
+    switch ($filter->order)
+    {
+        case "desc":
+            $query .= ($reverse ? "ASC " : "DESC ");
+            break;
+        case "asc":
+            $query .= ($reverse ? "DESC " : "ASC ");
+        default:
+            return json_error("Invalid sort order");
     }
 
     if ($num != 0)
