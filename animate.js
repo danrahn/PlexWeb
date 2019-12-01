@@ -30,7 +30,7 @@ let A = function()
 
         if (!element.id)
         {
-            logWarn("Animated element does not have an id!");
+            logWarn("Element has no id!");
         }
 
         if (!animationQueue[element.id])
@@ -50,7 +50,7 @@ let A = function()
 
             seen[key] = 1;
 
-            animations.push(new AnimationParams(/*Funcs[key]*/getFunc(key), key, delay, value, ...args));
+            animations.push(new AnimationParams(getFunc(key), key, delay, value, ...args));
         }
 
         animationQueue[element.id].push(animations);
@@ -135,7 +135,7 @@ let A = function()
             nextAnimations.timers = [];
             for (let i = 0; i < nextAnimations.length; ++i)
             {
-                nextAnimations.timers[i] = setTimeout(function(element, nextAnimation) {
+                nextAnimations.timers[i] = setTimeout((element, nextAnimation) => {
                     nextAnimation.func(element, nextAnimation.prop, ...nextAnimation.args);
                 }, nextAnimations[i].delay, element, nextAnimations[i]);
             }
@@ -151,7 +151,7 @@ let A = function()
         {
             case "backgroundColor":
             case "color":
-                return function(element, prop, newColor, duration, deleteAfterTransition = false)
+                return (element, prop, newColor, duration, deleteAfterTransition = false) =>
                 {
                     // '(x + .5) | 0' == Math.round.
                     // 'y || 1' because we need at least one step
@@ -163,7 +163,7 @@ let A = function()
                     {
                         if ((newColor = newColor.toLowerCase()) == "transparent")
                         {
-                            newColor = new Color(oldColor.toString());
+                            newColor = new Color(oldColor.s());
                             newColor.a = 0;
                         }
                         else
@@ -182,9 +182,9 @@ let A = function()
                         }
                     }
 
-                    logTmi("Animating " + prop + " of " + element.id + " from " + oldColor.toString() + " to " + newColor.toString() + " in " + duration + "ms");
+                    logTmi("Animating " + prop + " of " + element.id + " from " + oldColor.s() + " to " + newColor.s() + " in " + duration + "ms");
 
-                    let animationFunc = function(func, element, oldColor, newColor, i, steps, prop, deleteAfterTransition)
+                    let animationFunc = (func, element, oldColor, newColor, i, steps, prop, deleteAfterTransition) =>
                     {
                         if (animationQueue[element.id][0].canceled)
                         {
@@ -195,7 +195,7 @@ let A = function()
                             oldColor.r + (((newColor.r - oldColor.r) / steps) * i),
                             oldColor.g + (((newColor.g - oldColor.g) / steps) * i),
                             oldColor.b + (((newColor.b - oldColor.b) / steps) * i),
-                            oldColor.a + (((newColor.a - oldColor.a) / steps) * i)).toString();
+                            oldColor.a + (((newColor.a - oldColor.a) / steps) * i)).s();
 
                         if (i == steps)
                         {
@@ -218,7 +218,7 @@ let A = function()
                 };
             case "opacity":
             case "left":
-                return function(element, prop, newValue, duration, deleteAfterTransition = false)
+                return (element, prop, newValue, duration, deleteAfterTransition = false) =>
                 {
                     var steps = (duration / (50 / 3) + 0.5) | 0 || 1;
                     let lastChar = newValue[newValue.length - 1];
@@ -233,7 +233,7 @@ let A = function()
                     }
 
                     logTmi("Animating " + prop + " of " + element.id + " from " + oldVal + " to " + newVal + " in " + duration + "ms");
-                    let animationFunc = function(func, element, prop, oldVal, newVal, percent, px, i, steps, deleteAfterTransition)
+                    let animationFunc = (func, element, prop, oldVal, newVal, percent, px, i, steps, deleteAfterTransition) =>
                     {
                         if (animationQueue[element.id][0].canceled)
                         {
@@ -260,7 +260,7 @@ let A = function()
                     setTimeout(animationFunc, 50 / 3, animationFunc, element, prop, oldVal, newVal, percent, px, 1, steps, deleteAfterTransition);
                 };
             case "display":
-                return function(element, prop, newValue)
+                return (element, prop, newValue) =>
                 {
                     // Not really an animation, but being able to queue this is nice
                     element.style.display = newValue;
@@ -275,10 +275,7 @@ let A = function()
     /// <summary>
     /// Helps with the basic minification I run this script through
     /// </summary>
-    let getStyle = function(element)
-    {
-        return getComputedStyle(element);
-    };
+    let getStyle = (element) => getComputedStyle(element);
 };
 
 let Animation = new A();
@@ -288,6 +285,7 @@ let Animation = new A();
 /// </summary>
 function Color(r, g, b, a)
 {
+    let parse = (a, b) => parseInt(a, b);
     // if g is undefined, r better be a string
     if (g === undefined && r[0] == "#")
     {
@@ -302,9 +300,9 @@ function Color(r, g, b, a)
         // Assume rgb string
         result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(r);
 
-        this.r = parseInt(result[1], 16);
-        this.g = parseInt(result[2], 16);
-        this.b = parseInt(result[3], 16);
+        this.r = parse(result[1], 16);
+        this.g = parse(result[2], 16);
+        this.b = parse(result[3], 16);
         this.a = 1;
     }
     else
@@ -315,16 +313,14 @@ function Color(r, g, b, a)
             [r, g, b, a] = r.substr(r.indexOf("(") + 1).split(",");
         }
 
-        this.r = r ? parseInt(r) : 0;
-        this.g = g ? parseInt(g) : 0;
-        this.b = b ? parseInt(b) : 0;
+        this.r = r ? parse(r) : 0;
+        this.g = g ? parse(g) : 0;
+        this.b = b ? parse(b) : 0;
         this.a = a ? parseFloat(a) : 1; // Opaque by default
     }
 
     /// <summary>
     /// Return an rgba string representation of this color
     /// </summary>
-    this.toString = function() {
-        return "rgba(" + this.r + ", " + this.g + ", " + this.b + ", " + this.a + ")";
-    };
+    this.s = () => `rgba(${this.r},${this.g},${this.b},${this.a})`;
 }
