@@ -420,6 +420,7 @@ verify_loggedin(TRUE /*redirect*/, "requests.php");
         });
 
         Animation.queue({"opacity": 1}, overlay, 250);
+        $("#showPending").focus();
     }
 
     /// <summary>
@@ -497,7 +498,7 @@ verify_loggedin(TRUE /*redirect*/, "requests.php");
         </select>
     </div>
     <div class="formInput">
-        <label for="sortOrder">Sort By: </label>
+        <label for="sortOrder">Sort Order: </label>
         <select name="sortOrder" id="sortOrder">
             <option value="desc" id="sortDesc">Newest First</option>
             <option value="asc" id="sortAsc">Oldest First</option>

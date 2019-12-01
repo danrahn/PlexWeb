@@ -204,7 +204,12 @@ input[type=checkbox]:focus {
     margin-top: 25vh;
 }
 
+.textHolder label {
+    float: none;
+}
+
 .inlineCombo {
+    display: inline;
     float: none;
     background-color: transparent;
     border: none;

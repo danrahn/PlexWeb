@@ -1436,9 +1436,6 @@ function get_requests($num, $page, $filter)
             $query .= "user_requests.request_name ";
             $reverse = TRUE;
             break;
-        case "ua":
-            $query .= "user_requests.satisfied_date ";
-            break;
         default:
             return json_error("Invalid sort option");
     }
@@ -1450,6 +1447,7 @@ function get_requests($num, $page, $filter)
             break;
         case "asc":
             $query .= ($reverse ? "DESC " : "ASC ");
+            break;
         default:
             return json_error("Invalid sort order");
     }
