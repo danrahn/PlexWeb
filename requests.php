@@ -223,29 +223,54 @@ verify_loggedin(TRUE /*redirect*/, "requests.php");
             if (newVal != changeLink.getAttribute("orig"))
             {
                 changeLink.classList.remove("statusHidden");
+                changeLink.classList.add("statusVisible");
+                this.classList.add("statusChanged");
             }
             else if (!changeLink.classList.contains("statusHidden"))
             {
                 changeLink.classList.add("statusHidden");
+                changeLink.classList.remove("statusVisible");
+                this.classList.remove("statusChanged");
             }
+
+            let changed = $(".statusVisible");
+            let string = changed.length > 1 ? "Update All" : "Update";
+            changed.forEach(function(e)
+            {
+                e.innerHTML = string;
+            });
         });
 
         changeLink.addEventListener("click", function()
         {
+            let changed = $(".statusVisible");
+            let data = [];
+            let ridList = [];
+            changed.forEach(function(e)
+            {
+                let rid = e.getAttribute("rid");
+                data.push({
+                    "id" : rid,
+                    "kind" : "status",
+                    "content" : $(`#status_${rid}`).value
+                });
+
+                ridList.push(rid);
+            });
+
             let params = {
                 "type" : "req_update",
-                "data" :
-                [{
-                    "id" : this.getAttribute("rid"),
-                    "kind" : "status",
-                    "content" : $(`#status_${this.getAttribute("rid")}`).value
-                }]
+                "data" : data
             }
 
-            let successFunc = function()
+            let successFunc = function(response, request)
             {
-                Animation.queue({"backgroundColor": "rgb(63, 100, 69)"}, $(`#status_${request.rid}`), 500);
-                Animation.queueDelayed({"backgroundColor": "transparent"}, $(`#status_${request.rid}`), 500, 500, true);
+                request.ridList.forEach(function(rid)
+                {
+                    Animation.queue({"backgroundColor": "rgb(63, 100, 69)"}, $(`#status_${rid}`), 500);
+                    Animation.queueDelayed({"backgroundColor": "transparent"}, $(`#status_${rid}`), 500, 500, true);
+                });
+
                 setTimeout(function()
                 {
                     clearElement("tableEntries");
@@ -255,8 +280,11 @@ verify_loggedin(TRUE /*redirect*/, "requests.php");
 
             let failureFunc = function(response, request)
             {
-                Animation.queue({"backgroundColor": "rgb(100, 66, 69)"}, $(`#status_${request.rid}`), 500);
-                Animation.queueDelayed({"backgroundColor": "transparent"}, $(`#status_${request.rid}`), 1000, 500, true);
+                request.ridList.forEach(function(rid)
+                {
+                    Animation.queue({"backgroundColor": "rgb(100, 66, 69)"}, $(`#status_${rid}`), 500);
+                    Animation.queueDelayed({"backgroundColor": "transparent"}, $(`#status_${rid}`), 1000, 500, true);
+                });
             }
 
             sendHtmlJsonRequest(
@@ -264,7 +292,7 @@ verify_loggedin(TRUE /*redirect*/, "requests.php");
                 JSON.stringify(params),
                 successFunc,
                 failureFunc,
-                {"rid" : this.getAttribute("rid")},
+                {"ridList" : ridList},
                 true /*dataIsString*/);
         });
     }

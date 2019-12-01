@@ -225,6 +225,10 @@ input[type=checkbox]:focus {
     display: none;
 }
 
+.statusChanged {
+    background-color: rgba(100, 80, 69, 0.9);
+}
+
 #filterContainer input[type="button"] {
     padding: 5px;
 }
