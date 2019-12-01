@@ -6,6 +6,23 @@ a:hover {
     color: #608020;
 }
 
+input[type=checkbox] {
+    appearance: none;
+    -webkit-appearance: none;
+    padding: 6px;
+    margin: auto;
+    display: inline-block;
+}
+
+input[type=checkbox]:checked {
+    background-color: rgb(192, 189, 186);
+}
+
+input[type=checkbox]:focus {
+    outline: none;
+    border: 1px solid rgb(255, 127, 0);
+}
+
 .tableHolder {
     margin: auto;
     margin-top: 50px;
@@ -124,6 +141,15 @@ a:hover {
     border-right: 2px solid #919191AA;
 }
 
+.previousPage img, .nextPage img {
+    height: 15px;
+}
+
+.previousPage img {
+    -webkit-transform: scaleX(-1);
+    transform: scaleX(-1);
+}
+
 .nextPage {
     float: right;
     border: none;
@@ -175,6 +201,10 @@ a:hover {
     background-color: rgba(0,0,0,0.6);
     color: rgb(196, 196, 196);
     margin-top: 25vh;
+}
+
+#filterContainer input[type="button"] {
+    padding: 5px;
 }
 
 .pageSelect {

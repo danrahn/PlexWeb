@@ -28,24 +28,24 @@ verify_loggedin(TRUE /*redirect*/, "requests.php");
         <div id="container">
             <div class="tableHolder">
                 <div id="tableHeader" class="tableHF">
-                    <button class="previousPage">&larr;</button>
+                    <button class="previousPage"><img src="arrow.png" alt="Previous Page" /></button>
                     <div class="largeShow">
                         <span>Show:</span>
                         <button class="ppButton" value="25">25</button><button class="ppButton" value="50">50</button><button class="ppButton" value="100">100</button><button class="ppButton cap" value="0">All</button>
                     </div>
                     <div class="pageStatus">Page <input type="text" class="pageSelect" value="1"> of <span class="pageCount">1</span></div>
-                    <button class="nextPage">&rarr;</button>
+                    <button class="nextPage"><img src="arrow.png" alt="Next Page" /></button>
                     <img class="filterImg" src="filter.png" alt="Filter" title="Filter Results" />
                 </div>
                 <div id="tableEntries"></div>
                 <div id="tableFooter" class="tableHF">
-                    <button class="previousPage">&larr;</button>
+                    <button class="previousPage"><img src="arrow.png" alt="Previous Page" /></button>
                     <div class="largeShow">
                         <span>Show:</span>
                         <button class="ppButton" value="25">25</button><button class="ppButton" value="50">50</button><button class="ppButton" value="100">100</button><button class="ppButton cap" value="0">All</button>
                     </div>
                     <div class="pageStatus">Page <input type="text" class="pageSelect" value="1"> of <span class="pageCount">1</span></div>
-                    <button class="nextPage">&rarr;</button>
+                    <button class="nextPage"><img src="arrow.png" alt="Next Page" /></button>
                     <img class="filterImg" src="filter.png" alt="Filter" title="Filter Results" />
                 </div>
             </div>
@@ -56,7 +56,6 @@ verify_loggedin(TRUE /*redirect*/, "requests.php");
 (function()
 {
     var pages = 0;
-
     window.addEventListener("load", function()
     {
         setPage(0);
@@ -65,16 +64,17 @@ verify_loggedin(TRUE /*redirect*/, "requests.php");
         setupFilter();
         getRequests();
         setupKeyboardNavigation();
+        document.body.addEventListener("keyup", filterKeyHandler);
     });
 
+    /// <summary>
+    /// Ask the server for user requests dependent on the current page and filter
+    /// </summary>
     function getRequests()
     {
         let parameters = { "type" : "requests", "num" : getPerPage(), "page" : getPage(), "filter" : JSON.stringify(getFilter()) };
 
-        let loading = document.createElement("div");
-        loading.id = "resultInfo";
-        loading.innerHTML = "Loading...";
-        $("#tableEntries").appendChild(loading);
+        displayInfoMessage("Loading...");
 
         let successFunc = function(response)
         {
@@ -85,112 +85,115 @@ verify_loggedin(TRUE /*redirect*/, "requests.php");
 
         let failureFunc = function(response)
         {
-            $("#resultInfo").innerHTML = "Error loading requests. Please try again later. If this problem persists, contact the site administrator";
+            displayInfoMessage("Error loading requests. Please try again later. If this problem persists, contact the site administrator");
         }
 
         sendHtmlJsonRequest("process_request.php", parameters, successFunc, failureFunc);
     }
 
+    /// <summary>
+    /// Take the server response and build our list of requests
+    /// </summary>
     function buildRequests(requests)
     {
         if (requests.count == 0)
         {
-            let empty = document.createElement("div");
-            empty.id = "resultInfo";
-            empty.innerHTML = "No requests found with the current filter";
-            $("#tableEntries").appendChild(empty);
+            logWarn("No results, likely due to bad page index or filter");
+            displayInfoMessage("No requests found with the current filter");
             return;
         }
 
+        logInfo(`Building ${requests.count} requests`);
         let entries = $("#tableEntries");
         let sortOrder = getFilter().sort;
         let now = new Date();
-        let tooltipDateOptions = { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: 'numeric' };
         for (let i = 0; i < requests.count; ++i)
         {
-            let request = requests.entries[i];
-
-            let holder = document.createElement("div");
-            holder.classList.add("requestHolder");
-
-            let imgHolder = document.createElement("div");
-            imgHolder.classList.add("imgHolder");
-
-            let img = document.createElement("img");
-            img.src = `poster/${request.p}`;
-
-            imgHolder.appendChild(img);
-
-            let textHolder = document.createElement("div");
-            textHolder.classList.add("textHolder");
-
-            let a = document.createElement("a");
-            a.classList.add("requestTitle");
-            a.href = `request.php?id=${request.rid}`;
-            a.text = request.n;
-
-            let requestDate = document.createElement("span");
-            requestDate.title = new Date(request.rd).toLocaleDateString('en-US', tooltipDateOptions);
-            requestDate.innerHTML = `Requested: ${getDisplayDate(new Date(request.rd), now)}`;
-
-            let updateDate = document.createElement("span");
-            updateDate.title = new Date(request.ad).toLocaleDateString('en-us', tooltipDateOptions);
-            updateDate.innerHTML = `Last Update: ${getDisplayDate(new Date(request.ad), now)}`;
-
-            let requester = document.createElement("span");
-            requester.innerHTML = `Requested By: ${request.r}`;
-
-            let status = document.createElement("span");
-            let statusVal = parseInt(request.a);
-            let statusText = statusVal == 0 ? "Pending" : (statusVal == 1 ? "Complete" : "Denied");
-            status.innerHTML = `Status: ${statusText}`;
-
-            if (statusVal == 1 || statusVal == 2)
-            {
-                holder.classList.add(statusVal == 1 ? "requestComplete" : "requestDenied");
-            }
-
-            let comments = document.createElement("span");
-            comments.innerHTML = `<a href="request.php?id=${request.rid}">${request.c} comment${request.c != 1 ? 's' : ''}</a>`;
-
-            textHolder.appendChild(a);
-            if (sortOrder == "ud" || sortOrder == "ua")
-            {
-                textHolder.appendChild(updateDate);
-                textHolder.appendChild(requestDate);
-            }
-            else
-            {
-                textHolder.appendChild(requestDate);
-                textHolder.appendChild(updateDate);
-            }
-
-            textHolder.appendChild(requester);
-            textHolder.appendChild(status);
-            textHolder.appendChild(comments);
-
-            holder.appendChild(imgHolder);
-            holder.appendChild(textHolder);
-
-            entries.appendChild(holder);
+            entries.appendChild(buildRequest(requests.entries[i], sortOrder));
         }
 
-        pages = getPerPage() == 0 ? 1 : Math.ceil(requests.total / getPerPage())
-        $(".pageSelect").forEach(function(e)
-        {
-            e.value = getPage() + 1;
-        });
-
-        $(".pageCount").forEach(function(e)
-        {
-            e.innerHTML = pages;
-        });
-
-
+        setPageInfo(requests.total);
     }
 
-    function getDisplayDate(date, now)
+    /// <summary>
+    /// Build a single request node, which consists of the request poster, a link to the request,
+    /// and a few useful bits of information
+    /// </summary>
+    function buildRequest(request, sortOrder)
     {
+        let holder = document.createElement("div");
+        holder.classList.add("requestHolder");
+
+        let imgHolder = document.createElement("div");
+        imgHolder.classList.add("imgHolder");
+
+        let img = document.createElement("img");
+        img.src = `poster/${request.p}`;
+
+        imgHolder.appendChild(img);
+
+        let textHolder = document.createElement("div");
+        textHolder.classList.add("textHolder");
+
+        let a = document.createElement("a");
+        a.classList.add("requestTitle");
+        a.href = `request.php?id=${request.rid}`;
+        a.text = request.n;
+
+        let tooltipDateOptions = { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: 'numeric' };
+
+        let requestDate = document.createElement("span");
+        requestDate.title = new Date(request.rd).toLocaleDateString('en-US', tooltipDateOptions);
+        requestDate.innerHTML = `Requested: ${getDisplayDate(new Date(request.rd))}`;
+
+        let updateDate = document.createElement("span");
+        updateDate.title = new Date(request.ad).toLocaleDateString('en-us', tooltipDateOptions);
+        updateDate.innerHTML = `Last Update: ${getDisplayDate(new Date(request.ad))}`;
+
+        let requester = document.createElement("span");
+        requester.innerHTML = `Requested By: ${request.r}`;
+
+        let status = document.createElement("span");
+        let statusVal = parseInt(request.a);
+        let statusText = statusVal == 0 ? "Pending" : (statusVal == 1 ? "Complete" : "Denied");
+        status.innerHTML = `Status: ${statusText}`;
+
+        if (statusVal == 1 || statusVal == 2)
+        {
+            holder.classList.add(statusVal == 1 ? "requestComplete" : "requestDenied");
+        }
+
+        let comments = document.createElement("span");
+        comments.innerHTML = `<a href="request.php?id=${request.rid}">${request.c} comment${request.c != 1 ? 's' : ''}</a>`;
+
+        textHolder.appendChild(a);
+        if (sortOrder == "ud" || sortOrder == "ua")
+        {
+            textHolder.appendChild(updateDate);
+            textHolder.appendChild(requestDate);
+        }
+        else
+        {
+            textHolder.appendChild(requestDate);
+            textHolder.appendChild(updateDate);
+        }
+
+        textHolder.appendChild(requester);
+        textHolder.appendChild(status);
+        textHolder.appendChild(comments);
+
+        holder.appendChild(imgHolder);
+        holder.appendChild(textHolder);
+        return holder;
+    }
+
+    /// <summary>
+    /// Determine how long ago a date is from the current time.
+    /// Returns a string of the form "X [time units] ago"
+    /// </summary>
+    function getDisplayDate(date)
+    {
+        let now = new Date();
         let dateDiff = Math.abs(now - date);
         let minuteDiff = dateDiff / (1000 * 60);
         if (minuteDiff < 60)
@@ -229,15 +232,117 @@ verify_loggedin(TRUE /*redirect*/, "requests.php");
         return `${yearDiff == 0 ? 1 : yearDiff} year${yearDiff == 1 ? '' : 's'}`;
     }
 
+    /// <summary>
+    /// Update the "Page X of Y" strings in the request table
+    /// </summary>
+    function setPageInfo(totalRequests)
+    {
+        pages = getPerPage() == 0 ? 1 : Math.ceil(totalRequests / getPerPage())
+        $(".pageSelect").forEach(function(e)
+        {
+            e.value = getPage() + 1;
+        });
+
+        $(".pageCount").forEach(function(e)
+        {
+            e.innerHTML = pages;
+        });
+    }
+
+    /// <summary>
+    /// Clear out the current contents of the request table and replace it
+    /// with a single informational message
+    /// </summary>
+    function displayInfoMessage(message)
+    {
+        clearElement("tableEntries");
+        let info = document.createElement("div");
+        info.id = "resultInfo";
+        info.innerHTML = message;
+        $("#tableEntries").appendChild(info);
+    }
+
+    /// <summary>
+    /// Sets up the filter form and associated events.
+    /// </summary>
     function setupFilter()
     {
         $(".filterImg").forEach(function(imgElement)
         {
-            imgElement.addEventListener("click", function()
+            imgElement.addEventListener("click", filterImgClick);
+        });
+    }
+
+    /// <summary>
+    /// Launch the filter dialog and set up applicable event handlers
+    /// </summary>
+    function filterImgClick()
+    {
+        let overlay = document.createElement("div");
+        overlay.id = "filterOverlay";
+        overlay.innerHTML = filterHtml();
+        overlay.style.opacity = "0";
+        document.body.appendChild(overlay);
+
+        overlay.addEventListener("click", function(e)
+        {
+            // A click outside the main dialog will dismiss it
+            if (e.target.id == "filterOverlay")
             {
-                let overlay = document.createElement("div");
-                overlay.id = "filterOverlay";
-                let html = `
+                dismissFilterDialog();
+            }
+        });
+
+        let filter = getFilter();
+        $("#showPending").checked = filter.pending;
+        $("#showComplete").checked = filter.complete;
+        $("#showDeclined").checked = filter.declined;
+        $("#sortBy").value = filter.sort;
+
+        $("#applyFilter").addEventListener("click", function(e)
+        {
+            setFilter(
+            {
+                "pending" : $("#showPending").checked,
+                "complete" : $("#showComplete").checked,
+                "declined" : $("#showDeclined").checked,
+                "sort" : $("#sortBy").value
+            }, true /*update*/);
+
+            dismissFilterDialog();
+        });
+
+        $("#cancelFilter").addEventListener("click", dismissFilterDialog);
+
+        Animation.queue({"opacity": 1}, overlay, 250);
+    }
+
+    /// <summary>
+    /// Handle keystrokes 
+    /// </summary>
+    function filterKeyHandler(e)
+    {
+        let key = e.keyCode ? e.keyCode : e.which;
+        if (key == 27 /*esc*/)
+        {
+            dismissFilterDialog();
+        }
+        else if (key == 13 /*enter*/ && e.ctrlKey)
+        {
+            let overlay = $("#filterOverlay");
+            if (overlay && overlay.style.opacity == "1")
+            {
+                $("#applyFilter").click();
+            }
+        }
+    }
+
+    /// <summary>
+    /// HTML for the filter overlay/dialog. Should probably be part of the initial DOM
+    /// </summary>
+    function filterHtml()
+    {
+        return `
 <div id="filterContainer">
     <h3>Filter Options</h3>
     <hr />
@@ -263,70 +368,27 @@ verify_loggedin(TRUE /*redirect*/, "requests.php");
     <hr />
     <div class="formInput">
         <input type="button" value="Apply" id="applyFilter">
+        <input type="button" value="Cancel" id="cancelFilter" style="margin-right: 10px">
     </div>
 </div>
-`;
-                overlay.innerHTML = html;
-                overlay.style.opacity = "0";
-                document.body.appendChild(overlay);
-                document.body.addEventListener("keyup", function(e)
-                {
-                    let key = e.keyCode ? e.keyCode : e.which;
-                    if (key == 27 /*esc*/)
-                    {
-                        let overlay = $("#filterOverlay");
-                        if (overlay && overlay.style.opacity == "1")
-                        {
-                            Animation.queue({"opacity": 0}, overlay, 250, true);
-                        }
-                    }
-                    else if (key == 13 /*enter*/ && e.ctrlKey)
-                    {
-                        let overlay = $("#filterOverlay");
-                        if (overlay && overlay.style.opacity == "1")
-                        {
-                            $("#applyFilter").click();
-                        }
-                    }
-                });
-
-                overlay.addEventListener("click", function(e)
-                {
-                    let overlay = $("#filterOverlay");
-                    if (e.target.id == "filterOverlay" && e.target.style.opacity == 1)
-                    {
-                        Animation.queue({"opacity": 0}, overlay, 250, true);
-                    }
-                });
-
-                let filter = getFilter();
-                $("#showPending").checked = filter.pending;
-                $("#showComplete").checked = filter.complete;
-                $("#showDeclined").checked = filter.declined;
-                $("#sortBy").value = filter.sort;
-
-                $("#applyFilter").addEventListener("click", function(e)
-                {
-                    setFilter(
-                    {
-                        "pending" : $("#showPending").checked,
-                        "complete" : $("#showComplete").checked,
-                        "declined" : $("#showDeclined").checked,
-                        "sort" : $("#sortBy").value
-                    }, true /*update*/);
-
-                    let overlay = $("#filterOverlay");
-                    if (overlay)
-                    {
-                        Animation.queue({"opacity": 0}, overlay, 250, true);
-                    }
-                });
-
-                Animation.queue({"opacity": 1}, overlay, 250);
-            });
-        });
+`
     }
 
+    /// <summary>
+    /// Dismisses the filter overlay with an animation if it's present
+    /// </summary>
+    function dismissFilterDialog()
+    {
+        let overlay = $("#filterOverlay");
+        if (overlay && overlay.style.opacity == "1")
+        {
+            Animation.queue({"opacity": 0}, overlay, 250, true);
+        }
+    }
+
+    /// <summary>
+    /// Returns the number of items per page the user wants to see
+    /// </summary>
     function getPerPage()
     {
         let perPage = parseInt(localStorage.getItem("perPage"));
@@ -339,6 +401,9 @@ verify_loggedin(TRUE /*redirect*/, "requests.php");
         return perPage;
     }
 
+    /// <summary>
+    /// Sets up click handlers for per-page options
+    /// </summary>
     function setupPerPage()
     {
         let perPage = getPerPage();
@@ -360,6 +425,9 @@ verify_loggedin(TRUE /*redirect*/, "requests.php");
         setPerPage(perPage, false);
     }
 
+    /// <summary>
+    /// Set the number of requests to show per page
+    /// </summary>
     function setPerPage(newPerPage, update)
     {
         localStorage.setItem("perPage", newPerPage);
@@ -380,6 +448,9 @@ verify_loggedin(TRUE /*redirect*/, "requests.php");
         }
     }
 
+    /// <summary>
+    /// Set up click handlers for previous/next buttons
+    /// </summary>
     function setupNavigation()
     {
         $(".previousPage").forEach(function(e)
@@ -393,6 +464,9 @@ verify_loggedin(TRUE /*redirect*/, "requests.php");
         });
     }
 
+    /// <summary>
+    /// Navigate to the previous page if we're not on the first page
+    /// </summary>
     function previousPage()
     {
         let page = getPage();
@@ -404,6 +478,9 @@ verify_loggedin(TRUE /*redirect*/, "requests.php");
         setPage(page - 1, true);
     }
 
+    /// <summary>
+    /// Navigate to the next page if we're not on the last page
+    /// </summary>
     function nextPage()
     {
         let page = getPage();
@@ -415,6 +492,13 @@ verify_loggedin(TRUE /*redirect*/, "requests.php");
         setPage(page + 1, true);
     }
 
+    /// <summary>
+    /// Set up general keyboard navigation, and the handler for
+    /// when the user goes to a specific page via the input dialog
+    ///
+    /// SHIFT + LEFT_ARROW - Previous Page
+    /// SHIFT + RIGHT_ARROW - Next Page
+    /// </summary>
     function setupKeyboardNavigation()
     {
         document.addEventListener('keyup', function(e)
@@ -455,6 +539,9 @@ verify_loggedin(TRUE /*redirect*/, "requests.php");
         })
     }
 
+    /// <summary>
+    /// Returns the user's current page
+    /// </summary>
     function getPage()
     {
         let page = parseInt(localStorage.getItem("page"));
@@ -467,6 +554,9 @@ verify_loggedin(TRUE /*redirect*/, "requests.php");
         return page;
     }
 
+    /// <summary>
+    /// Sets the current page (0-based)
+    /// </summary>
     function setPage(page, update)
     {
         localStorage.setItem("page", page);
@@ -477,6 +567,9 @@ verify_loggedin(TRUE /*redirect*/, "requests.php");
         }
     }
 
+    /// <summary>
+    /// Retrieves the stored user filter (persists across page navigation, for better or worse)
+    /// </summary>
     function getFilter()
     {
         let filter = null;
@@ -522,10 +615,14 @@ verify_loggedin(TRUE /*redirect*/, "requests.php");
             setFilter(filter, false);
         }
 
-        logVerbose(`Filter: ${JSON.stringify(filter)}`);
+        logVerbose(`Got Filter: ${JSON.stringify(filter)}`);
         return filter;
     }
 
+    /// <summary>
+    /// Sets the current filter. No validation, but some basic validation
+    /// should exist when grabbing the filter from localStorage
+    /// </summary>
     function setFilter(filter, update)
     {
         logVerbose(`Setting filter to ${JSON.stringify(filter)}`);
@@ -537,6 +634,9 @@ verify_loggedin(TRUE /*redirect*/, "requests.php");
         }
     }
 
+    /// <summary>
+    /// Extremely basic version of a shorthand query selector
+    /// </summary>
     function $(selector)
     {
         if (selector.indexOf("#") === 0 && selector.indexOf(" ") === -1)
@@ -547,6 +647,9 @@ verify_loggedin(TRUE /*redirect*/, "requests.php");
         return document.querySelectorAll(selector);
     }
 
+    /// <summary>
+    /// Clears all contents of the element with the given id
+    /// </summary>
     function clearElement(id)
     {
         let element = $("#" + id);
