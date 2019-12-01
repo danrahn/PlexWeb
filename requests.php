@@ -363,7 +363,9 @@ verify_loggedin(TRUE /*redirect*/, "requests.php");
 
         if (dayDiff <= 28)
         {
-            let weeks = Math.floor(dayDiff / 7);
+            // For weeks do some extra approximation, as it's odd to see
+            // "1 week ago" for something created 13 days ago
+            let weeks = Math.floor((dayDiff + 3) / 7);
             return `${weeks} week${weeks == 1 ? '' : 's'} ago`;
         }
 
@@ -457,6 +459,7 @@ verify_loggedin(TRUE /*redirect*/, "requests.php");
 
         $("#applyFilter").addEventListener("click", function(e)
         {
+            setPage(0); // Go back to the start after applying a filter
             setFilter(
             {
                 "status" :
@@ -484,6 +487,7 @@ verify_loggedin(TRUE /*redirect*/, "requests.php");
         $("#cancelFilter").addEventListener("click", dismissFilterDialog);
         $("#resetFilter").addEventListener("click", function()
         {
+            setPage(0); // Go back to the start after applying a filter
             setFilter(defaultFilter(), true);
             dismissFilterDialog();
         });
@@ -748,11 +752,19 @@ verify_loggedin(TRUE /*redirect*/, "requests.php");
                     let page = parseInt(this.value);
                     if (isNaN(page) || page <= 0 || page > pages)
                     {
+                        this.value = getPage() + 1;
+                        this.select();
                         return;
                     }
 
                     setPage(page - 1, true);
+                    this.select();
                 }
+            });
+
+            input.addEventListener('focus', function(e)
+            {
+                this.select();
             });
         })
     }
