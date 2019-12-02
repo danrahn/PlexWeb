@@ -1,0 +1,61 @@
+form select {
+    width: 50%;
+}
+
+.matchContinue {
+    margin-top: 5px;
+    width: 100%;
+    clear: both;
+    padding: 10px 0;
+}
+
+.visible {
+    opacity: 1.0;
+    -webkit-transition: height 0.25s, opacity 0.5s;
+    transition: height 0.25s, opacity 0.5s;
+}
+
+.hidden {
+    opacity: 0;
+    height: 0;
+}
+
+.searchResult {
+    border: 1px solid #2e2e2e;
+    overflow: hidden;
+    width: calc(100% - 2px);
+    height: 70px;
+    vertical-align: middle;
+    background-color: rgba(0,0,0,0.1);
+}
+
+.searchResult:hover {
+    background-color: rgba(0,0,0,0.2);
+}
+
+.selectedSuggestion {
+    background-color: #2E5E3E;
+}
+.selectedSuggestion:hover {
+    background-color: #1E4E2E;
+}
+
+.searchResult img {
+    height: 100%;
+    float: left;
+    margin-right: 10px;
+}
+
+.searchResult div {
+    width: auto;
+    font-size: small;
+    position: relative;
+    top: 50%;
+    -ms-transform: translateY(-50%);
+    -webkit-transform: translateY(-50%);
+    transform: translateY(-50%);
+}
+
+.badLink {
+    color: red !important;
+}
