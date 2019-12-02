@@ -23,6 +23,10 @@ input[type=checkbox]:focus {
     border: 1px solid rgb(255, 127, 0);
 }
 
+option {
+    background-color: rgb(63, 66, 69);
+}
+
 .tableHolder {
     margin: auto;
     margin-top: 70px;
@@ -126,11 +130,11 @@ input[type=checkbox]:focus {
 }
 
 .requestDenied {
-    background-color: rgb(100, 66, 69, 0.3);
+    background-color: rgb(100, 66, 69, 0.5);
 }
 
 .requestDenied:hover {
-    background-color: rgb(100, 66, 69, 0.6);
+    background-color: rgb(100, 66, 69, 0.7);
 }
 
 .pageStatus {

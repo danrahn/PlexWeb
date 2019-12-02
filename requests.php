@@ -22,7 +22,8 @@ verify_loggedin(TRUE /*redirect*/, "requests.php");
     <script src="resource/min/animate.min.js"></script>
     <title>Plex Requests</title>
 </head>
-<body>
+
+<body isAdmin="<?= (isset($_SESSION['level']) && $_SESSION['level'] >= 100) ? 1 : 0 ?>">
     <div id="plexFrame">
         <?php include "nav.php" ?>
         <div id="container">
@@ -92,6 +93,16 @@ verify_loggedin(TRUE /*redirect*/, "requests.php");
     }
 
     /// <summary>
+    /// Returns whether the current session user is an admin. Easily bypassable
+    /// by modifying the DOM, but the backend is the source of truth and will block
+    /// any unauthorized actions.
+    /// </summary>
+    function isAdmin()
+    {
+        return document.body.getAttribute("isAdmin") == "1";
+    }
+
+    /// <summary>
     /// Take the server response and build our list of requests
     /// </summary>
     function buildRequests(requests)
@@ -112,11 +123,11 @@ verify_loggedin(TRUE /*redirect*/, "requests.php");
             const request = requests.entries[i];
             entries.appendChild(buildRequest(request, sortOrder));
 
-<?php if (isset($_SESSION['level']) && (int)$_SESSION['level'] >= 100) {?>
-            // Only after we append the item to the DOM can we mess with our constructed combobox
-            setStatusChangeHandlers(request);
-<?php } else { ?>
-<?php } ?>
+            if (isAdmin())
+            {
+                // Only after we append the item to the DOM can we mess with our constructed combobox
+                setStatusChangeHandlers(request);
+            }
         }
 
         setPageInfo(requests.total);
@@ -199,7 +210,9 @@ verify_loggedin(TRUE /*redirect*/, "requests.php");
         return holder;
     }
 
-<?php if (isset($_SESSION['level']) && (int)$_SESSION['level'] >= 100) {?> // Admin helper methods
+    /// <symmary>
+    /// Returns the HTML for a status combobox for request administration
+    /// </summary>
     function getStatusSelection(rid, selected)
     {
         return `
@@ -212,6 +225,9 @@ verify_loggedin(TRUE /*redirect*/, "requests.php");
 `
     }
 
+    /// <summary>
+    /// Setup handlers for changing request status
+    /// </summary>
     function setStatusChangeHandlers(request)
     {
         let select = $(`#status_${request.rid}`);
@@ -241,60 +257,65 @@ verify_loggedin(TRUE /*redirect*/, "requests.php");
             });
         });
 
-        changeLink.addEventListener("click", function()
-        {
-            let changed = $(".statusVisible");
-            let data = [];
-            let ridList = [];
-            changed.forEach(function(e)
-            {
-                let rid = e.getAttribute("rid");
-                data.push({
-                    "id" : rid,
-                    "kind" : "status",
-                    "content" : $(`#status_${rid}`).value
-                });
+        changeLink.addEventListener("click", updateStatus);
+    }
 
-                ridList.push(rid);
+    /// <summary>
+    /// Update the status(es) of requests that have changed
+    /// </sumary>
+    function updateStatus()
+    {
+        let changed = $(".statusVisible");
+        let data = [];
+        let ridList = [];
+        changed.forEach(function(e)
+        {
+            let rid = e.getAttribute("rid");
+            data.push({
+                "id" : rid,
+                "kind" : "status",
+                "content" : $(`#status_${rid}`).value
             });
 
-            let params = {
-                "type" : "req_update",
-                "data" : data
-            }
-
-            let successFunc = function(response, request)
-            {
-                request.ridList.forEach(function(rid)
-                {
-                    Animation.queue({"backgroundColor": "rgb(63, 100, 69)"}, $(`#status_${rid}`), 500);
-                    Animation.queueDelayed({"backgroundColor": "transparent"}, $(`#status_${rid}`), 500, 500, true);
-                });
-
-                setTimeout(function()
-                {
-                    clearElement("tableEntries");
-                    getRequests();
-                }, 2000)
-            }
-
-            let failureFunc = function(response, request)
-            {
-                request.ridList.forEach(function(rid)
-                {
-                    Animation.queue({"backgroundColor": "rgb(100, 66, 69)"}, $(`#status_${rid}`), 500);
-                    Animation.queueDelayed({"backgroundColor": "transparent"}, $(`#status_${rid}`), 1000, 500, true);
-                });
-            }
-
-            sendHtmlJsonRequest(
-                "update_request.php",
-                JSON.stringify(params),
-                successFunc,
-                failureFunc,
-                {"ridList" : ridList},
-                true /*dataIsString*/);
+            ridList.push(rid);
         });
+
+        let params = {
+            "type" : "req_update",
+            "data" : data
+        }
+
+        let successFunc = function(response, request)
+        {
+            request.ridList.forEach(function(rid)
+            {
+                Animation.queue({"backgroundColor": "rgb(63, 100, 69)"}, $(`#status_${rid}`), 500);
+                Animation.queueDelayed({"backgroundColor": "transparent"}, $(`#status_${rid}`), 500, 500, true);
+            });
+
+            setTimeout(function()
+            {
+                clearElement("tableEntries");
+                getRequests();
+            }, 2000)
+        }
+
+        let failureFunc = function(response, request)
+        {
+            request.ridList.forEach(function(rid)
+            {
+                Animation.queue({"backgroundColor": "rgb(100, 66, 69)"}, $(`#status_${rid}`), 500);
+                Animation.queueDelayed({"backgroundColor": "transparent"}, $(`#status_${rid}`), 1000, 500, true);
+            });
+        }
+
+        sendHtmlJsonRequest(
+            "update_request.php",
+            JSON.stringify(params),
+            successFunc,
+            failureFunc,
+            {"ridList" : ridList},
+            true /*dataIsString*/);
     }
 
     /// <summary>
@@ -330,7 +351,6 @@ verify_loggedin(TRUE /*redirect*/, "requests.php");
 
         sendHtmlJsonRequest("process_request.php", params, successFunc, failureFunc);
     }
-<?php } ?>
 
     /// <summary>
     /// Determine how long ago a date is from the current time.
@@ -450,9 +470,10 @@ verify_loggedin(TRUE /*redirect*/, "requests.php");
         $("#sortBy").value = filter.sort;
         $("#sortOrder").value = filter.order;
 
-<?php if ($_SESSION['level'] >= 100) {?>
-        populateUserFilter();
-<?php } ?>
+        if (isAdmin())
+        {
+            populateUserFilter();
+        }
 
         setSortOrderValues();
         $("#sortBy").addEventListener("change", setSortOrderValues);
@@ -476,9 +497,7 @@ verify_loggedin(TRUE /*redirect*/, "requests.php");
                 },
                 "sort" : $("#sortBy").value,
                 "order" : $("#sortOrder").value,
-<?php if ($_SESSION['level'] >= 100) { ?>
-                "user" : $("#filterTo").value
-<?php } ?>
+                "user" : isAdmin() ? $("#filterTo").value : "-1"
             }, true /*update*/);
 
             dismissFilterDialog();
