@@ -75,7 +75,7 @@ function plexOk()
     return <?= does_plex_exist() ? 'true' : 'false'; ?>;
 }
 </script>
-<script src="resource/script.js"></script>
+<script src="resource/index.js"></script>
 
 <div id="plexFrame">
     <?php include "nav.php" ?>
