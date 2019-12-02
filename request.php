@@ -48,292 +48,25 @@ function get_details($req_id)
 <head>
     <meta http-equiv="Content-Type" content="text/html;charset=utf-8">
     <link rel="stylesheet" type="text/css" href="resource/style.css">
+    <link rel="stylesheet" type="text/css" href="resource/request.css">
     <link rel="shortcut icon" href="favicon.png">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#3C5260" />
     <script src="resource/min/animate.min.js"></script>
     <script src="resource/consolelog.js"></script>
     <script src="resource/queryStatus.js"></script>
+    <script src="resource/request.js"></script>
     <title>Plex Request</title>
-    <style>
-        .searchResult {
-            border: 1px solid #2e2e2e;
-            overflow: hidden;
-            width: calc(100% - 2px);
-            height: 70px;
-            vertical-align: middle;
-            background-color: rgba(0,0,0,0.1);
-        }
-
-        .searchResult:hover {
-            background-color: rgba(0,0,0,0.2);
-        }
-
-        .selectedSuggestion {
-            background-color: #2E5E3E;
-        }
-        .selectedSuggestion:hover {
-            background-color: #1E4E2E;
-        }
-
-        .searchResult img {
-            height: 100%;
-            float: left;
-            margin-right: 10px;
-        }
-
-        .searchResult div {
-            width: auto;
-            font-size: small;
-            position: relative;
-            top: 50%;
-            -ms-transform: translateY(-50%);
-            -webkit-transform: translateY(-50%);
-            transform: translateY(-50%);
-        }
-
-        .matchContinue {
-            margin-top: 5px;
-            width: 100%;
-            clear: both;
-            height: 20px;
-        }
-
-        #infoContainer, #commentsHolder {
-            width: 100%;
-            color: #c1c1c1;
-        }
-
-        #mediaBackdrop {
-            width: 100%;
-            float: left;
-            position: fixed;
-            left: 0;
-            top: 0;
-            margin: 0;
-            opacity: 0.5;
-            -webkit-mask-image:-webkit-linear-gradient(top, rgba(0,0,0,1), rgba(0,0,0,1) 80%, rgba(0,0,0,0));
-            mask-image: linear-gradient(to bottom, rgba(0,0,0,1), rgba(0,0,0,1) 80%, rgba(0,0,0,0));
-            z-index: -1;
-        }
-
-        #mediaPoster {
-            border: 3px solid rgba(0,0,0,0.5);
-            border-radius: 2px;
-            z-index: 999;
-        }
-
-        .statusSpan {
-            user-select: none;
-        }
-
-        .status0 {
-            color: #C84;
-        }
-
-        .status1 {
-            color: #4C4;
-        }
-
-        .status2 {
-            color: #C44;
-        }
-
-        .commentHolder {
-            background-color: rgba(0,0,0,0.3);
-            margin-bottom: 10px;
-            border: 2px solid #515151;
-        }
-
-        .commentHolder:hover {
-            background-color: rgba(0,0,0,0.5);
-        }
-
-        .commentInfo {
-            padding-top: 10px;
-            padding-left: 10px;
-            padding-bottom: 5px;
-            border-bottom: 1px solid #616161;
-            width: calc(100% - 10px);
-            text-align: left;
-        }
-
-        .commentInfo span {
-            margin-right: 20px;
-        }
-
-        .commentContent {
-            background-color: rgba(0,0,0,0.2);
-            padding: 20px;
-        }
-
-        a, a:visited {
-            color: #80A020;
-        }
-        a:hover {
-            color: #608020;
-        }
-
-        @media (orientation: landscape), (min-width: 767px) {
-            #innerInfoContainer {
-                float: left;
-                margin-left: 60px;
-                margin-right: 60px;
-                margin-top: 100px;
-                padding: 20px;
-                width: calc(100% - 160px);
-                background-color: rgba(0,0,0,0.2);
-                overflow: auto;
-            }
-
-            #mediaPoster {
-                float: left;
-                width: 250px;
-            }
-
-            #mediaDetails {
-                float: left;
-                padding: 10px 20px 10px 20px;
-                width: calc(100% - 300px);
-                height: auto;
-            }
-
-            #mediaDetails hr {
-                border-color: rgba(200, 200, 200, 0.7);
-                text-align: center;
-                margin-top: 30px;
-                margin-bottom: 30px;
-            }
-
-            #mediaTitle {
-                font-size: 36pt;
-                vertical-align: top;
-                font-weight: bold;
-                text-shadow: -1px 0 #313131, 0 1px #313131, 1px 0 #313131, 0 -1px #313131;
-                margin-bottom: 20px;
-            }
-
-            #mediaYear {
-                font-size: 20pt;
-                text-shadow: -1px 0 #313131, 0 1px #313131, 1px 0 #313131, 0 -1px #313131;
-            }
-
-            #mediaLink {
-                font-size: 18pt;
-                text-shadow: -1px 0 #313131, 0 1px #313131, 1px 0 #313131, 0 -1px #313131;
-            }
-
-            #mediaOverview {
-                font-size: 14pt;
-                text-shadow: -1px 0 #313131, 0 1px #313131, 1px 0 #313131, 0 -1px #313131;
-            }
-
-            #commentsHolder {
-                overflow: auto;
-                float: left;
-                padding: 20px;
-                margin-left: 60px;
-                margin-right: 60px;
-                width: calc(100% - 160px);
-                margin-top: 20px;
-                background-color: rgba(0,0,0,0.2);
-                height: auto;
-            }
-
-            #newComment {
-                float: left;
-                height: 50px;
-                min-width: 400px;
-                max-width: 100%;
-                resize: both;
-                margin-top: 30px;
-                background-color: rgba(63, 66, 69, 0.7);
-            }
-        }
-
-        @media all and (orientation: portrait) and (max-width: 767px) {
-            #innerInfoContainer {
-                width: 100%;
-                text-align: center;
-                margin-top: 100px;
-            }
-
-            #mediaPoster {
-                max-width: 70%;
-            }
-
-            #mediaDetails {
-                float: left;
-                margin-left: 20px;
-                margin-top: 10px;
-                max-width: 90%;
-            }
-
-            #mediaDetails hr {
-                border-color: rgba(200, 200, 200, 0.7);
-                text-align: center;
-                max-width: 90%;
-            }
-
-            #mediaTitle {
-                font-size: 36pt;
-                vertical-align: top;
-                font-weight: bold;
-                text-shadow: -1px 0 #313131, 0 1px #313131, 1px 0 #313131, 0 -1px #313131;
-                margin-bottom: 20px;
-            }
-
-            #mediaYear {
-                font-size: 20pt;
-                text-shadow: -1px 0 #313131, 0 1px #313131, 1px 0 #313131, 0 -1px #313131;
-                margin-bottom: 20px;
-            }
-
-            #mediaLink {
-                font-size: 18pt;
-                text-shadow: -1px 0 #313131, 0 1px #313131, 1px 0 #313131, 0 -1px #313131;
-            }
-
-            #mediaOverview {
-                margin-top: 20px;
-                font-size: 12pt;
-                text-shadow: -1px 0 #313131, 0 1px #313131, 1px 0 #313131, 0 -1px #313131;
-                margin-bottom: 20px;
-            }
-
-            #commentsHolder {
-                overflow: auto;
-                padding: 20px;
-                margin-left: 10%;
-                margin-right: 10%;
-                margin-top: 30px;
-                margin-bottom: 30px;
-                width: calc(80% - 40px);
-                margin-top: 20px;
-                background-color: rgba(0,0,0,0.2);
-                height: auto;
-            }
-
-            #newComment {
-                float: left;
-                height: 50px;
-                width: 80%;
-                resize: both;
-                margin-top: 30px;
-                background-color: rgba(63, 66, 69, 0.7);
-            }
-
-            .commentHolder {
-                font-size: 10pt;
-            }
-
-            .commentInfo {
-                font-size: smaller;
-            }
-        }
-    </style>
 </head>
-<body>
+<body
+    isAdmin="<?= (isset($_SESSION['level']) && $_SESSION['level'] >= 100) ? 1 : 0 ?>"
+    isMediaRequest="<?php echo ($details->is_media_request ? 1 : 0)?>"
+    reqId="<?= $req_id ?>"
+    requestType="<?= $details->request_type ?>"
+    requestTypeStr="<?php echo ($details->request_type == 1 ? "movie" : "tv") ?>"
+    requestName="<?= $details->request_name ?>"
+    requestStatus="<?= $details->status ?>"
+    externalId="<?= $details->external_id?>">
     <div id="plexFrame">
         <?php include "nav.php" ?>
         <?php if (!$details->is_media_request) { ?>
@@ -375,6 +108,8 @@ function get_details($req_id)
 </body>
 <script>
     (function() {
+    window.addEventListener("load", function()
+    {
         if (!!$("#matchContainer"))
         {
             searchForMedia();
@@ -382,7 +117,7 @@ function get_details($req_id)
         }
         else
         {
-            if (<?php echo ($details->is_media_request ? "true" : "false")?>)
+            if (document.body.getAttribute("isMediaRequest") == "1")
             {
                 getMediaInfo();
             }
@@ -421,7 +156,7 @@ function get_details($req_id)
                 }
 
                 logVerbose("Searching for next id");
-                let parameters = { "type" : "req_nav", "id" : <?= $req_id ?>, "dir" : e.which === 37 ? "0" : "1" };
+                let parameters = { "type" : "req_nav", "id" : parseInt(document.body.getAttribute("reqId")), "dir" : e.which === 37 ? "0" : "1" };
                 let successFunc = function(response)
                 {
                     if (response.new_id == -1)
@@ -440,7 +175,7 @@ function get_details($req_id)
 
         function searchForMedia()
         {
-            let requestType = <?= $details->request_type ?>;
+            let requestType = parseInt(document.body.getAttribute("requestType"));
             switch (requestType)
             {
                 case 1:
@@ -472,11 +207,11 @@ function get_details($req_id)
 
             $("#imdbResult").innerHTML = "Searching...";
 
-            let parameters = { "type" : <?= $details->request_type ?>, "query" : id, "imdb" : true };
+            let parameters = { "type" : parseInt(document.body.getAttribute("requestType")), "query" : id, "imdb" : true };
             let successFunc = function(response)
             {
                 logInfo(response, true);
-                let type = <?= $details->request_type ?>;
+                let type = parseInt(document.body.getAttribute("requestType"));
                 switch (type)
                 {
                     case 1:
@@ -500,7 +235,7 @@ function get_details($req_id)
 
         function searchForMediaCore()
         {
-            let parameters = { "type" : <?= $details->request_type ?>, "query" : "<?= $details->request_name ?>" };
+            let parameters = { "type" : parseInt(document.body.getAttribute("requestType")), "query" : document.body.getAttribute("requestName") };
             let successFunc = function(response)
             {
                 logInfo(response, true);
@@ -571,7 +306,7 @@ function get_details($req_id)
 
         function goToImdb()
         {
-            let parameters = { "type" : <?= $details->request_type ?>, "query" : this.parentNode.parentNode.getAttribute("tmdbid"), "by_id" : "true" };
+            let parameters = { "type" : parseInt(document.body.getAttribute("requestType")), "query" : this.parentNode.parentNode.getAttribute("tmdbid"), "by_id" : "true" };
             let successFunc = function(respons, request)
             {
                 logInfo(response, true);
@@ -581,7 +316,7 @@ function get_details($req_id)
                 }
                 else
                 {
-                    window.open("https://www.themoviedb.org/" + <?php echo ($details->request_type == 1 ? "\"movie\"" : "\"tv\"") ?> + "/" + request.tmdbid)
+                    window.open("https://www.themoviedb.org/" + document.body.getAttribute("requestTypeStr") + "/" + request.tmdbid)
                 }
             };
             sendHtmlJsonRequest("media_search.php", parameters, successFunc, null, {"tmdbid" : this.parentNode.parentNode.getAttribute("tmdbid")});
@@ -644,7 +379,7 @@ function get_details($req_id)
                 return;
             }
 
-            let params = { "type" : "set_external_id", "req_id" : <?= $req_id ?>, "id" : selectedSuggestion.getAttribute("tmdbid") };
+            let params = { "type" : "set_external_id", "req_id" : parseInt(document.body.getAttribute("reqId")), "id" : selectedSuggestion.getAttribute("tmdbid") };
 
             let successFunc = function(response)
             {
@@ -663,7 +398,7 @@ function get_details($req_id)
 
         function getMediaInfo()
         {
-            let parameters = { "type" : <?= $details->request_type ?>, "query" : "<?= $details->external_id ?>", "by_id" : "true" };
+            let parameters = { "type" : parseInt(document.body.getAttribute("requestType")), "query" : document.body.getAttribute("externalId"), "by_id" : "true" };
             let successFunc = function(response)
             {
                 logInfo(response, true);
@@ -684,7 +419,7 @@ function get_details($req_id)
             container.id = "mediaDetails";
             let div = document.createElement("div");
             div.id = "mediaTitle";
-            div.innerHTML = "Request: <?= $details->request_name ?>";
+            div.innerHTML = `Request: ${document.body.getAttribute("requestName")}`;
             container.appendChild(div);
             outerContainer.appendChild(container);
             $("#infoContainer").innerHTML = "";
@@ -711,13 +446,15 @@ function get_details($req_id)
             details.id = "mediaDetails";
 
             let title = document.createElement("div");
-            let status = <?= $details->status ?>;
+            let status = parseInt(document.body.getAttribute("requestStatus"));
             let statusSpan = document.createElement("span");
             statusSpan.className = "status" + status;
             statusSpan.innerHTML = status == 0 ? "Pending" : status == 1 ? "Complete" : "Denied";
-<?php if($_SESSION['level'] >= 100) { ?>
-            setupSpanDoubleClick(statusSpan);
-<?php } ?>
+            if (document.body.getAttribute("isAdmin"))
+            {
+                setupSpanDoubleClick(statusSpan);
+            }
+
             title.innerHTML = (data.title || data.name) + " - ";
             title.appendChild(statusSpan);
             title.id = "mediaTitle";
@@ -737,7 +474,7 @@ function get_details($req_id)
             else if (data.id)
             {
                 imdb = document.createElement("div");
-                imdb.innerHTML = "<a href='https://www.themoviedb.org/" + <?php echo ($details->request_type == 1 ? "\"movie\"" : "\"tv\"")?> + "/" + data.id + "' target='_blank'>TMDb</a>";
+                imdb.innerHTML = "<a href='https://www.themoviedb.org/" + document.body.getAttribute("requestTypeStr") + "/" + data.id + "' target='_blank'>TMDb</a>";
                 imdb.id = "mediaLink";
             }
 
@@ -758,7 +495,6 @@ function get_details($req_id)
             container.appendChild(innerContainer);
         }
 
-<?php if($_SESSION['level'] >= 100) { ?>
         function setupSpanDoubleClick(statusSpan)
         {
             statusSpan.className += " statusSpan";
@@ -788,7 +524,7 @@ function get_details($req_id)
                 {
                     let params = {
                         "type" : "req_update",
-                        "data" : [{ "id" : "<?= $req_id ?>", "kind" : "status", "content" : status}]
+                        "data" : [{ "id" : parseInt(document.body.getAttribute("reqId")), "kind" : "status", "content" : status}]
                     }
 
                     let successFunc = function() {
@@ -808,11 +544,10 @@ function get_details($req_id)
                 }
             });
         }
-<?php } ?>
 
         function getComments()
         {
-            params = { "type" : "get_comments", "req_id" : <?= $req_id ?> };
+            params = { "type" : "get_comments", "req_id" : parseInt(document.body.getAttribute("reqId")) };
             let successFunc = function(response)
             {
                 logInfo(response, true);
@@ -839,7 +574,7 @@ function get_details($req_id)
 
             logInfo("Adding comment: " + text);
 
-            let params = { "type" : "add_comment", "req_id" : <?= $req_id ?>, "content" : text };
+            let params = { "type" : "add_comment", "req_id" : parseInt(document.body.getAttribute("reqId")), "content" : text };
             let successFunc = function(response)
             {
                 getComments();
@@ -997,6 +732,7 @@ function get_details($req_id)
             logVerbose("Built query: " + queryString);
             return queryString;
         }
+    })
     })();
 </script>
 </html>
