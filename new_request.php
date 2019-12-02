@@ -130,13 +130,18 @@ requireSSL();
 (function() {
     let searchTimer;
     let selectedSuggest;
-    selectChanged();
-    $("#type").addEventListener("change", selectChanged);
-    $("#name").addEventListener("input", suggestionChanged);
-    $("#external_id").addEventListener("input", searchImdb);
-
     let selectedSuggestion;
+    window.addEventListener("load", function()
+    {
+        selectChanged();
+        $("#type").addEventListener("change", selectChanged);
+        $("#name").addEventListener("input", suggestionChanged);
+        $("#external_id").addEventListener("input", searchImdb);
+    });
 
+    /// <summary>
+    /// Update UI when request options change
+    /// </summar>
     function selectChanged()
     {
         let value = $("#type").value;
@@ -153,6 +158,9 @@ requireSSL();
         suggestionChanged();
     }
 
+    /// <summary>
+    /// Set/reset timers when the user updates the suggestion
+    /// </summar>
     function suggestionChanged()
     {
         let suggestion = $("#name").value;
@@ -168,6 +176,9 @@ requireSSL();
         searchTimer = setTimeout(searchItem, 250);
     }
 
+    /// <summary>
+    /// Search for the user's current request
+    /// </summar>
     function searchItem()
     {
         let value = $("#type").value;
@@ -201,6 +212,9 @@ requireSSL();
         sendHtmlJsonRequest("media_search.php", params, successFunc, failureFunc);
     }
 
+    /// <summary>
+    /// Search for an item based on a specific IMDb id
+    /// </summar>
     function searchImdb()
     {
         let id = $("#external_id").value;
@@ -256,6 +270,9 @@ requireSSL();
         sendHtmlJsonRequest("media_search.php", parameters, successFunc, failureFunc);
     }
 
+    /// <summary>
+    /// Build the list of search results
+    /// </summar>
     function buildItems(matches, holder)
     {
         let container = $("#" + holder);
@@ -271,12 +288,15 @@ requireSSL();
             item.setAttribute("title", match.title ? match.title : match.name);
             item.setAttribute("poster", match.poster_path);
 
-            let img;
+            let img = document.createElement("img");
+            img.style.height = "70px";
             if (match.poster_path)
             {
-                img = document.createElement("img");
                 img.src = "https://image.tmdb.org/t/p/w92" + match.poster_path;
-                img.style.height = "70px";
+            }
+            else
+            {
+                img.src = $("#type").value == "movie" ? "poster/moviedefault.png" : "poster/tvdefault.png";
             }
 
             let div = document.createElement("div");
@@ -312,6 +332,9 @@ requireSSL();
         container.appendChild(button);
     }
 
+    /// <summary>
+    /// Go to IMDb (or TMDb) when the user clicks on a suggestion
+    /// </summar>
     function goToImdb()
     {
         let value = $("#type").value;
@@ -333,6 +356,9 @@ requireSSL();
         sendHtmlJsonRequest("media_search.php", parameters, successFunc, null, { "linkElement" : this });
     }
 
+    /// <summary>
+    /// Handler for clicking on a specific search result
+    /// </summar>
     function clickSuggestion(e)
     {
         if (e.target.tagName.toLowerCase() == "a")
@@ -365,7 +391,9 @@ requireSSL();
         Animation.queue({ "backgroundColor" : new Color(63, 66, 69) }, $("#" + enableButton), 500, 500, true);
     }
 
-
+    /// <summary>
+    /// Submit the selected suggestion
+    /// </summar>
     function submitSelected()
     {
         if (!selectedSuggestion)
@@ -411,48 +439,7 @@ requireSSL();
             }
         }
         sendHtmlJsonRequest("process_request.php", parameters, successFunc, failureFunc);
-
-        // let params = { "type" : "set_external_id", "req_id" : < ? = $req_id ?>, "id" : selectedSuggestion.getAttribute("tmdbid") };
-
-        // let successFunc = function(response)
-        // {
-        //     logInfo(response, true);
-        //     matches = $(".matchContinue");
-
-        //     for (let i = 0; i < matches.length; ++i)
-        //     {
-        //         matches[i].value = "Success! Redirecting...";
-        //     }
-        //     setTimeout(function() { window.location.reload(); }, 1000);
-        // };
-
-        // sendHtmlJsonRequest("process_request.php", params, successFunc);
     }
-
-    // function suggestionClicked()
-    // {
-    //     if (this == selectedSuggestion)
-    //     {
-    //         selectedSuggestion = undefined;
-    //         this.classList.remove("selectedSuggestion");
-    //         setVisibility("submitHolder", false);
-    //         return;
-    //     }
-
-    //     if (!selectedSuggestion)
-    //     {
-    //         this.classList.add("selectedSuggestion");
-    //         selectedSuggestion = this;
-    //     }
-    //     else
-    //     {
-    //         selectedSuggestion.classList.remove("selectedSuggestion");
-    //         selectedSuggestion = this;
-    //         selectedSuggestion.classList.add("selectedSuggestion");
-    //     }
-
-    //     setVisibility("submitHolder", true);
-    // }
 
     function setVisibility(id, visible)
     {
