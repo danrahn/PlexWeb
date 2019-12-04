@@ -61,7 +61,7 @@ if ((int)$_SESSION['level'] < 100)
             }
 
             document.getElementById("welcome").innerHTML = "Success!";
-            logVerbose(response, true);
+            logVerbose(response);
             buildTable(response);
         } catch (ex) {
             logError(ex);
