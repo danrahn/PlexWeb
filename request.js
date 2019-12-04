@@ -340,7 +340,7 @@ window.addEventListener("load", function()
         let status = parseInt(document.body.getAttribute("requestStatus"));
         let statusSpan = document.createElement("span");
         statusSpan.className = "status" + status;
-        statusSpan.innerHTML = status == 0 ? "Pending" : status == 1 ? "Complete" : "Denied";
+        statusSpan.innerHTML = ["Pending", "Complete", "Denied", "In Progress"][status];
         if (document.body.getAttribute("isAdmin"))
         {
             setupSpanDoubleClick(statusSpan);
@@ -390,7 +390,7 @@ window.addEventListener("load", function()
     {
         statusSpan.className += " statusSpan";
         statusSpan.addEventListener("dblclick", function(e) {
-            let data = prompt("Data ((A)pproved (1), (D)enied (0), or (P)ending):");
+            let data = prompt("Data ((A)pproved (1), (D)enied (0), (P)ending, or (I)n Progress):");
             let valid = false;
             let status = -1;
             let first = data.toLowerCase()[0];
@@ -406,9 +406,13 @@ window.addEventListener("load", function()
             {
                 status = 0;
             }
+            else if (first == "i")
+            {
+                status = 3;
+            }
             else
             {
-                alert("Invalid status: Must be '(A)pproved' (1), '(D)enied' (0), or '(P)ending'");
+                alert("Invalid status: Must be '(A)pproved' (1), '(D)enied' (0), '(P)ending', or '(I)n Progress'");
             }
 
             if (status != -1)
@@ -423,7 +427,7 @@ window.addEventListener("load", function()
                     if (span)
                     {
                         span.className = "statusSpan status" + status;
-                        span.innerHTML = status == 0 ? "Pending" : status == 1 ? "Approved" : "Denied";
+                        span.innerHTML = ["Pending", "Approved", "Denied", "In Progress"][status];
                     }
                 };
 

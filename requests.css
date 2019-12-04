@@ -100,7 +100,7 @@ option {
 }
 
 .requestHolder:hover {
-    background-color: rgba(0,0,0,0.6);
+    background-color: rgba(0,0,0,0.4);
 }
 
 .requestHolder .imgHolder {
@@ -135,6 +135,14 @@ option {
 
 .requestDenied:hover {
     background-color: rgb(100, 66, 69, 0.7);
+}
+
+.requestInProgress {
+    background-color: rgb(100, 100, 69, 0.6);
+}
+
+.requestInProgress:hover {
+    background-color: rgb(100, 100, 69, 0.8);
 }
 
 .pageStatus {

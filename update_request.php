@@ -171,6 +171,9 @@ function process_request_update($requests)
                             case 2:
                                 $status = "Denied";
                                 break;
+                            case 3:
+                                $status = "In Progress";
+                                break;
                             default:
                                 $status = "Unknown";
                                 break;
@@ -221,6 +224,9 @@ function process_request_update($requests)
                                 break;
                             case 2:
                                 $status = "Denied";
+                                break;
+                            case 3:
+                                $status = "In Progress";
                                 break;
                             default:
                                 $status = "Unknown";

@@ -72,7 +72,7 @@ function get_details($req_id)
         <?php if (!$details->is_media_request) { ?>
             <div id="infoContainer">Getting info...</div>
             <div id="commentsHolder">
-                <div style="margin-bottom: 10px">Comments:</div>
+                <div style="margin-bottom: 10px" class="commentHeader">Comments:</div>
                 <div id="comments">
                     
                 </div>
@@ -96,7 +96,7 @@ function get_details($req_id)
         <?php } else { ?>
             <div id="infoContainer">Getting info...</div>
             <div id="commentsHolder">
-                <div style="margin-bottom: 10px">Comments:</div>
+                <div style="margin-bottom: 10px" class="commentHeader">Comments:</div>
                 <div id="comments">
                     
                 </div>

@@ -89,10 +89,13 @@
         let imgHolder = document.createElement("div");
         imgHolder.classList.add("imgHolder");
 
+        let imgA = document.createElement("a");
+        imgA.href = `request.php?id=${request.rid}`;
         let img = document.createElement("img");
         img.src = `poster/${request.p}`;
+        imgA.appendChild(img);
 
-        imgHolder.appendChild(img);
+        imgHolder.appendChild(imgA);
 
         let textHolder = document.createElement("div");
         textHolder.classList.add("textHolder");
@@ -117,13 +120,13 @@
 
         let status = document.createElement("span");
         let statusVal = parseInt(request.a);
-        let statusText = statusVal == 0 ? "Pending" : (statusVal == 1 ? "Complete" : "Denied");
+        let statusTest = ["Pending", "Complete", "Denied", "In Progress"][statusVal];
 
         status.innerHTML = isAdmin() ? getStatusSelection(request.rid, statusVal) : `Status: ${statusText}`;
 
-        if (statusVal == 1 || statusVal == 2)
+        if (statusVal != 0)
         {
-            holder.classList.add(statusVal == 1 ? "requestComplete" : "requestDenied");
+            holder.classList.add(["", "requestComplete", "requestDenied", "requestInProgress"][statusVal]);
         }
 
         let comments = document.createElement("span");
@@ -158,6 +161,7 @@
         return `
 <label for="status_${rid}">Status: </label><select name="status_${rid}" id="status_${rid}" class="inlineCombo">
     <option value="0">Pending</option>
+    <option value="3">In Progress</option>
     <option value="1">Complete</option>
     <option value="2">Denied</option>
 </select>
@@ -404,6 +408,7 @@
         $("#showPending").checked = filter.status.pending;
         $("#showComplete").checked = filter.status.complete;
         $("#showDeclined").checked = filter.status.declined;
+        $("#showInProgress").checked = filter.status.inprogress;
         $("#showMovies").checked = filter.type.movies;
         $("#showTV").checked = filter.type.tv;
         $("#showOther").checked = filter.type.other;
@@ -427,7 +432,8 @@
                 {
                     "pending" : $("#showPending").checked,
                     "complete" : $("#showComplete").checked,
-                    "declined" : $("#showDeclined").checked
+                    "declined" : $("#showDeclined").checked,
+                    "inprogress" : $("#showInProgress").checked,
                 },
                 "type" :
                 {
@@ -503,6 +509,9 @@
     <hr />
     <div class="formInput">
         <label for="showPending">Show Pending: </label><input type="checkbox" name="showPending" id="showPending">
+    </div>
+    <div class="formInput">
+        <label for="showInProgress">Show In Progress: </label><input type="checkbox" name="showInProgress" id="showInProgress">
     </div>
     <div class="formInput">
         <label for="showComplete">Show Complete: </label><input type="checkbox" name="showComplete" id="showComplete">
@@ -776,11 +785,20 @@
 
         if (filter == null ||
             !filter.hasOwnProperty("status") ||
+                !filter.status.hasOwnProperty("pending") ||
+                !filter.status.hasOwnProperty("complete") ||
+                !filter.status.hasOwnProperty("declined") ||
+                !filter.status.hasOwnProperty("inprogress") ||
             !filter.hasOwnProperty("type") ||
+                !filter.type.hasOwnProperty("movies") ||
+                !filter.type.hasOwnProperty("tv") ||
+                !filter.type.hasOwnProperty("other") ||
             !filter.hasOwnProperty("sort") ||
             !filter.hasOwnProperty("order") ||
             !filter.hasOwnProperty("user"))
         {
+            logError("Bad filter, resetting: ");
+            logError(filter, true);
             filter = defaultFilter();
             setFilter(filter, false);
         }
@@ -797,7 +815,8 @@
             {
                 "pending" : true,
                 "complete" : true,
-                "declined" : true
+                "declined" : true,
+                "inprogress" : true
             },
             "type" :
             {
