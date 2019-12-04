@@ -588,8 +588,6 @@ function set_imdb_link($show, $season, $episode, $link)
     }
 }
 
-
-
 /// <summary>
 /// Get the user-friendly playback device. If it's a web device, also list the browser
 /// </summary>
@@ -603,6 +601,10 @@ function get_playback_device($player)
     else if (strpos($device, "Plex for Android") !== FALSE && $player["title"] && $player["vendor"])
     {
         $device = ucwords($player["vendor"]) . " " . $player["title"];
+    }
+    else if (isset($_SESSION['level']) && $_SESSION['level'] >= 100 && $player["title"])
+    {
+        $device .= " (" . $player["title"] . ")";
     }
 
     return $device;
