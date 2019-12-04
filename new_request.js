@@ -64,7 +64,7 @@
         let params = { "type" : value == "movie" ? 1 : 2, "query" : $("#name").value };
         let successFunc = function(response)
         {
-            logInfo(response, true);
+            logInfo(response);
             setVisibility("imdbContainer", true);
             if (response.results.length === 0)
             {
@@ -108,7 +108,7 @@
         let parameters = { "type" : $("#type").value == "movie" ? 1 : 2, "query" : id, "imdb" : true };
         let successFunc = function(response)
         {
-            logInfo(response, true);
+            logInfo(response);
             let type = $("#type").value;
             switch (type)
             {
@@ -212,7 +212,7 @@
         let parameters = { "type" : value == "movie" ? 1 : 2, "query" : this.parentNode.parentNode.getAttribute("tmdbid"), "by_id" : "true" };
         let successFunc = function(response, request)
         {
-            logInfo(response, true);
+            logInfo(response);
             if (response.imdb_id)
             {
                 window.open("https://www.imdb.com/title/" + response.imdb_id, "_blank");
@@ -382,7 +382,7 @@
             }
             catch (ex)
             {
-                logError(ex, true);
+                logError(ex);
                 logError(this.responseText);
             }
         };

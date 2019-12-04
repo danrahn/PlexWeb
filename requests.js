@@ -23,7 +23,7 @@
 
         let successFunc = function(response)
         {
-            logInfo(response, true);
+            logInfo(response);
             clearElement("tableEntries");
             buildRequests(response);
         };
@@ -798,7 +798,7 @@
             !filter.hasOwnProperty("user"))
         {
             logError("Bad filter, resetting: ");
-            logError(filter, true);
+            logError(filter);
             filter = defaultFilter();
             setFilter(filter, false);
         }
@@ -920,7 +920,7 @@
             }
             catch (ex)
             {
-                logError(ex, true);
+                logError(ex);
                 logError(this.responseText);
             }
         };

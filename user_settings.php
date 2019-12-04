@@ -194,7 +194,7 @@ input[type=checkbox]:focus {
 
                 logJson(initialValues, LOG.Verbose);
             } catch (ex) {
-                logError(ex, true);
+                logError(ex);
                 logError(this.responseText);
             }
         }

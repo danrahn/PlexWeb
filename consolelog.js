@@ -42,54 +42,49 @@ function setDarkConsole(dark) {
     g_darkConsole = dark;
 }
 
-function logTmi(text, isObject = false) {
-    log(text, LOG.Tmi, isObject);
+function logTmi(text) {
+    log(text, LOG.Tmi);
 }
 
-function logVerbose(text, isObject = false) {
-    log(text, LOG.Verbose, isObject);
+function logVerbose(text) {
+    log(text, LOG.Verbose);
 }
 
-function logInfo(text, isObject = false) {
-    log(text, LOG.Info, isObject);
+function logInfo(text) {
+    log(text, LOG.Info);
 }
 
-function logWarn(text, isObject = false) {
-    log(text, LOG.Warn, isObject);
+function logWarn(text) {
+    log(text, LOG.Warn);
 }
 
-function logError(text, isObject = false) {
-    log(text, LOG.Error, isObject);
+function logError(text) {
+    log(text, LOG.Error);
 }
 
 function logJson(object, level) {
     log(JSON.stringify(object), level);
 }
 
-function log(text, level, isObject = false) {
+function log(text, level) {
     if (level < g_logLevel) {
         return;
     }
 
-    const print = function(output, text, level)
+    const print = function(output, text, obj, level)
     {
         textColor = `color: ${g_levelColors[level][g_darkConsole ? 2 : 1]}`;
         titleColor = `color: ${g_levelColors[level][0]}`;
-        output(text, textColor, titleColor, textColor, titleColor, textColor);
+        output(text, textColor, titleColor, textColor, titleColor, textColor, obj);
     }
 
     let d = getTimestring();
     if (g_logLevel === LOG.Extreme) {
-        print(console.log, `%c[%cEXTREME%c][%c${d}%c] Called log with (${text}, ${level}, ${isObject})`, 6);
+        print(console.log, `%c[%cEXTREME%c][%c${d}%c] Called log with (${text}, ${level})`, 6);
     }
 
     let output = level < LOG.Warn ? console.log : level < LOG.Error ? console.warn : console.error;
-    print(output, `%c[%c${g_logStr[level]}%c][%c${d}%c]${isObject ? '' : ' ' + text}`, level);
-
-    if (isObject) {
-        // If we want to output an object directly (dict, array, element), don't format it
-        output(text);
-    }
+    print(output, `%c[%c${g_logStr[level]}%c][%c${d}%c]${typeof(text) == "string" ? ' %s' : ' %o'}`, text, level);
 
     function getTimestring() {
         let z = function(n,x=2) {

@@ -101,7 +101,7 @@ window.addEventListener("load", function()
         let parameters = { "type" : parseInt(document.body.getAttribute("requestType")), "query" : id, "imdb" : true };
         let successFunc = function(response)
         {
-            logInfo(response, true);
+            logInfo(response);
             let type = parseInt(document.body.getAttribute("requestType"));
             switch (type)
             {
@@ -129,7 +129,7 @@ window.addEventListener("load", function()
         let parameters = { "type" : parseInt(document.body.getAttribute("requestType")), "query" : document.body.getAttribute("requestName") };
         let successFunc = function(response)
         {
-            logInfo(response, true);
+            logInfo(response);
             if (response.results.length === 0)
             {
                 document.getElementById("matchContainer").innerHTML = "No matches found. Please enter the IMDb id below";
@@ -200,7 +200,7 @@ window.addEventListener("load", function()
         let parameters = { "type" : parseInt(document.body.getAttribute("requestType")), "query" : this.parentNode.parentNode.getAttribute("tmdbid"), "by_id" : "true" };
         let successFunc = function(respons, request)
         {
-            logInfo(response, true);
+            logInfo(response);
             if (response.imdb_id)
             {
                 window.open("https://www.imdb.com/title/" + response.imdb_id, "_blank");
@@ -274,7 +274,7 @@ window.addEventListener("load", function()
 
         let successFunc = function(response)
         {
-            logInfo(response, true);
+            logInfo(response);
             matches = $(".matchContinue");
 
             for (let i = 0; i < matches.length; ++i)
@@ -292,7 +292,7 @@ window.addEventListener("load", function()
         let parameters = { "type" : parseInt(document.body.getAttribute("requestType")), "query" : document.body.getAttribute("externalId"), "by_id" : "true" };
         let successFunc = function(response)
         {
-            logInfo(response, true);
+            logInfo(response);
             buildPage(response);
         };
         let failureFunc = function(response)
@@ -445,7 +445,7 @@ window.addEventListener("load", function()
         params = { "type" : "get_comments", "req_id" : parseInt(document.body.getAttribute("reqId")) };
         let successFunc = function(response)
         {
-            logInfo(response, true);
+            logInfo(response);
             buildComments(response);
         };
         let failureFunc = function(response)
@@ -600,7 +600,7 @@ window.addEventListener("load", function()
             }
             catch (ex)
             {
-                logError(ex, true);
+                logError(ex);
                 logError(this.responseText);
             }
         };

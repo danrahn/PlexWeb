@@ -528,7 +528,7 @@
     {
         // Main container
         logVerbose("Adding Session");
-        logVerbose(sesh, true);
+        logVerbose(sesh);
         let container = document.createElement("div");
         container.className = "mediainfo";
         container.id = "id" + sesh.session_id;
@@ -1274,7 +1274,7 @@
             }
             catch (ex)
             {
-                logError(ex, true);
+                logError(ex);
                 logError(this.responseText);
             }
         };

@@ -76,10 +76,10 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === TRUE)
                         try
                         {
                             let response = JSON.parse(this.responseText);
-                            logVerbose(response, true);
+                            logVerbose(response);
                             if (response.value != '0' && response.value != '1')
                             {
-                                logError(response, true);
+                                logError(response);
                                 return;
                             }
 
@@ -101,7 +101,7 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === TRUE)
                         }
                         catch (ex)
                         {
-                            logError(ex, true);
+                            logError(ex);
                             logError(this.responseText);
                         }
 

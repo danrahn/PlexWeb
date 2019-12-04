@@ -17,7 +17,7 @@
             try
             {
                 let response = JSON.parse(this.responseText);
-                logVerbose(response, true);
+                logVerbose(response);
                 if (response.play == 0 && response.pause == 0)
                 {
                     // Only reset the title if we've previously changed it to avoid constant title updates
@@ -46,7 +46,7 @@
             }
             catch (ex)
             {
-                logError(ex, true);
+                logError(ex);
                 logError(this.responseText);
             }
         };
