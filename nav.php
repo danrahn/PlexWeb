@@ -121,6 +121,11 @@
         }
 
         element.addEventListener("auxclick", function(e) {
+            if (e.which != 2)
+            {
+                return;
+            }
+
             window.open(url, "_blank");
         });
     }
