@@ -451,6 +451,8 @@ function process_stream_access_request($which)
                 return '{ "value" : "Request Denied" }';
             case 3:
                 return '{ "value" : "Request In Progress" }';
+            case 4:
+                return '{ "valie" : "Request Waiting" }';
             default:
                 return json_error("Unknown request status");
         }
@@ -731,7 +733,7 @@ function update_req_status($req_id, $status, $requester)
         return db_error();
     }
 
-    $status_str = array("Pending", "Approved", "Denied", "In Progress")[$status];
+    $status_str = array("Pending", "Approved", "Denied", "In Progress", "Waiting")[$status];
 
     send_notifications_if_needed("status", $requester, $req_name, $status_str, $req_id);
     return json_success();
@@ -1385,6 +1387,10 @@ function get_requests($num, $page, $filter)
     if ($filter->status->inprogress)
     {
         array_push($filter_status, "satisfied=3");
+    }
+    if ($filter->status->waiting)
+    {
+        array_push($filter_status, "satisfied=4");
     }
 
     $filter_type = array();

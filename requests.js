@@ -120,13 +120,13 @@
 
         let status = document.createElement("span");
         let statusVal = parseInt(request.a);
-        let statusTest = ["Pending", "Complete", "Denied", "In Progress"][statusVal];
+        let statusTest = ["Pending", "Complete", "Denied", "In Progress", "Waiting"][statusVal];
 
         status.innerHTML = isAdmin() ? getStatusSelection(request.rid, statusVal) : `Status: ${statusText}`;
 
         if (statusVal != 0)
         {
-            holder.classList.add(["", "requestComplete", "requestDenied", "requestInProgress"][statusVal]);
+            holder.classList.add(["", "requestComplete", "requestDenied", "requestInProgress", "requestWaiting"][statusVal]);
         }
 
         let comments = document.createElement("span");
@@ -161,6 +161,7 @@
         return `
 <label for="status_${rid}">Status: </label><select name="status_${rid}" id="status_${rid}" class="inlineCombo">
     <option value="0">Pending</option>
+    <option value="4">Waiting</option>
     <option value="3">In Progress</option>
     <option value="1">Complete</option>
     <option value="2">Denied</option>
@@ -378,16 +379,16 @@
     /// </summary>
     function setupFilter()
     {
-        $(".filterImg").forEach(function(imgElement)
+        $(".filterBtn").forEach(function(imgElement)
         {
-            imgElement.addEventListener("click", filterImgClick);
+            imgElement.addEventListener("click", filterBtnClick);
         });
     }
 
     /// <summary>
     /// Launch the filter dialog and set up applicable event handlers
     /// </summary>
-    function filterImgClick()
+    function filterBtnClick()
     {
         let overlay = document.createElement("div");
         overlay.id = "filterOverlay";
@@ -409,6 +410,7 @@
         $("#showComplete").checked = filter.status.complete;
         $("#showDeclined").checked = filter.status.declined;
         $("#showInProgress").checked = filter.status.inprogress;
+        $("#showWaiting").checked = filter.status.waiting;
         $("#showMovies").checked = filter.type.movies;
         $("#showTV").checked = filter.type.tv;
         $("#showOther").checked = filter.type.other;
@@ -434,6 +436,7 @@
                     "complete" : $("#showComplete").checked,
                     "declined" : $("#showDeclined").checked,
                     "inprogress" : $("#showInProgress").checked,
+                    "waiting" : $("#showWaiting").checked
                 },
                 "type" :
                 {
@@ -511,6 +514,9 @@
         <label for="showPending">Show Pending: </label><input type="checkbox" name="showPending" id="showPending">
     </div>
     <div class="formInput">
+        <label for="showWaiting">Show Waiting: </label><input type="checkbox" name="showWaiting" id="showWaiting">
+    </div>
+    <div class="formInput">
         <label for="showInProgress">Show In Progress: </label><input type="checkbox" name="showInProgress" id="showInProgress">
     </div>
     <div class="formInput">
@@ -558,9 +564,11 @@
 
         html += `
     <div class="formInput">
-        <input type="button" value="Apply" id="applyFilter">
-        <input type="button" value="Reset" id="resetFilter" style="margin-right: 10px">
-        <input type="button" value="Cancel" id="cancelFilter" style="margin-right: 10px">
+        <div class="filterButtons">
+            <input type="button" value="Cancel" id="cancelFilter" style="margin-right: 10px">
+            <input type="button" value="Reset" id="resetFilter" style="margin-right: 10px">
+            <input type="button" value="Apply" id="applyFilter">
+        </div>
     </div>
 </div>
 `
@@ -789,6 +797,7 @@
                 !filter.status.hasOwnProperty("complete") ||
                 !filter.status.hasOwnProperty("declined") ||
                 !filter.status.hasOwnProperty("inprogress") ||
+                !filter.status.hasOwnProperty("waiting") ||
             !filter.hasOwnProperty("type") ||
                 !filter.type.hasOwnProperty("movies") ||
                 !filter.type.hasOwnProperty("tv") ||
@@ -816,7 +825,8 @@
                 "pending" : true,
                 "complete" : true,
                 "declined" : true,
-                "inprogress" : true
+                "inprogress" : true,
+                "waiting" : true
             },
             "type" :
             {

@@ -36,8 +36,9 @@ verify_loggedin(TRUE /*redirect*/, "requests.php");
                         <button class="ppButton" value="25">25</button><button class="ppButton" value="50">50</button><button class="ppButton" value="100">100</button><button class="ppButton cap" value="0">All</button>
                     </div>
                     <div class="pageStatus">Page <input type="text" class="pageSelect" value="1" title="Select Page"> of <span class="pageCount">1</span></div>
-                    <button class="nextPage" title="Next Page"><img src="arrow.png" alt="Next Page" /></button>
-                    <img class="filterImg" src="filter.png" alt="Filter" title="Filter Results" />
+                    <div class="rightSide">
+                        <button class="filterBtn"><img class="filterImg" src="filter.png" alt="Filter" title="Filter Results" /></button><button class="nextPage" title="Next Page"><img src="arrow.png" alt="Next Page" /></button>
+                    </div>
                 </div>
                 <div id="tableEntries"></div>
                 <div id="tableFooter" class="tableHF">
@@ -47,8 +48,9 @@ verify_loggedin(TRUE /*redirect*/, "requests.php");
                         <button class="ppButton" value="25">25</button><button class="ppButton" value="50">50</button><button class="ppButton" value="100">100</button><button class="ppButton cap" value="0">All</button>
                     </div>
                     <div class="pageStatus">Page <input type="text" class="pageSelect" value="1" title="Select Page"> of <span class="pageCount">1</span></div>
-                    <button class="nextPage" title="Next Page"><img src="arrow.png" alt="Next Page" /></button>
-                    <img class="filterImg" src="filter.png" alt="Filter" title="Filter Results" />
+                    <div class="rightSide">
+                        <button class="filterBtn"><img class="filterImg" src="filter.png" alt="Filter" title="Filter Results" /></button><button class="nextPage" title="Next Page"><img src="arrow.png" alt="Next Page" /></button>
+                    </div>
                 </div>
             </div>
         </div>

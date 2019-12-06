@@ -174,6 +174,9 @@ function process_request_update($requests)
                             case 3:
                                 $status = "In Progress";
                                 break;
+                            case 4:
+                                $status = "Waiting";
+                                break;
                             default:
                                 $status = "Unknown";
                                 break;
@@ -227,6 +230,9 @@ function process_request_update($requests)
                                 break;
                             case 3:
                                 $status = "In Progress";
+                                break;
+                            case 4:
+                                $status = "Waiting";
                                 break;
                             default:
                                 $status = "Unknown";

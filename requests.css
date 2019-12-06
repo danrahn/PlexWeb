@@ -122,27 +122,35 @@ option {
 }
 
 .requestComplete {
-    background-color: rgb(63, 100, 69, 0.3);
+    background-color: rgba(63, 100, 69, 0.3);
 }
 
 .requestComplete:hover {
-    background-color: rgb(63, 100, 69, 0.6);
+    background-color: rgba(63, 100, 69, 0.6);
 }
 
 .requestDenied {
-    background-color: rgb(100, 66, 69, 0.5);
+    background-color: rgba(100, 66, 69, 0.5);
 }
 
 .requestDenied:hover {
-    background-color: rgb(100, 66, 69, 0.7);
+    background-color: rgba(100, 66, 69, 0.7);
 }
 
 .requestInProgress {
-    background-color: rgb(100, 100, 69, 0.6);
+    background-color: rgba(100, 100, 69, 0.6);
 }
 
 .requestInProgress:hover {
-    background-color: rgb(100, 100, 69, 0.8);
+    background-color: rgba(100, 100, 69, 0.8);
+}
+
+.requestWaiting {
+    background-color: rgba(63, 66, 120, 0.4);
+}
+
+.requestWaiting:hover {
+    background-color: rgba(63, 66, 120, 0.7);
 }
 
 .pageStatus {
@@ -165,7 +173,6 @@ option {
 }
 
 .nextPage {
-    float: right;
     border: none;
     border-left: 2px solid #919191AA;
 }
@@ -183,16 +190,22 @@ option {
     border-bottom-right-radius: 10px
 }
 
+.filterBtn {
+    display: inline;
+    border: none;
+    vertical-align: middle;
+    height: 35px;
+    padding-top: 7px !important;
+}
+
 .filterImg {
     display: inline;
     height: 20px;
-    margin-top: 7px;
-    margin-right: 10px;
     vertical-align: middle;
-    float: right;
+    padding-bottom: 3px;
 }
 
-.filterImg:hover {
+.filterBtn:hover .filterImg {
     filter: invert(20%);
 }
 
@@ -230,7 +243,9 @@ option {
 }
 
 .inlineCombo:focus {
+    background-color: rgba(100, 80, 69, 0.5);
     border: none;
+    outline: none;
 }
 
 .statusHidden {
@@ -258,6 +273,19 @@ option {
 .pageCount {
     padding: 0 !important;
     margin: 0;
+}
+
+.rightSide {
+    float: right;
+}
+
+.filterButtons {
+    float: right;
+    overflow: auto;
+}
+
+#applyFilter, #resetFilter, #cancelFilter {
+    float: none;
 }
 
 /* Desktop/landscape mode */

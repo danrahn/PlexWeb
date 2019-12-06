@@ -340,7 +340,15 @@ window.addEventListener("load", function()
         let status = parseInt(document.body.getAttribute("requestStatus"));
         let statusSpan = document.createElement("span");
         statusSpan.className = "status" + status;
-        statusSpan.innerHTML = ["Pending", "Complete", "Denied", "In Progress"][status];
+        statusSpan.innerHTML =
+        [
+            "Pending",
+            "Complete",
+            "Denied",
+            "In Progress",
+            "Waiting"
+        ][status];
+
         if (document.body.getAttribute("isAdmin"))
         {
             setupSpanDoubleClick(statusSpan);
@@ -390,29 +398,32 @@ window.addEventListener("load", function()
     {
         statusSpan.className += " statusSpan";
         statusSpan.addEventListener("dblclick", function(e) {
-            let data = prompt("Data ((A)pproved (1), (D)enied (0), (P)ending, or (I)n Progress):");
+            let data = prompt("Data ((A)pproved (1), (D)enied (0), (P)ending, (I)n Progress, or (W)aiting):");
             let valid = false;
             let status = -1;
             let first = data.toLowerCase()[0];
-            if (data == "1" || first == "a")
+            switch (first)
             {
-                status = 1;
-            }
-            else if (data == "0" || first == "d")
-            {
-                status = 2;
-            }
-            else if (first == "p")
-            {
-                status = 0;
-            }
-            else if (first == "i")
-            {
-                status = 3;
-            }
-            else
-            {
-                alert("Invalid status: Must be '(A)pproved' (1), '(D)enied' (0), '(P)ending', or '(I)n Progress'");
+                case 'a':
+                case '1':
+                    status = 1;
+                    break;
+                case 'd':
+                case '0':
+                    status = 2;
+                    break;
+                case 'p':
+                    status = 0;
+                    break;
+                case 'i':
+                    status = 3;
+                    break;
+                case 'w':
+                    status = 4;
+                    break;
+                default:
+                    alert("Invalid status: Must be '(A)pproved' (1), '(D)enied' (0), '(P)ending', '(I)n Progress', or '(W)aiting'");
+                    break;
             }
 
             if (status != -1)
@@ -427,7 +438,7 @@ window.addEventListener("load", function()
                     if (span)
                     {
                         span.className = "statusSpan status" + status;
-                        span.innerHTML = ["Pending", "Approved", "Denied", "In Progress"][status];
+                        span.innerHTML = ["Pending", "Approved", "Denied", "In Progress", "Waiting"][status];
                     }
                 };
 

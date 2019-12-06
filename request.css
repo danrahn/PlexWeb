@@ -76,7 +76,7 @@ input[type=checkbox]:focus {
     float: none;
 }
 
-#filterPendingLabel, #filterCompleteLabel, #filterInProgressLabel {
+#filterPendingLabel, #filterCompleteLabel, #filterInProgressLabel, #filterWaitingLabel {
     margin-right: 20px;
 }
 
@@ -166,6 +166,10 @@ input[type=checkbox]:focus {
 
 .status3 {
     color: #CC4;
+}
+
+.status4 {
+    color: #44C;
 }
 
 .commentHolder {
