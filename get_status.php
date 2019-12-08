@@ -193,7 +193,7 @@ function get_all_progress()
     foreach ($sessions as $sesh)
     {
         $entry = new \stdClass();
-        $entry->duration = (int)$sesh['duration'];
+        $entry->duration = get_duration($sesh);
         $entry->progress = (int)$sesh['viewOffset'];
         $entry->paused = strcmp($sesh->xpath("Player")[0]['state'], 'paused') == 0;
         $entry->id = get_sesh_id($sesh);
@@ -317,7 +317,7 @@ function build_sesh($sesh, $library_names)
 
     $slim_sesh->thumb_path = 'thumb' . ($sesh_type == MediaType::TVShow ? ($sesh['parentThumb'] ? $sesh['parentThumb'] : $sesh['grandparentThumb']) : $sesh['thumb']);
     if ($slim_sesh->thumb_path)
-    $slim_sesh->duration = (int)$sesh['duration'];
+    $slim_sesh->duration = get_duration($sesh);
     $slim_sesh->progress = (int)$sesh['viewOffset'];
     $slim_sesh->release_date = MediaType::is_audio($sesh_type) ? (string)$parent['originallyAvailableAt'] : (string)$sesh['originallyAvailableAt'];
     if ($sesh_type === MediaType::Music)
@@ -602,7 +602,7 @@ function get_playback_device($player)
     {
         $device = ucwords($player["vendor"]) . " " . $player["title"];
     }
-    else if (isset($_SESSION['level']) && $_SESSION['level'] >= 100 && $player["title"])
+    else if (isset($_SESSION['level']) && $_SESSION['level'] >= 100 && $player["title"] && strlen($player["title"]) > 0)
     {
         $device .= " (" . $player["title"] . ")";
     }
@@ -628,6 +628,23 @@ function get_audio_channels($channels)
         default:
             return $channels . " channel";
     }
+}
+
+/// <summary>
+/// Gets the duration for the given media. Sometimes there are multiple versions with different lengths
+/// (e.g. regular vs extended cuts). By default choose the duration attached to the top-level entry,
+/// but if we have an explicitly selected stream, use that duration instead.
+/// </summary>
+function get_duration($sesh)
+{
+    $duration = (int)$sesh['duration'];
+    $selected = $sesh->xpath('Media[@selected="1"]');
+    if (count($selected) == 1)
+    {
+        return (int)$selected[0]['duration'];
+    }
+
+    return $duration;
 }
 
 /// <summary>
