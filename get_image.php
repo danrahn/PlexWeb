@@ -90,7 +90,7 @@ function serve_new_image($img_path, $filename, $type)
 
     if ($type == ImgType::Poster)
     {
-        $img->readImageBlob(curl("https://image.tmdb.org/t/p/w342" . $img_path));
+        $img->readImageBlob(curl("https://image.tmdb.org/t/p/w185" . $img_path));
     }
     else
     {

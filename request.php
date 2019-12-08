@@ -47,16 +47,11 @@ function get_details($req_id)
 <html lang="en-us">
 <head>
     <meta http-equiv="Content-Type" content="text/html;charset=utf-8">
-    <link rel="stylesheet" type="text/css" href="resource/style.css">
-    <link rel="stylesheet" type="text/css" href="resource/request.css">
     <link rel="shortcut icon" href="favicon.png">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#3C5260" />
-    <script src="resource/min/animate.min.js"></script>
-    <script src="resource/consolelog.js"></script>
-    <script src="resource/queryStatus.js"></script>
-    <script src="resource/request.js"></script>
     <title>Plex Request</title>
+    <?php get_css("style", "request"); ?>
 </head>
 <body
     isAdmin="<?= (isset($_SESSION['level']) && $_SESSION['level'] >= 100) ? 1 : 0 ?>"
@@ -106,4 +101,5 @@ function get_details($req_id)
         <?php } ?>
     </div>
 </body>
+<?php get_js("consolelog", "animate", "queryStatus", "request"); ?>
 </html>

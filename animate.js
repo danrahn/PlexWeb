@@ -57,11 +57,11 @@ let A = function()
         if (animationQueue[element.id].length !== 1)
         {
             // Can't fire immediately
-            logTmi("Adding animation for " + element.id + " to queue");
+            /*@__PURE__*/logTmi("Adding animation for " + element.id + " to queue");
             return;
         }
 
-        logTmi("Firing animation for " + element.id + " immediately");
+        /*@__PURE__*/logTmi("Firing animation for " + element.id + " immediately");
         animationQueue[element.id][0].timers = [];
         for (let i = 0; i < animations.length; ++i)
         {
@@ -182,7 +182,7 @@ let A = function()
                         }
                     }
 
-                    logTmi("Animating " + prop + " of " + element.id + " from " + oldColor.s() + " to " + newColor.s() + " in " + duration + "ms");
+                    /*@__PURE__*/logTmi("Animating " + prop + " of " + element.id + " from " + oldColor.s() + " to " + newColor.s() + " in " + duration + "ms");
 
                     let animationFunc = (func, element, oldColor, newColor, i, steps, prop, deleteAfterTransition) =>
                     {
@@ -232,7 +232,7 @@ let A = function()
                         oldVal = oldVal / parseInt(getStyle(document.body).width);
                     }
 
-                    logTmi("Animating " + prop + " of " + element.id + " from " + oldVal + " to " + newVal + " in " + duration + "ms");
+                    /*@__PURE__*/logTmi("Animating " + prop + " of " + element.id + " from " + oldVal + " to " + newVal + " in " + duration + "ms");
                     let animationFunc = (func, element, prop, oldVal, newVal, percent, px, i, steps, deleteAfterTransition) =>
                     {
                         if (animationQueue[element.id][0].canceled)

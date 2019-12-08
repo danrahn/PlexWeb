@@ -13,16 +13,11 @@ requireSSL();
 <html lang="en-us">
 <head>
     <meta http-equiv="Content-Type" content="text/html;charset=utf-8">
-    <link rel="stylesheet" type="text/css" href="resource/style.css">
-    <link rel="stylesheet" type="text/css" href="resource/new_request.css">
     <link rel="shortcut icon" href="favicon.png">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#3C5260" />
-    <script src="resource/consolelog.js"></script>
-    <script src="resource/min/animate.min.js"></script>
-    <script src="resource/queryStatus.js"></script>
-    <script src="resource/new_request.js"></script>
     <title>New Plex Request</title>
+    <?php get_css("style", "new_request"); ?>
 </head>
 <body>
 <div id="plexFrame">
@@ -36,8 +31,8 @@ requireSSL();
                     <option value="none"></option>
                     <option value="movie">Movie</option>
                     <option value="tv">TV Show</option>
-                    <option value="audiobook">Audiobook</option>
-                    <option value="music">Music</option>
+                    <!-- <option value="audiobook">Audiobook</option>
+                    <option value="music">Music</option> -->
                 </select></div>
                 <div class="formInput" id="nameHolder"><label for="name">Suggestion:</label><input type="text" name="name" id="name" maxlength=128></div>
                 <div id="matchHolder">
@@ -65,4 +60,5 @@ requireSSL();
     <div id="tooltip"></div>
 </div>
 </body>
+<?php get_js("consolelog", "animate", "queryStatus", "new_request"); ?>
 </html>

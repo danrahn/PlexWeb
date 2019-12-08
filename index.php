@@ -60,13 +60,11 @@ function get_username()
 <html lang="en-us">
 <head>
     <meta http-equiv="Content-Type" content="text/html;charset=utf-8">
-    <link rel="stylesheet" type="text/css" href="resource/style.css">
     <link rel="shortcut icon" href="favicon.png">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#3C5260" />
-    <script src="resource/consolelog.js"></script>
-    <script src="resource/min/animate.min.js"></script>
     <title>Plex Status</title>
+    <?php get_css("style") ?>
 </head>
 <body>
 <script>
@@ -75,7 +73,6 @@ function plexOk()
     return <?= does_plex_exist() ? 'true' : 'false'; ?>;
 }
 </script>
-<script src="resource/index.js"></script>
 
 <div id="plexFrame">
     <?php include "nav.php" ?>
@@ -110,4 +107,5 @@ function plexOk()
     <div id="tooltip"></div>
 </div>
 </body>
+<?php get_js("consolelog", "animate", "index"); ?>
 </html>

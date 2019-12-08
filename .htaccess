@@ -5,3 +5,9 @@ RewriteRule ^/?poster/(.*)$ get_image.php?path=/$1&type=poster [PT]
 RewriteRule ^/?resource/(.*)$ get_resource.php?resource=$1 [PT]
 
 FileETag MTime Size
+
+<IfModule mod_deflate.c>
+<FilesMatch "\.(ico|jpg|jpeg|png|gif|js|css|html|php|txt|xml)$">
+SetOutputFilter DEFLATE
+</FilesMatch>
+</IfModule>

@@ -17,14 +17,11 @@ if ((int)$_SESSION['level'] < 100)
 <html lang="en-us">
 <head>
     <meta http-equiv="Content-Type" content="text/html;charset=utf-8">
-    <link rel="stylesheet" type="text/css" href="resource/style.css">
-    <link rel="stylesheet" type="text/css" href="resource/request.css">
     <link rel="shortcut icon" href="favicon.png">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#3C5260" />
-    <script src="resource/min/animate.min.js"></script>
-    <script src="resource/consolelog.js"></script>
     <title>Plex Status: Members</title>
+    <?php get_css("style", "request"); ?>
 </head>
 <body>
 
@@ -37,6 +34,7 @@ if ((int)$_SESSION['level'] < 100)
     </div>
 </div>
 </body>
+<?php get_js("consolelog", "animate"); ?>
 <script>
 (function() {
     window.addEventListener('load', function() {

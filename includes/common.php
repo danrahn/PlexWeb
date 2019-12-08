@@ -132,6 +132,9 @@ function get($param)
     return param_or_json_exit($param);
 }
 
+/// <summary>
+/// Returns the get/post parameter, or FALSE if not found
+/// </summary>
 function try_get($param)
 {
     $value;
@@ -143,6 +146,9 @@ function try_get($param)
     return FALSE;
 }
 
+/// <summary>
+/// If $param exists, sets $value to the given paramter and returns true, otherwise returns false
+/// </summary>
 function param($param, &$value)
 {
     if (isset($_POST[$param]))
@@ -158,6 +164,45 @@ function param($param, &$value)
     }
 
     return FALSE;
+}
+
+/// <summary>
+/// Echos the contents of the given javascript resources. This allows
+/// for more efficient inlining while still allowing cleaner organization
+/// </summary>
+function get_js(...$files)
+{
+    foreach ($files as $file)
+    {
+        echo "<script>\n" . include_js($file) . "</script>\n\n";
+    }
+}
+
+/// <summary>
+/// Echos the contents of the given javascript file. By default writes
+/// the minified version, unless the 'nomin' get/post parameter is set
+/// </summary>
+function include_js($file)
+{
+    if (!try_get("nomin"))
+    {
+        return file_get_contents("min/" . $file . ".min.js");
+    }
+    else
+    {
+        return file_get_contents($file . ".js");
+    }
+}
+
+/// <summary>
+/// Echos the given css files as separate <style>s
+/// </summary>
+function get_css(...$files)
+{
+    foreach ($files as $file)
+    {
+        echo "<style>\n" . file_get_contents($file . ".css") . "</style>\n";
+    }
 }
 
 /// <summary>
