@@ -1,6 +1,6 @@
 <div id="navholder">
 <div id="nav">
-    <div id="mainMenu" class="leftbutton">
+    <div id="mainMenu" class="leftbutton" tabindex=1>
         <div class="ham"></div>
         <div class="ham"></div>
         <div class="ham"></div>
@@ -37,49 +37,56 @@
 </div>
 <div id="leftMenu">
     <div class="navButton" id="navHome">
-        <button class=btntxt>Home</button>
+        <button class=btntxt disabled=true>Home</button>
         <div class=btnimg><image src='resource/home.png' alt='Home' style='filter: invert(80%);'/></div>
     </div>
     <div class="navButton rightbutton" id="navNewRequest">
-        <button class=btntxt>New Request</button>
+        <button class=btntxt disabled=true>New Request</button>
         <div class=btnimg><image src='resource/new_request.png' alt='NewRequest' style='filter: invert(80%);'/></div>
     </div>
 <?php if (isset($_SESSION['level']) && (int)$_SESSION['level'] >= 100) { ?>
     <div class="navButton" id="navMembers">
-        <button class=btntxt>Members</button>
+        <button class=btntxt disabled=true>Members</button>
         <div class=btnimg><image src='resource/members.png' alt='Home' style='filter: invert(80%);'/></div>
     </div>
 <?php } ?>
     <div class="navButton rightbutton" id="navUserSettings">
-        <button class=btntxt>Settings</button>
+        <button class=btntxt disabled=true>Settings</button>
         <div class=btnimg><image src='resource/settings.png' alt='Settings' style='filter: invert(80%);'/></div>
     </div>
     <div class="navButton" id="navRequests">
-        <button class=btntxt>Requests</button>
+        <button class=btntxt disabled=true>Requests</button>
         <div class=btnimg><image src='resource/requests.png' alt='Requests' style='filter: invert(80%);'/></div>
     </div>
     <div class="navButton" id="navLogout">
-        <button class=btntxt>Logout</button>
+        <button class=btntxt disabled=true>Logout</button>
         <div class=btnimg><image src='resource/logout.png' alt='Logout' style='filter: invert(80%);'/></div>
     </div>
     <div class="navButton" id="navGithub">
-        <button class=btntxt>Source Code</button>
+        <button class=btntxt disabled=true>Source Code</button>
         <div class=btnimg><image src='resource/github.png' alt='Github' style='filter: invert(80%);'/></div>
     </div>
 </div>
 <script>
 (function() {
+
     document.getElementById("mainMenu").addEventListener("click", function() {
         let menu = document.getElementById("leftMenu");
-        if (menu) {
-            if (menu.style.opacity == "1") {
-                logVerbose("Contracting Menu");
-                Animation.queue({"opacity" : 0, "left": "-170px"}, menu, 200);
-            } else {
-                logVerbose("Expanding menu");
-                Animation.queue({"opacity" : 1, "left" : "0px"}, menu, 200);
-            }
+        if (!menu)
+        {
+            return;
         }
+
+        expandContractMenu(menu, menu.style.opacity != 1);
+    });
+
+    document.getElementById("mainMenu").addEventListener("keyup", function(e) {
+        let menu = document.getElementById("leftMenu");
+        if (!menu || e.keyCode != 13) {
+            return;
+        }
+
+        expandContractMenu(menu, menu.style.opacity != 1);
     });
 
     setupClicks("pageName", "index.php");
@@ -98,7 +105,20 @@
     setupClicks("navLogout", "logout.php");
     setupClicks("navGithub", "https://github.com/danrahn/plexweb", true);
 
+    /// <summary>
+    /// Shows or hides the menu
+    /// </summary>
+    function expandContractMenu(menu, expand, duration)
+    {
+        logVerbose((expand ? "Expanding" : "Contracting") + " Menu");
+        Animation.queue({"opacity" : (expand ? 1 : 0), "left" : (expand ? "0px" : "-170px")}, menu, duration || 200);
+        setEnabled(expand);
+    }
 
+    /// <summary>
+    /// Setup URL click handlers for the given id, ensuring a middle mouse click
+    /// opens in a new tab
+    /// </summary>
     function setupClicks(id, url, forceNewWindow)
     {
         let element = document.getElementById(id);
@@ -130,17 +150,38 @@
         });
     }
 
+    /// <summary>
+    /// Set left menu buttons to be enabled/disabled to help with tab navigation
+    /// </summary>
+    function setEnabled(enabled)
+    {
+        document.querySelector("#navHome button").disabled = !enabled;
+        document.querySelector("#navNewRequest button").disabled = !enabled;
+        document.querySelector("#navMembers button").disabled = !enabled;
+        document.querySelector("#navUserSettings button").disabled = !enabled;
+        document.querySelector("#navRequests button").disabled = !enabled;
+        document.querySelector("#navLogout button").disabled = !enabled;
+        document.querySelector("#navGithub button").disabled = !enabled;
+    }
+
+    /// <summary>
+    /// If Escape is pressed and the menu is open, dismiss it
+    /// </summary>
     window.addEventListener("keydown", function(e) {
         e = e || window.event;
         const key = e.which || e.keyCode;
         if (key === 27 /*esc*/) {
             let menu = document.getElementById("leftMenu");
             if (menu && menu.style.opacity != 0) {
-                Animation.queue({"opacity" : 0, "left": "-170px"}, menu, 200);
+                expandContractMenu(menu, false);
             }
         }
     });
 
+    /// <summary>
+    /// If the menu is open and the user clicks anywhere expect the
+    /// menu or nav header, dismiss the menu
+    /// </summary>
     window.addEventListener("click", function(e) {
         e = e || window.event;
         let element = e.target;
@@ -154,7 +195,7 @@
 
         let menu = document.getElementById("leftMenu");
         if (menu && menu.style.opacity != 0) {
-            Animation.queue({"opacity" : 0, "left": "-170px"}, menu, 200);
+            expandContractMenu(menu, false);
         }
 
     });
@@ -216,7 +257,7 @@
 
         if (direction == 1) {
             // Maximizing
-            menu.style.opacity = Math.max(0, 1 - (170 - diff) / 170);
+            menu.style.opacity = Math.min(1, Math.max(0, 1 - (170 - diff) / 170));
             menu.style.left = "-" + (170 - diff) + "px";
         } else {
             // Minimizing
@@ -246,12 +287,12 @@
         if (left < threshold) {
             let duration = Math.round(((170 - Math.abs(left)) / 170) * 200);
             if (duration != 0) {
-                Animation.queue({"opacity" : 0, "left": "-170px"}, menu, duration);
+                expandContractMenu(menu, false, duration);
             }
         } else {
             let duration = Math.round((Math.abs(left) / 170) * 200);
             if (duration != 0) {
-                Animation.queue({"opacity" : 1, "left": "0px"}, menu, duration);
+                expandContractMenu(menu, true, duration);
             }
         }
 

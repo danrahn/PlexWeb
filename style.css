@@ -714,10 +714,6 @@ hr {
     color: #c1c1c1;
 }
 
-.btntxt:focus {
-    outline: none;
-}
-
 .navPageInfo {
     color: #c1c1c1;
     float: left;
