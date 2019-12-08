@@ -79,12 +79,13 @@ function log(text, level) {
     }
 
     let d = getTimestring();
+    let typ = (text) => typeof(text) == "string" ? "%s" : "%o";
     if (g_logLevel === LOG.Extreme) {
-        print(console.log, `%c[%cEXTREME%c][%c${d}%c] Called log with (${text}, ${level})`, 6);
+        print(console.log, `%c[%cEXTREME%c][%c${d}%c] Called log with ${typ(text)}, ${level})`, text, 6);
     }
 
     let output = level < LOG.Warn ? console.log : level < LOG.Error ? console.warn : console.error;
-    print(output, `%c[%c${g_logStr[level]}%c][%c${d}%c]${typeof(text) == "string" ? ' %s' : ' %o'}`, text, level);
+    print(output, `%c[%c${g_logStr[level]}%c][%c${d}%c] ${typ(text)}`, text, level);
 
     function getTimestring() {
         let z = function(n,x=2) {
