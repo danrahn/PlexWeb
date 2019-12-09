@@ -7,7 +7,6 @@
 /// <summary>
 /// The main animation class, responsible for synchronous execution
 /// </summary>
-/// <todo>When required, support multiple properties at once, i.e. { "backgroundColor" : "#AAA", "color": "#BBB" }</todo>
 let A = function()
 {
     /// <summary>
@@ -56,12 +55,12 @@ let A = function()
         animationQueue[element.id].push(animations);
         if (animationQueue[element.id].length !== 1)
         {
-            // Can't fire immediately
-            /*@__PURE__*/logTmi("Adding animation for " + element.id + " to queue");
+            // Can't fire immediately (PURE annotation will remove it from the minified JS)
+            /*@__PURE__*/logTmi(animationQueue[element.id], "Adding animation for " + element.id + " to queue");
             return;
         }
 
-        /*@__PURE__*/logTmi("Firing animation for " + element.id + " immediately");
+        /*@__PURE__*/logTmi(animationQueue[element.id], "Firing animation for " + element.id + " immediately");
         animationQueue[element.id][0].timers = [];
         for (let i = 0; i < animations.length; ++i)
         {
@@ -76,16 +75,18 @@ let A = function()
     /// </summary>
     this.fireNow = function(func, element, ...args)
     {
+        /*@__PURE__*/logTmi(`Firing now: ${element.id}`);
         let queue = animationQueue[element.id];
         if (queue)
         {
+            /*@__PURE__*/logTmi(queue, `FireNow - queue not empty, attempting to cancel current animations for ${element.id}`);
             for (let i = 0; i < queue[0].timers.length; ++i)
             {
                 clearTimeout(queue[0].timers[i]);
             }
 
-            // Otherwise splice out everything except what's currently firing
-            queue = queue.splice(0, 1);
+            // If the queue is not empty, remove everything but the first element (which needs to exist and know it's canceled)
+            queue.splice(1);
             queue[0].canceled = true;
         }
 
@@ -117,20 +118,24 @@ let A = function()
         if (queue[0].length == 0)
         {
             // Clear it from our dictionary to save some space
+            /*@__PURE__*/logTmi(`No more animations in the current group for ${element.id}, removing it from the queue`);
             queue.shift();
         }
         else
         {
             // Still waiting for the last animation from the given group
+            /*@__PURE__*/logTmi(`Waiting for additional animations in to finish for ${element.id}`);
             return;
         }
 
         if (queue.length == 0)
         {
+            /*@__PURE__*/logTmi(`no more animations for ${element.id}`);
             delete animationQueue[element.id];
         }
         else
         {
+            /*@__PURE__*/logTmi(`Firing next animation for ${element.id}`);
             let nextAnimations = queue[0];
             nextAnimations.timers = [];
             for (let i = 0; i < nextAnimations.length; ++i)
@@ -188,6 +193,7 @@ let A = function()
                     {
                         if (animationQueue[element.id][0].canceled)
                         {
+
                             i = steps;
                         }
 
