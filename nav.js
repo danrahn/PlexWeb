@@ -85,13 +85,23 @@
     /// </summary>
     function setEnabled(enabled)
     {
-        document.querySelector("#navHome button").disabled = !enabled;
-        document.querySelector("#navNewRequest button").disabled = !enabled;
-        document.querySelector("#navMembers button").disabled = !enabled;
-        document.querySelector("#navUserSettings button").disabled = !enabled;
-        document.querySelector("#navRequests button").disabled = !enabled;
-        document.querySelector("#navLogout button").disabled = !enabled;
-        document.querySelector("#navGithub button").disabled = !enabled;
+        [
+        "navHome",
+        "navNewRequest",
+        "navMembers",
+        "navUserSettings",
+        "navRequests",
+        "navLogout",
+        "navGithub"].forEach((element) => enableSingle(element, enabled));
+    }
+
+    function enableSingle(id, enabled)
+    {
+        let element = document.querySelector(`#${id} button`);
+        if (element)
+        {
+            element.disabled = !enabled;
+        }
     }
 
     /// <summary>

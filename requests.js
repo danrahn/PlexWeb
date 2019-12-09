@@ -43,7 +43,7 @@
     /// </summary>
     function isAdmin()
     {
-        return document.body.getAttribute("isAdmin") == "1";
+        return parseInt(document.body.getAttribute("isAdmin")) === 1 ;
     }
 
     /// <summary>
@@ -83,54 +83,52 @@
     /// </summary>
     function buildRequest(request, sortOrder)
     {
-        let holder = document.createElement("div");
-        holder.classList.add("requestHolder");
+        let holder = buildNode("div", {"class" : "requestHolder"});
 
-        let imgHolder = document.createElement("div");
-        imgHolder.classList.add("imgHolder");
-
-        let imgA = document.createElement("a");
-        imgA.href = `request.php?id=${request.rid}`;
-        let img = document.createElement("img");
-        img.src = `poster/${request.p}`;
+        let imgHolder = buildNode("div", {"class" : "imgHolder"});
+        let imgA = buildNode("a", {"href" : `request.php?id=${request.rid}`});
+        let img = buildNode("img", {"src" : `poster/${request.p}`});
         imgA.appendChild(img);
-
         imgHolder.appendChild(imgA);
 
-        let textHolder = document.createElement("div");
-        textHolder.classList.add("textHolder");
+        let textHolder = buildNode("div", {"class" : "textHolder"});
 
-        let a = document.createElement("a");
-        a.classList.add("requestTitle");
-        a.href = `request.php?id=${request.rid}`;
-        a.text = request.n;
+        let a = buildNode("a", {"class" : "requestTitle", "href" : `request.php?id=${request.rid}`}, request.n);
 
         let tooltipDateOptions = { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: 'numeric' };
 
-        let requestDate = document.createElement("span");
-        requestDate.title = new Date(request.rd).toLocaleDateString('en-US', tooltipDateOptions);
-        requestDate.innerHTML = `Requested: ${getDisplayDate(new Date(request.rd))}`;
+        let requestDate = buildNode("span",
+            {"title" : new Date(request.rd).toLocaleDateString('en-US', tooltipDateOptions)},
+            `Requested: ${getDisplayDate(new Date(request.rd))}`);
 
-        let updateDate = document.createElement("span");
-        updateDate.title = new Date(request.ad).toLocaleDateString('en-us', tooltipDateOptions);
-        updateDate.innerHTML = `Last Update: ${getDisplayDate(new Date(request.ad))}`;
+        let updateDate = buildNode("span",
+            {"title" : new Date(request.ad).toLocaleDateString('en-US', tooltipDateOptions)},
+            `Last Update: ${getDisplayDate(new Date(request.ad))}`);
 
-        let requester = document.createElement("span");
-        requester.innerHTML = `Requested By: ${request.r}`;
+        let requester = buildNode("span", {}, `Requested By: ${request.r}`);
 
-        let status = document.createElement("span");
+        let status = buildNode("span");
         let statusVal = parseInt(request.a);
-        let statusTest = ["Pending", "Complete", "Denied", "In Progress", "Waiting"][statusVal];
+        let statusText = ["Pending", "Complete", "Denied", "In Progress", "Waiting"][statusVal];
 
-        status.innerHTML = isAdmin() ? getStatusSelection(request.rid, statusVal) : `Status: ${statusText}`;
+        if (isAdmin())
+        {
+            getStatusSelection(status, request.rid, statusVal);
+        }
+        else
+        {
+            status.innerHTML = `Status: ${statusText}`;
+        }
 
         if (statusVal != 0)
         {
             holder.classList.add(["", "requestComplete", "requestDenied", "requestInProgress", "requestWaiting"][statusVal]);
         }
 
-        let comments = document.createElement("span");
-        comments.innerHTML = `<a href="request.php?id=${request.rid}">${request.c} comment${request.c != 1 ? 's' : ''}</a>`;
+        let comments = buildNode("span");
+        comments.appendChild(buildNode("a",
+            {"href" : `request.php?id=${request.rid}`},
+            `${request.c} comment${request.c != 1 ? 's' : ''}`));
 
         textHolder.appendChild(a);
         if (sortOrder == "ud" || sortOrder == "ua")
@@ -156,18 +154,26 @@
     /// <symmary>
     /// Returns the HTML for a status combobox for request administration
     /// </summary>
-    function getStatusSelection(rid, selected)
+    function getStatusSelection(statusHolder, rid, selected)
     {
-        return `
-<label for="status_${rid}">Status: </label><select name="status_${rid}" id="status_${rid}" class="inlineCombo">
-    <option value="0">Pending</option>
-    <option value="4">Waiting</option>
-    <option value="3">In Progress</option>
-    <option value="1">Complete</option>
-    <option value="2">Denied</option>
-</select>
-<a href='#' id='statusChange_${rid}' class='statusChange statusHidden' orig='${selected}' rid='${rid}'>Update</a>
-`
+        statusHolder.appendChild(buildNode("label", {"for" : `status_${rid}`}, status));
+        let select = buildNode("select", {"name" : `status_${rid}`, "id" : `status_${rid}`, "class" : "inlineCombo"});
+        let mappings = [0, 4, 3, 1, 2];
+        ["Pending", "Waiting", "In Progress", "Complete", "Denied"].forEach(function(item, i)
+        {
+            select.appendChild(buildNode("option", {"value" : mappings[i]}, item));
+        });
+
+        statusHolder.appendChild(select);
+        statusHolder.appendChild(buildNode("a",
+            {
+                "href" : "#",
+                "id" : `statusChange_${rid}`,
+                "class" : "statusChange statusHidden",
+                "orig" : selected,
+                "rid" : rid
+            },
+            "Update"));
     }
 
     /// <summary>
@@ -279,10 +285,7 @@
             let select = $("#filterTo");
             response.forEach(function(user)
             {
-                let option = document.createElement("option");
-                option.value = user.id;
-                option.text = user.username;
-                select.appendChild(option);
+                select.appendChild(buildNode("option", {"value" : user.id}, user.username));
             });
 
             select.value = getFilter().user;
@@ -368,10 +371,7 @@
     function displayInfoMessage(message)
     {
         clearElement("tableEntries");
-        let info = document.createElement("div");
-        info.id = "resultInfo";
-        info.innerHTML = message;
-        $("#tableEntries").appendChild(info);
+        $("#tableEntries").appendChild(buildNode("div", {"id" : "resultInfo"}, message));
     }
 
     /// <summary>
@@ -390,9 +390,9 @@
     /// </summary>
     function filterBtnClick()
     {
-        let overlay = document.createElement("div");
+        let overlay = buildNode("div", {"id" : "filterOverlay"});
         overlay.id = "filterOverlay";
-        overlay.innerHTML = filterHtml();
+        overlay.appendChild(filterHtml());
         overlay.style.opacity = "0";
         document.body.appendChild(overlay);
 
@@ -504,75 +504,107 @@
     /// <summary>
     /// HTML for the filter overlay/dialog. Should probably be part of the initial DOM
     /// </summary>
-    function filterHtml()
+    function filterHtml(overlay)
     {
-        let html = `
-<div id="filterContainer">
-    <h3>Filter Options</h3>
-    <hr />
-    <div class="formInput">
-        <label for="showPending">Show Pending: </label><input type="checkbox" name="showPending" id="showPending">
-    </div>
-    <div class="formInput">
-        <label for="showWaiting">Show Waiting: </label><input type="checkbox" name="showWaiting" id="showWaiting">
-    </div>
-    <div class="formInput">
-        <label for="showInProgress">Show In Progress: </label><input type="checkbox" name="showInProgress" id="showInProgress">
-    </div>
-    <div class="formInput">
-        <label for="showComplete">Show Complete: </label><input type="checkbox" name="showComplete" id="showComplete">
-    </div>
-    <div class="formInput">
-        <label for="showDeclined">Show Declined: </label><input type="checkbox" name="showDeclined" id="showDeclined">
-    </div>
-    <hr />
-    <div class="formInput">
-        <label for="showMovies">Show Movies: </label><input type="checkbox" name="showMovies" id="showMovies">
-    </div>
-    <div class="formInput">
-        <label for="showTV">Show TV: </label><input type="checkbox" name="showTV" id="showTV">
-    </div>
-    <div class="formInput">
-        <label for="showOther">Show Other: </label><input type="checkbox" name="showOther" id="showOther">
-    </div>
-    <hr />
-    <div class="formInput">
-        <label for="sortBy">Sort By: </label>
-        <select name="sortBy" id="sortBy">
-            <option value="request">Request Date</option>
-            <option value="update">Update Date</option>
-            <option value="title">Title</option>
-        </select>
-    </div>
-    <div class="formInput">
-        <label for="sortOrder">Sort Order: </label>
-        <select name="sortOrder" id="sortOrder">
-            <option value="desc" id="sortDesc">Newest First</option>
-            <option value="asc" id="sortAsc">Oldest First</option>
-        </select>
-    </div>
-    <hr />`;
+        let container = buildNode("div", {"id" : "filterContainer"});
+        container.appendChild(buildNode("h3", {}, "Filter Options"));
+        container.appendChild(buildNode("hr"));
 
-        if (isAdmin()) { html += `
-    <div class="formInput">
-        <label for="filterTo">Filter To: </label>
-        <select name="filterTo" id="filterTo">
-            <option value="-1">All</option>
-        </select>
-    </div>
-    <hr />`; }
+        // Statuses + request types
+        let labels = [
+            "Show Pending",
+            "Show Waiting",
+            "Show In Progress",
+            "Show Complete",
+            "Show Declined",
+            "",
+            "Show Movies",
+            "Show TV",
+            "Show Other"];
 
-        html += `
-    <div class="formInput">
-        <div class="filterButtons">
-            <input type="button" value="Cancel" id="cancelFilter" style="margin-right: 10px">
-            <input type="button" value="Reset" id="resetFilter" style="margin-right: 10px">
-            <input type="button" value="Apply" id="applyFilter">
-        </div>
-    </div>
-</div>
-`
-        return html;
+        [
+            "showPending",
+            "showWaiting",
+            "showInProgress",
+            "showComplete",
+            "showDeclined",
+            "",
+            "showMovies",
+            "showTV",
+            "showOther"
+        ].forEach(function(typ, index)
+        {
+            if (typ == "")
+            {
+                container.appendChild(buildNode("hr"));
+                return;
+            }
+
+            let div = buildNode("div", {"class" : "formInput"});
+            div.appendChild(buildNode("label", {"for" : typ}, labels[index] + ": "));
+            div.appendChild(buildNode("input", {
+                "type" : "checkbox",
+                "name" : typ,
+                "id" : typ
+            }));
+            container.appendChild(div);
+        });
+
+        let sortBy = buildNode("div", {"class" : "formInput"});
+        sortBy.appendChild(buildNode("label", {"for" : "sortBy"}, "Sort By: "));
+        let sortByFields = buildNode("select", {"name" : "sortBy", "id" : "sortBy"});
+        labels = ["Request Date", "Update Date", "Title"];
+        ["request", "update", "title"].forEach(function(category, index)
+        {
+            sortByFields.appendChild(buildNode("option", {"value": category}, labels[index]));
+        });
+        sortBy.appendChild(sortByFields);
+        container.appendChild(sortBy);
+
+        let sortOrder = buildNode("div", {"class" : "formInput"});
+        sortOrder.appendChild(buildNode("label", {"for" : "sortOrder"}, "Sort  Order: "));
+        let sortOrderFields = buildNode("select", {"name" : "sortOrder", "id" : "sortOrder"});
+        sortOrderFields.appendChild(buildNode("option", {"value" : "desc", "id" : "sortDesc"}, "Newest First"));
+        sortOrderFields.appendChild(buildNode("option", {"value" : "asc", "id" : "sortAsc"}, "Oldest First"));
+        sortOrder.appendChild(sortOrderFields);
+        container.appendChild(sortOrder);
+        container.appendChild(buildNode("hr"));
+
+        if (isAdmin())
+        {
+            let userSelect = buildNode("div", {"class" : "formInput"});
+            userSelect.appendChild(buildNode("label", {"for" : "filterTo"}, "Filter To: "));
+            let filterUser = buildNode("select", {"name" : "filterTo", "id" : "filterTo"});
+            filterUser.appendChild(buildNode("option", {"value" : "-1"}, "All"));
+            userSelect.appendChild(filterUser);
+            container.appendChild(userSelect);
+            container.appendChild(buildNode("hr"));
+        }
+
+        let buttonHolder = buildNode("div", {"class" : "formInput"});
+        let innerButtonHolder = buildNode("div", {"class" : "filterButtons"});
+        innerButtonHolder.appendChild(buildNode("input", {
+            "type" : "button",
+            "value" : "Cancel",
+            "id" : "cancelFilter",
+            "style" : "margin-right: 10px"
+        }));
+        innerButtonHolder.appendChild(buildNode("input", {
+            "type" : "button",
+            "value" : "Reset",
+            "id" : "resetFilter",
+            "style" : "margin-right: 10px"
+        }));
+        innerButtonHolder.appendChild(buildNode("input", {
+            "type" : "button",
+            "value" : "Apply",
+            "id" : "applyFilter",
+            "style" : "margin-right: 10px"
+        }));
+
+        buttonHolder.appendChild(innerButtonHolder);
+        container.appendChild(buttonHolder);
+        return container;
     }
 
     /// <summary>
@@ -855,6 +887,36 @@
             clearElement("tableEntries");
             getRequests();
         }
+    }
+
+    /// <summary>
+    /// Helper method to create DOM elements.
+    /// </summary>
+    function buildNode(type, attrs, content, events)
+    {
+        let ele = document.createElement(type);
+        if (attrs)
+        {
+            for (let [key, value] of Object.entries(attrs))
+            {
+                ele.setAttribute(key, value);
+            }
+        }
+
+        if (events)
+        {
+            for (let [event, func] of Object.entries(events))
+            {
+                ele.addEventListener(event, func);
+            }
+        }
+
+        if (content)
+        {
+            ele.innerHTML = content;
+        }
+
+        return ele;
     }
 
     /// <summary>

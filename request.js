@@ -154,44 +154,48 @@ window.addEventListener("load", function()
         for (let i = 0; i < max; ++i)
         {
             let match = matches[i];
-            let item = document.createElement("div");
-            item.className = "searchResult";
-            item.setAttribute("tmdbid", match.id);
+            let item = buildNode("div",
+                {"className" : "searchResult", "tmdbid" : match.id},
+                0,
+                {"click" : clickSuggestion});
             let img;
             if (match.poster_path)
             {
-                img = document.createElement("img");
-                img.src = "https://image.tmdb.org/t/p/w92" + match.poster_path;
-                img.style.height = "70px";
+                img = buildNode("img", {
+                    "src" :
+                    `https://image.tmdb.org/t/p/w92${match.poster_path}`,
+                    "style" : "height: 70px"
+                });
             }
-            let div = document.createElement("div");
+
+            let div = buildNode("div");
             let release = match.release_date;
             if (release === null || release === undefined)
             {
                 release = match.first_air_date;
             }
-            let href = document.createElement("a");
-            href.href = "#";
-            href.addEventListener("click", goToImdb);
-            href.innerHTML = (match.title ? match.title : match.name) + (release.length > 4 ? (" (" + release.substring(0, 4) + ")") : "");
-            div.appendChild(href);
 
+            let href = buildNode("a",
+                {"href" : "#"},
+                (match.title ? match.title : match.name) + (release.length > 4 ? (" (" + release.substring(0, 4) + ")") : ""),
+                { "click" : goToImdb});
+
+            div.appendChild(href);
             if (img) item.appendChild(img);
             item.appendChild(div);
-
-            item.addEventListener("click", clickSuggestion);
 
             container.appendChild(item);
         }
 
-        let button = document.createElement("input");
-        button.id = "matchContinue_" + holder;
-        button.classList.add("matchContinue");
-        button.style.visibility = "hidden";
-        button.style.height = "0";
-        button.type = "button";
-        button.value = "Continue";
-        button.addEventListener("click", chooseSelected);
+        let button = buildNode("input", {
+            "id" : `matchContinue_${holder}`,
+            "class" : "matchContinue",
+            "style" : "visibility: hidden; height: 0",
+            "type" : "button",
+            "value" : "Continue"
+        },
+        0,
+        {"click" : chooseSelected});
         container.appendChild(button);
     }
 
@@ -304,14 +308,9 @@ window.addEventListener("load", function()
 
     function getNonMediaInfo()
     {
-        let outerContainer = document.createElement("div");
-        outerContainer.id = "innerInfoContainer";
-        let container = document.createElement("div");
-        container.id = "mediaDetails";
-        let div = document.createElement("div");
-        div.id = "mediaTitle";
-        div.innerHTML = `Request: ${document.body.getAttribute("requestName")}`;
-        container.appendChild(div);
+        let outerContainer = buildNode("div", {"id" : "innerInfoContainer"});
+        let container = buildNode("div", {"id" : "mediaDetails"});
+        container.appendChild(buildNode("div", {"id" : "mediaTitle"}, `Request: ${document.body.getAttribute("requestName")}`));
         outerContainer.appendChild(container);
         $("#infoContainer").innerHTML = "";
         $("#infoContainer").appendChild(outerContainer);
@@ -322,69 +321,64 @@ window.addEventListener("load", function()
         let container = $("#infoContainer");
         container.innerHTML = "";
 
-        let backdrop = document.createElement("img");
-        backdrop.src = "https://image.tmdb.org/t/p/original" + data.backdrop_path;
-        backdrop.id = "mediaBackdrop";
+        let backdrop = buildNode("img", {
+            "src" : `https://image.tmdb.org/t/p/original${data.backdrop_path}`,
+            "id" : "mediaBackdrop"
+        });
 
-        let innerContainer = document.createElement("div");
-        innerContainer.id = "innerInfoContainer";
+        let innerContainer = buildNode("div", {"id" : "innerInfoContainer"});
 
-        let poster = document.createElement("img");
-        poster.src = "poster" + data.poster_path;
-        poster.id = "mediaPoster";
+        let poster = buildNode("img", {"src" : `poster${data.poster_path}`, "id" : "mediaPoster"});
+        let details = buildNode("div", {"id" : "mediaDetails"});
 
-        let details = document.createElement("div");
-        details.id = "mediaDetails";
-
-        let title = document.createElement("div");
+        let title = buildNode("div", {"id" : "mediaTitle"});
         let status = parseInt(document.body.getAttribute("requestStatus"));
-        let statusSpan = document.createElement("span");
-        statusSpan.className = "status" + status;
-        statusSpan.innerHTML =
-        [
-            "Pending",
-            "Complete",
-            "Denied",
-            "In Progress",
-            "Waiting"
-        ][status];
 
-        if (document.body.getAttribute("isAdmin"))
+        let statusSpan = buildNode("span",
+            {"class" : `status${status}`},
+            [
+                "Pending",
+                "Complete",
+                "Denied",
+                "In Progress",
+                "Waiting"
+            ][status]);
+
+        if (parseInt(document.body.getAttribute("isAdmin")) == 1)
         {
             setupSpanDoubleClick(statusSpan);
         }
 
         title.innerHTML = (data.title || data.name) + " - ";
         title.appendChild(statusSpan);
-        title.id = "mediaTitle";
 
-        let year = document.createElement("div");
         let release = data.release_date || data.first_air_date;
-        year.innerHTML = release.length > 4 ? release.substring(0, 4) : "Unknown Release Date";
-        year.id = "mediaYear";
+        let year = buildNode("div", {"id" : "mediaYear"}, release.length > 4 ? release.substring(0, 4)  : "Unknown Release Date");
 
         let imdb;
         if (data.imdb_id)
         {
-            imdb = document.createElement("div");
-            imdb.innerHTML = "<a href='https://imdb.com/title/" + data.imdb_id + "' target='_blank'>IMDb</a>";
-            imdb.id = "mediaLink";
+            imdb = buildNode("div", {"id" : "mediaLink"});
+            imdb.appendChild(buildNode("a", {
+                "href" : `https://imdb.com/title/${data.imdb_id}`,
+                "target" : "_blank"
+            }, "IMDb"));
         }
         else if (data.id)
         {
-            imdb = document.createElement("div");
-            imdb.innerHTML = "<a href='https://www.themoviedb.org/" + document.body.getAttribute("requestTypeStr") + "/" + data.id + "' target='_blank'>TMDb</a>";
-            imdb.id = "mediaLink";
+            imdb = buildNode("div", {"id" : "mediaLink"});
+            imdb.appendChild(buildNode("a", {
+                "href" : `https://www.themoviedb.org/${document.body.getAttribute("requestTypeStr")}/${data.id}`,
+                "target" : "_blank"
+            }, "TMDb"));
         }
 
-        let desc = document.createElement("div");
-        desc.innerHTML = data.overview;
-        desc.id = "mediaOverview";
+        let desc = buildNode("div", {"id" : "mediaOverview"}, data.overview);
 
         details.appendChild(title);
         details.appendChild(year);
         if (imdb) details.appendChild(imdb);
-        details.appendChild(document.createElement("hr"));
+        details.appendChild(buildNode("hr"));
         details.appendChild(desc);
 
         innerContainer.appendChild(poster);
@@ -504,25 +498,22 @@ window.addEventListener("load", function()
         for (let i = 0; i < comments.length; ++i)
         {
             let comment = comments[i];
-            let holder = document.createElement("div");
-            holder.classList.add("commentHolder");
+            let holder = buildNode("div", {"class" : "commentHolder"});
+            let info = buildNode("div", {"class" : "commentInfo"});
+            let name = buildNode("span", {}, comment[0])
 
-            let info = document.createElement("div");
-            info.classList.add("commentInfo");
+            let date = buildNode("span", {},
+                new Date(comment[2]).toLocaleDateString("en-US",
+                    options={
+                        year: "2-digit",
+                        month: "numeric",
+                        day : "numeric",
+                        hour: "numeric",
+                        minute: "numeric",
+                        second: "numeric" 
+                    })
+                );
 
-            let name = document.createElement("span");
-            name.innerHTML = comment[0];
-
-            let date = document.createElement("span");
-            date.innerHTML = new Date(comment[2]).toLocaleDateString("en-US", options={
-                year: "2-digit",
-                month: "numeric",
-                day : "numeric",
-                hour: "numeric",
-                minute: "numeric",
-                second: "numeric" });
-
-            let content = document.createElement("div");
             let fixedupContent = comment[1].replace(/[&<>"\/]/g, function(s) {
                 const entityMap = {
                     "&": "&amp;",
@@ -539,8 +530,7 @@ window.addEventListener("load", function()
             let markdownUrlRegex = /\[(.*?)\]\((.*?)\)/gm;
             fixedupContent = "<span>" + fixedupContent.replace(markdownUrlRegex, '<a href="$2" target="_blank">$1</a>') + "</span>";
 
-            content.innerHTML = fixedupContent;
-            content.classList.add("commentContent");
+            let content = buildNode("div", {"class" : "commentContent"}, fixedupContent);
 
             info.appendChild(name);
             info.appendChild(date);
@@ -561,6 +551,36 @@ window.addEventListener("load", function()
         }
 
         return document.querySelectorAll(selector);
+    }
+
+    /// <summary>
+    /// Helper method to create DOM elements.
+    /// </summary>
+    function buildNode(type, attrs, content, events)
+    {
+        let ele = document.createElement(type);
+        if (attrs)
+        {
+            for (let [key, value] of Object.entries(attrs))
+            {
+                ele.setAttribute(key, value);
+            }
+        }
+
+        if (events)
+        {
+            for (let [event, func] of Object.entries(events))
+            {
+                ele.addEventListener(event, func);
+            }
+        }
+
+        if (content)
+        {
+            ele.innerHTML = content;
+        }
+
+        return ele;
     }
 
     /// <summary>

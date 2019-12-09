@@ -66,23 +66,14 @@
     function getStatusFailure()
     {
         // User doesn't have access to active streams
-        let spanOpen = document.createElement('span');
-        spanOpen.innerHTML = '[';
-
-        let requestLink = document.createElement('a');
-        requestLink.href = '#';
-        requestLink.id = "streamAccess";
-        requestLink.innerHTML = "No Access";
+        let requestLink = buildNode("a", {"href" : "#", "id" : "streamAccess"}, "No Access");
         getStreamAccessString();
-
-        let spanClose = document.createElement('span');
-        spanClose.innerHTML = ']';
 
         let active = $("#activeNum");
         active.innerHTML = "";
-        active.append(spanOpen);
+        active.append(buildNode("span", {}, "["));
         active.append(requestLink);
-        active.append(spanClose);
+        active.append(buildNode("span", {}, "]"));
     }
 
     /// <summary>
@@ -111,24 +102,35 @@
             
             if (canRequest)
             {
-                let textbox = document.createElement("textarea");
-                textbox.id = "RequestText";
-                textbox.style.display = "block";
+                let textbox = buildNode("textarea", {"id" : "RequestText", "style" : "display: block;"});
+
                 // Need to request access
                 streamAccess.addEventListener("click", function()
                 {
-                    let overlay = document.createElement("div");
-                    overlay.id = "requestOverlay";
-                    let html = `
-<div id="requestContainer">
-    <div>Add a message for the admins to let them know who you are (optional)</div>
-    <textarea maxlength="1024"></textarea>
-    <input id="requestButton" type="button" value="Request" />
-</div>
-                    `
-                    overlay.innerHTML = html;
-                    overlay.style.opacity = "0";
-                    document.body.appendChild(overlay);
+                    let overlay = buildNode("div", {"id" : "requestOverlay"}, 0, {
+                        "click" : function()
+                        {
+                            if (e.target.id == "requestOverlay" && e.target.style.opacity == 1)
+                            {
+                                Animation.queue({"opacity": 0}, overlay, 250, true /*deleteAfterTransition*/);
+                            }
+                        }
+                    });
+
+                    let container = buildNode("div", {"id" : "requestContainer"});
+                    container.appendChild(buildNode("div",
+                        {},
+                        "Add a message for the admins to let them know who you are (optional)"));
+                    container.appendChild(buildNode("textarea", {"maxlength" : "1024"}));
+                    container.appendChild(buildNode("input", {
+                        "type" : "button",
+                        "id" : "requestButton",
+                        "value" : "Request",
+                        "style" : "opacity: 0"},
+                        0,
+                        { "click" : requestStreamAccess }));
+
+                    overlay.appendChild(container);
                     document.body.addEventListener("keyup", function(e)
                     {
                         if (e.keyCode == 27 /*esc*/)
@@ -141,23 +143,11 @@
                             }
                         }
                     });
-                    overlay.addEventListener("click", function(e)
-                    {
-                        if (e.target.id == "requestOverlay" && e.target.style.opacity == 1)
-                        {
-                            Animation.queue({"opacity": 0}, overlay, 250, true);
-                            //document.body.removeChild(overlay);
-                        }
-                    })
-
-                    $("#requestButton").addEventListener("click", function(e)
-                    {
-                        requestStreamAccess();
-                    });
 
                     Animation.queue({"opacity": 1}, overlay, 250);
                 });
             }
+
             if (response.value == "Request Denied")
             {
                 streamAccess.innerHTML = "<a href='requests.php'>Request Denied</a>";
@@ -195,7 +185,6 @@
             }
 
             const alreadyPending = (response.value == '0');
-            const newString = alreadyPending ? "Request Already Pending" : "Access Requested!";
             $("#streamAccess").innerHTML = alreadyPending ? "Request Already Pending" : "Access Requested!";
         };
 
@@ -529,57 +518,69 @@
         // Main container
         logVerbose("Adding Session");
         logVerbose(sesh);
-        let container = document.createElement("div");
-        container.className = "mediainfo";
-        container.id = "id" + sesh.session_id;
-        container.style.backgroundImage = "linear-gradient(rgba(0,0,0,0.4),rgba(0,0,0,0.4)), url(" + sesh.art_path + ")";
+        let container = buildNode("div", {
+            "class" : "mediainfo",
+            "id" : `id${sesh.session_id}`,
+            "style" : `background-image : linear-gradient(rgba(0,0,0,0.4),rgba(0,0,0,0.4)), url(${sesh.art_path})`
+        },
+        0,
+        {
+            // Darken/lighten the background when entering/leaving the entry
+            "mouseenter" : function(e)
+            {
+                let style = e.target.style.backgroundImage;
+                const newStyle = `linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)),${style.substring(style.indexOf(" url("))}`;
+                e.target.style.backgroundImage = newStyle;
+            },
+            "mouseleave" : function(e)
+            {
+                let style = e.target.style.backgroundImage;
+                const newStyle = `linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), ${style.substring(style.indexOf(" url("))}`;
+                e.target.style.backgroundImage = newStyle;
+            }
+        });
 
-        const innerHolder = document.createElement("div");
-        innerHolder.className = "innerHolder";
+        const innerHolder = buildNode("div", {"class" : "innerHolder"});
 
         // Album/poster thumb
-        let thumbholder = document.createElement("div");
-        thumbholder.className = "thumbholder";
-        let img = document.createElement("img");
-        img.src = sesh.thumb_path;
-        img.style.width = "100px";
-        img.alt = "thumbnail";
-
-        thumbholder.appendChild(img);
+        let thumbholder = buildNode("div", {"class" : "thumbholder"});
+        thumbholder.appendChild(buildNode("img", {
+            "src" : sesh.thumb_path,
+            "style" : "width: 100px",
+            "alt" : "thumbnail"
+        }));
 
 
         // Details
-        let details = document.createElement("div");
-        details.className = "details";
-        // link to imdb/audible
-        let link = document.createElement("a");
-        link.href = sesh.hyperlink;
-        link.target = '_blank';
-        let icon = document.createElement('i');
-        icon.className = "ppbutton fa fa-" + (sesh.paused ? "pause" : "play");
-        icon.style.fontSize = "smaller";
-        icon.style.color = "$AADDAA";
-        let span = document.createElement('span');
-        span.innerHTML = "  " + sesh.title;
+        let details = buildNode("div", {"class" : "details"});
 
-        link.appendChild(icon);
-        link.appendChild(span);
+        // link to imdb/audible
+        let link = buildNode("a", {"href" : sesh.hyperlink, "target" : "_blank"});
+        link.appendChild(buildNode("i", {
+            "class" : `ppbutton fa fa-${sesh.paused ? "pause" : "play"}`,
+            "style" : "fontSize: smaller; color : #AADDAA"
+        }));
+
+        link.appendChild(buildNode("span", {}, `  ${sesh.title}`));
 
         // Bulleted list
-        let list = document.createElement("ul");
+        let list = buildNode("ul");
         list.appendChild(getListItem("Media type", sesh.media_type));
         if (sesh.album) // special handling for music
         {
             list.appendChild(getListItem("Album", sesh.album));
         }
+
         const date = new Date(sesh.release_date);
         const dateOpts = { year: 'numeric', month: 'long', day: 'numeric' };
         list.appendChild(getListItem("Release Date", date.toLocaleDateString("en-US", dateOpts)));
         list.appendChild(getListItem("Playback Device", sesh.playback_device));
+
         if (sesh.user)
         {
             list.appendChild(getListItem("User", sesh.user));
         }
+
         if (sesh.ip)
         {
             let ipId = sesh.session_id + "_ip";
@@ -596,6 +597,7 @@
         {
             list.appendChild(getListItem("Video", getVideoString(sesh.video)));
         }
+
         list.appendChild(getListItem("Audio", getAudioString(sesh.audio)));
 
         if (sesh.video)
@@ -610,38 +612,36 @@
 
 
         // Progress indicator at the bottom of the container
-        let progressHolder = document.createElement("div");
-        progressHolder.className = "progressHolder";
-        progressHolder.setAttribute('progress', sesh.progress);
-        progressHolder.setAttribute('duration', sesh.duration);
-
-        progressHolder.addEventListener("mousemove", progressHover);
-        progressHolder.addEventListener("mouseleave", function()
-        {
-            this.removeAttribute("hovered");
-            $("#tooltip").style.display = "none";
-        });
-        let progress = document.createElement("div");
-        progress.className = "progress";
-        const progressPercent = (sesh.progress / sesh.duration * 100);
-        progress.style.width =  progressPercent + "%";
-        let transcodeDiff = document.createElement("div");
-        transcodeDiff.className = "tcdiff";
         let tcprogress = 'transcode_progress' in sesh ? sesh.transcode_progress : 0;
+        let progressHolder = buildNode("div", {
+            "class" : "progressHolder",
+            "progress" : sesh.progress,
+            "duration" : sesh.duration,
+            "tcprogress" : tcprogress
+        },
+        0,
+        {
+            "mousemove" : progressHover,
+            "mouseleave" : function()
+            {
+                this.removeAttribute("hovered");
+                $("#tooltip").style.display = "none";
+            }
+        });
 
-        progressHolder.setAttribute('tcprogress', tcprogress);
+        const progressPercent = (sesh.progress / sesh.duration * 100);
+        let progress = buildNode("div", {"class" : "progress", "style" : `width: ${progressPercent}%`});
+
         if (tcprogress < progressPercent)
         {
             tcprogress = progressPercent;
         }
-        transcodeDiff.style.width = (tcprogress - progressPercent) + "%";
-        let remaining = document.createElement("div");
-        remaining.className = "remaining";
-        remaining.style.width = (100 - tcprogress) + "%";
-        let time = document.createElement("div");
-        time.className = "time";
-        time.innerHTML = msToHms(sesh.progress) + "/" + msToHms(sesh.duration);
 
+        let transcodeDiff = buildNode("div", {"class" : "tcdiff", "style" : `width: ${tcprogress - progressPercent}%`});
+
+        let remaining = buildNode("div", {"class" : "remaining", "style" : `widtn: ${(100 - tcprogress)}%`});
+
+        let time = buildNode("div", {"class" : "time"}, `${msToHms(sesh.progress)}/${msToHms(sesh.duration)}`);
 
         progressHolder.appendChild(progress);
         progressHolder.appendChild(transcodeDiff);
@@ -659,19 +659,6 @@
             innerProgressTimers[sesh.session_id] = setInterval(innerUpdate, 1000, sesh.session_id);
         }
 
-        // Darken/lighten the background when entering/leaving the entry
-        container.addEventListener("mouseenter", function(e)
-        {
-            let style = e.target.style.backgroundImage;
-            e.target.style.backgroundImage = "linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6))," + style.substring(style.indexOf(" url("));
-        });
-
-        container.addEventListener("mouseleave", function(e)
-        {
-            let style = e.target.style.backgroundImage;
-            e.target.style.backgroundImage = "linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4))," + style.substring(style.indexOf(" url("));
-        });
-
         return container;
     }
 
@@ -680,17 +667,9 @@
     /// </summary>
     function getListItem(key, value, id)
     {
-        let item = document.createElement("li");
-        if (id)
-        {
-            item.id = id;
-        }
-        let title = document.createElement("strong");
-        title.innerHTML = key + ": ";
-        let span = document.createElement("span");
-        span.innerHTML = value;
-        item.appendChild(title);
-        item.appendChild(span);
+        let item = buildNode("li", id ? {"id" : id} : {});
+        item.appendChild(buildNode("strong", {}, `${key}: `));
+        item.appendChild(buildNode("span", {}, value));
         return item;
     }
 
@@ -1146,36 +1125,34 @@
                 }
             }
 
-            let div = document.createElement("div");
-            div.className = "suggestionHolder";
-            div.setAttribute("title", result.title.replace("'", ""));
-            div.setAttribute("realtitle", result.title);
-            div.setAttribute("year", result.year);
-            div.setAttribute("externalid", result.id);
-            let img = document.createElement("img");
-            img.src = result.thumb;
-            img.className = "suggestionImg";
-            let title = document.createElement("div");
-            const text = result.title + (result.year ? (" (" + result.year + ")") : "");
-
-            if (external)
+            let div = buildNode("div", {
+                "class" : "suggestionHolder",
+                "title" : result.title.replace("'", ""),
+                "realtitle" : result.title,
+                "year" : result.year,
+                "externalid" : result.id,
+                "style" : external ? "cursor : pointer" : ""
+            },
+            0, !external ? 0 :
             {
-                title.innerHTML = "<a href='" + result.ref + "' target='_blank'>" + text + "</a>";
-                div.style.cursor = "pointer";
-                div.addEventListener("click", function(e)
+                "click" : function()
                 {
                     logVerbose("Clicked " + this.getAttribute("realtitle"));
                     $("input[name='name']")[0].value = this.getAttribute("realtitle");
                     $("input[name='externalid']")[0].value = this.getAttribute("externalid");
                     searchSuggestion();
-                });
-            }
-            else
-            {
-                title.innerHTML = text;
-            }
+                }
+            });
 
-            title.className = "suggestionText";
+            let img = buildNode("img", {"src" : result.thumb, "class" : "suggestionImg"});
+
+            const text = result.title + (result.year ? (" (" + result.year + ")") : "");
+            let title = buildNode("div", {"class" : "suggestionText"}, external ? 0 : text);
+
+            if (external)
+            {
+                title.appendChild(buildNode("a", {"href" : result.ref, "target" : "_blank"}, text));
+            }
 
             div.appendChild(img);
             div.appendChild(title);
@@ -1190,21 +1167,17 @@
 
         if (results.length > results.top.length && !external)
         {
-            let div = document.createElement("div");
-            div.className = "suggestionHolder";
-            let title = document.createElement("div");
-            title.innerHTML = "(" + (results.length - results.top.length) + " more)";
-            title.style.textAlign = "center";
-            title.className = "suggestionText";
-
-            div.appendChild(title);
+            let div = buildNode("div", {"class" : "suggestionHolder"});
+            div.appendChild(buildNode("div",
+                {"style" : "text-align: center", "class" : "suggestionText"},
+                `(${results.length - result.top.length} more)`));
 
             suggestions.appendChild(div);
         }
 
         if (len != 0)
         {
-            suggestions.appendChild(document.createElement("hr"));
+            suggestions.appendChild(buildNode("hr"));
         }
 
         $("#suggestions").style.display = "block";
@@ -1224,6 +1197,36 @@
         }
 
         return document.querySelectorAll(selector);
+    }
+
+    /// <summary>
+    /// Helper method to create DOM elements.
+    /// </summary>
+    function buildNode(type, attrs, content, events)
+    {
+        let ele = document.createElement(type);
+        if (attrs)
+        {
+            for (let [key, value] of Object.entries(attrs))
+            {
+                ele.setAttribute(key, value);
+            }
+        }
+
+        if (events)
+        {
+            for (let [event, func] of Object.entries(events))
+            {
+                ele.addEventListener(event, func);
+            }
+        }
+
+        if (content)
+        {
+            ele.innerHTML = content;
+        }
+
+        return ele;
     }
 
     /// <summary>
