@@ -1,4 +1,4 @@
-<div id="navholder">
+<div id="navholder" currentPage="<?php $_SERVER['REQUEST_URI'] ?>">
 <div id="nav">
     <div id="mainMenu" class="leftbutton" tabindex=1>
         <div class="ham"></div>

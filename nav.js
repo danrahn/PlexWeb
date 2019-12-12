@@ -21,7 +21,7 @@
 
     setupClicks("pageName", "index.php");
     setupClicks("backToRequests", "requests.php");
-    setupClicks("currentPage", "<?= $_SERVER['REQUEST_URI'] ?>");
+    setupClicks("currentPage", document.getElementById("navholder").getAttribute("currentPage"));
 
     setupClicks("navLogoutTop", "logout.php");
     setupClicks("navRequestsTop", "requests.php");
