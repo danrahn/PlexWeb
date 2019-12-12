@@ -328,7 +328,7 @@ window.addEventListener("load", function()
 
         let innerContainer = buildNode("div", {"id" : "innerInfoContainer"});
 
-        let poster = buildNode("img", {"src" : `poster${data.poster_path}`, "id" : "mediaPoster"});
+        let poster = buildNode("img", {"src" : `poster${data.poster_path}&large=1`, "id" : "mediaPoster"});
         let details = buildNode("div", {"id" : "mediaDetails"});
 
         let title = buildNode("div", {"id" : "mediaTitle"});

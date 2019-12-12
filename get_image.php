@@ -18,9 +18,11 @@ $root_folder = $isThumb ? "" : param_or_die("type") . "/";
 
 $filename_parts = explode("/", $img_path);
 $filename = "";
+$large = try_get("large");
 if ($type == ImgType::Poster)
 {
-    $filename = "includes/cache/poster" . $img_path;
+
+    $filename = "includes/cache/poster" . ($large ? "/342" : "") . $img_path;
 }
 else
 {
@@ -70,7 +72,7 @@ if (file_exists($filename))
 }
 else
 {
-    serve_new_image($img_path, $filename, $type);
+    serve_new_image($img_path, $filename, $type, $large);
 }
 
 abstract class ImgType
@@ -84,13 +86,13 @@ abstract class ImgType
 /// Grab the specified image from plex, resize it, and store it locally.
 /// If it's not a thumb, also blur the image
 /// </summary>
-function serve_new_image($img_path, $filename, $type)
+function serve_new_image($img_path, $filename, $type, $large)
 {
     $img = new Imagick();
 
     if ($type == ImgType::Poster)
     {
-        $img->readImageBlob(curl("https://image.tmdb.org/t/p/w185" . $img_path));
+        $img->readImageBlob(curl("https://image.tmdb.org/t/p/" . ($large ? "w342" : "w185") . $img_path));
     }
     else
     {
