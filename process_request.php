@@ -386,7 +386,7 @@ function process_stream_access_request($which)
     $result = $db->query($query);
     if ($result === FALSE)
     {
-        return json_error("Error querying database");
+        return db_error();
     }
 
     if ($result->num_rows == 0)
@@ -409,7 +409,7 @@ function process_stream_access_request($which)
         $result = $db->query($query);
         if ($result === FALSE)
         {
-            return json_error("Error querying database");
+            return db_error();
         }
 
         if (strlen($msg) != 0)

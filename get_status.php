@@ -6,7 +6,7 @@ require_once "includes/config.php";
 require_once "includes/tvdb.php";
 
 requireSSL();
-verify_loggedin();
+verify_loggedin(FALSE /*redirect*/, "" /*return*/, TRUE /*JSON*/);
 
 $tvdb_client;
 

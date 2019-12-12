@@ -13,7 +13,8 @@ function requireSSL() {
 /// <summary>
 /// Ensure the user is logged in. If they're not, either return 401 or redirect to the login page
 /// </summary>
-function verify_loggedin($redirect = FALSE, $return = "") {
+function verify_loggedin($redirect = FALSE, $return = "", $json = FALSE)
+{
     if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== TRUE)
     {
         if ($redirect)
@@ -25,6 +26,11 @@ function verify_loggedin($redirect = FALSE, $return = "") {
             }
             header("Location: " . $loc);
             exit;
+        }
+
+        if ($json)
+        {
+            json_error_and_exit("Not Authorized");
         }
 
         error_and_exit(401);

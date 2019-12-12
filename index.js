@@ -63,6 +63,7 @@
             }, 100);
         });
 
+        addOverlayListener();
     });
 
     /// <summary>
@@ -109,47 +110,7 @@
             if (canRequest)
             {
                 // Need to request access
-                streamAccess.addEventListener("click", function()
-                {
-                    let overlay = buildNode("div", {"id" : "requestOverlay"}, 0, {
-                        "click" : function()
-                        {
-                            if (e.target.id == "requestOverlay" && e.target.style.opacity == 1)
-                            {
-                                Animation.queue({"opacity": 0}, overlay, 250, true /*deleteAfterTransition*/);
-                            }
-                        }
-                    });
-
-                    let container = buildNode("div", {"id" : "requestContainer"});
-                    container.appendChild(buildNode("div",
-                        {},
-                        "Add a message for the admins to let them know who you are (optional)"));
-                    container.appendChild(buildNode("textarea", {"maxlength" : "1024"}));
-                    container.appendChild(buildNode("input", {
-                        "type" : "button",
-                        "id" : "requestButton",
-                        "value" : "Request",
-                        "style" : "opacity: 0"},
-                        0,
-                        { "click" : requestStreamAccess }));
-
-                    overlay.appendChild(container);
-                    document.body.addEventListener("keyup", function(e)
-                    {
-                        if (e.keyCode == 27 /*esc*/)
-                        {
-                            let overlay = $("#requestOverlay");
-                            if (overlay && overlay.style.opacity == "1")
-                            {
-                                Animation.queue({"opacity": 0}, overlay, 250, true);
-                                // document.body.removeChild(overlay);
-                            }
-                        }
-                    });
-
-                    Animation.queue({"opacity": 1}, overlay, 250);
-                });
+                streamAccess.addEventListener("click", showStreamAccessOverlay);
             }
 
             if (response.value == "Request Denied")
@@ -167,6 +128,39 @@
     }
 
     /// <summary>
+    /// When the user requests access to view active streams, surface an overlay asking them to
+    /// add a comment about who they are before submitting the request
+    /// </summary>
+    function showStreamAccessOverlay()
+    {
+        let message = buildNode("div", {}, "Add a message for the admins to let them know who you are (optional)");
+        let textbox = buildNode("textarea", {"maxlength" : "1024"}, 0,
+        {
+            "keydown" : function(e)
+            {
+                if (e.keyCode == 13 && e.ctrlKey)
+                {
+                    $("#requestButton").click();
+                }
+            }
+        });
+
+        let button = buildNode(
+            "input",
+            {
+                "type" : "button",
+                "id" : "requestButton",
+                "value" : "Request"
+            },
+            0,
+            {
+                "click" : requestStreamAccess
+            });
+
+        buildOverlay(true /*dismissable*/, message, textbox, button);
+    }
+
+    /// <summary>
     /// Updates the access string after the user requests access to stream information
     /// </summary>
     function requestStreamAccess()
@@ -176,12 +170,12 @@
             "type" : "pr",
             "req_type" : 10,
             "which" : "req",
-            "msg" : $("#requestContainer textarea")[0].value
+            "msg" : $("#overlayContainer textarea")[0].value
         };
 
         let successFunc = function(response)
         {
-            let overlay = $("#requestOverlay");
+            let overlay = $("#mainOverlay");
             if (overlay)
             {
                 Animation.queue({"backgroundColor": "rgba(0,25,0,0.5)"}, overlay, 500);
@@ -194,7 +188,7 @@
 
         let failureFunc = function(/*response*/)
         {
-            if ($("#requestOverlay")) document.body.removeChild($("#requestOverlay"));
+            if ($("#mainOverlay")) document.body.removeChild($("#mainOverlay"));
             $("#streamAccess").innerHTML = "Error processing request";
         };
 
@@ -260,8 +254,39 @@
         {
             let parameters = { "type" : "4" };
             let successFunc = function(response) { processUpdate(response); };
-            sendHtmlJsonRequest("get_status.php", parameters, successFunc);
+            let failureFunc = function(response)
+            {
+                if (response.Error == "Not Authorized")
+                {
+                    showRestartSessionOverlay();
+                }
+            };
+
+            sendHtmlJsonRequest("get_status.php", parameters, successFunc, failureFunc);
         }, 10000);
+    }
+
+    /// <summary>
+    /// If we've detected that our session has expired ('Not Authorized' from get_status),
+    /// surface a non-dismissable overlay asking the user to log in again
+    /// </summary>
+    function showRestartSessionOverlay()
+    {
+        let message = buildNode("div", {}, "Your session has expired, please log in again");
+        let button = buildNode(
+            "input",
+            {
+                "type" : "button",
+                "id" : "goToLogin",
+                "value" : "OK",
+                "style" : "width: 100px"
+            },
+            0,
+            {
+                "click" : () => window.location = "login.php"
+            });
+        buildOverlay(false /*dismissable*/, message, button);
+        $("#goToLogin").focus();
     }
 
     /// <summary>
@@ -1186,6 +1211,55 @@
 
         $("#suggestions").style.display = "block";
         suggestions.style.display = "block";
+    }
+
+    function addOverlayListener()
+    {
+        document.body.addEventListener("keyup", function(e)
+        {
+            if (e.keyCode == 27 /*esc*/)
+            {
+                let overlay = $("#mainOverlay");
+                if (overlay && !!overlay.getAttribute("dismissable") && overlay.style.opacity == "1")
+                {
+                    Animation.queue({"opacity": 0}, overlay, 250, true /*deleteAfterTransition*/);
+                }
+            }
+        });
+    }
+
+    function buildOverlay(dismissable, ...children)
+    {
+        let overlay = buildNode("div",
+            {
+                "id" : "mainOverlay",
+                "style" : "opacity: 0",
+                "dismissable" : dismissable
+            },
+            0,
+            {
+                "click" : function(e)
+                {
+                    let overlay = $("#mainOverlay");
+                    if (overlay &&
+                        !!overlay.getAttribute("dismissable") &&
+                        e.target.id == "mainOverlay" &&
+                        e.target.style.opacity == 1)
+                    {
+                        Animation.queue({"opacity": 0}, overlay, 250, true /*deleteAfterTransition*/);
+                    }
+                }
+            });
+
+        let container = buildNode("div", {"id" : "overlayContainer"});
+        children.forEach(function(element)
+        {
+            container.appendChild(element);
+        });
+
+        overlay.appendChild(container);
+        document.body.appendChild(overlay);
+        Animation.queue({"opacity" : 1}, overlay, 250);
     }
 
     /// <summary>
