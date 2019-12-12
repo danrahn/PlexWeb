@@ -116,7 +116,7 @@ window.addEventListener("load", function()
                     break;
             }
         };
-        let failureFunc = function(response)
+        let failureFunc = function()
         {
             $("#imdbResult").innerHTML = "Failed to retrieve media";
         };
@@ -299,7 +299,7 @@ window.addEventListener("load", function()
             logInfo(response);
             buildPage(response);
         };
-        let failureFunc = function(response)
+        let failureFunc = function()
         {
             $("#infoContainer").innerHTML = "Unable to query request information";
         };
@@ -391,9 +391,8 @@ window.addEventListener("load", function()
     function setupSpanDoubleClick(statusSpan)
     {
         statusSpan.className += " statusSpan";
-        statusSpan.addEventListener("dblclick", function(e) {
+        statusSpan.addEventListener("dblclick", function() {
             let data = prompt("Data ((A)pproved (1), (D)enied (0), (P)ending, (I)n Progress, or (W)aiting):");
-            let valid = false;
             let status = -1;
             let first = data.toLowerCase()[0];
             switch (first)
@@ -453,11 +452,11 @@ window.addEventListener("load", function()
             logInfo(response);
             buildComments(response);
         };
-        let failureFunc = function(response)
+        let failureFunc = function()
         {
             $("#comments").innerHTML = response.Error;
         };
-        sendHtmlJsonRequest("process_request.php", params, successFunc);
+        sendHtmlJsonRequest("process_request.php", params, successFunc, failureFunc);
     }
 
     function addComment()
@@ -475,7 +474,7 @@ window.addEventListener("load", function()
         logInfo("Adding comment: " + text);
 
         let params = { "type" : "add_comment", "req_id" : parseInt(document.body.getAttribute("reqId")), "content" : text };
-        let successFunc = function(response)
+        let successFunc = function()
         {
             getComments();
         };
@@ -591,6 +590,7 @@ window.addEventListener("load", function()
         let http = new XMLHttpRequest();
         http.open("POST", url, true /*async*/);
         http.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+        let queryString = dataIsString ? parameters : buildQuery(parameters);
         if (additionalParams)
         {
             for (let param in additionalParams)
@@ -614,7 +614,7 @@ window.addEventListener("load", function()
             try
             {
                 let response = JSON.parse(this.responseText);
-                logJson(response, LOG.Verbose);
+                logVerbose(response, `${url}${queryString}`);
                 if (response.Error)
                 {
                     logError(response.Error);
@@ -636,7 +636,7 @@ window.addEventListener("load", function()
             }
         };
 
-        http.send(dataIsString ? parameters : buildQuery(parameters));
+        http.send(queryString);
     }
 
     /// <summary>
