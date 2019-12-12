@@ -91,7 +91,16 @@
 
         let textHolder = buildNode("div", {"class" : "textHolder"});
 
-        let a = buildNode("a", {"class" : "requestTitle", "href" : `request.php?id=${request.rid}`}, request.n);
+        let a = buildNode("a", {"class" : "requestTitle", "href" : `request.php?id=${request.rid}`});
+        a.appendChild(buildNode("span", {}, request.n));
+        if (request.t == 1 || request.t == 2)
+        {
+            a.appendChild(buildNode("img", {
+                "class" : "inlineIcon",
+                "src" : `${request.t == 1 ? "movie" : "tv"}icon.png`,
+                "alt" : request.t == 1 ? "Movie" : "TV Show"
+            }));
+        }
 
         let tooltipDateOptions = { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: 'numeric' };
 
