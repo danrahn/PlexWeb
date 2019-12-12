@@ -35,6 +35,9 @@ requireSSL();
                     <option value="music">Music</option> -->
                 </select></div>
                 <div class="formInput" id="nameHolder"><label for="name">Suggestion:</label><input type="text" name="name" id="name" maxlength=128></div>
+                <div id="existingMatchHolder">
+                    <div id="existingMatchContainer"></div>
+                </div>
                 <div id="matchHolder">
                     <div id="matchContainer"></div>
                     <div id="imdbContainer" class="hidden">

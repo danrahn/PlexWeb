@@ -1,6 +1,6 @@
 (function() {
     let searchTimer;
-    let selectedSuggest;
+    let internalSearchTimer;
     let selectedSuggestion;
     window.addEventListener("load", function()
     {
@@ -20,6 +20,7 @@
         {
             setVisibility("nameHolder", false);
             $("#matchHolder").style.display = "none";
+            $("#existingMatchHolder").style.display = "none";
             setVisibility("suggestions", false);
             setVisibility("submitHolder", false);
             return;
@@ -36,15 +37,18 @@
     {
         let suggestion = $("#name").value;
         clearTimeout(searchTimer);
+        clearTimeout(internalSearchTimer);
         if (suggestion.length === 0)
         {
             setVisibility("suggestions", false);
             $("#matchHolder").style.display = "none";
+            $("#existingMatchHolder").style.display = "none";
             return;
         }
 
         $("#matchHolder").style.display = "block";
         searchTimer = setTimeout(searchItem, 250);
+        internalSearchTimer = setTimeout(searchInternal, 250);
     }
 
     /// <summary>
@@ -64,7 +68,7 @@
         let params = { "type" : value == "movie" ? 1 : 2, "query" : $("#name").value };
         let successFunc = function(response)
         {
-            logInfo(response);
+            logInfo(response, "Search Results");
             setVisibility("imdbContainer", true);
             if (response.results.length === 0)
             {
@@ -81,6 +85,47 @@
         };
 
         sendHtmlJsonRequest("media_search.php", params, successFunc, failureFunc);
+    }
+
+    /// <summary>
+    /// Search the plex server for the given query so users may know if the item already exists
+    /// </summary>
+    function searchInternal()
+    {
+        // For now only search for movies, since TV shows can have requests for different seasons
+        let type = $("#type").value;
+        if (type == "tv")
+        {
+            clearElement("existingMatchContainer");
+            return;
+        }
+
+        let name = $("#name").value;
+        let parameters =
+        {
+            "type" : "search",
+            "kind" : type,
+            "query" : name
+        };
+
+        let successFunc = function(response)
+        {
+            logInfo(response, "Internal Search");
+            clearElement("existingMatchContainer");
+            if (response.length > 0)
+            {
+                $("#existingMatchHolder").style.display = "block";
+                buildItems(response.top, "existingMatchContainer");
+            }
+        };
+
+        let failureFunc = function(response)
+        {
+            logError(response, "Failed to parse internal search");
+        };
+
+        logTmi(`Initiating internal search for ${name}`);
+        sendHtmlJsonRequest("process_request.php", parameters, successFunc, failureFunc);
     }
 
     /// <summary>
@@ -133,7 +178,7 @@
                     break;
             }
         };
-        let failureFunc = function(response)
+        let failureFunc = function()
         {
             $("#imdbResult").innerHTML = "Failed to retrieve media";
         };
@@ -146,60 +191,73 @@
     /// </summar>
     function buildItems(matches, holder)
     {
+        const external = holder == "existingMatchContainer";
+        logTmi(matches, `${holder} matches`);
         let container = $("#" + holder);
         container.innerHTML = "";
-        container.appendChild(document.createElement("hr"));
+        container.appendChild(buildNode("hr"));
+
+        container.appendChild(buildNode("p", {"style" : "margin-bottom: 5px"}, external ? "Existing Items:" : "Results:"));   
+
         let max = Math.min(matches.length, 10);
         for (let i = 0; i < max; ++i)
         {
             let match = matches[i];
-            let item = document.createElement("div");
-            item.className = "searchResult";
-            item.setAttribute("tmdbid", match.id);
-            item.setAttribute("title", match.title ? match.title : match.name);
-            item.setAttribute("poster", match.poster_path);
+            let item = buildNode("div", {
+                "class" : "searchResult",
+                "title" : match.title ? match.title : match.name,
+                "poster" : match.poster_path
+            },
+            0,
+            external ? {} : {
+                "click" : clickSuggestion
+            });
 
-            let img = document.createElement("img");
-            img.style.height = "70px";
-            if (match.poster_path)
-            {
-                img.src = "https://image.tmdb.org/t/p/w92" + match.poster_path;
-            }
-            else
-            {
-                img.src = $("#type").value == "movie" ? "poster/moviedefault.png" : "poster/tvdefault.png";
-            }
+            item.setAttribute(match.id ? "tmdbid" : "imdbid", match.id ? match.id : match.imdbid);
 
-            let div = document.createElement("div");
+            let img = buildNode("img", {
+                "style" : "height : 70px",
+                "src" : (match.poster_path ?
+                    `https://image.tmdb.org/t/p/w92${match.poster_path}` :
+                    (match.thumb ?
+                        match.thumb :
+                        `poster/${$("#type").value}default.png`
+                    )
+                )
+            });
+
+            let div = buildNode("div");
+            div.appendChild(buildNode("span", {}, (match.title ? match.title : match.name) + " "));
             let release = match.release_date;
             if (!release)
             {
-                release = match.first_air_date;
+                release = match.year || match.first_air_date;
             }
-            let span = document.createElement("span");
-            span.innerHTML = (match.title ? match.title : match.name) + " ";
-            let href = document.createElement("a");
-            href.href = "#";
-            href.addEventListener("click", goToImdb);
-            href.innerHTML = `(${release ? release.substring(0, 4) : "IMDb"})`;
-            div.appendChild(span);
-            div.appendChild(href);
 
-            if (img) item.appendChild(img);
+            div.appendChild(buildNode("a",
+                {"href" : "#"},
+                `(${release ? release.substring(0, 4) : "IMDb"})`,
+                {
+                    "click" : goToImdb
+                }));
+
+            item.appendChild(img);
             item.appendChild(div);
-
-            item.addEventListener("click", clickSuggestion);
 
             container.appendChild(item);
         }
 
-        let button = document.createElement("input");
-        button.id = "matchContinue_" + holder;
-        button.classList.add("matchContinue");
-        button.classList.add("hidden");
-        button.type = "button";
-        button.value = "Submit Request";
-        button.addEventListener("click", submitSelected);
+        let button = buildNode("input", {
+            "type" : "button",
+            "id" : `matchContinue_${holder}`,
+            "class" : "matchContinue hidden",
+            "value" : "button"
+        },
+        0,
+        {
+            "click" : submitSelected
+        });
+
         container.appendChild(button);
     }
 
@@ -209,6 +267,14 @@
     function goToImdb()
     {
         let value = $("#type").value;
+        const imdbid = this.parentNode.parentNode.getAttribute("imdbid");
+        if (imdbid)
+        {
+            logTmi("Clicked on an existing item");
+            window.open(`https://www.imdb.com/title/${imdbid}`, "_blank");
+            return;
+        }
+
         let parameters = { "type" : value == "movie" ? 1 : 2, "query" : this.parentNode.parentNode.getAttribute("tmdbid"), "by_id" : "true" };
         let successFunc = function(response, request)
         {
@@ -298,7 +364,7 @@
         {
             window.location.href = "https://danrahn.com/plexweb/request.php?id=" + response.req_id;
         }
-        let failureFunc = function(response)
+        let failureFunc = function()
         {
             let buttons = $(".matchContinue");
             for (let i = 0; i < buttons.length; ++i)
@@ -334,6 +400,45 @@
         return document.querySelectorAll(selector);
     }
 
+    function clearElement(id)
+    {
+        let element = $(`#${id}`);
+        while (element.firstChild)
+        {
+            element.removeChild(element.firstChild);
+        }
+    }
+
+    /// <summary>
+    /// Helper method to create DOM elements.
+    /// </summary>
+    function buildNode(type, attrs, content, events)
+    {
+        let ele = document.createElement(type);
+        if (attrs)
+        {
+            for (let [key, value] of Object.entries(attrs))
+            {
+                ele.setAttribute(key, value);
+            }
+        }
+
+        if (events)
+        {
+            for (let [event, func] of Object.entries(events))
+            {
+                ele.addEventListener(event, func);
+            }
+        }
+
+        if (content)
+        {
+            ele.innerHTML = content;
+        }
+
+        return ele;
+    }
+
     /// <summary>
     /// Generic method to sent an async request that expects JSON in return
     /// </summary>
@@ -342,6 +447,7 @@
         let http = new XMLHttpRequest();
         http.open("POST", url, true /*async*/);
         http.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+        let queryString = buildQuery(parameters);
         if (additionalParams)
         {
             for (let param in additionalParams)
@@ -365,7 +471,7 @@
             try
             {
                 let response = JSON.parse(this.responseText);
-                logJson(response, LOG.Verbose);
+                logVerbose(response, `${url}${queryString}`);
                 if (response.Error)
                 {
                     logError(response.Error);
@@ -382,12 +488,13 @@
             }
             catch (ex)
             {
+                logError(ex.stack);
                 logError(ex);
                 logError(this.responseText);
             }
         };
 
-        http.send(buildQuery(parameters));
+        http.send(queryString);
     }
 
     /// <summary>
@@ -406,7 +513,6 @@
             queryString += `&${parameter}=${encodeURIComponent(parameters[parameter])}`;
         }
 
-        logVerbose("Built query: " + queryString);
         return queryString;
     }
 })();

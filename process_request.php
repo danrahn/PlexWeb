@@ -1040,6 +1040,7 @@ function search($query, $kind)
         $item->title = (string)$result['title'];
         $item->thumb = 'thumb' . $result['thumb'];
         $item->year = (string)$result['year'];
+        $item->imdbid = substr($result['guid'], strpos($result['guid'], '://') + 3); 
         if (RequestType::is_audio($type))
         {
             // Todo - search Audible/music apis?
