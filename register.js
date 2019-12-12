@@ -106,7 +106,7 @@
 
                 try {
                     let response = JSON.parse(this.responseText);
-                    logJson(response, LOG.Info);
+                    logInfo(response, "Registration response");
                     let status = document.getElementById("formStatus");
                     if (response["Error"]) {
                         status.className = "formContainer statusFail";

@@ -20,6 +20,10 @@
         }
     };
 
+    /// <summary>
+    /// Contains the setTimeout id of a scroll event, which will hide the progress tool tip when expired
+    /// hide the tooltip
+    /// </summary>
     let hideTooltipTimer = null;
 
     /// <summary>
@@ -36,6 +40,7 @@
                 writeSessions(response);
                 startUpdates();
             };
+
             sendHtmlJsonRequest("get_status.php", parameters, successFunc, getStatusFailure);
         }
         else
@@ -45,10 +50,11 @@
 
         setupSuggestionForm();
 
-        $("#plexFrame").addEventListener("scroll", function(e) {
+        $("#plexFrame").addEventListener("scroll", function() {
             // On scroll, hide the tooltip (mainly for mobile devices)
             // Add a bit of delay, as it is a bit jarring to have it immediately go away
-            if (hideTooltipTimer) {
+            if (hideTooltipTimer)
+            {
                 clearTimeout(hideTooltipTimer);
             }
 
@@ -102,8 +108,6 @@
             
             if (canRequest)
             {
-                let textbox = buildNode("textarea", {"id" : "RequestText", "style" : "display: block;"});
-
                 // Need to request access
                 streamAccess.addEventListener("click", function()
                 {
@@ -165,7 +169,7 @@
     /// <summary>
     /// Updates the access string after the user requests access to stream information
     /// </summary>
-    function requestStreamAccess(element)
+    function requestStreamAccess()
     {
         let parameters =
         {
@@ -351,7 +355,7 @@
             if (!found)
             {
                 // An existing session is no longer active, remove it
-                logVerbose("Attempting to remove session# " + session.id);
+                logVerbose("Attempting to remove session " + session.id);
 
                 if ($("#" + session.id + " .progressHolder")[0].hasAttribute("hovered"))
                 {
@@ -516,8 +520,7 @@
     function buildMediaInfo(sesh)
     {
         // Main container
-        logVerbose("Adding Session");
-        logVerbose(sesh);
+        logVerbose(sesh, "Adding Session");
         let container = buildNode("div", {
             "class" : "mediainfo",
             "id" : `id${sesh.session_id}`,
@@ -558,7 +561,7 @@
         let link = buildNode("a", {"href" : sesh.hyperlink, "target" : "_blank"});
         link.appendChild(buildNode("i", {
             "class" : `ppbutton fa fa-${sesh.paused ? "pause" : "play"}`,
-            "style" : "fontSize: smaller; color : #AADDAA"
+            "style" : "fontSize: smaller"
         }));
 
         link.appendChild(buildNode("span", {}, `  ${sesh.title}`));
@@ -639,7 +642,7 @@
 
         let transcodeDiff = buildNode("div", {"class" : "tcdiff", "style" : `width: ${tcprogress - progressPercent}%`});
 
-        let remaining = buildNode("div", {"class" : "remaining", "style" : `widtn: ${(100 - tcprogress)}%`});
+        let remaining = buildNode("div", {"class" : "remaining", "style" : `width: ${(100 - tcprogress)}%`});
 
         let time = buildNode("div", {"class" : "time"}, `${msToHms(sesh.progress)}/${msToHms(sesh.duration)}`);
 
@@ -822,6 +825,7 @@
 
         if (!name)
         {
+            logTmi("Suggestion form not attached to main page");
             return;
         }
         
@@ -1002,7 +1006,7 @@
     /// <summary>
     /// After a delay in the user typing something into the suggestion box, search to see whether the item already exists
     /// </summary>
-    function onSuggestionInput(e)
+    function onSuggestionInput()
     {
         if (inputTimer)
         {
@@ -1045,7 +1049,7 @@
             searchExternal();
         };
 
-        let failureFunc = function(response)
+        let failureFunc = function()
         {
             // Even if we fail to grab existing suggestions, we can still try
             // to return external ones
@@ -1237,6 +1241,7 @@
         let http = new XMLHttpRequest();
         http.open("POST", url, true /*async*/);
         http.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+        let queryString = buildQuery(parameters);
         if (additionalParams)
         {
             for (let param in additionalParams)
@@ -1260,10 +1265,10 @@
             try
             {
                 let response = JSON.parse(this.responseText);
-                logJson(response, LOG.Verbose);
+                logVerbose(response, `${url}${queryString}`);
                 if (response.Error)
                 {
-                    logError(response.Error);
+                    logError(response.Error, `Error querying ${url}${queryString}`);
                     if (failFunc)
                     {
                         failFunc(response);
@@ -1277,12 +1282,12 @@
             }
             catch (ex)
             {
-                logError(ex);
-                logError(this.responseText);
+                logError(ex, "Exception");
+                logError(this.responseText, "Exception Text");
             }
         };
 
-        http.send(buildQuery(parameters));
+        http.send(queryString);
     }
 
     /// <summary>

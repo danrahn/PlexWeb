@@ -59,13 +59,13 @@
 
         if (forceNewWindow)
         {
-            element.addEventListener("click", function(e) {
+            element.addEventListener("click", function() {
                 window.open(url, "_blank");
             });
         }
         else
         {
-            element.addEventListener("click", function(e) {
+            element.addEventListener("click", function() {
                 window.location = url;
             });
         }
@@ -179,7 +179,6 @@
         }
 
         let menu = document.getElementById("leftMenu");
-        let visible = !!menu.style.opacity;
 
         // Update our total movement
         dxTotal += Math.abs(lastMove.x - e.touches[0].clientX);
@@ -207,7 +206,7 @@
 
     });
 
-    window.addEventListener("touchend", function(e) {
+    window.addEventListener("touchend", function() {
         let menu = document.getElementById("leftMenu");
         let dxFinal = dxTotal;
         dxTotal = 0;

@@ -1,5 +1,8 @@
+/// <summary>
+/// All possible log levels, from most to least verbose
+/// </summary>
 const LOG = {
-    Extreme: -1,
+    Extreme: -1, // Log everytime something is logged
     Tmi: 0,
     Verbose: 1,
     Info: 2,
@@ -19,12 +22,12 @@ const g_levelColors = [
     ["#009900", "#AAA", "#888"]
 ];
 
-let g_logLevel = parseInt(sessionStorage.getItem("loglevel"));
+let g_logLevel = parseInt(localStorage.getItem("loglevel"));
 if (isNaN(g_logLevel)) {
     g_logLevel = LOG.Info;
 }
 
-let g_darkConsole = parseInt(sessionStorage.getItem("darkconsole"));
+let g_darkConsole = parseInt(localStorage.getItem("darkconsole"));
 if (isNaN(g_darkConsole)) {
     logInfo("Welcome to the console!");
     logInfo("For best debugging results, set whether you're using a light or dark themed console via setDarkConsole(isDark), ");
@@ -33,40 +36,36 @@ if (isNaN(g_darkConsole)) {
 }
 
 function setLogLevel(level) {
-    sessionStorage.setItem("loglevel", level);
+    localStorage.setItem("loglevel", level);
     g_logLevel = level;
 }
 
 function setDarkConsole(dark) {
-    sessionStorage.setItem("darkconsole", dark);
+    localStorage.setItem("darkconsole", dark);
     g_darkConsole = dark;
 }
 
-function logTmi(text) {
-    log(text, LOG.Tmi);
+function logTmi(obj, description) {
+    log(obj, description, LOG.Tmi);
 }
 
-function logVerbose(text) {
-    log(text, LOG.Verbose);
+function logVerbose(obj, description) {
+    log(obj, description, LOG.Verbose);
 }
 
-function logInfo(text) {
-    log(text, LOG.Info);
+function logInfo(obj, description) {
+    log(obj, description, LOG.Info);
 }
 
-function logWarn(text) {
-    log(text, LOG.Warn);
+function logWarn(obj, description) {
+    log(obj, description, LOG.Warn);
 }
 
-function logError(text) {
-    log(text, LOG.Error);
+function logError(obj, description) {
+    log(obj, description, LOG.Error);
 }
 
-function logJson(object, level) {
-    log(JSON.stringify(object), level);
-}
-
-function log(text, level) {
+function log(obj, description, level) {
     if (level < g_logLevel) {
         return;
     }
@@ -79,13 +78,16 @@ function log(text, level) {
     }
 
     let d = getTimestring();
-    let typ = (text) => typeof(text) == "string" ? "%s" : "%o";
+    let typ = (obj) => typeof(obj) == "string" ? "%s" : "%o";
+    let curState = (obj) => typeof(obj) == "string" ? obj : JSON.parse(JSON.stringify(obj));
     if (g_logLevel === LOG.Extreme) {
-        print(console.log, `%c[%cEXTREME%c][%c${d}%c] Called log with ${typ(text)}, ${level})`, text, 6);
+        print(
+            console.log,
+            `%c[%cEXTREME%c][%c${d}%c] Called log with '${description ? description + ': ' : ''}${typ(obj)}, ${level}'`, curState(obj), 6);
     }
 
     let output = level < LOG.Warn ? console.log : level < LOG.Error ? console.warn : console.error;
-    print(output, `%c[%c${g_logStr[level]}%c][%c${d}%c] ${typ(text)}`, text, level);
+    print(output, `%c[%c${g_logStr[level]}%c][%c${d}%c] ${description ? description + ': ' : ''}${typ(obj)}`, curState(obj), level);
 
     function getTimestring() {
         let z = function(n,x=2) {

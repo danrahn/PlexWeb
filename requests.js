@@ -23,12 +23,11 @@
 
         let successFunc = function(response)
         {
-            logInfo(response);
             clearElement("tableEntries");
             buildRequests(response);
         };
 
-        let failureFunc = function(response)
+        let failureFunc = function()
         {
             displayInfoMessage("Error loading requests. Please try again later. If this problem persists, contact the site administrator");
         }
@@ -61,7 +60,6 @@
         logInfo(`Building ${requests.count} requests`);
         let entries = $("#tableEntries");
         let sortOrder = getFilter().sort;
-        let now = new Date();
         for (let i = 0; i < requests.count; ++i)
         {
             const request = requests.entries[i];
@@ -291,7 +289,7 @@
             select.value = getFilter().user;
         };
 
-        let failureFunc = function(response)
+        let failureFunc = function()
         {
             Animation.queue({"backgroundColor": "rgb(100, 66, 69)"}, $("#filterTo"), 500);
             Animation.queueDelayed({"backgroundColor": "rgb(63, 66, 69"}, $("#filterTo"), 1000, 500, true);
@@ -425,7 +423,7 @@
         setSortOrderValues();
         $("#sortBy").addEventListener("change", setSortOrderValues);
 
-        $("#applyFilter").addEventListener("click", function(e)
+        $("#applyFilter").addEventListener("click", function()
         {
             setPage(0); // Go back to the start after applying a filter
             setFilter(
@@ -504,7 +502,7 @@
     /// <summary>
     /// HTML for the filter overlay/dialog. Should probably be part of the initial DOM
     /// </summary>
-    function filterHtml(overlay)
+    function filterHtml()
     {
         let container = buildNode("div", {"id" : "filterContainer"});
         container.appendChild(buildNode("h3", {}, "Filter Options"));
@@ -773,7 +771,7 @@
                 }
             });
 
-            input.addEventListener('focus', function(e)
+            input.addEventListener('focus', function()
             {
                 this.select();
             });
@@ -844,7 +842,7 @@
             setFilter(filter, false);
         }
 
-        logVerbose(`Got Filter: ${JSON.stringify(filter)}`);
+        logVerbose(filter, "Got Filter");
         return filter;
     }
 
@@ -880,7 +878,7 @@
     /// </summary>
     function setFilter(filter, update)
     {
-        logVerbose(`Setting filter to ${JSON.stringify(filter)}`);
+        logVerbose(filter, "Setting filter to");
         localStorage.setItem("filter", JSON.stringify(filter));
         if (update)
         {
@@ -952,6 +950,7 @@
         let http = new XMLHttpRequest();
         http.open("POST", url, true /*async*/);
         http.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+        const queryString = dataIsString ? parameters : buildQuery(parameters);
         if (additionalParams)
         {
             for (let param in additionalParams)
@@ -975,7 +974,7 @@
             try
             {
                 let response = JSON.parse(this.responseText);
-                logJson(response, LOG.Verbose);
+                logVerbose(response, `${url}${queryString}`);
                 if (response.Error)
                 {
                     logError(response.Error);
@@ -997,7 +996,7 @@
             }
         };
 
-        http.send(dataIsString ? parameters : buildQuery(parameters));
+        http.send(queryString);
     }
 
     /// <summary>

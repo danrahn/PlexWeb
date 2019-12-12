@@ -58,7 +58,7 @@
 
             try {
                 let response = JSON.parse(this.responseText);
-                logJson(response, LOG.Info);
+                logInfo(response, "User settings");
                 if (response["Error"]) {
                     logError(response["Error"]);
                     let error = document.getElementById("formError");
@@ -93,8 +93,6 @@
                     document.querySelector("select[name=carrier]").parentNode.style.display = "block";
                     document.querySelector("input[name=phone").parentNode.style.display = "block";
                 }
-
-                logJson(initialValues, LOG.Verbose);
             } catch (ex) {
                 logError(ex);
                 logError(this.responseText);
@@ -165,7 +163,6 @@
     }
 
     function phoneListenerCore(ele) {
-        let alert = document.querySelector("input[name=phonealerts");
         let digit = ele.value ? ele.value.replace(/[^\d]/g, "") : "";
         if (digit.length !== 10) {
             logVerbose("Invalid phone");
@@ -227,7 +224,7 @@
             let phone = document.querySelector("input[name=phone]");
             let phonealerts = document.querySelector("input[name=phonealerts]").checked;
             let digits = phone.value.replace(/[^\d]/g, "");
-            if (document.querySelector("input[name=phonealerts]").checked)
+            if (phonealerts)
             {
                 if (digits.length !== 10) {
                     valid = false;
@@ -268,7 +265,7 @@
 
                     try {
                         let response = JSON.parse(this.responseText);
-                        logJson(response, LOG.Info);
+                        logInfo(response, "Update user settings response");
                         if (response["Error"]) {
                             logError(response["Error"]);
                             let error = document.getElementById("formError");
@@ -376,7 +373,7 @@
 
             try {
                 let response = JSON.parse(this.responseText);
-                logJson(response, LOG.Info);
+                logInfo(response, "Password change response");
                 let status = document.getElementById("formStatus");
                 if (response["Error"]) {
                     status.className = "formContainer statusFail";

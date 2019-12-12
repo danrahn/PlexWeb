@@ -38,7 +38,7 @@ function setupLoginForm()
 
             try {
                 let response = JSON.parse(this.responseText);
-                logJson(response, LOG.Info);
+                logInfo(response, "Login response");
                 let status = document.getElementById("formStatus");
                 if (response["Error"]) {
                     status.className = "formContainer statusFail";
@@ -58,8 +58,8 @@ function setupLoginForm()
 
                 window.location = "index.php";
             } catch (ex) {
-                logError(ex);
-                logError(this.responseText);
+                logError(ex, "Exception");
+                logError(this.responseText, "Exception Text");
             }
         };
         
