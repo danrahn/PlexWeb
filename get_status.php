@@ -315,6 +315,8 @@ function build_sesh($sesh, $library_names)
         $slim_sesh->art_path = 'art' . $sesh['art'];
     }
 
+    $slim_sesh->art_colors = get_img_average($slim_sesh->art_path);
+
     $slim_sesh->thumb_path = 'thumb' . ($sesh_type == MediaType::TVShow ? ($sesh['parentThumb'] ? $sesh['parentThumb'] : $sesh['grandparentThumb']) : $sesh['thumb']);
     if ($slim_sesh->thumb_path)
     $slim_sesh->duration = get_duration($sesh);
@@ -645,6 +647,71 @@ function get_duration($sesh)
     }
 
     return $duration;
+}
+
+
+/// <summary>
+/// Get the average red/green/blue of a background
+/// </summary>
+function get_img_average($src)
+{
+    $filename_parts = explode("/", $src);
+    $filename = $filename_parts[count($filename_parts) - 3] . "_" . $filename_parts[count($filename_parts) - 1] . ".jpg";
+    $path = "includes/cache/background/" . $filename_parts[count($filename_parts) - 2] . "/" . $filename;
+
+    $colors = new \stdClass();
+    $colors->red = 0;
+    $colors->green = 0;
+    $colors->blue = 0;
+
+    global $db;
+    $query = "SELECT `red`, `green`, `blue` FROM background_color_cache WHERE `path`='$filename'";
+    $result = $db->query($query);
+    if ($result === FALSE)
+    {
+        return db_error();
+    }
+
+    if ($result->num_rows === 1)
+    {
+        $row = $result->fetch_assoc();
+        $colors->red = (int)$row['red'];
+        $colors->green = (int)$row['green'];
+        $colors->blue = (int)$row['blue'];
+        return $colors;
+    }
+
+    // Our values aren't cached. Read in the image
+    if (!file_exists($path))
+    {
+        // Art background doesn't exist yet, not the end of the world, we'll get it eventually
+        return $colors;
+    }
+
+    $size = @getimagesize($path);
+    $img = @imagecreatefromjpeg($path);
+    $samples = 0;
+    for ($x = 0; $x < $size[0]; $x += 5) // Every 5 pixels, as doing every pixel gets very expensive
+    {
+        for ($y = 0; $y < $size[1]; $y += 5)
+        {
+            $thisColor = imagecolorat($img, $x, $y);
+            $rgb = imagecolorsforindex($img, $thisColor);
+            $colors->red += $rgb['red'];
+            $colors->green += $rgb['green'];
+            $colors->blue += $rgb['blue'];
+            $samples += 1;
+        }
+    }
+
+    $colors->red = (int)($colors->red / $samples);
+    $colors->green = (int)($colors->green / $samples);
+    $colors->blue = (int)($colors->blue / $samples);
+
+    $query = "INSERT INTO background_color_cache (`path`, `red`, `green`, `blue`) VALUES ('$filename', $colors->red, $colors->green, $colors->blue)";
+    $db->query($query);
+
+    return $colors;
 }
 
 /// <summary>

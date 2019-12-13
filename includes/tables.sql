@@ -88,6 +88,16 @@ CREATE TABLE `logins` (
  PRIMARY KEY (`id`)
 ) ENGINE=MyISAM AUTO_INCREMENT=1155 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci
 
+CREATE TABLE `background_color_cache` (
+ `id` int(11) NOT NULL AUTO_INCREMENT,
+ `path` varchar(64) COLLATE utf8_unicode_ci NOT NULL,
+ `red` int(3) NOT NULL,
+ `green` int(3) NOT NULL,
+ `blue` int(3) NOT NULL,
+ PRIMARY KEY (`id`),
+ UNIQUE KEY `path` (`path`)
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci
+
 # Triggers
 CREATE TRIGGER `UpdateCommentCount` AFTER INSERT ON `request_comments`
  FOR EACH ROW UPDATE user_requests r SET r.comment_count=r.comment_count+1 WHERE r.id=NEW.req_id

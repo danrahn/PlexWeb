@@ -543,13 +543,16 @@
     /// Returns a mediainfo element based on the given session
     /// </summary>
     function buildMediaInfo(sesh)
-    {
+    {        
         // Main container
         logVerbose(sesh, "Adding Session");
+        const posterColors = sesh.art_colors;
+        const makeDarker = posterColors.red + posterColors.green + posterColors.blue > 500;
+        const opacity = makeDarker ? 0.6 : 0.4;
         let container = buildNode("div", {
-            "class" : "mediainfo",
+            "class" : "mediainfo" + (makeDarker ? " darkerposter" : ""),
             "id" : `id${sesh.session_id}`,
-            "style" : `background-image : linear-gradient(rgba(0,0,0,0.4),rgba(0,0,0,0.4)), url(${sesh.art_path})`
+            "style" : `background-image : linear-gradient(rgba(0,0,0,${opacity}),rgba(0,0,0,${opacity})), url(${sesh.art_path})`
         },
         0,
         {
@@ -557,13 +560,15 @@
             "mouseenter" : function(e)
             {
                 let style = e.target.style.backgroundImage;
-                const newStyle = `linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)),${style.substring(style.indexOf(" url("))}`;
+                let newOpacity = e.target.classList.contains("darkerposter") ? 0.8 : 0.6;
+                const newStyle = `linear-gradient(rgba(0,0,0,${newOpacity}), rgba(0,0,0,${newOpacity})),${style.substring(style.indexOf(" url("))}`;
                 e.target.style.backgroundImage = newStyle;
             },
             "mouseleave" : function(e)
             {
                 let style = e.target.style.backgroundImage;
-                const newStyle = `linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), ${style.substring(style.indexOf(" url("))}`;
+                let newOpacity = e.target.classList.contains("darkerposter") ? 0.6 : 0.4;
+                const newStyle = `linear-gradient(rgba(0,0,0,${newOpacity}), rgba(0,0,0,${newOpacity})), ${style.substring(style.indexOf(" url("))}`;
                 e.target.style.backgroundImage = newStyle;
             }
         });
@@ -686,7 +691,7 @@
         {
             innerProgressTimers[sesh.session_id] = setInterval(innerUpdate, 1000, sesh.session_id);
         }
-
+        
         return container;
     }
 
