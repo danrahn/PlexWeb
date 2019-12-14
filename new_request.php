@@ -31,8 +31,8 @@ requireSSL();
                     <option value="none"></option>
                     <option value="movie">Movie</option>
                     <option value="tv">TV Show</option>
-                    <!-- <option value="audiobook">Audiobook</option>
-                    <option value="music">Music</option> -->
+                    <?php if ($_SESSION['level'] >= 100) {?> <option value="audiobook">Audiobook</option> <?php } ?>
+                    <!-- <option value="music">Music</option> -->
                 </select></div>
                 <div class="formInput" id="nameHolder"><label for="name">Suggestion:</label><input type="text" name="name" id="name" maxlength=128></div>
                 <div id="existingMatchHolder">
@@ -40,9 +40,9 @@ requireSSL();
                 </div>
                 <div id="matchHolder">
                     <div id="matchContainer"></div>
-                    <div id="imdbContainer" class="hidden">
-                        <div class='formInput' id="external_holder"><hr /><label for='external_id'>--OR-- IMDb ID:</label><input type=text style="float: left; margin-left: 10px" id='external_id' placeholder='tt1234567'></div>
-                        <div id="imdbResult"></div>
+                    <div id="externalContainer" class="hidden">
+                        <div class='formInput' id="external_holder"><hr /><label for='external_id' id='externallabel'>--OR-- IMDb ID:</label><input type=text style="float: left; margin-left: 10px" id='external_id' placeholder='tt1234567'></div>
+                        <div id="externalResult"></div>
                     </div>
                 </div>
                 <div id="suggestions">

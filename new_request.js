@@ -7,7 +7,7 @@
         selectChanged();
         $("#type").addEventListener("change", selectChanged);
         $("#name").addEventListener("input", suggestionChanged);
-        $("#external_id").addEventListener("input", searchImdb);
+        $("#external_id").addEventListener("input", searchSpecificExternal);
     });
 
     /// <summary>
@@ -51,28 +51,46 @@
         internalSearchTimer = setTimeout(searchInternal, 250);
     }
 
+    function setExternalType(type)
+    {
+        if (type == "audiobook")
+        {
+            $("#externallabel").innerHTML = "--OR-- Audible ID:";
+            $("#external_id").placeholder = "B017V4IM1G";
+        }
+        else
+        {
+            $("#externallabel").innerHTML = "--OR-- IMDb ID:";
+            $("#external_id").placeholder = "tt1234567";
+        }
+    }
+
     /// <summary>
     /// Search for the user's current request
     /// </summar>
     function searchItem()
     {
         let value = $("#type").value;
-        if (value != "movie" && value != "tv")
+        if (value != "movie" && value != "tv" && value != "audiobook")
         {
             // Only movies and tv shows supported for now
-            setVisibility("imdbContainer", false);
-            $("#matchContainer").innerHTML = "Sorry, audiobook/music requests are currently unavailable"
+            setVisibility("externalContainer", false);
+            $("#matchContainer").innerHTML = "Sorry, music requests are currently unavailable"
             return;
         }
 
-        let params = { "type" : value == "movie" ? 1 : 2, "query" : $("#name").value };
+        let type = value == "movie" ? 1 : (value == "tv" ? 2 : 3);
+
+        setExternalType(value);
+
+        let params = { "type" : type, "query" : $("#name").value };
         let successFunc = function(response)
         {
             logInfo(response, "Search Results");
-            setVisibility("imdbContainer", true);
+            setVisibility("externalContainer", true);
             if (response.results.length === 0)
             {
-                document.getElementById("matchContainer").innerHTML = "No matches found. Please enter the IMDb id below";
+                document.getElementById("matchContainer").innerHTML = `No matches found. Please enter the ${value == "audiobook" ? "Audible" : "IMDb"} ID below`;
                 return;
             }
 
@@ -128,29 +146,47 @@
         sendHtmlJsonRequest("process_request.php", parameters, successFunc, failureFunc);
     }
 
-    /// <summary>
-    /// Search for an item based on a specific IMDb id
-    /// </summar>
-    function searchImdb()
+    function validateId(id, isAudiobook)
     {
-        let id = $("#external_id").value;
-        if (id.length != 9 || id.substring(0, 2) != "tt" || parseInt(id.substring(2)) == NaN)
+        if (isAudiobook)
         {
-            if (id.length !== 0)
+            if (id.length != 10)
             {
-                $("#imdbResult").innerHTML = "Incomplete IMDb Id";
-            }
-            else
-            {
-                $("#imdbResult").innerHTML = "";
+                $("#externalResult").innerHTML = id.length == 0 ? "" : "Incomplete Audible Id";
+                return false;
             }
 
+            return true;
+        }
+
+        if (id.length != 9 ||
+            id.substring(0, 2) != "tt" ||
+            parseInt(id.substring(2)) == NaN)
+        {
+            $("#externalResult").innerHTML = id.length == 0 ? "" : "Incomplete IMDb Id";
+            return false;
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// Search for an item based on a specific IMDb/Audible id
+    /// </summar>
+    function searchSpecificExternal()
+    {
+        let id = $("#external_id").value;
+        const isAudiobook = $("#type").value == "audiobook";
+        if (!validateId(id, isAudiobook))
+        {
             return;
         }
 
-        $("#imdbResult").innerHTML = "Searching...";
+        $("#externalResult").innerHTML = "Searching...";
 
-        let parameters = { "type" : $("#type").value == "movie" ? 1 : 2, "query" : id, "imdb" : true };
+        let value = $("#type").value;
+        let type = value == "movie" ? 1 : (value == "tv" ? 2 : 3);
+        let parameters = { "type" : type, "query" : id, "imdb" : type != 3, "audible" : type == 3 };
         let successFunc = function(response)
         {
             logInfo(response);
@@ -160,27 +196,36 @@
                 case "movie":
                     if (response.movie_results.length === 0)
                     {
-                        $("#imdbResult").innerHTML = "Movie not found";
+                        $("#externalResult").innerHTML = "Movie not found";
                         return;
                     }
-                    buildItems(response.movie_results, "imdbResult");
+                    buildItems(response.movie_results, "externalResult");
                     break;
                 case "tv":
                     if (response.tv_results.length === 0)
                     {
-                        $("#imdbResult").innerHTML = "TV Show not found";
+                        $("#externalResult").innerHTML = "TV Show not found";
                         return;
                     }
-                    build_items(response.tv_results, "imdbResult");
+                    buildItems(response.tv_results, "externalResult");
+                    break;
+                case "audiobook":
+                    if (!response.valid)
+                    {
+                        $("#externalResult").innerHTML = "Audiobook not found";
+                        return;
+                    }
+                    buildItems([response], "externalResult");
                     break;
                 default:
-                    $("#imdbResult").innerHTML = "Sorry, something went wrong";
+                    $("#externalResult").innerHTML = "Sorry, something went wrong";
                     break;
             }
         };
+
         let failureFunc = function()
         {
-            $("#imdbResult").innerHTML = "Failed to retrieve media";
+            $("#externalResult").innerHTML = "Failed to retrieve media";
         };
 
         sendHtmlJsonRequest("media_search.php", parameters, successFunc, failureFunc);
@@ -206,14 +251,21 @@
             let item = buildNode("div", {
                 "class" : "searchResult",
                 "title" : match.title ? match.title : match.name,
-                "poster" : match.poster_path
+                "poster" : match.poster_path ? match.poster_path : match.thumb
             },
             0,
             external ? {} : {
                 "click" : clickSuggestion
             });
 
-            item.setAttribute(match.id ? "tmdbid" : "imdbid", match.id ? match.id : match.imdbid);
+            if (match.ref)
+            {
+                item.setAttribute("ref", match.ref);
+            }
+            else
+            {
+                item.setAttribute(match.id ? "tmdbid" : "imdbid", match.id ? match.id : match.imdbid);
+            }
 
             let img = buildNode("img", {
                 "style" : "height : 70px",
@@ -234,11 +286,14 @@
                 release = match.year || match.first_air_date;
             }
 
+            // match.ref is a hacky way to tell that we have an audiobook request
+            const linkString = `(${match.ref ? "Audible" : (release ? release.substring(0, 4) : "IMDb")})`;
+
             div.appendChild(buildNode("a",
                 {"href" : "#"},
-                `(${release ? release.substring(0, 4) : "IMDb"})`,
+                linkString,
                 {
-                    "click" : goToImdb
+                    "click" : goToExternal
                 }));
 
             item.appendChild(img);
@@ -251,7 +306,7 @@
             "type" : "button",
             "id" : `matchContinue_${holder}`,
             "class" : "matchContinue hidden",
-            "value" : "button"
+            "value" : "Submit Request"
         },
         0,
         {
@@ -264,10 +319,11 @@
     /// <summary>
     /// Go to IMDb (or TMDb) when the user clicks on a suggestion
     /// </summar>
-    function goToImdb()
+    function goToExternal()
     {
         let value = $("#type").value;
-        const imdbid = this.parentNode.parentNode.getAttribute("imdbid");
+        let grandparent = this.parentNode.parentNode;
+        const imdbid = grandparent.getAttribute("imdbid");
         if (imdbid)
         {
             logTmi("Clicked on an existing item");
@@ -275,7 +331,15 @@
             return;
         }
 
-        let parameters = { "type" : value == "movie" ? 1 : 2, "query" : this.parentNode.parentNode.getAttribute("tmdbid"), "by_id" : "true" };
+        const ref = grandparent.getAttribute("ref");
+        if (ref)
+        {
+            window.open(ref, "_blank");
+            return;
+        }
+
+        const tmdbid = grandparent.getAttribute("tmdbid");
+        let parameters = { "type" : value == "movie" ? 1 : 2, "query" : tmdbid, "by_id" : "true" };
         let successFunc = function(response, request)
         {
             logInfo(response);
@@ -304,7 +368,7 @@
         }
 
         let enableButton = "matchContinue_" + this.parentNode.id;
-        let disableButton = "matchContinue_" + (enableButton.charAt(14) == 'm' ? "imdbResult" : "matchContainer");
+        let disableButton = "matchContinue_" + (enableButton.charAt(14) == 'm' ? "externalResult" : "matchContainer");
         logTmi("EnableButton: " + enableButton);
         logTmi("DisableButton: " + disableButton);
         if (selectedSuggestion && selectedSuggestion != this)
@@ -333,6 +397,12 @@
     /// </summar>
     function submitSelected()
     {
+        if ($("#type").value == "audiobook")
+        {
+            alert("Sorry, audiobook requests aren't quite hooked up yet");
+            return;
+        }
+        
         if (!selectedSuggestion)
         {
             let button = $("#matchContinue");
