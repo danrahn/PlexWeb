@@ -196,7 +196,7 @@ function include_js($file)
     }
     else
     {
-        return file_get_contents($file . ".js");
+        return file_get_contents("script/" . $file . ".js");
     }
 }
 
