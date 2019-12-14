@@ -97,7 +97,7 @@
         {
             a.appendChild(buildNode("img", {
                 "class" : "inlineIcon",
-                "src" : `${request.t == 1 ? "movie" : "tv"}icon.png`,
+                "src" : `icon/${request.t == 1 ? "movie" : "tv"}icon.png`,
                 "alt" : request.t == 1 ? "Movie" : "TV Show"
             }));
         }

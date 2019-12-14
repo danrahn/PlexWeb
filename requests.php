@@ -27,26 +27,26 @@ verify_loggedin(TRUE /*redirect*/, "requests.php");
         <div id="container">
             <div class="tableHolder">
                 <div id="tableHeader" class="tableHF">
-                    <button class="previousPage" title="Previous Page"><img src="arrow.png" alt="Previous Page" /></button>
+                    <button class="previousPage" title="Previous Page"><img src="icon/arrow.png" alt="Previous Page" /></button>
                     <div class="largeShow">
                         <span>Show:</span>
                         <button class="ppButton" value="25">25</button><button class="ppButton" value="50">50</button><button class="ppButton" value="100">100</button><button class="ppButton cap" value="0">All</button>
                     </div>
                     <div class="pageStatus">Page <input type="text" class="pageSelect" value="1" title="Select Page"> of <span class="pageCount">1</span></div>
                     <div class="rightSide">
-                        <button class="filterBtn"><img class="filterImg" src="filter.png" alt="Filter" title="Filter Results" /></button><button class="nextPage" title="Next Page"><img src="arrow.png" alt="Next Page" /></button>
+                        <button class="filterBtn"><img class="filterImg" src="filter.png" alt="Filter" title="Filter Results" /></button><button class="nextPage" title="Next Page"><img src="icon/arrow.png" alt="Next Page" /></button>
                     </div>
                 </div>
                 <div id="tableEntries"></div>
                 <div id="tableFooter" class="tableHF">
-                    <button class="previousPage" title="Previous Page"><img src="arrow.png" alt="Previous Page" /></button>
+                    <button class="previousPage" title="Previous Page"><img src="icon/arrow.png" alt="Previous Page" /></button>
                     <div class="largeShow">
                         <span>Show:</span>
                         <button class="ppButton" value="25">25</button><button class="ppButton" value="50">50</button><button class="ppButton" value="100">100</button><button class="ppButton cap" value="0">All</button>
                     </div>
                     <div class="pageStatus">Page <input type="text" class="pageSelect" value="1" title="Select Page"> of <span class="pageCount">1</span></div>
                     <div class="rightSide">
-                        <button class="filterBtn"><img class="filterImg" src="filter.png" alt="Filter" title="Filter Results" /></button><button class="nextPage" title="Next Page"><img src="arrow.png" alt="Next Page" /></button>
+                        <button class="filterBtn"><img class="filterImg" src="filter.png" alt="Filter" title="Filter Results" /></button><button class="nextPage" title="Next Page"><img src="icon/arrow.png" alt="Next Page" /></button>
                     </div>
                 </div>
             </div>
