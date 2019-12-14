@@ -547,7 +547,19 @@
                 return;
             }
 
-            let div = buildNode("div", {"class" : "formInput"});
+            let div = buildNode("div",
+                {"class" : "formInput"},
+                0,
+                {
+                    "click" : function(e)
+                    {
+                        // If we clicked the filter item, but not directly on the label/checkbox, pretend we did
+                        if (e.target == this)
+                        {
+                            this.querySelector("input").click();
+                        }
+                    }
+                });
             div.appendChild(buildNode("label", {"for" : typ}, labels[index] + ": "));
             div.appendChild(buildNode("input", {
                 "type" : "checkbox",
@@ -605,8 +617,7 @@
         innerButtonHolder.appendChild(buildNode("input", {
             "type" : "button",
             "value" : "Apply",
-            "id" : "applyFilter",
-            "style" : "margin-right: 10px"
+            "id" : "applyFilter"
         }));
 
         buttonHolder.appendChild(innerButtonHolder);
