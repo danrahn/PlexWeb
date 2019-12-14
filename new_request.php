@@ -60,7 +60,6 @@ requireSSL();
         </div>
         <div id="formStatus" class="formContainer"></div>
     </div>
-    <div id="tooltip"></div>
 </div>
 </body>
 <?php get_js("consolelog", "animate", "queryStatus", "new_request"); ?>

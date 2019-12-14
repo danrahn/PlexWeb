@@ -40,7 +40,7 @@ h1, h2, h3 {
     color: rgb(192, 189, 186);
 }
 
-.formContainer a, .actionLink, .actionLink:visited {
+.formContainer a {
     color: #80A020;
 }
 
@@ -48,7 +48,7 @@ h1, h2, h3 {
     color: #80A020;
 }
 
-.formContainer a:hover, .actionLink:hover {
+.formContainer a:hover {
     color: #608020;
 }
 
@@ -68,10 +68,6 @@ h1, h2, h3 {
 
 .statusFail {
     background-color: rgba(100, 66, 69, 0.5);
-}
-
-#suggest {
-    width: 30%;
 }
 
 #login, #register, #info, #pwReset {
@@ -100,10 +96,6 @@ textarea::placeholder {
 td textarea {
     width: 100%;
     min-width: 150px;
-}
-
-#suggest:hover {
-    background: rgba(63, 66, 69, .3);
 }
 
 label {
@@ -201,7 +193,7 @@ hr {
     bottom: 5px;
 }
 
-#active, #active a, #login a, #register a, #logout a {
+#login a, #register a, #logout a {
     color: #80A020;
 }
 
@@ -209,297 +201,11 @@ hr {
     color: #608020;
 }
 
-#active a {
-    text-decoration: none;
-}
-
-#active a:hover {
-    text-decoration: underline;
-    color: #202060;
-}
-
-#footer {
-    position: fixed;
-    left: 0;
-    bottom: 5px;
-    width: 100%;
-    color: white;
-    text-align: right;
-}
-
-#footer a {
-    color: white;
-    font-size: 8pt;
-    padding: 5px;
-}
-
-#actions {
-    width: 30%;
-    min-width: 125px;
-    margin-left: auto;
-    margin-right: auto;
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-between;
-}
-
-.action {
-    min-width: 150px;
-    border: 2px solid black;
-    margin: 10px;
-    overflow: auto;
-    border: 2px solid #222;
-    border-radius: 10px;
-    margin-left: auto;
-    margin-right: auto;
-    margin-top: 10px;
-    margin-bottom: 10px;
-    background-color: #00000033;
-}
-
-.action:hover {
-    background-color: #00000055;
-}
-
-.actionImg {
-    display: block;
-    margin: auto;
-    width: 100px;
-    padding-top: 20px;
-    padding-bottom: 5px;
-}
-
-.action a {
-    text-align: center;
-    display: block;
-    margin-bottom: 20px;
-}
-
-.mediainfo {
-    border: 2px solid black;
-    margin: 10px;
-    width: 30%;
-    clear: both;
-    overflow: auto;
-    border: 2px solid #222;
-    border-radius: 10px;
-    margin-left: auto;
-    margin-right: auto;
-    margin-top: 10px;
-    margin-bottom: 10px;
-    background-size: cover;
-    background-position: center;
-
-    text-shadow: -1px 0 1px #444, 0 1px 1px #444, 1px 0 1px #444, 0 -1px 1px #444;
-    /*box-shadow: inset 10px 10px 10px black;*/
-}
-
-.mediainfo a {
-    color: #50C050;
-    font-weight: bold;
-}
-
-.mediainfo a:visited {
-    color: #50B050;
-}
-
-.mediainfo a:hover {
-    text-decoration: underline;
-    color: #40A040;
-}
-
-.mediainfo strong {
-    color: #AAA;
-}
-
-.mediainfo ul {
-    color: #CCC;
-}
-
-.innerHolder {
-    margin: 15px;
-}
-
-.progressHolder {
-    width: 100%;
-    position: relative;
-    bottom: 0;
-    left: 0;
-    margin-left: auto;
-    margin-right: auto;
-    overflow: auto;
-}
-
-.progress, .tcdiff, .remaining {
-    border-top: 1px solid #222;
-    height: 5px;
-    margin-top: 0;
-    opacity: 0.5;
-    margin-top: 15px;
-}
-
-.mediainfo:hover .progress, .mediainfo:hover .tcdiff, .mediainfo:hover .remaining {
-    opacity: 0.8;
-    height: 15px;
-    margin-top: 5px;
-}
-
-.mediainfo:hover .time {
-    opacity: 1;
-}
-
-.progress {
-    float: left;
-    background-color: #A0C030;
-}
-
-.tcdiff {
-    float: left;
-    background-color: rgb(176, 160, 48);
-}
-
-.remaining {
-    float: right;
-    background-color: #C08030;
-}
-
-.time {
-    position: absolute;
-    bottom: 0;
-    font-size: smaller;
-    margin: auto;
-    color: #c1c1c1;
-    font-weight: bold;
-    left: 50%;
-    transform: translateX(-50%);
-    -webkit-transform: translateX(-50%);
-    opacity: 0;
-}
-
-#tooltip {
-    display: none;
-    background-color: rgba(50, 50, 50, .7);
-    color: #c1c1c1;
-    border-radius: 3px;
-    border: 1px solid #616161;
-    padding: 5px;
-    position: absolute;
-}
-
-#suggestions,
-#existingSuggestions,
-#outsideSuggestions {
-    display: none;
-}
-
-.suggestionHolder {
-    border: 1px solid #2e2e2e;
-    overflow: hidden;
-    width: 100%;
-    height: 50px;
-    vertical-align: middle;
-    background-color: rgba(0,0,0,0.1);
-}
-
-.suggestionHolder:hover {
-    background-color: rgba(0,0,0,0.2);
-}
-
-.suggestionImg {
-    height: 100%;
-    float: left;
-    margin-right: 10px;
-}
-
-.suggestionText {
-    width: auto;
-    font-size: small;
-    position: relative;
-    top: 50%;
-    -ms-transform: translateY(-50%);
-    -webkit-transform: translateY(-50%);
-    transform: translateY(-50%);
-}
-
 .tableHolder {
     overflow-y: scroll;
 }
 
-.smallDiv {
-    font-size: smaller;
-}
-
-#mainOverlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    background-color: rgba(0,0,0,0.6);
-}
-
-#overlayContainer {
-    margin: auto;
-    width: auto;
-    height: auto;
-    padding: 20px;
-    background-color: rgba(0,0,0,0.3);
-    color: rgb(196, 196, 196);
-    margin-top: 25vh;
-}
-
-#overlayContainer div {
-    padding-bottom: 20px;
-    margin: auto;
-    display: block;
-    text-align: center;
-}
-
-#overlayContainer textarea {
-    display: block;
-    width: 50%;
-    min-width: 200px;
-    margin: auto;
-    float: none;
-    height: 50px;
-}
-
-#overlayContainer input {
-    display: block;
-    float: none;
-    margin: auto;
-    margin-top: 10px;
-    padding: 10px;
-}
-
-.ppbutton {
-    text-decoration: none;
-    display: inline-block;
-    margin-right: 4px;
-}
-
 @media (orientation: landscape), (min-width: 767px) {
-    .mediainfo,
-    #actions {
-        min-width: 630px;
-    }
-
-    .mediainfo ul {
-        text-align: left;
-        font-size: small;
-    }
-
-    .thumbholder {
-        float: left;
-        z-index: 1;
-    }
-
-    .details {
-        float: left;
-        margin-left: 10px;
-        max-width: calc(100% - 110px);
-    }
-
     /* width*/
     ::-webkit-scrollbar {
         width: 10px;
@@ -520,32 +226,6 @@ hr {
 }
 
 @media all and (orientation: portrait) and (max-width: 767px) {
-    .mediainfo,
-    #actions {
-        min-width: 80%;
-        text-align: center;
-    }
-    .mediainfo ul {
-        text-align: center;
-        font-size: small;
-        padding: 0;
-    }
-
-    .mediainfo li {
-        list-style-type: none;
-        margin: 0;
-    }
-
-    .thumbholder {
-        text-align: center;
-        clear: both;
-    }
-
-    .details {
-        margin-left: 10px;
-        text-align: center;
-    }
-
     /* width*/
     ::-webkit-scrollbar {
         width: 3px;

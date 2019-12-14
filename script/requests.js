@@ -648,7 +648,7 @@
     {
         let perPage = getPerPage();
 
-        document.querySelectorAll(".ppButton").forEach((btn) =>
+        document.querySelectorAll(".perPageButton").forEach((btn) =>
         {
             btn.addEventListener("click", function()
             {
@@ -671,12 +671,12 @@
     function setPerPage(newPerPage, update)
     {
         localStorage.setItem("perPage", newPerPage);
-        document.querySelectorAll(".ppButton").forEach((btn) =>
+        document.querySelectorAll(".perPageButton").forEach((btn) =>
         {
             btn.classList.remove("selected");
         });
 
-        document.querySelectorAll(`.ppButton[value="${newPerPage}"]`).forEach(function(e)
+        document.querySelectorAll(`.perPageButton[value="${newPerPage}"]`).forEach(function(e)
         {
             e.classList.add("selected");
         });

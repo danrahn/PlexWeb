@@ -1,0 +1,275 @@
+#active a {
+    text-decoration: none;
+}
+
+#active a:hover {
+    text-decoration: underline;
+    color: #202060;
+}
+
+#active, #active a {
+    color: #80A020;
+}
+
+#actions {
+    width: 30%;
+    min-width: 125px;
+    margin-left: auto;
+    margin-right: auto;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+}
+
+.action {
+    min-width: 150px;
+    border: 2px solid black;
+    margin: 10px;
+    overflow: auto;
+    border: 2px solid #222;
+    border-radius: 10px;
+    margin-left: auto;
+    margin-right: auto;
+    margin-top: 10px;
+    margin-bottom: 10px;
+    background-color: #00000033;
+}
+
+.action:hover {
+    background-color: #00000055;
+}
+
+.actionImg {
+    display: block;
+    margin: auto;
+    width: 100px;
+    padding-top: 20px;
+    padding-bottom: 5px;
+}
+
+.action a {
+    text-align: center;
+    display: block;
+    margin-bottom: 20px;
+}
+
+.actionLink, .actionLink:visited {
+    color: #80A020;
+}
+
+.actionLink:hover {
+    color: #608020;
+}
+
+.mediainfo {
+    border: 2px solid black;
+    margin: 10px;
+    width: 30%;
+    clear: both;
+    overflow: auto;
+    border: 2px solid #222;
+    border-radius: 10px;
+    margin-left: auto;
+    margin-right: auto;
+    margin-top: 10px;
+    margin-bottom: 10px;
+    background-size: cover;
+    background-position: center;
+
+    text-shadow: -1px 0 1px #444, 0 1px 1px #444, 1px 0 1px #444, 0 -1px 1px #444;
+    /*box-shadow: inset 10px 10px 10px black;*/
+}
+
+.mediainfo a {
+    color: #50C050;
+    font-weight: bold;
+}
+
+.mediainfo a:visited {
+    color: #50B050;
+}
+
+.mediainfo a:hover {
+    text-decoration: underline;
+    color: #40A040;
+}
+
+.mediainfo strong {
+    color: #AAA;
+}
+
+.mediainfo ul {
+    color: #CCC;
+}
+
+.mediainfo:hover .progress, .mediainfo:hover .tcdiff, .mediainfo:hover .remaining {
+    opacity: 0.8;
+    height: 15px;
+    margin-top: 5px;
+}
+
+.mediainfo:hover .time {
+    opacity: 1;
+}
+
+.innerHolder {
+    margin: 15px;
+}
+
+.progressHolder {
+    width: 100%;
+    position: relative;
+    bottom: 0;
+    left: 0;
+    margin-left: auto;
+    margin-right: auto;
+    overflow: auto;
+}
+
+.progress, .tcdiff, .remaining {
+    border-top: 1px solid #222;
+    height: 5px;
+    margin-top: 0;
+    opacity: 0.5;
+    margin-top: 15px;
+}
+
+.progress {
+    float: left;
+    background-color: #A0C030;
+}
+
+.tcdiff {
+    float: left;
+    background-color: rgb(176, 160, 48);
+}
+
+.remaining {
+    float: right;
+    background-color: #C08030;
+}
+
+.time {
+    position: absolute;
+    bottom: 0;
+    font-size: smaller;
+    margin: auto;
+    color: #c1c1c1;
+    font-weight: bold;
+    left: 50%;
+    transform: translateX(-50%);
+    -webkit-transform: translateX(-50%);
+    opacity: 0;
+}
+
+#tooltip {
+    display: none;
+    background-color: rgba(50, 50, 50, .7);
+    color: #c1c1c1;
+    border-radius: 3px;
+    border: 1px solid #616161;
+    padding: 5px;
+    position: absolute;
+}
+
+#mainOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0,0,0,0.6);
+}
+
+#overlayContainer {
+    margin: auto;
+    width: auto;
+    height: auto;
+    padding: 20px;
+    background-color: rgba(0,0,0,0.3);
+    color: rgb(196, 196, 196);
+    margin-top: 25vh;
+}
+
+#overlayContainer div {
+    padding-bottom: 20px;
+    margin: auto;
+    display: block;
+    text-align: center;
+}
+
+#overlayContainer textarea {
+    display: block;
+    width: 50%;
+    min-width: 200px;
+    margin: auto;
+    float: none;
+    height: 50px;
+}
+
+#overlayContainer input {
+    display: block;
+    float: none;
+    margin: auto;
+    margin-top: 10px;
+    padding: 10px;
+}
+
+.ppbutton {
+    text-decoration: none;
+    display: inline-block;
+    margin-right: 4px;
+}
+
+/* Desktop/Landscape */
+@media (orientation: landscape), (min-width: 767px) {
+    .details {
+        float: left;
+        margin-left: 10px;
+        max-width: calc(100% - 110px);
+    }
+
+    .thumbholder {
+        float: left;
+        z-index: 1;
+    }
+    
+    .mediainfo,
+    #actions {
+        min-width: 630px;
+    }
+
+    .mediainfo ul {
+        text-align: left;
+        font-size: small;
+    }
+}
+
+/* Phone/Portrait*/
+@media all and (orientation: portrait) and (max-width: 767px) {
+    .details {
+        margin-left: 10px;
+        text-align: center;
+    }
+
+    .thumbholder {
+        text-align: center;
+        clear: both;
+    }
+
+    .mediainfo,
+    #actions {
+        min-width: 80%;
+        text-align: center;
+    }
+    .mediainfo ul {
+        text-align: center;
+        font-size: small;
+        padding: 0;
+    }
+
+    .mediainfo li {
+        list-style-type: none;
+        margin: 0;
+    }
+}

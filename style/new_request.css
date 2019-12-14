@@ -59,3 +59,17 @@ form select {
 .badLink {
     color: red !important;
 }
+
+#suggest {
+    width: 30%;
+}
+
+#suggest:hover {
+    background: rgba(63, 66, 69, .3);
+}
+
+#suggestions,
+#existingSuggestions,
+#outsideSuggestions {
+    display: none;
+}

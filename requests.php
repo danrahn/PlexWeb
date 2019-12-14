@@ -30,7 +30,7 @@ verify_loggedin(TRUE /*redirect*/, "requests.php");
                     <button class="previousPage" title="Previous Page"><img src="icon/arrow.png" alt="Previous Page" /></button>
                     <div class="largeShow">
                         <span>Show:</span>
-                        <button class="ppButton" value="25">25</button><button class="ppButton" value="50">50</button><button class="ppButton" value="100">100</button><button class="ppButton cap" value="0">All</button>
+                        <button class="perPageButton" value="25">25</button><button class="perPageButton" value="50">50</button><button class="perPageButton" value="100">100</button><button class="perPageButton cap" value="0">All</button>
                     </div>
                     <div class="pageStatus">Page <input type="text" class="pageSelect" value="1" title="Select Page"> of <span class="pageCount">1</span></div>
                     <div class="rightSide">
@@ -42,7 +42,7 @@ verify_loggedin(TRUE /*redirect*/, "requests.php");
                     <button class="previousPage" title="Previous Page"><img src="icon/arrow.png" alt="Previous Page" /></button>
                     <div class="largeShow">
                         <span>Show:</span>
-                        <button class="ppButton" value="25">25</button><button class="ppButton" value="50">50</button><button class="ppButton" value="100">100</button><button class="ppButton cap" value="0">All</button>
+                        <button class="perPageButton" value="25">25</button><button class="perPageButton" value="50">50</button><button class="perPageButton" value="100">100</button><button class="perPageButton cap" value="0">All</button>
                     </div>
                     <div class="pageStatus">Page <input type="text" class="pageSelect" value="1" title="Select Page"> of <span class="pageCount">1</span></div>
                     <div class="rightSide">
