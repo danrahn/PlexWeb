@@ -18,7 +18,16 @@ $plex_ok = does_plex_exist();
 
 function does_plex_exist()
 {
-    return !!(@get_headers(PLEX_SERVER));
+    // Apache and Plex are on the same machine so a
+    // timeout of 0.1 seconds should be more than enough
+    $socket =@ fsockopen(PLEX_HOST, PLEX_PORT, $errno, $errstr, 0.1);
+    if ($socket)
+    {
+        fclose($socket);
+        return true;
+    }
+
+    return false;
 }
 
 function get_plex_status($class)
