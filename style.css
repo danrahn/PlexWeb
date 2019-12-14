@@ -312,6 +312,10 @@ hr {
     color: #AAA;
 }
 
+.mediainfo ul {
+    color: #CCC;
+}
+
 .innerHolder {
     margin: 15px;
 }
@@ -476,7 +480,6 @@ hr {
 
     .mediainfo ul {
         text-align: left;
-        color: #CCC;
         font-size: small;
     }
 
@@ -518,7 +521,6 @@ hr {
     }
     .mediainfo ul {
         text-align: center;
-        color: #CCC;
         font-size: small;
         padding: 0;
     }

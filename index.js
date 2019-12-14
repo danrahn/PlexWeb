@@ -367,7 +367,7 @@
     /// </summary.
     function trimSessions(newSessions, existingSessions)
     {
-        // O(n^2), ugh
+        // O(n^2), but if I have enough streams to point where this matters, I have other problems
         for (let i = 0; i < existingSessions.length; ++i)
         {
             let session = existingSessions[i];
@@ -398,6 +398,8 @@
                 --i;
             }
         }
+
+        updateTotalBitrate();
     }
 
     /// <summary>
@@ -518,7 +520,7 @@
     function showTotalBitrateTooltip(e)
     {
         let bitrate = $("#active").getAttribute("bitrate");
-        if (!bitrate)
+        if (bitrate == 0)
         {
             return;
         }

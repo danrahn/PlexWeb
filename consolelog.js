@@ -86,7 +86,7 @@ function log(obj, description, level) {
             `%c[%cEXTREME%c][%c${d}%c] Called log with '${description ? description + ': ' : ''}${typ(obj)}, ${level}'`, curState(obj), 6);
     }
 
-    let output = level < LOG.Warn ? console.log : level < LOG.Error ? console.warn : console.error;
+    let output = level < LOG.Info ? console.log : level < LOG.Warn ? console.info : level < LOG.Error ? console.warn : console.error;
     print(output, `%c[%c${g_logStr[level]}%c][%c${d}%c] ${description ? description + ': ' : ''}${typ(obj)}`, curState(obj), level);
 
     function getTimestring() {
