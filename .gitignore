@@ -1,0 +1,6 @@
+.well-known/*
+includes/cache/*
+includes/phpMail/*
+includes/config.php
+min/*
+vendor/*

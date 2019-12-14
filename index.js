@@ -328,7 +328,7 @@
                 item.querySelector('.progressHolder').setAttribute('progress', sesh.progress);
                 item.querySelector('.progressHolder').setAttribute('tcprogress', 'transcode_progress' in sesh ? sesh.transcode_progress : 0);
 
-                item.querySelector(".ppbutton").className = "ppbutton fa fa-" + (sesh.paused ? "pause" : "play");
+                item.querySelector(".ppbutton").innerHTML = sesh.paused ? "&#10073;&#10073;  " : "&#x25ba;  ";
                 if (sesh.paused)
                 {
                     // Transocde progress may still be updated, so do a one-off here
@@ -631,12 +631,11 @@
 
         // link to imdb/audible
         let link = buildNode("a", {"href" : sesh.hyperlink, "target" : "_blank"});
-        link.appendChild(buildNode("i", {
-            "class" : `ppbutton fa fa-${sesh.paused ? "pause" : "play"}`,
-            "style" : "fontSize: smaller"
-        }));
+        link.appendChild(buildNode("span",
+            { "class" : "ppbutton" },
+            sesh.paused ? "&#10073;&#10073;  " : "&#x25ba;  "));
 
-        link.appendChild(buildNode("span", {}, `  ${sesh.title}`));
+        link.appendChild(buildNode("span", {}, `${sesh.title}`));
 
         // Bulleted list
         let list = buildNode("ul");

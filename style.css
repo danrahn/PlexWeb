@@ -472,6 +472,12 @@ hr {
     padding: 10px;
 }
 
+.ppbutton {
+    text-decoration: none;
+    display: inline-block;
+    margin-right: 4px;
+}
+
 @media (orientation: landscape), (min-width: 767px) {
     .mediainfo,
     #actions {
@@ -561,31 +567,6 @@ hr {
     .tableHolder td {
     	font-size: smaller;
     }
-}
-
-@font-face {
-    font-family: 'FontAwesome';
-    src: url('fontawesome.eot');
-    src: url('fontawesome-webfont-iefix.eot') format('embedded-opentype'),url('fontawesome-webfont.woff2') format('woff2'),url('fontawesome-webfont.woff') format('woff'),url('fontawesome-webfont.ttf') format('truetype'),url('fontawesome-webfont.svg') format('svg');
-    font-weight: normal;
-    font-style: normal
-}
-
-.fa {
-    display: inline-block;
-    font: normal normal normal 14px/1 FontAwesome;
-    font-size: inherit;
-    text-rendering: auto;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale
-}
-
-.fa-pause:before {
-    content: "\f04c"
-}
-
-.fa-play:before {
-    content: "\f04b"
 }
 
 /* Track */
