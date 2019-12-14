@@ -51,7 +51,7 @@ function get_details($req_id)
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#3C5260" />
     <title>Plex Request</title>
-    <?php get_css("style", "request"); ?>
+    <?php get_css("style", "nav", "request"); ?>
 </head>
 <body
     isAdmin="<?= (isset($_SESSION['level']) && $_SESSION['level'] >= 100) ? 1 : 0 ?>"

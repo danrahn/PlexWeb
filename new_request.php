@@ -17,7 +17,7 @@ requireSSL();
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#3C5260" />
     <title>New Plex Request</title>
-    <?php get_css("style", "new_request"); ?>
+    <?php get_css("style", "nav", "new_request"); ?>
 </head>
 <body>
 <div id="plexFrame">

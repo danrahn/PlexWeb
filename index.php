@@ -73,7 +73,7 @@ function get_username()
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#3C5260" />
     <title>Plex Status</title>
-    <?php get_css("style", "index") ?>
+    <?php get_css("style", "nav", "index") ?>
 </head>
 <body>
 <script>

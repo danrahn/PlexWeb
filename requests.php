@@ -18,7 +18,7 @@ verify_loggedin(TRUE /*redirect*/, "requests.php");
     <title>Plex Requests</title>
 
     <!-- Inline stylesheets to reduce network roundtrip costs -->
-    <?php get_css("style", "requests"); ?>
+    <?php get_css("style", "nav", "requests"); ?>
 </head>
 
 <body isAdmin="<?= (isset($_SESSION['level']) && $_SESSION['level'] >= 100) ? 1 : 0 ?>">
