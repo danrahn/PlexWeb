@@ -79,7 +79,7 @@ function plexOk()
     <h3 id="welcome">Welcome <?= get_username() ?></h3>
     <h1 id="header" class=<?= get_plex_status(true /*class*/) ?>><?= get_plex_status(false) ?></h1>
     <div id="container">
-        <h2 id="active">Active Streams: <span id="activeNum">loading...</span></h2>
+        <h2 id="active"><span id="activeText">Active Streams: <span id="activeNum">loading...</span></span></h2>
         <div id="mediaentries">
         </div>
         <div id="actions">

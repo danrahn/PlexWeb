@@ -208,6 +208,10 @@
         writeTitle(activeSessions);
 
         $("#activeNum").innerHTML = activeSessions.length;
+        updateTotalBitrate();
+        let active = $("#activeText");
+        active.addEventListener("mousemove", showTotalBitrateTooltip);
+        active.addEventListener("mouseout", dismissTooltip);
     }
 
     /// <summary>
@@ -508,6 +512,42 @@
     }
 
     /// <summary>
+    /// When hovering over the number of active streams, snow a tooltip
+    /// indicating the total bitrate of all playing items
+    /// </summary>
+    function showTotalBitrateTooltip(e)
+    {
+        let bitrate = $("#active").getAttribute("bitrate");
+        if (!bitrate)
+        {
+            return;
+        }
+
+        showTooltip(e, `Total Bitrate: ${bitrate} kbps`);
+    }
+
+    /// <summary>
+    /// Updates the total bitrate of active streams
+    /// </summary>
+    function updateTotalBitrate()
+    {
+        currentSessions = $(".mediainfo");
+        if (currentSessions.length == 0)
+        {
+            $("#active").setAttribute("bitrate", 0);
+        }
+
+        let totalBitrate = 0;
+        currentSessions.forEach(function(session, index)
+        {
+            let lis = session.querySelectorAll("li");
+            totalBitrate += parseInt(lis[lis.length - 1].querySelector("span").innerHTML);
+        });
+        
+        $("#active").setAttribute("bitrate", totalBitrate);
+    }
+
+    /// <summary>
     /// Callback method that creates a new session from the given response
     /// </summary>
     function addSession(response)
@@ -537,6 +577,8 @@
                 $("#mediaentries").append(buildMediaInfo(response));
             }
         }
+
+        updateTotalBitrate();
     }
 
     /// <summary>
@@ -658,7 +700,7 @@
             "mouseleave" : function()
             {
                 this.removeAttribute("hovered");
-                $("#tooltip").style.display = "none";
+                dismissTooltip();
             }
         });
 
@@ -691,7 +733,7 @@
         {
             innerProgressTimers[sesh.session_id] = setInterval(innerUpdate, 1000, sesh.session_id);
         }
-        
+
         return container;
     }
 
@@ -737,19 +779,35 @@
     }
 
     /// <summary>
-    /// Shows a tooltip when hovering over the transcode progress
+    /// Show a tooltip with the given text at a position relative to clientX/Y in event e
     /// </summary>
-    function progressHover(e)
+    function showTooltip(e, text)
     {
-        this.setAttribute("hovered", true);
         const left = e.clientX + "px";
         const top = (e.clientY + 20) + "px";
         let tooltip = $("#tooltip");
         tooltip.style.left = left;
         tooltip.style.top = top;
 
-        tooltip.innerHTML = getHoverText(this);
+        tooltip.innerHTML = text;
         tooltip.style.display = "inline";
+    }
+
+    /// <summary>
+    /// Dismisses the tooltip
+    /// </summary>
+    function dismissTooltip()
+    {
+        $("#tooltip").style.display = "none";
+    }
+
+    /// <summary>
+    /// Shows a tooltip when hovering over the transcode progress
+    /// </summary>
+    function progressHover(e)
+    {
+        this.setAttribute("hovered", true);
+        showTooltip(e, getHoverText(this));
     }
 
     /// <summary>
@@ -776,7 +834,7 @@
 
     function hoverFormat(title, data)
     {
-        return `<span>${title}: <span style='float:right'>${data}</span></span>`;
+        return `<span>${title}: <span style='float:right; padding-left: 5px'>${data}</span></span>`;
     }
 
     /// <summary>
