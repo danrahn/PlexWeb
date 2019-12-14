@@ -207,7 +207,7 @@ function get_css(...$files)
 {
     foreach ($files as $file)
     {
-        echo "<style>\n" . file_get_contents($file . ".css") . "</style>\n";
+        echo "<style>\n" . file_get_contents("style/" . $file . ".css") . "</style>\n";
     }
 }
 

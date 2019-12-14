@@ -34,7 +34,7 @@ verify_loggedin(TRUE /*redirect*/, "requests.php");
                     </div>
                     <div class="pageStatus">Page <input type="text" class="pageSelect" value="1" title="Select Page"> of <span class="pageCount">1</span></div>
                     <div class="rightSide">
-                        <button class="filterBtn"><img class="filterImg" src="filter.png" alt="Filter" title="Filter Results" /></button><button class="nextPage" title="Next Page"><img src="icon/arrow.png" alt="Next Page" /></button>
+                        <button class="filterBtn"><img class="filterImg" src="icon/filter.png" alt="Filter" title="Filter Results" /></button><button class="nextPage" title="Next Page"><img src="icon/arrow.png" alt="Next Page" /></button>
                     </div>
                 </div>
                 <div id="tableEntries"></div>
@@ -46,7 +46,7 @@ verify_loggedin(TRUE /*redirect*/, "requests.php");
                     </div>
                     <div class="pageStatus">Page <input type="text" class="pageSelect" value="1" title="Select Page"> of <span class="pageCount">1</span></div>
                     <div class="rightSide">
-                        <button class="filterBtn"><img class="filterImg" src="filter.png" alt="Filter" title="Filter Results" /></button><button class="nextPage" title="Next Page"><img src="icon/arrow.png" alt="Next Page" /></button>
+                        <button class="filterBtn"><img class="filterImg" src="icon/filter.png" alt="Filter" title="Filter Results" /></button><button class="nextPage" title="Next Page"><img src="icon/arrow.png" alt="Next Page" /></button>
                     </div>
                 </div>
             </div>
