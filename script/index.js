@@ -328,12 +328,23 @@
                 item.querySelector('.progressHolder').setAttribute('progress', sesh.progress);
                 item.querySelector('.progressHolder').setAttribute('tcprogress', 'transcode_progress' in sesh ? sesh.transcode_progress : 0);
 
-                item.querySelector(".ppbutton").innerHTML = sesh.paused ? "&#10073;&#10073;  " : "&#x25ba;  ";
+                let ppbutton = item.querySelector(".ppbutton");
+
                 if (sesh.paused)
                 {
                     // Transocde progress may still be updated, so do a one-off here
                     innerUpdate(id);
+                    ppbutton.classList.remove("play");
+                    ppbutton.classList.add("pause");
+                    ppbutton.innerHTML = "&#10073;&#10073;  ";
                 }
+                else
+                {
+                    ppbutton.classList.remove("pause");
+                    ppbutton.classList.add("play");
+                    ppbutton.innerHTML = "&#x25ba;  ";
+                }
+
                 if (sesh.paused && innerProgressTimers[id])
                 {
                     clearInterval(innerProgressTimers[id]);
@@ -563,7 +574,7 @@
         // If we have existing sessions, find its place in the list
         for (let i = 0; i < currentSessions.length; ++i)
         {
-            if (!response.paused && currentSessions[i].querySelector("i").className.indexOf("pause") != -1 ||
+            if (!response.paused && currentSessions[i].querySelector(".ppbutton").classList.contains("pause") != -1 ||
                 (response.progress / response.duration) * 100 < parseFloat(currentSessions[i].querySelector(".progress").style.width))
             {
                 // Found our position if this item is playing and the next is paused, or this item has less
@@ -632,7 +643,7 @@
         // link to imdb/audible
         let link = buildNode("a", {"href" : sesh.hyperlink, "target" : "_blank"});
         link.appendChild(buildNode("span",
-            { "class" : "ppbutton" },
+            { "class" : `ppbutton  ${sesh.paused ? "pause" : "play"}` },
             sesh.paused ? "&#10073;&#10073;  " : "&#x25ba;  "));
 
         link.appendChild(buildNode("span", {}, `${sesh.title}`));
@@ -1042,7 +1053,8 @@
             catch (ex)
             {
                 logError(ex, "Exception");
-                logError(this.responseText, "Exception Text");
+                logError(ex.stack);
+                logError(this.responseText, "Response Text");
             }
         };
 
