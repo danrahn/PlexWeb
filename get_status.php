@@ -655,14 +655,20 @@ function get_duration($sesh)
 /// </summary>
 function get_img_average($src)
 {
-    $filename_parts = explode("/", $src);
-    $filename = $filename_parts[count($filename_parts) - 3] . "_" . $filename_parts[count($filename_parts) - 1] . ".jpg";
-    $path = "includes/cache/background/" . $filename_parts[count($filename_parts) - 2] . "/" . $filename;
-
     $colors = new \stdClass();
     $colors->red = 0;
     $colors->green = 0;
     $colors->blue = 0;
+
+    $filename_parts = explode("/", $src);
+
+    if (count($filename_parts) < 3)
+    {
+        return $colors;
+    }
+
+    $filename = $filename_parts[count($filename_parts) - 3] . "_" . $filename_parts[count($filename_parts) - 1] . ".jpg";
+    $path = "includes/cache/background/" . $filename_parts[count($filename_parts) - 2] . "/" . $filename;
 
     global $db;
     $query = "SELECT `red`, `green`, `blue` FROM background_color_cache WHERE `path`='$filename'";
