@@ -26,6 +26,7 @@
     setupClicks("navLogoutTop", "logout.php");
     setupClicks("navRequestsTop", "requests.php");
     setupClicks("navSettingsTop", "user_settings.php");
+    setupClicks("navActivityTop", "activity.php");
 
     setupClicks("navHome", "index.php");
     setupClicks("navNewRequest", "new_request.php");
