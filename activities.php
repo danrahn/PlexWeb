@@ -6,6 +6,25 @@ require_once "includes/config.php";
 
 verify_loggedin(TRUE /*redirect*/, "activities.php");
 requireSSL();
+
+update_last_seen();
+
+/// <summary>
+/// Update the 'last seen' activities time so we can correctly show the number of new activities for a user
+/// </summary>
+function update_last_seen()
+{
+    global $db;
+    $uid = $_SESSION['id'];
+    $query = "INSERT INTO `activity_status`
+        (`user_id`, `last_viewed`) VALUES ($uid, NOW())
+        ON DUPLICATE KEY UPDATE `last_viewed`=NOW()";
+    $result = $db->query($query);
+    if ($result === FALSE)
+    {
+        error_and_exit(500, db_error());
+    }
+}
 ?>
 
 <!DOCTYPE html>

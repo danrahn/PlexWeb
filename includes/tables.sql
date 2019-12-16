@@ -114,6 +114,13 @@ CREATE TABLE `activities` (
  CONSTRAINT `update_user_actions` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci
 
+CREATE TABLE `activity_status` (
+ `user_id` int(11) NOT NULL,
+ `last_viewed` timestamp NOT NULL,
+ UNIQUE KEY `user_id` (`user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci
+
+
 # Triggers
 CREATE TRIGGER `UpdateCommentCount` AFTER INSERT ON `request_comments`
  FOR EACH ROW UPDATE user_requests r SET r.comment_count=r.comment_count+1 WHERE r.id=NEW.req_id
