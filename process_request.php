@@ -101,6 +101,9 @@ function process_request($type)
         case "requests":
             $message = get_requests((int)get("num"), (int)get("page"), get("filter"));
             break;
+        case "activities":
+            $message = get_activites();
+            break;
         default:
             return json_error("Unknown request type: " . $type);
     }
@@ -1589,6 +1592,108 @@ function get_poster_path($request)
 
         return $poster_path;
     }
+}
+
+/// <summary>
+/// Get all relevant activites for the current user. If the current user is an admin, return
+/// all activities, otherwise return activities that directly relate to the current user.
+/// </summary>
+function get_activites()
+{
+    global $db;
+    $current_user = $_SESSION['id'];
+    $query;
+    if ($_SESSION['level'] >= 100)
+    {
+        $query = "SELECT `type`, `user_id`, `admin_id`, `request_id`, `data`, `timestamp` FROM `activities` ORDER BY `timestamp` DESC";
+    }
+    else
+    {
+        $query = "SELECT `type`, `user_id`, `admin_id`, `request_id`, `data`, `timestamp` FROM `activities` WHERE `user_id`=$current_user ORDER BY `timestamp` DESC";
+    }
+
+    $result = $db->query($query);
+    if ($result === FALSE)
+    {
+        return db_error();
+    }
+
+    $activities = new \stdClass();
+    $activities->activities = array();
+    while ($row = $result->fetch_assoc())
+    {
+        $activity = new \stdClass();
+        $activity->type = $row['type'];
+        $activity->timestamp = $row['timestamp'];
+        $activity->username = $_SESSION['username'];
+        $activity->uid = $row['user_id'];
+        $activity->rid = $row['request_id'];
+
+        $admin_id = $row['admin_id'];
+        $inner_query;
+        if ($admin_id == 0)
+        {
+            $inner_query = "SELECT id, username FROM users WHERE id=$activity->uid";
+        }
+        else
+        {
+            $inner_query = "SELECT id, username FROM users WHERE id=$admin_id";
+        }
+
+        $inner_result = $db->query($inner_query);
+        if ($inner_result === FALSE)
+        {
+            return db_error();
+        }
+
+        if ($inner_result->num_rows == 0)
+        {
+            return json_error("Unable to get username from activity user id $admin_id");
+        }
+
+        $inner_row = $inner_result->fetch_assoc();
+        $activity->username = $inner_row['username'];
+        $activity->uid = $inner_row['id'];
+        $inner_result->close();
+
+        $activity_rid = $row['request_id'];
+        $inner_query = "SELECT `request_name` FROM `user_requests` WHERE `id`=$activity_rid";
+        $inner_result = $db->query($inner_query);
+        if ($inner_result === FALSE)
+        {
+            return db_error();
+        }
+
+        if ($inner_result->num_rows == 0)
+        {
+            return json_error("Unable to get request name from request id $activity_rid");
+        }
+
+        $activity->value = $inner_result->fetch_assoc()['request_name'];
+        $inner_result->close();
+
+        if ($row['type'] == 3) // Status change
+        {
+            $statuses = array("Pending", "Approved", "Denied", "In Progress", "Waiting");
+            if ($row['data']['status'] >= count($statuses))
+            {
+                $activity->status = "Unknown";
+            }
+            else
+            {
+                $activity->status = $statuses[$row['data']['status']];
+            }
+        }
+
+        if ($row['type'] == 2)
+        {
+            // A comment was added, make sure the userid is the id of the person who added the comment
+        }
+
+        array_push($activities->activities, $activity);
+    }
+
+    return json_encode($activities);
 }
 
 function run_query($endpoint)
