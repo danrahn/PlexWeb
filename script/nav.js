@@ -32,9 +32,10 @@
 
     setupClicks("navHome", "index.php");
     setupClicks("navNewRequest", "new_request.php");
+    setupClicks("navRequests", "requests.php");
+    setupClicks("navActivity", "activity.php");
     setupClicks("navMembers", "members.php");
     setupClicks("navUserSettings", "user_settings.php");
-    setupClicks("navRequests", "requests.php");
     setupClicks("navLogout", "logout.php");
     setupClicks("navGithub", "https://github.com/danrahn/plexweb", true);
 
@@ -70,14 +71,29 @@
                     return;
                 }
 
-                activityBtn.title = `${response.new == 0 ? "No" : response.new} new activit${response.new == 1 ? "y" : "ies"}`;
+                let title = `${response.new == 0 ? "No" : response.new} new notification${response.new == 1 ? "" : "s"}`;
+                activityBtn.title = title;
                 if (response.new > 0)
                 {
-                    document.getElementById("activityImg").classList.add("newActivity");
+                    document.querySelector("#mainMenu").title = "Menu (Shift + M) - " + title;
+                    document.querySelector("#navActivity").title = `Notifications (${response.new} new, Shift + A)`;
+                    document.querySelectorAll(".activityImg").forEach(function(ele)
+                    {
+                        ele.classList.add("hasNewActivity");
+                    });
+
+                    document.getElementById("activityIndicator").style.display = "block";
                 }
                 else
                 {
-                    document.getElementById("activityImg").classList.remove("newActivity");
+                    document.querySelector("#mainMenu").title = "Menu (Shift + M)";
+                    document.querySelector("#navActivity").title = `Notifications (Shift + A)`;
+                    document.querySelectorAll(".activityImg").forEach(function(ele)
+                    {
+                        ele.classList.remove("hasNewActivity");
+                    });
+
+                    document.getElementById("activityIndicator").style.display = "none";
                 }
 
             }
@@ -145,9 +161,10 @@
         [
         "navHome",
         "navNewRequest",
+        "navRequests",
+        "navActivity",
         "navMembers",
         "navUserSettings",
-        "navRequests",
         "navLogout",
         "navGithub"].forEach((element) => enableSingle(element, enabled));
     }
@@ -211,6 +228,9 @@
                     break;
                 case KEY.S:
                     target = "settings.php";
+                    break;
+                case KEY.A:
+                    target = "activity.php";
                     break;
                 case KEY.M:
                 {

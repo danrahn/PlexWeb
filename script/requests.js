@@ -81,7 +81,7 @@
     /// </summary>
     function buildRequest(request, sortOrder)
     {
-        let holder = buildNode("div", {"class" : "requestHolder"});
+        let holder = buildNode("div", {"class" : "tableEntryHolder"});
 
         let imgHolder = buildNode("div", {"class" : "imgHolder"});
         let imgA = buildNode("a", {"href" : `request.php?id=${request.rid}`});
@@ -91,7 +91,7 @@
 
         let textHolder = buildNode("div", {"class" : "textHolder"});
 
-        let a = buildNode("a", {"class" : "requestTitle", "href" : `request.php?id=${request.rid}`});
+        let a = buildNode("a", {"class" : "tableEntryTitle", "href" : `request.php?id=${request.rid}`});
         a.appendChild(buildNode("span", {}, request.n));
         if (request.t == 1 || request.t == 2)
         {

@@ -4,6 +4,7 @@
         <div class="ham"></div>
         <div class="ham"></div>
         <div class="ham"></div>
+        <div id="activityIndicator"></div>
     </div>
     <div id="navShort">
         <div class="navButton rightbutton" id="navLogoutTop">
@@ -15,12 +16,10 @@
         <div class="navButton rightbutton" id="navSettingsTop" title="Settings (Shift + S)">
             <div class=btnimg><image src='icon/settings.png' alt='Settings' style='filter: invert(80%);margin-top:8px'/></div>
         </div>
+        <div class="navButton rightbutton" id="navActivityTop">
+            <div class=btnImg><image src='icon/bell.png' alt='Activity' class="activityImg" style='margin-top:8px;height:24px'/></div>
+        </div>
     </div>
-    <?php if ($_SESSION['level'] >= 100) { ?>
-    <div class="navButton rightbutton" id="navActivityTop">
-        <div class=btnImg><image src='icon/bell.png' alt='Activity' id="activityImg" style='margin-top:8px;height:24px'/></div>
-    </div>
-<?php } ?>
     <button id="pageName" class="navPageInfo" title="Home (Shift + H)">Plex Web</button>
     <?php
         if ($_SERVER['REQUEST_URI'] != '/plexweb/index.php' &&
@@ -49,6 +48,14 @@
         <button class=btntxt disabled=true>New Request</button>
         <div class=btnimg><image src='icon/new_request.png' alt='NewRequest' style='filter: invert(80%);'/></div>
     </div>
+    <div class="navButton" id="navRequests" title="Requests (Shift + R)">
+        <button class=btntxt disabled=true>Requests</button>
+        <div class=btnimg><image src='icon/requests.png' alt='Requests' style='filter: invert(80%);'/></div>
+    </div>
+    <div class="navButton" id="navActivity" title="Notifications (Shift + A)">
+        <button class=btntxt disabled=true>Notifications</button>
+        <div class=btnimg><image class='activityImg' src='icon/bell.png' alt='Notifications'/></div>
+    </div>
 <?php if (isset($_SESSION['level']) && (int)$_SESSION['level'] >= 100) { ?>
     <div class="navButton" id="navMembers">
         <button class=btntxt disabled=true>Members</button>
@@ -58,10 +65,6 @@
     <div class="navButton rightbutton" id="navUserSettings" title="Settings (Shift + S)">
         <button class=btntxt disabled=true>Settings</button>
         <div class=btnimg><image src='icon/settings.png' alt='Settings' style='filter: invert(80%);'/></div>
-    </div>
-    <div class="navButton" id="navRequests" title="Requests (Shift + R)">
-        <button class=btntxt disabled=true>Requests</button>
-        <div class=btnimg><image src='icon/requests.png' alt='Requests' style='filter: invert(80%);'/></div>
     </div>
     <div class="navButton" id="navLogout">
         <button class=btntxt disabled=true>Logout</button>

@@ -17,10 +17,13 @@ requireSSL();
     <meta name="theme-color" content="#3C5260">
     <title>Activity</title>
 
-    <?php get_css("style", "nav", "request") ?>
+    <?php get_css("style", "nav", "table") ?>
     <style>
-.tableHolder {
-    margin-top: 70px;
+.newActivity {
+    background-color: rgba(63, 100, 69, 0.3);
+}
+.newActivity:hover {
+    background-color: rgba(63, 100, 69, 0.6);
 }
 
     </style>
@@ -32,8 +35,7 @@ requireSSL();
     <div id="plexFrame">
         <?php include "nav.php" ?>
         <div id="container">
-            <div class="tableHolder">
-            </div>
+            <?php include "includes/table.html" ?>
         </div>
     </div>
 </body>
@@ -42,12 +44,16 @@ requireSSL();
 {
     window.addEventListener("load", function()
     {
+        // For now, let people know this is still a work in progress, since it's "good enough"
+        // but still needs some polish
+        $("#currentPage").innerHTML = 'Activity (Work in Progress)';
+
         logVerbose("Getting Activities");
         var http = new XMLHttpRequest();
         http.open('POST', 'process_request.php', true /*async*/);
         http.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
         http.onreadystatechange = loadActivities;
-        http.send('&type=activities');
+        http.send('&type=activities&num=0&page=0&filter=""');
     });
 
     function loadActivities()
@@ -88,75 +94,151 @@ requireSSL();
     function buildActivities(activities, newActivities)
     {
         logVerbose(activities);
-        let table = buildNode("table", {"id" : "activities"});
-        appendHeaders(table);
+        let entries = $("#tableEntries");
+
         for (let i = 0; i < activities.length; ++i, --newActivities)
         {
             let activity = activities[i];
+
+            let holder = buildNode("div", {"class" : "tableEntryHolder"});
+            if (newActivities > 0)
+            {
+                holder.classList.add("newActivity");
+            }
+
+            let imgHolder = buildNode("div", {"class" : "imgHolder"});
+            let imgA = buildNode("a", {"href" : `request.php?id=${activity.rid}`});
+            let img = buildNode("img", {"src" : `poster${activity.poster}`});
+
+            if (activity.value == "ViewStream")
+            {
+                img.src = "poster/viewstream.png";
+            }
+            else if (!activity.poster)
+            {
+                img.src = "poster/moviedefault.png";
+            }
+
+            img.style.height = "80px";
+            imgA.appendChild(img);
+            imgHolder.appendChild(imgA);
+
+            let textHolder = buildNode("div", {"class" : "textHolder"});
+            let span = buildNode("span", {"class" : "tableEntryTitle"});
+
+            let a = buildNode("a", {"href" : `request.php?id=${activity.rid}`});
+
             let name = activity.username == attrib("username") ? "You" : activity.username;
-            let str;
+            let plainText;
+            let linkText;
+
             switch (parseInt(activity.type))
             {
                 case Activity.AddRequest:
                     if (activity.value == "ViewStream")
                     {
-                        str = `${name} requested permission to view active streams`;
+                        plainText = `${name} requested permission to `;
+                        linkText = "view active streams";
                     }
                     else
                     {
-                        str = `${name} added a request for ${activity.value}`;
+                        plainText = `${name} added a request for `;
+                        linkText = activity.value;
                     }
 
-                    appendRow("td", table, str, requestLink(activity.rid, activity.timestamp));
                     break;
                 case Activity.AddComment:
-                    str = `${name} added a comment on the request for ${activity.value}`;
-                    appendRow("td", table, str, requestLink(activity.rid, activity.timestamp));
+                    plainText = `${name} added a comment to the request for `;
+                    linkText = activity.value;
                     break;
                 case Activity.StatusChange:
                     if (activity.username == attrib("username"))
                     {
-                        str = `You changed the status of the request for ${activity.value} to ${activity.status}`;
+                        plainText = `You changed the status of the request for ${activity.value} to `;
+                        linkText = activity.status;
                     }
                     else
                     {
-                        str = `The status of the request for ${activity.value} changed to ${activity.status}`;
+                        plainText = `The status of the request for ${activity.value} changed to `
+                        linkText = activity.status;
                     }
-                    
-                    appendRow("td", table, str, requestLink(activity.rid, activity.timestamp));
+
                     break;
                 default:
+                    plainText = "Error getting activity details. ";
+                    linkText = "Click here to view the request.";
                     logError(activity.type, "Unknown activity type");
+                    break;
             }
+
+            a.appendChild(buildNode("span", {}, linkText));
+            span.appendChild(buildNode("span", {}, plainText));
+            span.appendChild(a);
+        
+            let tooltipDateOptions = { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: 'numeric' };
+            let activityTime = buildNode("span",
+                {"title" : new Date(activity.timestamp).toLocaleDateString('en-US', tooltipDateOptions)},
+                getDisplayDate(new Date(activity.timestamp)));
+
+            textHolder.appendChild(span);
+            textHolder.appendChild(activityTime);
+
+            holder.appendChild(imgHolder);
+            holder.appendChild(textHolder);
+            entries.appendChild(holder);
+        }
+    }
+
+    function attrib(attribute)
+    {
+        return document.body.getAttribute(attribute);
+    }
+
+    /// <summary>
+    /// Determine how long ago a date is from the current time.
+    /// Returns a string of the form "X [time units] ago"
+    /// </summary>
+    function getDisplayDate(date)
+    {
+        let now = new Date();
+        let dateDiff = Math.abs(now - date);
+        let minuteDiff = dateDiff / (1000 * 60);
+        if (minuteDiff < 60)
+        {
+            let minutes = Math.floor(minuteDiff);
+            return `${minutes} minute${minutes == 1 ? "" : "s"} ago`;
+        }
+        
+        let hourDiff = minuteDiff / 60;
+        if (hourDiff < 24)
+        {
+            let hours = Math.floor(hourDiff);
+            return `${hours} hour${hours == 1 ? "" : "s"} ago`;
         }
 
-        document.querySelector(".tableHolder").appendChild(table);
-    }
-
-    function requestLink(rid, text)
-    {
-        return buildNode("a", {"href" : `request.php?id=${rid}`}, text).outerHTML;
-    }
-
-    function attrib(attrib)
-    {
-        return document.body.getAttribute(attrib);
-    }
-
-    function appendHeaders(table)
-    {
-        appendRow("th", table, "Activity", "Timestamp");
-    }
-
-    function appendRow(type, table, ...values)
-    {
-        let row = buildNode("tr");
-        values.forEach(function(value)
+        let dayDiff = hourDiff / 24;
+        if (dayDiff < 7)
         {
-            row.appendChild(buildNode(type, {}, value));
-        });
+            let days = Math.floor(dayDiff);
+            return `${days} day${days == 1 ? "" : "s"} ago`;
+        }
 
-        table.appendChild(row);
+        if (dayDiff <= 28)
+        {
+            // For weeks do some extra approximation, as it's odd to see
+            // "1 week ago" for something created 13 days ago
+            let weeks = Math.floor((dayDiff + 3) / 7);
+            return `${weeks} week${weeks == 1 ? '' : 's'} ago`;
+        }
+
+        if (dayDiff < 365)
+        {
+            let months = (now.getMonth() + (now.getFullYear() != date.getFullYear() ? 12 : 0)) - date.getMonth();
+            return `${months == 0 ? 1 : months} month${months == 1 ? '' : 's'} ago`;
+        }
+
+        let yearDiff = now.getFullYear() - date.getFullYear();
+        return `${yearDiff == 0 ? 1 : yearDiff} year${yearDiff == 1 ? '' : 's'}`;
     }
 
     /// <summary>
@@ -189,7 +271,20 @@ requireSSL();
         return ele;
     }
 
+    /// <summary>
+    /// Extremely basic version of a shorthand query selector
+    /// </summary>
+    function $(selector)
+    {
+        if (selector.indexOf("#") === 0 && selector.indexOf(" ") === -1)
+        {
+            return document.querySelector(selector);
+        }
+
+        return document.querySelectorAll(selector);
+    }
+
 })();
 </script>
-<?php get_js("consolelog", "animate", "nav"); ?>
+<?php get_js("consolelog", "animate", "queryStatus", "nav"); ?>
 </html>

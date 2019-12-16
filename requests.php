@@ -18,38 +18,14 @@ verify_loggedin(TRUE /*redirect*/, "requests.php");
     <title>Plex Requests</title>
 
     <!-- Inline stylesheets to reduce network roundtrip costs -->
-    <?php get_css("style", "nav", "requests"); ?>
+    <?php get_css("style", "nav", "table", "requests"); ?>
 </head>
 
 <body isAdmin="<?= (isset($_SESSION['level']) && $_SESSION['level'] >= 100) ? 1 : 0 ?>">
     <div id="plexFrame">
         <?php include "nav.php" ?>
         <div id="container">
-            <div class="tableHolder">
-                <div id="tableHeader" class="tableHF">
-                    <button class="previousPage" title="Previous Page"><img src="icon/arrow.png" alt="Previous Page" /></button>
-                    <div class="largeShow">
-                        <span>Show:</span>
-                        <button class="perPageButton" value="25">25</button><button class="perPageButton" value="50">50</button><button class="perPageButton" value="100">100</button><button class="perPageButton cap" value="0">All</button>
-                    </div>
-                    <div class="pageStatus">Page <input type="text" class="pageSelect" value="1" title="Select Page"> of <span class="pageCount">1</span></div>
-                    <div class="rightSide">
-                        <button class="filterBtn"><img class="filterImg" src="icon/filter.png" alt="Filter" title="Filter Results" /></button><button class="nextPage" title="Next Page"><img src="icon/arrow.png" alt="Next Page" /></button>
-                    </div>
-                </div>
-                <div id="tableEntries"></div>
-                <div id="tableFooter" class="tableHF">
-                    <button class="previousPage" title="Previous Page"><img src="icon/arrow.png" alt="Previous Page" /></button>
-                    <div class="largeShow">
-                        <span>Show:</span>
-                        <button class="perPageButton" value="25">25</button><button class="perPageButton" value="50">50</button><button class="perPageButton" value="100">100</button><button class="perPageButton cap" value="0">All</button>
-                    </div>
-                    <div class="pageStatus">Page <input type="text" class="pageSelect" value="1" title="Select Page"> of <span class="pageCount">1</span></div>
-                    <div class="rightSide">
-                        <button class="filterBtn"><img class="filterImg" src="icon/filter.png" alt="Filter" title="Filter Results" /></button><button class="nextPage" title="Next Page"><img src="icon/arrow.png" alt="Next Page" /></button>
-                    </div>
-                </div>
-            </div>
+            <?php include "includes/table.html" ?>
         </div>
     </div>
 </body>

@@ -134,16 +134,23 @@
     color: #a1a1a1;
 }
 
-#activityImg {
+.activityImg {
     filter: invert(80%);
 }
 
-#activityImg.newActivity { /* https://codepen.io/sosuke/pen/Pjoqqp */
-    filter: invert(46%) sepia(94%) saturate(6125%) hue-rotate(8deg) brightness(109%) contrast(102%);
+.activityImg.hasNewActivity { /* https://codepen.io/sosuke/pen/Pjoqqp */
+    filter: invert(48%) sepia(61%) saturate(3437%) hue-rotate(351deg) brightness(101%) contrast(101%);
 }
 
-#activityImg.newActivity:hover { /* https://codepen.io/sosuke/pen/Pjoqqp */
-    filter: invert(23%) sepia(71%) saturate(7470%) hue-rotate(5deg) brightness(103%) contrast(102%);
+#activityIndicator {
+    display: none;
+    width: 10px;
+    height: 10px;
+    border-radius: 5px;
+    position: relative;
+    top: -31px;
+    left: 24px;
+    background-color: orangered;
 }
 
 @media all and (orientation: portrait) and (max-width: 767px) {

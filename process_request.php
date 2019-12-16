@@ -102,7 +102,7 @@ function process_request($type)
             $message = get_requests((int)get("num"), (int)get("page"), get("filter"));
             break;
         case "activities":
-            $message = get_activites();
+            $message = get_activites((int)get("num"), (int)get("page"), get("filter"));
             break;
         case "new_activities":
             $message = get_new_activity_count();
@@ -1664,18 +1664,30 @@ function get_new_activity_count()
 /// Get all relevant activites for the current user. If the current user is an admin, return
 /// all activities, otherwise return activities that directly relate to the current user.
 /// </summary>
-function get_activites()
+function get_activites($num, $page, $filter)
 {
     global $db;
+
+    $offset = $num == 0 ? 0 : $num * $page;
     $current_user = $_SESSION['id'];
     $query = "SELECT `type`, `user_id`, `admin_id`, `request_id`, `data`, `timestamp` FROM `activities` ";
 
     if ($_SESSION['level'] < 100)
     {
-        $query .= "WHERE `user_id`=$current_user ";
+        $query .= "WHERE `user_id`=$current_user AND `admin_id` != 0 ";
     }
 
-    $query .= "ORDER BY `timestamp` DESC";
+    $query .= "ORDER BY `timestamp` DESC ";
+
+    if ($num != 0)
+    {
+        $query .= "LIMIT $num ";
+    }
+
+    if ($offset != 0)
+    {
+        $query .= "OFFSET $offset";
+    }
 
     $result = $db->query($query);
     if ($result === FALSE)
@@ -1770,6 +1782,21 @@ function get_activites()
 
         array_push($activities->activities, $activity);
     }
+
+    $query = "SELECT COUNT(*) FROM activities";
+
+    if ($_SESSION['level'] < 100)
+    {
+        $query .= " WHERE `user_id`=$current_user ";
+    }
+
+    $result = $db->query($query);
+    if (!$result)
+    {
+        return db_error();
+    }
+
+    $activities->total = (int)$result->fetch_row()[0];
 
     // Assume if we're processing this request, the user is viewing the activity page and we should
     // update their last seen time. Can't update right when we visit the page, because it will appear

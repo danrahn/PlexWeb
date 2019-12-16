@@ -393,7 +393,7 @@
             if (!found)
             {
                 // An existing session is no longer active, remove it
-                logVerbose("Attempting to remove session " + session.id);
+                logInfo("Attempting to remove session " + session.id);
 
                 if ($("#" + session.id + " .progressHolder")[0].hasAttribute("hovered"))
                 {
@@ -512,7 +512,7 @@
         for (let i = 0; i < newIds.length; ++i)
         {
             const id = newIds[i];
-            logVerbose("Attempting to add session# " + id);
+            logInfo("Attempting to add session " + id);
             let parameters =
             {
                 "type" : 2,
@@ -549,7 +549,7 @@
         }
 
         let totalBitrate = 0;
-        currentSessions.forEach(function(session, index)
+        currentSessions.forEach(function(session)
         {
             let lis = session.querySelectorAll("li");
             totalBitrate += parseInt(lis[lis.length - 1].querySelector("span").innerHTML);
