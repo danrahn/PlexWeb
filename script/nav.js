@@ -104,8 +104,21 @@
         }
     }
 
+    const KEY =  {
+        TAB   : 9,  SPACE : 32,
+        ENTER : 13, SHIFT : 16, CTRL  : 17, ALT   : 18, ESC  : 27,
+        LEFT  : 37, UP    : 38, RIGHT : 39, DOWN  : 40,
+        ZERO  : 48, ONE   : 49, TWO   : 50, THREE : 51, FOUR : 52,
+        FIVE  : 53, SIX   : 54, SEVEN : 55, EIGHT : 56, NINE : 57,
+        A : 65, B : 66, C : 67, D : 68, E : 69, F : 70, G : 71, H : 72,
+        I : 73, J : 74, K : 75, L : 76, M : 77, N : 78, O : 79, P : 80,
+        Q : 81, R : 82, S : 83, T : 84, U : 85, V : 86, W : 87, X : 88,
+        Y : 89, Z : 90, OPEN_BRACKET : 219, CLOSE_BRACKET : 221
+    };
+
     /// <summary>
-    /// If Escape is pressed and the menu is open, dismiss it
+    /// Key listener. Escape dismisses the menu, and various other shortcuts
+    /// to navigate around pages.
     /// </summary>
     window.addEventListener("keydown", function(e) {
         e = e || window.event;
@@ -114,6 +127,46 @@
             let menu = document.getElementById("leftMenu");
             if (menu && menu.style.opacity != 0) {
                 expandContractMenu(menu, false);
+            }
+
+            return;
+        }
+
+        let active = document.activeElement.tagName.toLowerCase();
+        if (active == "textarea" || active == "input")
+        {
+            return;
+        }
+
+        if (e.shiftKey && !e.altKey && !e.ctrlKey)
+        {
+            let target = "";
+            switch (key)
+            {
+                case KEY.H:
+                    target = "index.php";
+                    break;
+                case KEY.R:
+                    target = "requests.php";
+                    break;
+                case KEY.N:
+                    target = "new_request.php";
+                    break;
+                case KEY.S:
+                    target = "settings.php";
+                    break;
+                case KEY.M:
+                {
+                    let menu = document.getElementById("leftMenu");
+                    expandContractMenu(menu, menu.style.opacity == 0);
+                }
+                default:
+                    break;
+            }
+
+            if (target.length > 0)
+            {
+                window.location = target;
             }
         }
     });
