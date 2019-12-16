@@ -104,7 +104,7 @@ function process_request_update($requests)
                     return json_error("Not authorized");
                 }
 
-                if (!update_req_status($req_id, (int)$content, $requester, $contact_info, $request_name))
+                if (!update_req_status($req_id, (int)$content, $requester, $sesh_id, $contact_info, $request_name))
                 {
                     return json_error("Unable to update status");
                 }
@@ -260,7 +260,7 @@ function process_request_update($requests)
 /// <summary>
 /// Updates the status of the given request
 /// </summary>
-function update_req_status($req_id, $status, $requester, &$contact_info, &$request_name)
+function update_req_status($req_id, $status, $requester, $admin_id, &$contact_info, &$request_name)
 {
     global $db;
     $request_query = "SELECT * FROM user_requests WHERE id=$req_id";
@@ -303,6 +303,16 @@ function update_req_status($req_id, $status, $requester, &$contact_info, &$reque
     if (!$db->query($query))
     {
         return FALSE;
+    }
+
+    $data = "{\"status\" : $status}";
+    $query = "INSERT INTO `activities`
+        (`type`, `user_id`, `admin_id`, `request_id`, `data`) VALUES
+        (3, $requester->id, $admin_id, $req_id, '$data')";
+    if (!$db->query($query))
+    {
+        // We basically just have to hope that this succeeds, because we don't
+        // want to cancel the whole operation if this fails.
     }
 
     get_contact_info($requester, $contact_info);

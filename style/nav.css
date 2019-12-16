@@ -27,6 +27,7 @@
     border-left: 2px solid #808080;
     float: right;
     height: 40px;
+    width: 24px;
 }
 
 .navButton:hover, #mainMenu:hover, #pageName:hover {
@@ -131,6 +132,18 @@
 
 #pageName:hover, .pageDetail:hover {
     color: #a1a1a1;
+}
+
+#activityImg {
+    filter: invert(80%);
+}
+
+#activityImg.newActivity { /* https://codepen.io/sosuke/pen/Pjoqqp */
+    filter: invert(46%) sepia(94%) saturate(6125%) hue-rotate(8deg) brightness(109%) contrast(102%);
+}
+
+#activityImg.newActivity:hover { /* https://codepen.io/sosuke/pen/Pjoqqp */
+    filter: invert(23%) sepia(71%) saturate(7470%) hue-rotate(5deg) brightness(103%) contrast(102%);
 }
 
 @media all and (orientation: portrait) and (max-width: 767px) {

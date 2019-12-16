@@ -104,6 +104,9 @@ function process_request($type)
         case "activities":
             $message = get_activites();
             break;
+        case "new_activities":
+            $message = get_new_activity_count();
+            break;
         default:
             return json_error("Unknown request type: " . $type);
     }
@@ -328,7 +331,7 @@ function process_suggestion_new($suggestion, $type, $external_id, $poster)
     $query = "INSERT INTO user_requests (username_id, request_type, request_name, external_id, comment, poster_path) VALUES ($userid, $type, '$suggestion', $external_id, '', '$poster')";
     if (!$db->query($query))
     {
-        return json_error($db->error);
+        return db_error();
     }
 
     // Return the new entry's id
@@ -336,13 +339,20 @@ function process_suggestion_new($suggestion, $type, $external_id, $poster)
     $result = $db->query($query);
     if ($result === FALSE)
     {
-        return json_error($db->error);
+        return db_error();
     }
 
-    $row = $result->fetch_row();
-    send_notifications_if_needed("create", get_user_from_request($row[0]), $suggestion, "", $row[0]);
+    $row = $result->fetch_assoc();
+    $id = $row['id'];
+    send_notifications_if_needed("create", get_user_from_request($id), $suggestion, "", $id);
 
-    return "{ \"req_id\" : " . $row[0] . " }";
+    // Add an entry to the activity table
+    if (!add_create_activity($id, $uid))
+    {
+        return db_error();
+    }
+
+    return "{ \"req_id\" : " . $id . " }";
 }
 
 /// <summary>
@@ -536,10 +546,31 @@ function add_request_comment($req_id, $content)
     $query = "INSERT INTO request_comments (req_id, user_id, content) VALUES ($req_id, $userid, '$content')";
     if (!$db->query($query))
     {
-        return json_error($db->error);
+        return db_error();
     }
 
     send_notifications_if_needed("comment", get_user_from_request($req_id), $req_name, $content, $req_id);
+
+    // Need to get the ID of this comment to add it to the activity table
+    $query = "SELECT `id` FROM request_comments WHERE `req_id`=$req_id AND `user_id`=$userid AND `content`='$content' ORDER BY `timestamp` DESC";
+
+    $result = $db->query($query);
+    if (!$result)
+    {
+        return json_error("Successfully added the comment, but failed to query for it");
+    }
+    else if ($result->num_rows == 0)
+    {
+        return json_error("Successfully added the comment, but now we can't find it");
+    }
+
+    $row = $result->fetch_assoc();
+    $id = $row['id'];
+    if (!add_comment_activity($id, $req_id, $req_userid, $userid))
+    {
+        return db_error();
+        // return json_error("Successfully added the comment, but failed to add it to the activity table");
+    }
 
     return json_success();
 }
@@ -1595,22 +1626,30 @@ function get_poster_path($request)
 }
 
 /// <summary>
-/// Get all relevant activites for the current user. If the current user is an admin, return
-/// all activities, otherwise return activities that directly relate to the current user.
+/// Get the number of new activities since the user last visited the activity page
 /// </summary>
-function get_activites()
+function get_new_activity_count()
 {
     global $db;
+
     $current_user = $_SESSION['id'];
-    $query;
-    if ($_SESSION['level'] >= 100)
+    $query = "SELECT `last_viewed` FROM `activity_status` WHERE `user_id`=$current_user";
+    $active_result = $db->query($query);
+    $last_active = new DateTime('1970-01-01 00:00:00');
+    if ($active_result->num_rows != 0)
     {
-        $query = "SELECT `type`, `user_id`, `admin_id`, `request_id`, `data`, `timestamp` FROM `activities` ORDER BY `timestamp` DESC";
+        $last_active = new DateTime($active_result->fetch_row()[0]);
     }
-    else
+
+    $active_string = $last_active->format('Y-m-d H:i:s');
+    $query = "SELECT `type`, `user_id`, `admin_id`, `request_id`, `data`, `timestamp` FROM `activities` WHERE `timestamp` > '$active_string' ";
+
+    if ($_SESSION['level'] < 100)
     {
-        $query = "SELECT `type`, `user_id`, `admin_id`, `request_id`, `data`, `timestamp` FROM `activities` WHERE `user_id`=$current_user ORDER BY `timestamp` DESC";
+        $query .= "AND `user_id`=$current_user ";
     }
+
+    $query .= "ORDER BY `timestamp` DESC";
 
     $result = $db->query($query);
     if ($result === FALSE)
@@ -1618,10 +1657,51 @@ function get_activites()
         return db_error();
     }
 
+    return "{\"new\" : $result->num_rows}";
+}
+
+/// <summary>
+/// Get all relevant activites for the current user. If the current user is an admin, return
+/// all activities, otherwise return activities that directly relate to the current user.
+/// </summary>
+function get_activites()
+{
+    global $db;
+    $current_user = $_SESSION['id'];
+    $query = "SELECT `type`, `user_id`, `admin_id`, `request_id`, `data`, `timestamp` FROM `activities` ";
+
+    if ($_SESSION['level'] < 100)
+    {
+        $query .= "WHERE `user_id`=$current_user ";
+    }
+
+    $query .= "ORDER BY `timestamp` DESC";
+
+    $result = $db->query($query);
+    if ($result === FALSE)
+    {
+        return db_error();
+    }
+
+    $query = "SELECT `last_viewed` FROM `activity_status` WHERE `user_id`=$current_user";
+    $active_result = $db->query($query);
+    $last_active = new DateTime('1970-01-01 00:00:00');
+    if ($active_result->num_rows != 0)
+    {
+        $last_active = new DateTime($active_result->fetch_row()[0]);
+    }
+
     $activities = new \stdClass();
     $activities->activities = array();
+    $activities->new = 0;
     while ($row = $result->fetch_assoc())
     {
+        $ts = new DateTime($row['timestamp']);
+        if ($ts->getTimestamp() - $last_active->getTimestamp() > 0)
+        {
+            $activities->new++;
+        }
+
         $activity = new \stdClass();
         $activity->type = $row['type'];
         $activity->timestamp = $row['timestamp'];
@@ -1657,7 +1737,7 @@ function get_activites()
         $inner_result->close();
 
         $activity_rid = $row['request_id'];
-        $inner_query = "SELECT `request_name` FROM `user_requests` WHERE `id`=$activity_rid";
+        $inner_query = "SELECT `request_name`, `poster_path` FROM `user_requests` WHERE `id`=$activity_rid";
         $inner_result = $db->query($inner_query);
         if ($inner_result === FALSE)
         {
@@ -1669,31 +1749,69 @@ function get_activites()
             return json_error("Unable to get request name from request id $activity_rid");
         }
 
-        $activity->value = $inner_result->fetch_assoc()['request_name'];
+        $request = $inner_result->fetch_assoc();
+        $activity->value = $request['request_name'];
+        $activity->poster = $request['poster_path'];
         $inner_result->close();
 
         if ($row['type'] == 3) // Status change
         {
             $statuses = array("Pending", "Approved", "Denied", "In Progress", "Waiting");
-            if ($row['data']['status'] >= count($statuses))
+            $data = json_decode($row['data']);
+            if ($data->status >= count($statuses))
             {
                 $activity->status = "Unknown";
             }
             else
             {
-                $activity->status = $statuses[$row['data']['status']];
+                $activity->status = $statuses[$data->status];
             }
-        }
-
-        if ($row['type'] == 2)
-        {
-            // A comment was added, make sure the userid is the id of the person who added the comment
         }
 
         array_push($activities->activities, $activity);
     }
 
+    // Assume if we're processing this request, the user is viewing the activity page and we should
+    // update their last seen time. Can't update right when we visit the page, because it will appear
+    // that we never have new activities.
+    update_last_seen();
     return json_encode($activities);
+}
+
+/// <summary>
+/// Update the 'last seen' activities time so we can correctly show the number of new activities for a user
+/// </summary>
+function update_last_seen()
+{
+    global $db;
+    $uid = $_SESSION['id'];
+    $query = "INSERT INTO `activity_status`
+        (`user_id`, `last_viewed`) VALUES ($uid, NOW())
+        ON DUPLICATE KEY UPDATE `last_viewed`=NOW()";
+    $result = $db->query($query);
+    if ($result === FALSE)
+    {
+        error_and_exit(500, db_error());
+    }
+}
+
+/// <summary>
+/// Adds a create activity to the activity table
+/// </summary>
+function add_create_activity($rid, $uid)
+{
+    global $db;
+    $query = "INSERT INTO `activities` (`type`, `user_id`, `request_id`, `data`) VALUES (1, $uid, $rid, '{}')";
+    return $db->query($query) !== FALSE;
+}
+
+function add_comment_activity($cid, $rid, $ruid, $uid)
+{
+    global $db;
+    $admin_id = ($ruid == $uid ? 0 : $uid);
+    $data = "{\"comment_id\" : $cid}";
+    $query = "INSERT INTO `activities` (`type`, `user_id`, `admin_id`, `request_id`, `data`) VALUES (2, $ruid, $admin_id, $rid, '$data')";
+    return $db->query($query) !== FALSE;
 }
 
 function run_query($endpoint)

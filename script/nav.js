@@ -1,5 +1,7 @@
 (function() {
 
+    getNewActivities();
+
     document.getElementById("mainMenu").addEventListener("click", function() {
         let menu = document.getElementById("leftMenu");
         if (!menu)
@@ -35,6 +37,60 @@
     setupClicks("navRequests", "requests.php");
     setupClicks("navLogout", "logout.php");
     setupClicks("navGithub", "https://github.com/danrahn/plexweb", true);
+
+    /// <summary>
+    /// Get the number of new activities to show
+    /// </summary>
+    function getNewActivities()
+    {
+        let activityBtn = document.getElementById("navActivityTop");
+        if (!activityBtn)
+        {
+            return;
+        }
+
+        let http = new XMLHttpRequest();
+        http.open("POST", "process_request.php", true /*async*/);
+        http.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+        http.onreadystatechange = function()
+        {
+            if (this.readyState != 4 || this.status != 200)
+            {
+                return;
+            }
+
+            try
+            {
+                let response = JSON.parse(this.responseText);
+                logInfo(`${response.new} new activities`);
+
+                if (response.Error)
+                {
+                    logError(response.Error, `Error querying ${url}${queryString}`);
+                    return;
+                }
+
+                activityBtn.title = `${response.new == 0 ? "No" : response.new} new activit${response.new == 1 ? "y" : "ies"}`;
+                if (response.new > 0)
+                {
+                    document.getElementById("activityImg").classList.add("newActivity");
+                }
+                else
+                {
+                    document.getElementById("activityImg").classList.remove("newActivity");
+                }
+
+            }
+            catch (ex)
+            {
+                logError(ex, "Exception");
+                logError(ex.stack);
+                logError(this.responseText, "Response Text");
+            }
+        };
+
+        http.send("&type=new_activities");
+    }
 
     /// <summary>
     /// Shows or hides the menu

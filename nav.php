@@ -16,6 +16,11 @@
             <div class=btnimg><image src='icon/settings.png' alt='Settings' style='filter: invert(80%);margin-top:8px'/></div>
         </div>
     </div>
+    <?php if ($_SESSION['level'] >= 100) { ?>
+    <div class="navButton rightbutton" id="navActivityTop">
+        <div class=btnImg><image src='icon/bell.png' alt='Activity' id="activityImg" style='margin-top:8px;height:24px'/></div>
+    </div>
+<?php } ?>
     <button id="pageName" class="navPageInfo" title="Home (Shift + H)">Plex Web</button>
     <?php
         if ($_SERVER['REQUEST_URI'] != '/plexweb/index.php' &&

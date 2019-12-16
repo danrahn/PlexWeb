@@ -6,25 +6,6 @@ require_once "includes/config.php";
 
 verify_loggedin(TRUE /*redirect*/, "activities.php");
 requireSSL();
-
-update_last_seen();
-
-/// <summary>
-/// Update the 'last seen' activities time so we can correctly show the number of new activities for a user
-/// </summary>
-function update_last_seen()
-{
-    global $db;
-    $uid = $_SESSION['id'];
-    $query = "INSERT INTO `activity_status`
-        (`user_id`, `last_viewed`) VALUES ($uid, NOW())
-        ON DUPLICATE KEY UPDATE `last_viewed`=NOW()";
-    $result = $db->query($query);
-    if ($result === FALSE)
-    {
-        error_and_exit(500, db_error());
-    }
-}
 ?>
 
 <!DOCTYPE html>
@@ -34,7 +15,7 @@ function update_last_seen()
     <link rel="shortcut icon" href="favicon.png">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#3C5260">
-    <title>Activities</title>
+    <title>Activity</title>
 
     <?php get_css("style", "nav", "request") ?>
     <style>
@@ -87,7 +68,7 @@ function update_last_seen()
             }
 
             logVerbose(response, "process_request?type=activities");
-            buildActivities(response.activities);
+            buildActivities(response.activities, response.new);
         }
         catch (ex)
         {
@@ -104,15 +85,14 @@ function update_last_seen()
         StatusChange : 3
     }
 
-    function buildActivities(activities)
+    function buildActivities(activities, newActivities)
     {
         logVerbose(activities);
         let table = buildNode("table", {"id" : "activities"});
         appendHeaders(table);
-        for (let i = 0; i < activities.length; ++i)
+        for (let i = 0; i < activities.length; ++i, --newActivities)
         {
             let activity = activities[i];
-            logVerbose(`Activity UID: ${activity.uid}; Attrib UID: ${attrib("uid")}`);
             let name = activity.username == attrib("username") ? "You" : activity.username;
             let str;
             switch (parseInt(activity.type))
@@ -134,8 +114,17 @@ function update_last_seen()
                     appendRow("td", table, str, requestLink(activity.rid, activity.timestamp));
                     break;
                 case Activity.StatusChange:
-                    str = `${name} changed the status of the request for ${activity.value} to ${activity.status}`;
+                    if (activity.username == attrib("username"))
+                    {
+                        str = `You changed the status of the request for ${activity.value} to ${activity.status}`;
+                    }
+                    else
+                    {
+                        str = `The status of the request for ${activity.value} changed to ${activity.status}`;
+                    }
+                    
                     appendRow("td", table, str, requestLink(activity.rid, activity.timestamp));
+                    break;
                 default:
                     logError(activity.type, "Unknown activity type");
             }
