@@ -258,7 +258,7 @@
             let successFunc = function(response) { processUpdate(response); };
             let failureFunc = function(response)
             {
-                if (response.Error == "Not Authorized")
+                if (response.Error == "Not Authorized" && !$("#goToLogin"))
                 {
                     showRestartSessionOverlay();
                 }
@@ -574,7 +574,7 @@
         // If we have existing sessions, find its place in the list
         for (let i = 0; i < currentSessions.length; ++i)
         {
-            if (!response.paused && currentSessions[i].querySelector(".ppbutton").classList.contains("pause") != -1 ||
+            if ((!response.paused && currentSessions[i].querySelector(".ppbutton").classList.contains("pause")) ||
                 (response.progress / response.duration) * 100 < parseFloat(currentSessions[i].querySelector(".progress").style.width))
             {
                 // Found our position if this item is playing and the next is paused, or this item has less
@@ -793,7 +793,8 @@
     /// </summary>
     function showTooltip(e, text)
     {
-        const left = e.clientX + "px";
+        let max = $("#plexFrame").clientWidth - 180;
+        const left = Math.min(e.clientX, max) + "px";
         const top = (e.clientY + 20) + "px";
         let tooltip = $("#tooltip");
         tooltip.style.left = left;
