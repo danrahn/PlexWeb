@@ -200,6 +200,27 @@ function include_js($file)
     }
 }
 
+function build_js($file, ...$includes)
+{
+    if (try_get("nomin"))
+    {
+        echo "<script>\n" . include_js($file) . "</script>\n\n";
+        foreach ($includes as $include)
+        {
+            echo "<script>\n" . include_js($include) . "</script>\n\n";
+        }
+    }
+    else
+    {
+        echo "<script>!function(){" . include_js($file);
+        foreach ($includes as $include)
+        {
+            echo include_js($include);
+        }
+        echo "}();</script>";
+    }
+}
+
 /// <summary>
 /// Echos the given css files as separate <style>s
 /// </summary>

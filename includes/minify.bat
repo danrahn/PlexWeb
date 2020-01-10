@@ -24,7 +24,7 @@ call terser script/index.js -o min/index.min.js %OPTIONS%
 echo.
 
 echo Minifying requests.js
-call terser script/requests.js -o min/requests.min.js %OPTIONS%
+call terser script/requests.js -o min/requests.min.js %OPTIONS_KEEPTOP%
 echo.
 
 echo Minifying request.js
@@ -45,6 +45,14 @@ echo.
 
 echo Minifying register.js
 call terser script/register.js -o min/register.min.js %OPTIONS%
+echo.
+
+echo Minifying activity.js
+call terser script/activity.js -o min/activity.min.js %OPTIONS_KEEPTOP%
+echo.
+
+echo Minifying tableCommon.js
+call terser script/tableCommon.js -o min/tableCommon.min.js %OPTIONS_KEEPTOP%
 echo.
 
 echo Done!
