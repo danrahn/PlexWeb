@@ -347,7 +347,7 @@ function process_suggestion_new($suggestion, $type, $external_id, $poster)
     send_notifications_if_needed("create", get_user_from_request($id), $suggestion, "", $id);
 
     // Add an entry to the activity table
-    if (!add_create_activity($id, $uid))
+    if (!add_create_activity($id, $userid))
     {
         return db_error();
     }
@@ -1670,14 +1670,51 @@ function get_activites($num, $page, $filter)
 
     $offset = $num == 0 ? 0 : $num * $page;
     $current_user = $_SESSION['id'];
+    $filter = json_decode($filter);
     $query = "SELECT `type`, `user_id`, `admin_id`, `request_id`, `data`, `timestamp` FROM `activities` ";
+
+    $filter_string = "";
 
     if ($_SESSION['level'] < 100)
     {
-        $query .= "WHERE `user_id`=$current_user AND `admin_id` != 0 ";
+        $filter_string .= "WHERE `user_id`=$current_user ";
+        if (!$filter->type->mine)
+        {
+            $filter_string .= "AND `admin_id` != 0 ";
+        }
+    }
+    else
+    {
+        $filter_string .= " WHERE 1 ";
+        if (!$filter->type->mine)
+        {
+            $filter_string .= "AND `admin_id` != $current_user AND `user_id` != $current_user ";
+        }
+        
+        if ($filter->user != -1)
+        {
+            $filter_string .= "AND `user_id` = $filter->user ";
+        }
     }
 
-    $query .= "ORDER BY `timestamp` DESC ";
+    if (!$filter->type->new)
+    {
+        $filter_string .= "AND `type` != 1 ";
+    }
+
+    if (!$filter->type->comment)
+    {
+        $filter_string .= "AND `type` != 2 ";
+    }
+
+    if (!$filter->type->status)
+    {
+        $filter_string .= "AND `type` != 3 ";
+    }
+
+    $query .= $filter_string;
+
+    $query .= "ORDER BY `timestamp` " . $filter->order . " ";
 
     if ($num != 0)
     {
@@ -1706,6 +1743,7 @@ function get_activites($num, $page, $filter)
     $activities = new \stdClass();
     $activities->activities = array();
     $activities->new = 0;
+    $activities->count = $result->num_rows;
     while ($row = $result->fetch_assoc())
     {
         $ts = new DateTime($row['timestamp']);
@@ -1783,7 +1821,7 @@ function get_activites($num, $page, $filter)
         array_push($activities->activities, $activity);
     }
 
-    $query = "SELECT COUNT(*) FROM activities";
+    $query = "SELECT COUNT(*) FROM activities " . $filter_string;
 
     if ($_SESSION['level'] < 100)
     {
