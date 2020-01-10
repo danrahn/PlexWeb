@@ -107,6 +107,9 @@ function process_request($type)
         case "new_activities":
             $message = get_new_activity_count();
             break;
+        case "log_err":
+            $message = log_error(get("error"), get("stack"));
+            break;
         default:
             return json_error("Unknown request type: " . $type);
     }
@@ -1889,6 +1892,19 @@ function run_query($endpoint)
     $return = curl_exec($ch);
     curl_close($ch);
     return $return;
+}
+
+function log_error($error, $stack)
+{
+    global $db;
+    $query = "INSERT INTO `js_errors` (`error`, `stack`) VALUES ('$error', '$stack')";
+    $result = $db->query($query);
+    if ($result)
+    {
+        return json_success();
+    }
+
+    return db_error();
 }
 
 /// <summary>

@@ -79,27 +79,27 @@ function setTrace(trace) {
     g_traceLogging = trace;
 }
 
-function logTmi(obj, description) {
-    log(obj, description, LOG.Tmi);
+function logTmi(obj, description, freeze) {
+    log(obj, description, freeze, LOG.Tmi);
 }
 
-function logVerbose(obj, description) {
-    log(obj, description, LOG.Verbose);
+function logVerbose(obj, description, freeze) {
+    log(obj, description, freeze, LOG.Verbose);
 }
 
-function logInfo(obj, description) {
-    log(obj, description, LOG.Info);
+function logInfo(obj, description, freeze) {
+    log(obj, description, freeze, LOG.Info);
 }
 
-function logWarn(obj, description) {
-    log(obj, description, LOG.Warn);
+function logWarn(obj, description, freeze) {
+    log(obj, description, freeze, LOG.Warn);
 }
 
-function logError(obj, description) {
-    log(obj, description, LOG.Error);
+function logError(obj, description, freeze) {
+    log(obj, description, freeze, LOG.Error);
 }
 
-function log(obj, description, level) {
+function log(obj, description, freeze, level) {
     if (level < g_logLevel) {
         return;
     }
@@ -114,7 +114,8 @@ function log(obj, description, level) {
     let d = getTimestring();
     let colors = g_traceLogging ? g_traceColors : g_levelColors;
     let typ = (obj) => typeof(obj) == "string" ? "%s" : "%o";
-    let curState = (obj) => typeof(obj) == "string" ? obj : JSON.parse(JSON.stringify(obj));
+
+    let curState = (obj) => typeof(obj) == "string" ? obj : freeze ? JSON.parse(JSON.stringify(obj)) : obj;
     if (g_logLevel === LOG.Extreme) {
         print(
             console.log,
@@ -131,5 +132,15 @@ function log(obj, description, level) {
 
         let d = new Date();
         return `${d.getFullYear()}.${z(d.getMonth()+1)}.${z(d.getDate())} ${z(d.getHours())}:${z(d.getMinutes())}:${z(d.getSeconds())}.${z(d.getMilliseconds(),3)}`;
+    };
+
+    if (level > LOG.Warn)
+    {
+        // Don't worry about the result, just try to log the error
+        freeze = true;
+        let http = new XMLHttpRequest();
+        http.open("POST", "process_request.php", true);
+        http.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+        http.send(`&type=log_err&error=${encodeURIComponent(curState(obj))}&stack=${encodeURIComponent(Error().stack)}`);
     }
 }
