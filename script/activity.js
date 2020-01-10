@@ -15,7 +15,18 @@ window.addEventListener("load", function()
 function getActivities()
 {
     let parameters = { "type" : "activities", "num" : getPerPage(), "page" : getPage(), "filter" : JSON.stringify(getFilter()) };
-    sendHtmlJsonRequest("process_request.php", parameters, buildActivities);
+    let successFunc = function(message)
+    {
+        clearElement("tableEntries");
+        buildActivities(message);
+    }
+
+    let failureFunc = function()
+    {
+        displayInfoMessage("Error loading activities. Pleases trya again later. If this problem persists, contact the site administrator");
+    };
+
+    sendHtmlJsonRequest("process_request.php", parameters, successFunc, failureFunc);
 }
 
 const Activity =
@@ -25,21 +36,25 @@ const Activity =
     StatusChange : 3
 }
 
-function buildActivities(activities, newActivities)
+function buildActivities(response)
 {
-    if (activities.count == 0)
+    if (response.count == 0)
     {
         logWarn("No results, likely due to bad page index or filter");
         displayInfoMessage("No requests found with the current filter");
         return;
     }
 
-    logVerbose(activities);
+    let activities = response.activities;
+    let newActivities = response.new;
+    let total = response.total;
+
+    logVerbose(response);
     let entries = $("#tableEntries");
 
-    for (let i = 0; i < activities.activities.length; ++i, --newActivities)
+    for (let i = 0; i < activities.length; ++i, --newActivities)
     {
-        let activity = activities.activities[i];
+        let activity = activities[i];
 
         let holder = buildNode("div", {"class" : "tableEntryHolder"});
         if (newActivities > 0)
@@ -129,7 +144,7 @@ function buildActivities(activities, newActivities)
         entries.appendChild(holder);
     }
 
-    setPageInfo(activities.total);
+    setPageInfo(total);
 }
 
 function attrib(attribute)
