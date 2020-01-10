@@ -19,7 +19,6 @@ This repository contains (most of) the source code for danrahn.com/plexweb. Some
 ## TODOs
 
 Some random ideas:
-1. Better file naming (`script.js`, really?)
-2. Better CSS management - don't shove everything into `style.css`, and avoid inlining when it makes sense
-3. General cleanup - consistent style/comments. Shorten some functions in `script.js`
-4. Web notifications - alert the user when they log in if changes have been made since their last visit
+1. Better CSS management - don't shove everything into `style.css`, and avoid inlining when it makes sense
+2. General cleanup - consistent style/comments. Shorten some functions in `script.js`
+3. Detect subtitle usage and report in active streams
