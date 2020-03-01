@@ -196,7 +196,7 @@ function include_js($file)
     }
     else
     {
-        return file_get_contents("script/" . $file . ".js");
+        return "/* $file */\n" . file_get_contents("script/" . $file . ".js");
     }
 }
 
@@ -204,10 +204,10 @@ function build_js($file, ...$includes)
 {
     if (try_get("nomin"))
     {
-        echo "<script>\n" . include_js($file) . "</script>\n\n";
+        echo "<script>/* $file */\n" . include_js($file) . "</script>\n\n";
         foreach ($includes as $include)
         {
-            echo "<script>\n" . include_js($include) . "</script>\n\n";
+            echo "<script>/* $include */\n" . include_js($include) . "</script>\n\n";
         }
     }
     else
