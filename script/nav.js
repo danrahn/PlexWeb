@@ -14,7 +14,7 @@
 
     document.getElementById("mainMenu").addEventListener("keyup", function(e) {
         let menu = document.getElementById("leftMenu");
-        if (!menu || e.keyCode != 13) {
+        if (!menu || (e.keyCode != 13 /*enter*/ && e.keyCode != 32/*space*/)) {
             return;
         }
 

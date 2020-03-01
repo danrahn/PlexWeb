@@ -27,7 +27,7 @@ function getRequests()
     let failureFunc = function()
     {
         displayInfoMessage("Error loading requests. Please try again later. If this problem persists, contact the site administrator");
-    }
+    };
 
     sendHtmlJsonRequest("process_request.php", parameters, successFunc, failureFunc);
 }
@@ -86,7 +86,7 @@ function buildRequest(request, sortOrder)
     imgA.appendChild(img);
     imgHolder.appendChild(imgA);
 
-    let textHolder = buildNode("div", {"class" : "textHolder"});
+    let textHolder = buildNode("div", {"class" : "textHolder"/*, "style" : "max-width: calc(100% - 100px)"*/});
 
     let a = buildNode("a", {"class" : "tableEntryTitle", "href" : `request.php?id=${request.rid}`});
     a.appendChild(buildNode("span", {}, request.n));
@@ -152,6 +152,7 @@ function buildRequest(request, sortOrder)
 
     holder.appendChild(imgHolder);
     holder.appendChild(textHolder);
+    logTmi(holder, "Built Item", false);
     return holder;
 }
 

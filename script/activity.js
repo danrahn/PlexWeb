@@ -79,7 +79,7 @@ function buildActivities(response)
         imgA.appendChild(img);
         imgHolder.appendChild(imgA);
 
-        let textHolder = buildNode("div", {"class" : "textHolder"});
+        let textHolder = buildNode("div", {"class" : "textHolder"/*, "style": "max-width: calc(100% - 70px"*/});
         let span = buildNode("span", {"class" : "tableEntryTitle"});
 
         let a = buildNode("a", {"href" : `request.php?id=${activity.rid}`});

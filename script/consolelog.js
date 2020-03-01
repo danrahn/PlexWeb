@@ -37,17 +37,17 @@ if (isNaN(g_logLevel)) {
     g_logLevel = LOG.Info;
 }
 
+let g_traceLogging = parseInt(localStorage.getItem("logtrace"));
+if (isNaN(g_traceLogging)) {
+    g_traceLogging = 0;
+}
+
 let g_darkConsole = parseInt(localStorage.getItem("darkconsole"));
 if (isNaN(g_darkConsole)) {
     logInfo("Welcome to the console!");
     logInfo("For best debugging results, set whether you're using a light or dark themed console via setDarkConsole(isDark), ");
     logInfo("where isDark is 1 (true) or 0 (false)");
     g_darkConsole = 0;
-}
-
-let g_traceLogging = parseInt(localStorage.getItem("logtrace"));
-if (isNaN(g_traceLogging)) {
-    g_traceLogging = 0;
 }
 
 /*testAll = function()
@@ -115,7 +115,7 @@ function log(obj, description, freeze, level) {
     let colors = g_traceLogging ? g_traceColors : g_levelColors;
     let typ = (obj) => typeof(obj) == "string" ? "%s" : "%o";
 
-    let curState = (obj) => typeof(obj) == "string" ? obj : freeze ? JSON.parse(JSON.stringify(obj)) : obj;
+    let curState = (obj, str=0) => typeof(obj) == "string" ? obj : str ? JSON.stringify(obj) : freeze ? JSON.parse(JSON.stringify(obj)) : obj;
     if (g_logLevel === LOG.Extreme) {
         print(
             console.log,
@@ -141,6 +141,7 @@ function log(obj, description, freeze, level) {
         let http = new XMLHttpRequest();
         http.open("POST", "process_request.php", true);
         http.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
-        http.send(`&type=log_err&error=${encodeURIComponent(curState(obj))}&stack=${encodeURIComponent(Error().stack)}`);
+        let encode = encodeURIComponent;
+        http.send(`&type=log_err&error=${encode(curState(obj, 1))}&stack=${encode(Error().stack)}`);
     }
 }

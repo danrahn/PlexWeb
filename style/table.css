@@ -272,6 +272,10 @@ option {
     #filterContainer {
         margin-top: 25vh;
     }
+
+    .textHolder {
+        max-width: calc(100% - 100px);
+    }
 }
 
 /* Mobile/portrait mode */

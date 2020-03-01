@@ -120,6 +120,13 @@ CREATE TABLE `activity_status` (
  UNIQUE KEY `user_id` (`user_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci
 
+CREATE TABLE `js_errors` (
+ `id` int(11) NOT NULL AUTO_INCREMENT,
+ `error` text COLLATE utf8_unicode_ci NOT NULL,
+ `stack` text COLLATE utf8_unicode_ci NOT NULL,
+ `timestamp` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci
 
 # Triggers
 CREATE TRIGGER `UpdateCommentCount` AFTER INSERT ON `request_comments`

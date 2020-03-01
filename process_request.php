@@ -1809,7 +1809,7 @@ function get_activites($num, $page, $filter)
 
         if ($row['type'] == 3) // Status change
         {
-            $statuses = array("Pending", "Approved", "Denied", "In Progress", "Waiting");
+            $statuses = array("Pending", "Complete", "Denied", "In Progress", "Waiting");
             $data = json_decode($row['data']);
             if ($data->status >= count($statuses))
             {
