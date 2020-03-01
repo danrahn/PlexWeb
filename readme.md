@@ -1,6 +1,6 @@
 # Plex Web
 
-This repository contains (most of) the source code for danrahn.com/plexweb. Some things to note:
+This repository contains (most of) the source code for danrahn.com/plex. Some things to note:
 
 1. This is running using Wamp64 - Apache+PHP+MySQL
 2. Within the `includes/` folder, the following structure is required:

@@ -10,11 +10,11 @@
         <div class="navButton rightbutton" id="navLogoutTop">
             <div class=btnimg><image src='icon/logout.png' alt='Logout' style='filter: invert(80%);margin-top:8px'/></div>
         </div>
-        <div class="navButton rightbutton" id="navRequestsTop" title="Requests (Ctrl + R)">
-            <div class=btnimg><image src='icon/requests.png' alt='Requests' style='filter: invert(80%);margin-top:8px'/></div>
-        </div>
         <div class="navButton rightbutton" id="navSettingsTop" title="Settings (Shift + S)">
             <div class=btnimg><image src='icon/settings.png' alt='Settings' style='filter: invert(80%);margin-top:8px'/></div>
+        </div>
+        <div class="navButton rightbutton" id="navRequestsTop" title="Requests (Ctrl + R)">
+            <div class=btnimg><image src='icon/requests.png' alt='Requests' style='filter: invert(80%);margin-top:8px'/></div>
         </div>
         <div class="navButton rightbutton" id="navActivityTop">
             <div class=btnImg><image src='icon/bell.png' alt='Activity' class="activityImg" style='margin-top:8px;height:24px'/></div>
@@ -22,8 +22,8 @@
     </div>
     <button id="pageName" class="navPageInfo" title="Home (Shift + H)">Plex Web</button>
     <?php
-        if ($_SERVER['REQUEST_URI'] != '/plexweb/index.php' &&
-            $_SERVER['REQUEST_URI'] != '/plexweb/')
+        if ($_SERVER['REQUEST_URI'] != '/plex/index.php' &&
+            $_SERVER['REQUEST_URI'] != '/plex/')
         {
             $location = $_SERVER['REQUEST_URI'];
             $start = strrpos($location, '/') + 1;

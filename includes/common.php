@@ -248,7 +248,7 @@ function error_and_exit($status, $message='')
 
     $_GET['r'] = $status;
     $_GET['m'] = $message;
-    $_SERVER['REDIRECT_URL'] = "plexweb/get_status.php";
+    $_SERVER['REDIRECT_URL'] = "plex/get_status.php";
     include "C:/wamp64/www/error.php";
     exit;
 }
@@ -381,7 +381,7 @@ abstract class RequestType
 /// </summary>
 function send_email_forget($to, $content, $subject)
 {
-    $url = "http://127.0.0.1/plexweb/includes/send_email.php";
+    $url = "http://127.0.0.1/plex/includes/send_email.php";
 
     $data = http_build_query(array("to" => $to, "content" => $content, "subject" => $subject));
     $parts = parse_url($url);

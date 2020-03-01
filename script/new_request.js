@@ -432,7 +432,7 @@
 
         let successFunc = function(response)
         {
-            window.location.href = "https://danrahn.com/plexweb/request.php?id=" + response.req_id;
+            window.location.href = "https://danrahn.com/plex/request.php?id=" + response.req_id;
         }
         let failureFunc = function()
         {
