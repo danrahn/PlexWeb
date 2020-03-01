@@ -4,7 +4,7 @@ session_start();
 require_once "includes/common.php";
 require_once "includes/config.php";
 
-verify_loggedin(TRUE /*redirect*/, "activities.php");
+verify_loggedin(TRUE /*redirect*/, "activity.php");
 requireSSL();
 ?>
 
