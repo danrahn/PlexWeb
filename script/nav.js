@@ -36,6 +36,7 @@
     setupClicks("navActivity", "activity.php");
     setupClicks("navMembers", "members.php");
     setupClicks("navUserSettings", "user_settings.php");
+    setupClicks("navAdmin", "administration.php");
     setupClicks("navLogout", "logout.php");
     setupClicks("navGithub", "https://github.com/danrahn/plexweb", true);
 
@@ -71,7 +72,7 @@
                     return;
                 }
 
-                let title = `${response.new == 0 ? "No" : response.new} new notification${response.new == 1 ? "" : "s"}`;
+                let title = `${response.new == 0 ? "No" : response.new} new notification${response.new == 1 ? "" : "s"} (Shift + A)`;
                 activityBtn.title = title;
                 if (response.new > 0)
                 {
@@ -165,6 +166,7 @@
         "navActivity",
         "navMembers",
         "navUserSettings",
+        "navAdmin",
         "navLogout",
         "navGithub"].forEach((element) => enableSingle(element, enabled));
     }

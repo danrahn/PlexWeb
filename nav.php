@@ -7,7 +7,7 @@
         <div id="activityIndicator"></div>
     </div>
     <div id="navShort">
-        <div class="navButton rightbutton" id="navLogoutTop">
+        <div class="navButton rightbutton" id="navLogoutTop" title="Logout">
             <div class=btnimg><image src='icon/logout.png' alt='Logout' style='filter: invert(80%);margin-top:8px'/></div>
         </div>
         <div class="navButton rightbutton" id="navSettingsTop" title="Settings (Shift + S)">
@@ -66,6 +66,12 @@
         <button class=btntxt disabled=true>Settings</button>
         <div class=btnimg><image src='icon/settings.png' alt='Settings' style='filter: invert(80%);'/></div>
     </div>
+<?php if (isset($_SESSION['level']) && (int)$_SESSION['level'] >= 100) { ?>
+    <div class="navButton rightbutton" id="navAdmin" title="Admin">
+        <button class=btntxt disabled=true>Admin</button>
+        <div class=btnimg><image src='icon/admin.png' alt='Admin' style='filter: invert(80%);'/></div>
+    </div>
+<?php } ?>
     <div class="navButton" id="navLogout">
         <button class=btntxt disabled=true>Logout</button>
         <div class=btnimg><image src='icon/logout.png' alt='Logout' style='filter: invert(80%);'/></div>

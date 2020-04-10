@@ -129,6 +129,7 @@ function process_request_update($requests)
             $data->kind = $kind;
             $data->content = $content;
             $data->request = $request_name;
+            $data->request_id = $req_id;
             array_push($alerts[$contact->email]->messages, $data);
         }
     }
@@ -182,7 +183,7 @@ function process_request_update($requests)
                                 break;
 
                         }
-                        $text .= "The status of your request for " . $message->request . " has changed: " . $status . $end;
+                        $text .= "The status of your request for " . $message->request . " has changed: " . $status . " - https://plex.danrahn.com/request.php?id=" . $message->request_id . $end;
                         break;
                     default:
                         return json_error("Error sending notifications");
