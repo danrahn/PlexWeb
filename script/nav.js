@@ -23,6 +23,7 @@
 
     setupClicks("pageName", "index.php");
     setupClicks("backToRequests", "requests.php");
+    setupClicks("backToAdmin", "administration.php");
     setupClicks("currentPage", document.getElementById("navholder").getAttribute("currentPage"));
 
     setupClicks("navLogoutTop", "logout.php");

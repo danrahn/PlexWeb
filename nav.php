@@ -34,6 +34,10 @@
     <div class="navPageInfo">&#x2192;</div>
     <button class="navPageInfo pageDetail" id="backToRequests">Requests</button>
     <?php } ?>
+    <?php if ($location == "Library" || $location == "Password Reset") { ?>
+    <div class="navPageInfo">&#x2192;</div>
+    <button class="navPageInfo pageDetail" id="backToAdmin">Administration</button>
+    <?php } ?>
     <div class="navPageInfo">&#x2192;</div>
     <button class="navPageInfo pageDetail" id="currentPage"><?= $location ?></button>
     <?php } ?>

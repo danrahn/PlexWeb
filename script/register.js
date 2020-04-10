@@ -41,11 +41,13 @@
                                 {
                                     // It's available!
                                     username.style.backgroundColor = "rgb(63, 100, 69)";
+                                    username.title = "Username available";
                                 }
                                 else
                                 {
                                     // It exists!
                                     username.style.backgroundColor = "rgb(100, 66, 69)";
+                                    username.title = "Username already exists";
                                 }
                             }
                         }

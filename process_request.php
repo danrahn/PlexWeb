@@ -118,6 +118,9 @@ function process_request($type)
         case "reset_password":
             $message = reset_password(get("token"), get("password"), get("confirm"));
             break;
+        case "forgot_password_admin":
+            $message = forgot_password_admin(get("username"), get("email"));
+            break;
         default:
             return json_error("Unknown request type: " . $type);
     }
@@ -1923,6 +1926,9 @@ function log_error($error, $stack)
     return db_error();
 }
 
+/// <summary>
+/// Sets up a reset token for the given user
+/// </summary>
 function forgot_password($username)
 {
     global $db;
@@ -1999,6 +2005,9 @@ function forgot_password($username)
     return '{ "Method" : ' . $method . ' }';
 }
 
+/// <summary>
+/// Resets the password for the user identified by the given token, assuming it's valid
+/// </summary>
 function reset_password($token, $password, $confirm)
 {
     global $db;
@@ -2049,6 +2058,41 @@ function reset_password($token, $password, $confirm)
     }
 
     $query = "UPDATE `password_reset` SET `used`=1 WHERE token='$token'";
+
+    return json_success();
+}
+
+/// <summary>
+/// Allows an administrator to send a reset link for an arbitrary username to
+/// an arbitrary email address. Much fewer safeguards as forgot_password
+/// </summary>
+function forgot_password_admin($username, $email)
+{
+    if ($_SESSION['level'] < 100)
+    {
+        return json_error("You can't do that!");
+    }
+
+    global $db;
+    $user_normalized = $db->real_escape_string(strtolower($username));
+    $query = "SELECT id FROM users WHERE `username_normalized`='$user_normalized'";
+    $result = $db->query($query);
+    if (!$result || $result->num_rows === 0)
+    {
+        return json_error("User does not exist!");
+    }
+
+    $id = $result->fetch_row()[0];
+    $token = bin2hex(random_bytes(10));
+    $query = "INSERT INTO `password_reset` (`user_id`, `token`) VALUES ($id, '$token')";
+    $result = $db->query($query);
+    if (!$result)
+    {
+        return db_error();
+    }
+
+    $message = "Hello, $username. You recently requested a password reset at plex.danrahn.com. Click the following link to reset your password: https://plex.danrahn.com/reset?token=$token\n\nIf you did not request a password reset, you can ignore this message.";
+    send_email_forget($email, $message, "Password Reset");
 
     return json_success();
 }

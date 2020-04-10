@@ -111,9 +111,9 @@ function validate_request($token)
 
 <div id="plexFrame">
     <div id="container">
-        <div id="login" class="formContainer">
+        <div id="reset" class="formContainer">
             <div class="formTitle">Password Reset<span style="float: right; font-size: smaller">(<a href="login.php">Login</a>)</span></div>
-            <form id="loginForm">
+            <form id="resetForm">
                 <hr />
                 <div class="formInput"><label for="password">New Password: </label><input type="password" name="password" id="password"></div>
                 <div class="formInput"><label for="confirm">Confirm Password: </label><input type="password" name="confirm" id="confirm"></div>
