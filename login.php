@@ -30,11 +30,12 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === TRUE)
         <div id="login" class="formContainer">
             <div class="formTitle">Login (<a href="register.php">register</a>)</div>
             <form id="loginForm">
+                <hr />
                 <div class="formInput"><label for="username">Username: </label><input type="text" name="username" id="username"></div>
-                <hr />
                 <div class="formInput"><label for="password">Password: </label><input type="password" name="password" id="password"></div>
+                <div class="formInput"><input type="button" value="Login" id="go" style="padding:5px"></input></div>
                 <hr />
-                <div class="formInput"><input type="button" value="Login" id="go"></input></div>
+                <div><a href="forgot.php" style="float:right; font-size: smaller">Forgot your password?</a></div>
             </form>
         </div>
         <div id="formStatus" class="formContainer"></div>

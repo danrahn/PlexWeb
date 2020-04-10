@@ -20,6 +20,8 @@ switch ($type)
     case "check_username":
     case "login":
     case "register":
+    case "forgot_password":
+    case "reset_password":
         break;
     default:
         session_start();
@@ -109,6 +111,12 @@ function process_request($type)
             break;
         case "log_err":
             $message = log_error(get("error"), get("stack"));
+            break;
+        case "forgot_password":
+            $message = forgot_password(get("username"));
+            break;
+        case "reset_password":
+            $message = reset_password(get("token"), get("password"), get("confirm"));
             break;
         default:
             return json_error("Unknown request type: " . $type);
@@ -827,28 +835,36 @@ function send_notifications_if_needed($type, $requester, $req_name, $content, $r
     return json_success();
 }
 
+function get_phone_email($phone, $carrier, &$error)
+{
+    $error = FALSE;
+    switch ($carrier)
+    {
+        case "verizon":
+            return $phone . "@vzwpix.com";
+        case "tmobile":
+            return $phone . "@tmomail.net";
+        case "att":
+            return $phone . "@mms.att.net";
+        case "sprint":
+            return $phone . "@pm.sprint.com";
+        default:
+            $error = TRUE;
+            return "";
+    }
+}
+
 function send_notification($requester, $text, $email)
 {
     if ($requester->info->phone_alerts && $requester->info->phone != 0)
     {
         $to = "";
         $phone = $requester->info->phone;
-        switch ($requester->info->carrier)
+        $error = FALSE;
+        $to = get_phone_email($phone, $requester->info->carrier, $error);
+        if ($error)
         {
-            case "verizon":
-                $to = $phone . "@vzwpix.com";
-                break;
-            case "tmobile":
-                $to = $phone . "@tmomail.net";
-                break;
-            case "att":
-                $to = $phone . "@mms.att.net";
-                break;
-            case "sprint":
-                $to = $phone . "@pm.sprint.com";
-                break;
-            default:
-                return json_error("Unknown carrier: " . $requester->info->carrier);
+            return json_error("Unknown carrier: " . $requester->info->carrier);
         }
 
         $subject = "";
@@ -1905,6 +1921,136 @@ function log_error($error, $stack)
     }
 
     return db_error();
+}
+
+function forgot_password($username)
+{
+    global $db;
+    $user_normalized = $db->real_escape_string(strtolower($username));
+    $query = "SELECT id FROM users WHERE `username_normalized`='$user_normalized'";
+    $result = $db->query($query);
+    if (!$result || $result->num_rows === 0)
+    {
+        return '{ "Method" : -1 }';
+    }
+
+    $id = (int)$result->fetch_row()[0];
+    $result->close();
+
+    $query = "SELECT `used`, CONVERT_TZ(timestamp, @@session.time_zone, '+00:00') AS `utc_timestamp` FROM `password_reset` WHERE user_id=$id ORDER BY `timestamp` DESC";
+    $result = $db->query($query);
+    if ($result && $result->num_rows > 0)
+    {
+        $row = $result->fetch_assoc();
+        $diff = (new DateTime(date("Y-m-d H:i:s")))->getTimestamp() - (new DateTime($row['utc_timestamp']))->getTimestamp();
+        if ($diff < 5 * 60)
+        {
+            return '{ "Method" : 3 }';
+        }
+
+        if ($diff < 20 * 60 && (int)$row['used'] == 1)
+        {
+            return '{ "Method" : 3 }';
+        }
+    }
+
+    $query = "SELECT * FROM user_info WHERE userid=$id";
+    $result = $db->query($query);
+    if (!$result)
+    {
+        return '{ "Method" : 0 }';
+    }
+
+    $info = $result->fetch_assoc();
+    $method = 0;
+    $email = "";
+    if ((int)$info['phone'] != 0)
+    {
+        $method = 1;
+        $error = FALSE;
+        $email = get_phone_email($info['phone'], $info['carrier'], $error);
+        if ($error)
+        {
+            return '{ "Method" : 4 }';
+        }
+    }
+    else if ($info['email'] != NULL)
+    {
+        $method = 2;
+        $email = $info['email'];
+    }
+
+    if ($method == 0)
+    {
+        return '{ "Method" : 0 }';
+    }
+
+    $token = bin2hex(random_bytes(10));
+    $query = "INSERT INTO `password_reset` (`user_id`, `token`) VALUES ($id, '$token')";
+    $result = $db->query($query);
+    if (!$result)
+    {
+        return '{ "Method" : 4 }';
+    }
+
+    $message = "Hello, $username. You recently requested a password reset at plex.danrahn.com. Click the following link to reset your password: https://plex.danrahn.com/reset?token=$token\n\nIf you did not request a password reset, you can ignore this message.";
+    send_email_forget($email, $message, "Password Reset");
+
+    return '{ "Method" : ' . $method . ' }';
+}
+
+function reset_password($token, $password, $confirm)
+{
+    global $db;
+    if ($password != $confirm)
+    {
+        return json_error("Passwords don't match!");
+    }
+
+    $query = "SELECT `user_id`, `used`, CONVERT_TZ(timestamp, @@session.time_zone, '+00:00') AS `utc_timestamp` FROM `password_reset` WHERE `token`='$token'";
+
+    $result = $db->query($query);
+    if (!$result || $result->num_rows != 1)
+    {
+        return json_error("Invalid token, please go through the reset process again.");
+    }
+
+    $row = $result->fetch_assoc();
+    $id = $row['user_id'];
+    $diff = (new DateTime(date("Y-m-d H:i:s")))->getTimestamp() - (new DateTime($row['utc_timestamp']))->getTimestamp();
+    if ($diff < 0 || $diff > 20 * 60)
+    {
+        return json_error("Token expired");
+    }
+
+    if ((int)$row['used'] == 1)
+    {
+        return json_error("This token has already been used to reset your password.");
+    }
+
+    $query = "SELECT `token` FROM `password_reset` WHERE `user_id`=$id ORDER BY `timestamp` DESC";
+    $result = $db->query($query);
+    if (!$result)
+    {
+        return json_error("Something went wrong. Please try again later.");
+    }
+
+    if ($result->fetch_row()[0] != $token)
+    {
+        return json_error("This token been superseded by a newer reset token. Please use the new token or request another reset.");
+    }
+
+    $new_pass_hash = password_hash($password, PASSWORD_DEFAULT);
+    $query = "UPDATE `users` SET password='$new_pass_hash' WHERE id=$id";
+    $result = $db->query($query);
+    if (!$result)
+    {
+        db_error();
+    }
+
+    $query = "UPDATE `password_reset` SET `used`=1 WHERE token='$token'";
+
+    return json_success();
 }
 
 /// <summary>

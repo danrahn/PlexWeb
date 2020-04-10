@@ -128,6 +128,15 @@ CREATE TABLE `js_errors` (
  PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci
 
+CREATE TABLE `password_reset` (
+ `id` int(11) NOT NULL AUTO_INCREMENT,
+ `user_id` int(11) NOT NULL,
+ `timestamp` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ `token` char(64) COLLATE utf8_unicode_ci NOT NULL,
+ `used` tinyint(1) NOT NULL DEFAULT '0',
+ PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci
+
 # Triggers
 CREATE TRIGGER `UpdateCommentCount` AFTER INSERT ON `request_comments`
  FOR EACH ROW UPDATE user_requests r SET r.comment_count=r.comment_count+1 WHERE r.id=NEW.req_id

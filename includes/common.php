@@ -77,7 +77,7 @@ function json_error($message)
 function db_error()
 {
     global $db;
-    return json_error("Error querying database: " . ($_SESSION["level"] >= 100 ? (  $db->error) : "Please contact the administrator with the details of how you encountered this error"));
+    return json_error("Error querying database: " . ((isset($_SESSION["level"]) && $_SESSION["level"] >= 100) ? (  $db->error) : "Please contact the administrator with the details of how you encountered this error"));
 }
 
 /// <summary>
