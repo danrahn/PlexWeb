@@ -74,9 +74,6 @@
                 document.querySelector("input[name=firstname]").value = initialValues.firstname = response["firstname"];
                 document.querySelector("input[name=lastname]").value = initialValues.lastname = response["lastname"];
                 document.querySelector("input[name=emailalerts]").checked = initialValues.emailalerts = response["emailalerts"] != "0";
-                if (document.querySelector("input[name=emailalerts]").checked) {
-                    document.querySelector("input[name=email]").parentNode.style.display = "block";
-                }
 
                 document.querySelector("input[name=email]").value = initialValues.email = response["email"];
                 emailChangeListenerCore(document.querySelector("input[name=email]"));
@@ -89,10 +86,6 @@
                 }
 
                 document.querySelector("select[name=carrier]").value = initialValues.carrier = response["carrier"];
-                if (document.querySelector("input[name=phonealerts]").checked) {
-                    document.querySelector("select[name=carrier]").parentNode.style.display = "block";
-                    document.querySelector("input[name=phone").parentNode.style.display = "block";
-                }
             } catch (ex) {
                 logError(ex);
                 logError(this.responseText);
@@ -105,14 +98,10 @@
     function setupEmailListeners() {
         let email = document.querySelector("input[name=email]");
         let alerts = document.querySelector("input[name=emailalerts]");
-        if (alerts.checked) {
-            email.parentNode.style.display = "block";
-        }
 
         email.addEventListener("input", emailChangeListener);
         alerts.addEventListener("change", function() {
             logVerbose("Email alerts changed to " + this.checked);
-            document.querySelector("input[name=email]").parentNode.style.display = this.checked ? "block" : "none";
         })
     }
 
@@ -138,12 +127,6 @@
         // Needs to be 10 digits (11-digit international numbers don't seem to work)
         if (digits.length === 10) {
             logVerbose("Valid phone");
-            alerts.parentNode.style.display = "block";
-        }
-
-        if (alerts.checked) {
-            document.querySelector("select[name=carrier]").parentNode.style.display = "block";
-            phone.parentNode.style.display = "block";
         }
 
         phone.addEventListener("input", phoneListener);
@@ -152,9 +135,6 @@
 
         alerts.addEventListener("change", function() {
             logVerbose("Phone alerts changed to " + this.checked);
-
-            document.querySelector("select[name=carrier]").parentNode.style.display = this.checked ? "block" : "none";
-            document.querySelector("input[name=phone]").parentNode.style.display = this.checked ? "block" : "none";
         });
     }
 

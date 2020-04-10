@@ -60,12 +60,11 @@ input[type=checkbox]:focus {
                 <div class="formInput"><label for="firstname" id="firstnamelabel">First Name: </label><input type="text" name="firstname" id="firstname" maxlength=1280></div>
                 <div class="formInput"><label for="lastname" id="lastnamelabel">Last Name: </label><input type="text" name="lastname" id="lastname" maxlength=128></div>
                 <hr />
+                <div class="formInput"><label for="email" id="emaillabel" maxlength=256>Email: </label><input type="text" name="email" id="email"></div>
                 <div class="formInput"><label for="emailalerts" id="emailalertslabel">Receive email alerts: </label><input type="checkbox" name="emailalerts" id="emailalerts"></div>
-                <div class="formInput" style="display:none"><label for="email" id="emaillabel" maxlength=256>Email: </label><input type="text" name="email" id="email"></div>
                 <hr />
-                <div class="formInput"><label for="phonealerts" id="phonealertslabel">Receive text alerts: </label><input type="checkbox" name="phonealerts" id="phonealerts"></div>
-                <div class="formInput" style="display:none"><label for="phone" id="phonelabel">Phone number: </label><input type="text" name="phone" id="phone"></div>
-                <div class="formInput" style="display:none"><label for="carrier" id="carrierlabel">Phone carrier: </label>
+                <div class="formInput"><label for="phone" id="phonelabel">Phone number: </label><input type="text" name="phone" id="phone"></div>
+                <div class="formInput"><label for="carrier" id="carrierlabel">Phone carrier: </label>
                     <select name="carrier" id="carrier">
                         <option value="verizon">Verizon</option>
                         <option value="att">AT&T</option>
@@ -73,6 +72,7 @@ input[type=checkbox]:focus {
                         <option value="sprint">Sprint</option>
                     </select>
                 </div>
+                <div class="formInput"><label for="phonealerts" id="phonealertslabel">Receive text alerts: </label><input type="checkbox" name="phonealerts" id="phonealerts"></div>
                 <hr />
                 <div class="formInput"><input type="button" value="update" id="go"></input></div>
             </form>
