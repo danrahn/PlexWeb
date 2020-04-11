@@ -72,7 +72,7 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === TRUE)
 <div id="plexFrame">
     <div id="container">
         <div id="forgot" class="formContainer">
-            <div class="formTitle">Forgot your password? &nbsp; <span style="float: right; font-size: smaller">(<a href="login.php">No</a>)</span></div>
+            <div class="formTitle">Forgot your password? &nbsp; <span style="float: right; font-size: smaller">(<a href="login.php">Login</a>)</span></div>
             <form id="forgotForm">
                 <hr />
                 <div class="formInput"><label for="username">Username: </label><input type="text" name="username" id="username"></div>

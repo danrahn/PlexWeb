@@ -70,7 +70,7 @@ h1, h2, h3 {
     background-color: rgba(100, 66, 69, 0.5);
 }
 
-#login, #register, #info, #pwReset {
+#login, #register, #info, #pwReset, #forgot, #reset {
     width: 30%;
     max-width: 400px;
 }
