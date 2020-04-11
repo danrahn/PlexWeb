@@ -41,6 +41,6 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === TRUE)
         <div id="formStatus" class="formContainer"></div>
     </div>
 </div>
-<?php get_js("consolelog", "animate", "login"); ?>
+<?php build_js("consolelog", "animate", "common", "login"); ?>
 </body>
 </html>

@@ -204,10 +204,10 @@ function build_js($file, ...$includes)
 {
     if (try_get("nomin"))
     {
-        echo "<script>/* $file */\n" . include_js($file) . "</script>\n\n";
+        echo "<script>\n" . include_js($file) . "</script>\n\n";
         foreach ($includes as $include)
         {
-            echo "<script>/* $include */\n" . include_js($include) . "</script>\n\n";
+            echo "<script>\n" . include_js($include) . "</script>\n\n";
         }
     }
     else

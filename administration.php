@@ -246,20 +246,20 @@ else
         <div id="actions">
             <div class="action actionLeft">
                 <a href="library.php" class="actionLink">
-                    <img src="resource/settings_large.png" class="actionImg" style="filter: invert(80)">
+                    <img src="resource/settings_medium.png" class="actionImg" style="filter: invert(80)">
                     <span>Manage Library</span>
                 </a>
             </div>
             <div class="action actionRight">
                 <a href="password_reset.php" class="actionLink">
-                    <img src="resource/settings_large.png" class="actionImg" style="filter: invert(80)">
+                    <img src="resource/lock_medium.png" class="actionImg" style="filter: invert(80)">
                     <span>Password Reset</span>
                 </a>
             </div>
         </div>
     </div>
 </div>
-<?php get_js("consolelog", "animate", "querystatus"); ?>
+<?php build_js("consolelog", "animate", "querystatus", "nav"); ?>
 </body>
 </html>
 <?php } ?>

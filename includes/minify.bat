@@ -55,4 +55,28 @@ echo Minifying tableCommon.js
 call terser script/tableCommon.js -o min/tableCommon.min.js %OPTIONS_KEEPTOP%
 echo.
 
+echo Minifying common.js
+call terser script/common.js -o min/common.min.js %OPTIONS_KEEPTOP%
+echo.
+
+echo Minifying overlay.js
+call terser script/overlay.js -o min/overlay.min.js %OPTIONS_KEEPTOP%
+echo.
+
+echo Minifying forgot.js
+call terser script/forgot.js -o min/forgot.min.js %OPTIONS%
+echo.
+
+echo Minifying reset.js
+call terser script/reset.js -o min/reset.min.js %OPTIONS%
+echo.
+
+echo Minifying library.js
+call terser script/library.js -o min/library.min.js %OPTIONS%
+echo.
+
+echo Minifying password_reset.js
+call terser script/password_reset.js -o min/password_reset.min.js %OPTIONS%
+echo.
+
 echo Done!

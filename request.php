@@ -101,5 +101,5 @@ function get_details($req_id)
         <?php } ?>
     </div>
 </body>
-<?php get_js("consolelog", "animate", "queryStatus", "request"); ?>
+<?php build_js("consolelog", "animate", "queryStatus", "nav", "request"); ?>
 </html>

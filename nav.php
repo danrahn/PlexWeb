@@ -85,4 +85,3 @@
         <div class=btnimg><image src='icon/github.png' alt='Github' style='filter: invert(80%);'/></div>
     </div>
 </div>
-<?php get_js("nav") ?>

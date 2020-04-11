@@ -34,7 +34,7 @@ if ((int)$_SESSION['level'] < 100)
     </div>
 </div>
 </body>
-<?php get_js("consolelog", "animate"); ?>
+<?php get_js("consolelog", "animate", "nav"); ?>
 <script>
 (function() {
     window.addEventListener('load', function()

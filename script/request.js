@@ -1,4 +1,3 @@
-(function() {
 window.addEventListener("load", function()
 {
     if (!!$("#matchContainer"))
@@ -658,5 +657,4 @@ window.addEventListener("load", function()
         logVerbose("Built query: " + queryString);
         return queryString;
     }
-})
-})();
+});

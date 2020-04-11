@@ -2046,7 +2046,7 @@ function reset_password($token, $password, $confirm)
 
     if ($result->fetch_row()[0] != $token)
     {
-        return json_error("This token been superseded by a newer reset token. Please use the new token or request another reset.");
+        return json_error("This token has been superseded by a newer reset token. Please use the new token or request another reset.");
     }
 
     $new_pass_hash = password_hash($password, PASSWORD_DEFAULT);
