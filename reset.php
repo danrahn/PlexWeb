@@ -80,6 +80,6 @@ function validate_request($token)
         <div id="formStatus" class="formContainer"></div>
     </div>
 </div>
-<?php build_js("consolelog", "animate", "common", "overlay", "reset"); ?>
+<?php build_js("reset", "consolelog", "animate", "common", "overlay"); ?>
 </body>
 </html>

@@ -93,5 +93,5 @@ input[type=checkbox]:focus {
     </div>
 </div>
 </body>
-<?php build_js("consolelog", "animate", "common", "queryStatus", "nav", "user_settings"); ?>
+<?php build_js("user_settings", "consolelog", "animate", "common", "queryStatus", "nav"); ?>
 </html>

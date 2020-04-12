@@ -40,6 +40,6 @@ if ($_SESSION['level'] < 100)
         </div>
     </div>
 </div>
-<?php build_js("consolelog", "animate", "querystatus", "nav", "password_reset"); ?>
+<?php build_js("password_reset", "consolelog", "animate", "queryStatus", "nav"); ?>
 </body>
 </html>

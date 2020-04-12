@@ -29,5 +29,5 @@ verify_loggedin(TRUE /*redirect*/, "requests.php");
         </div>
     </div>
 </body>
-<?php build_js("consolelog", "queryStatus", "animate", "common", "nav", "requests", "tableCommon") ?>
+<?php build_js("requests", "consolelog", "queryStatus", "animate", "common", "nav", "tableCommon") ?>
 </html>

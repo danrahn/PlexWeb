@@ -173,18 +173,6 @@ function param($param, &$value)
 }
 
 /// <summary>
-/// Echos the contents of the given javascript resources. This allows
-/// for more efficient inlining while still allowing cleaner organization
-/// </summary>
-function get_js(...$files)
-{
-    foreach ($files as $file)
-    {
-        echo "<script>\n" . include_js($file) . "</script>\n\n";
-    }
-}
-
-/// <summary>
 /// Echos the contents of the given javascript file. By default writes
 /// the minified version, unless the 'nomin' get/post parameter is set
 /// </summary>
@@ -200,6 +188,13 @@ function include_js($file)
     }
 }
 
+/// <summary>
+/// Builds a consolidated single-scoped script block with all
+/// the given files.
+///
+/// To ensure the most up-to-date contents are retrieved when nomin is not
+/// specified, make sure to run minify.py after modifying any javascript file
+/// </summary>
 function build_js($file, ...$includes)
 {
     if (try_get("nomin"))
@@ -212,12 +207,9 @@ function build_js($file, ...$includes)
     }
     else
     {
-        echo "<script>!function(){" . include_js($file);
-        foreach ($includes as $include)
-        {
-            echo include_js($include);
-        }
-        echo "}();</script>";
+        // When minified, the minified script should have already bundled
+        // the includes with the main script, and surrounded it in an anonymous function
+        echo "<script>" . include_js($file) . "</script>";
     }
 }
 

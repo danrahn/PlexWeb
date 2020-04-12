@@ -42,6 +42,6 @@ input[type=button] {
         <?php include "includes/table.html" ?>
     </div>
 </div>
-<?php build_js("consolelog", "animate", "common", "querystatus", "nav", "library", "tableCommon"); ?>
+<?php build_js("library", "consolelog", "animate", "common", "queryStatus", "nav", "tableCommon"); ?>
 </body>
 </html>

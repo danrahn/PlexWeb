@@ -1,3 +1,4 @@
+
 window.addEventListener("load", function()
 {
     // For activities, reset the filter on page load

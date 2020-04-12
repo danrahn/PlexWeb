@@ -62,5 +62,5 @@ requireSSL();
     </div>
 </div>
 </body>
-<?php build_js("consolelog", "animate", "common", "nav", "queryStatus", "new_request"); ?>
+<?php build_js("new_request", "consolelog", "animate", "common", "nav", "queryStatus"); ?>
 </html>

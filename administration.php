@@ -259,7 +259,7 @@ else
         </div>
     </div>
 </div>
-<?php build_js("consolelog", "animate", "querystatus", "nav"); ?>
+<?php build_js("administration", "consolelog", "animate", "queryStatus", "nav"); ?>
 </body>
 </html>
 <?php } ?>
