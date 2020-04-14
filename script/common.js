@@ -47,12 +47,12 @@ function buildNode(type, attrs, content, events)
 /// <summary>
 /// Generic method to sent an async request that expects JSON in return
 /// </summary>
-function sendHtmlJsonRequest(url, parameters, successFunc, failFunc, additionalParams)
+function sendHtmlJsonRequest(url, parameters, successFunc, failFunc, additionalParams, dataIsString=false)
 {
     let http = new XMLHttpRequest();
     http.open("POST", url, true /*async*/);
     http.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
-    let queryString = buildQuery(parameters);
+    const queryString = dataIsString ? parameters : buildQuery(parameters);
     if (additionalParams)
     {
         for (let param in additionalParams)
@@ -66,7 +66,8 @@ function sendHtmlJsonRequest(url, parameters, successFunc, failFunc, additionalP
         }   
     }
 
-    let sanitized = sanitize(parameters);
+    // Will need to update this if we ever pass in sensitive information when dataIsString == true
+    let sanitized = dataIsString ? queryString : sanitize(parameters);
     http.onreadystatechange = function()
     {
         if (this.readyState != 4 || this.status != 200)

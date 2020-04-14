@@ -12,7 +12,8 @@ const LOG = {
 };
 
 const g_logStr = ["TMI", "VERBOSE", "INFO", "WARN", "ERROR", "CRITICAL"];
-const g_levelColors = [
+const g_levelColors =
+[
     ["#00CC00", "#00AA00", "#AAA", "#888"],
     ["#c661e8", "#c661e8", "inherit", "inherit"],
     ["blue", "#88C", "inherit", "inherit"],
@@ -22,7 +23,8 @@ const g_levelColors = [
     ["#009900", "#006600", "#AAA", "#888"]
 ];
 
-const g_traceColors = [
+const g_traceColors =
+[
     ["#00CC00", "#00AA00", "#AAA", "#888"],
     ["#c661e8", "#c661e8", "inherit", "inherit"],
     ["#blue", "#88C", "inherit", "inherit"],
@@ -33,24 +35,27 @@ const g_traceColors = [
 ];
 
 let g_logLevel = parseInt(localStorage.getItem("loglevel"));
-if (isNaN(g_logLevel)) {
+if (isNaN(g_logLevel))
+{
     g_logLevel = LOG.Info;
 }
 
 let g_traceLogging = parseInt(localStorage.getItem("logtrace"));
-if (isNaN(g_traceLogging)) {
+if (isNaN(g_traceLogging))
+{
     g_traceLogging = 0;
 }
 
 let g_darkConsole = parseInt(localStorage.getItem("darkconsole"));
-if (isNaN(g_darkConsole)) {
+if (isNaN(g_darkConsole))
+{
     logInfo("Welcome to the console!");
     logInfo("For best debugging results, set whether you're using a light or dark themed console via setDarkConsole(isDark), ");
     logInfo("where isDark is 1 (true) or 0 (false)");
     g_darkConsole = 0;
 }
 
-/*testAll = function()
+testAll = function()
 {
     const old = g_logLevel;
     setLogLevel(-1);
@@ -60,47 +65,60 @@ if (isNaN(g_darkConsole)) {
     logInfo("Info!");
     logWarn("Warn!");
     logError("Error!");
-    log("Crit!", undefined, LOG.Critical);
+    log("Crit!", undefined, false /*freeze*/, LOG.Critical);
     setLogLevel(old);
-}*/
+}
 
-function setLogLevel(level) {
+function setLogLevel(level)
+{
     localStorage.setItem("loglevel", level);
     g_logLevel = level;
 }
 
-function setDarkConsole(dark) {
+function setDarkConsole(dark)
+{
     localStorage.setItem("darkconsole", dark);
     g_darkConsole = dark;
 }
 
-function setTrace(trace) {
+/// <summary>
+/// Sets whether to print stack traces for each log. Helpful when debugging
+/// </summary>
+function setTrace(trace)
+{
     localStorage.setItem("logtrace", trace);
     g_traceLogging = trace;
 }
 
-function logTmi(obj, description, freeze) {
+function logTmi(obj, description, freeze)
+{
     log(obj, description, freeze, LOG.Tmi);
 }
 
-function logVerbose(obj, description, freeze) {
+function logVerbose(obj, description, freeze)
+{
     log(obj, description, freeze, LOG.Verbose);
 }
 
-function logInfo(obj, description, freeze) {
+function logInfo(obj, description, freeze)
+{
     log(obj, description, freeze, LOG.Info);
 }
 
-function logWarn(obj, description, freeze) {
+function logWarn(obj, description, freeze)
+{
     log(obj, description, freeze, LOG.Warn);
 }
 
-function logError(obj, description, freeze) {
+function logError(obj, description, freeze)
+{
     log(obj, description, freeze, LOG.Error);
 }
 
-function log(obj, description, freeze, level) {
-    if (level < g_logLevel) {
+function log(obj, description, freeze, level)
+{
+    if (level < g_logLevel)
+    {
         return;
     }
 
