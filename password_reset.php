@@ -19,7 +19,7 @@ if ($_SESSION['level'] < 100)
     <link rel="shortcut icon" href="favicon.png">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#3C5260" />
-    <title>Administration</title>
+    <title>Password Reset</title>
     <?php get_css("style", "nav") ?>
 </head>
 <body>
@@ -28,7 +28,7 @@ if ($_SESSION['level'] < 100)
     <?php include "nav.php" ?>
     <div id="container">
         <div id="resetContainer">
-            <div id="manual_reset" class="formContainer" style="width:50%;min-width:500px">
+            <div id="manual_reset" class="formContainer">
                 <div class="formTitle">Manual User Password Reset</div>
                 <form id="resetForm">
                     <div class="formInput"><label for="username">Username: </label><input type="text" name="username" id="username"></div>

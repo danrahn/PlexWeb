@@ -184,58 +184,7 @@ else
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#3C5260" />
     <title>Administration</title>
-    <?php get_css("style", "nav") ?>
-    <style>
-#actions {
-    width: 30%;
-    min-width: 125px;
-    margin-left: auto;
-    margin-right: auto;
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-between;
-}
-
-.action {
-    min-width: 150px;
-    border: 2px solid black;
-    margin: 10px;
-    overflow: auto;
-    border: 2px solid #222;
-    border-radius: 10px;
-    margin-left: auto;
-    margin-right: auto;
-    margin-top: 10px;
-    margin-bottom: 10px;
-    background-color: #00000033;
-}
-
-.action:hover {
-    background-color: #00000055;
-}
-
-.actionImg {
-    display: block;
-    margin: auto;
-    width: 100px;
-    padding-top: 20px;
-    padding-bottom: 5px;
-}
-
-.action a {
-    text-align: center;
-    display: block;
-    margin-bottom: 20px;
-}
-
-.actionLink, .actionLink:visited {
-    color: #80A020;
-}
-
-.actionLink:hover {
-    color: #608020;
-}
-    </style>
+    <?php get_css("style", "nav", "actions") ?>
 </head>
 <body>
 
