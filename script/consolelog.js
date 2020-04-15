@@ -49,11 +49,10 @@ if (isNaN(g_traceLogging))
 let g_darkConsole = parseInt(localStorage.getItem("darkconsole"));
 if (isNaN(g_darkConsole))
 {
-    logInfo("Welcome to the console!");
-    logInfo("For best debugging results, set whether you're using a light or dark themed console via setDarkConsole(isDark), ");
-    logInfo("where isDark is 1 (true) or 0 (false)");
     g_darkConsole = 0;
 }
+
+logInfo("Welcome to the console! For debugging help, call consoleHelp()");
 
 testAll = function()
 {
@@ -162,4 +161,18 @@ function log(obj, description, freeze, level)
         let encode = encodeURIComponent;
         http.send(`&type=log_err&error=${encode(curState(obj, 1))}&stack=${encode(Error().stack)}`);
     }
+}
+
+function consoleHelp()
+{
+    // After initializing everything we need, print a message to the user to give some basic tips
+    const logLevelSav = g_logLevel;
+    g_logLevel = 2;
+    logInfo("Welcome to the console!");
+    logInfo("If you're debugging an issue, here are some tips:");
+    logInfo("  1. Set dark/light mode for the console via setDarkConsole(isDark), where isDark is 1 or 0.");
+    logInfo("  2. Set the log level via setLogLevel(level), where level is a value from the LOG dictionary (e.g. setLogLevel(LOG.Verbose);)");
+    logInfo("  3. To view unminified js sources, add nomin=1 to the url parameters.");
+    logInfo("  4. To view the stack trace for every logged event, call setTrace(1). To revert, setTrace(0)\n");
+    g_logLevel = logLevelSav;
 }
