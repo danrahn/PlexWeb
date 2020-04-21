@@ -8,6 +8,7 @@ This allows for maximally minized javascript that's contained to a single file p
 
 import glob
 import os
+import platform
 import shutil
 import subprocess
 import sys
@@ -135,7 +136,7 @@ def script_modified_dates():
     last_modified = {}
     files = glob.glob('script/*.js')
     for file in files:
-        last_modified[file[file.find('\\') + 1:file.rfind('.')]] = os.stat(file).st_mtime
+        last_modified[file[file.find(os.sep) + 1:file.rfind('.')]] = os.stat(file).st_mtime
     return last_modified
 
 
@@ -157,16 +158,25 @@ def minify():
         'hoist_funs'
     ]
 
-    cmd_params = ' -c ' + ','.join(options) + ' -m'
-
     files = glob.glob("tmp/*.js")
     for file in files:
-        clean_file = file[file.find('\\') + 1:file.find('.')] + '.min.js'
-        print('Minifying', clean_file)
-        cmd = 'node.exe ' + os.environ['APPDATA'] + '\\npm\\node_modules\\terser\\bin\\terser '
+        run_cmd(file, options)
+
+
+def run_cmd(file, options):
+    clean_file = file[file.find(os.sep) + 1:file.find('.')] + '.min.js'
+    print('Minifying', clean_file)
+    system = platform.system();
+    if system == 'Windows':
+        cmd_params = ' -c ' + ','.join(options) + ' -m'
+        cmd = 'node.exe ' + os.environ['APPDATA'] + r'\npm\node_modules\terser\bin\terser '
         cmd += file + ' -o min\\' + clean_file + cmd_params
-        print(str(subprocess.check_output(cmd)))
-        print()
+    elif system == 'Linux':
+        cmd = ['terser', file, '-o', 'min/' + clean_file, '-c', ','.join(options), '-m']
+    else:
+        print('Unsupported OS:', os)
+    print(str(subprocess.check_output(cmd)))
+    print()
 
 
 def clean_tmp():
