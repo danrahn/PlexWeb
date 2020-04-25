@@ -46,6 +46,12 @@ let initialValues =
     carrier: ""
 };
 
+function setVisible(ele, vis)
+{
+    ele.classList.remove(vis ? "hiddenInput" : "visibleInput");
+    ele.classList.add(!vis ? "hiddenInput" : "visibleInput");
+}
+
 function getCurrentValues()
 {
     // Basic client-side validation is okay, now send it to the server
@@ -61,11 +67,14 @@ function getCurrentValues()
         // Assume all of our values are correct here
         document.querySelector("input[name=firstname]").value = initialValues.firstname = response["firstname"];
         document.querySelector("input[name=lastname]").value = initialValues.lastname = response["lastname"];
-        document.querySelector("input[name=emailalerts]").checked = initialValues.emailalerts = response["emailalerts"] != "0";
-
         document.querySelector("input[name=email]").value = initialValues.email = response["email"];
+        document.querySelector("input[name=emailalerts]").checked = initialValues.emailalerts = response["emailalerts"] != "0";
+        if (initialValues.email.match(validEmailRegex))
+        {
+            setVisible(document.querySelector("input[name=emailalerts").parentNode, true);
+        }
+
         emailChangeListenerCore(document.querySelector("input[name=email]"));
-        document.querySelector("input[name=phonealerts]").checked = initialValues.phonealerts = response["phonealerts"] != "0";
         let phone = response["phone"];
         if (phone != "0") {
             document.querySelector("input[name=phone]").value = initialValues.phone = phone;
@@ -74,6 +83,12 @@ function getCurrentValues()
         }
 
         document.querySelector("select[name=carrier]").value = initialValues.carrier = response["carrier"];
+        document.querySelector("input[name=phonealerts]").checked = initialValues.phonealerts = response["phonealerts"] != "0";
+        logVerbose(initialValues.phone.replace(/[^\d]/g, "").length);
+        if (initialValues.phone.replace(/[^\d]/g, "").length == 10)
+        {
+            setVisible(document.querySelector("input[name=phonealerts]").parentNode, true);
+        }
     };
 
     let failureFunc = function(response)
@@ -111,13 +126,22 @@ function emailChangeListenerCore(ele)
 {
     if (ele.value.match(validEmailRegex))
     {
-        logVerbose("valid email found");
-        ele.style.backgroundColor = null;
+        logTmi("valid email found");
+        setVisible(document.querySelector("input[name=emailalerts]").parentNode, true);
     }
     else
     {
-        logVerbose("Invalid email");
-        ele.style.backgroundColor = ele.value ? "rgb(100, 66, 69)" : null;
+        logTmi("Invalid email");
+        if (ele.value.length == 0)
+        {
+            ele.style.backgroundColor = null;
+        }
+        else
+        {
+            ele.style.backgroundColor = ele.value ? "rgb(100, 66, 69)" : null;
+        }
+
+        setVisible(document.querySelector("input[name=emailalerts]").parentNode, false);
     }
 }
 
@@ -130,7 +154,7 @@ function setupPhoneListeners()
     // Needs to be 10 digits (11-digit international numbers don't seem to work)
     if (digits.length === 10)
     {
-        logVerbose("Valid phone");
+        logTmi("Valid phone");
     }
 
     phone.addEventListener("input", phoneListener);
@@ -148,12 +172,15 @@ function phoneListener() {
 
 function phoneListenerCore(ele) {
     let digit = ele.value ? ele.value.replace(/[^\d]/g, "") : "";
+    let alerts = document.querySelector("input[name=phonealerts]");
     if (digit.length !== 10) {
-        logVerbose("Invalid phone");
+        logTmi("Invalid phone");
         ele.style.backgroundColor = ele.value ? "rgb(100, 66, 69)" : null;
+        setVisible(alerts.parentNode, false);
     } else {
-        logVerbose("Valid phone");
+        logTmi("Valid phone");
         ele.style.backgroundColor = null;
+        setVisible(alerts.parentNode, true);
     }
 }
 
@@ -236,18 +263,11 @@ function setupSubmitButton()
 
 
         let email = document.querySelector("input[name=email]");
-        if (document.querySelector("input[name=emailalerts]").checked)
+        if (email.value.length != 0 && !email.value.match(validEmailRegex))
         {
-            if (!email.value.match(validEmailRegex))
-            {
-                valid = false;
-                Animation.queue({"backgroundColor": new Color(140, 66, 69)}, email, 500);
-                Animation.queueDelayed({"backgroundColor": new Color(100, 66, 69)}, email, 500, 500);
-            }
-        }
-        else if (!email.value.match(validEmailRegex))
-        {
-            email.value = "";
+            valid = false;
+            Animation.queue({"backgroundColor": new Color(140, 66, 69)}, email, 500);
+            Animation.queueDelayed({"backgroundColor": new Color(100, 66, 69)}, email, 500, 500);
         }
 
         if (!valid)

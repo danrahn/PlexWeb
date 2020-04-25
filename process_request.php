@@ -664,8 +664,8 @@ function update_user_settings($firstname, $lastname, $email, $emailalerts, $phon
         $firstname = $db->real_escape_string($firstname);
         $lastname = $db->real_escape_string($lastname);
         $email = $db->real_escape_string($email);
-        $emailalerts = !strcmp($emailalerts, "true") ? "TRUE" : "FALSE";
-        $phonealerts = !strcmp($phonealerts, "true") ? "TRUE" : "FALSE";
+        $emailalerts = (!empty($email) && !strcmp($emailalerts, "true")) ? "TRUE" : "FALSE";
+        $phonealerts = (!empty($phone) && !strcmp($phonealerts, "true")) ? "TRUE" : "FALSE";
         $phone = (int)$phone;
         $carrier = $db->real_escape_string($carrier);
         $userid = (int)$_SESSION['id'];

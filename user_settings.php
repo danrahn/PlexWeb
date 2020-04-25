@@ -47,6 +47,23 @@ input[type=checkbox]:focus {
     outline: none;
     border: 1px solid rgb(255, 127, 0);
 }
+
+.hiddenInput {
+    visibility: hidden;
+    opacity: 0;
+    height: 0;
+    overflow: hidden;
+    transition: visibility 0.25s, opacity 0.25s linear, height 0.25s linear;
+}
+
+.visibleInput {
+    visibility: visible;
+    opacity: 1;
+    height: 25px;
+    overflow: hidden;
+    transition: visibility 0.25s, opacity 0.25s linear, height 0.25s linear;
+
+}
     </style>
 </head>
 <body>
@@ -61,7 +78,7 @@ input[type=checkbox]:focus {
                 <div class="formInput"><label for="lastname" id="lastnamelabel">Last Name: </label><input type="text" name="lastname" id="lastname" maxlength=128></div>
                 <hr />
                 <div class="formInput"><label for="email" id="emaillabel" maxlength=256>Email: </label><input type="text" name="email" id="email"></div>
-                <div class="formInput"><label for="emailalerts" id="emailalertslabel">Receive email alerts: </label><input type="checkbox" name="emailalerts" id="emailalerts"></div>
+                <div class="formInput hiddenInput"><label for="emailalerts" id="emailalertslabel">Receive email alerts: </label><input type="checkbox" name="emailalerts" id="emailalerts"></div>
                 <hr />
                 <div class="formInput"><label for="phone" id="phonelabel">Phone number: </label><input type="text" name="phone" id="phone"></div>
                 <div class="formInput"><label for="carrier" id="carrierlabel">Phone carrier: </label>
@@ -72,7 +89,7 @@ input[type=checkbox]:focus {
                         <option value="sprint">Sprint</option>
                     </select>
                 </div>
-                <div class="formInput"><label for="phonealerts" id="phonealertslabel">Receive text alerts: </label><input type="checkbox" name="phonealerts" id="phonealerts"></div>
+                <div class="formInput hiddenInput"><label for="phonealerts" id="phonealertslabel">Receive text alerts: </label><input type="checkbox" name="phonealerts" id="phonealerts"></div>
                 <hr />
                 <div class="formInput"><input type="button" value="update" id="go"></input></div>
             </form>
