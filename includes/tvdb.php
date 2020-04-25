@@ -151,6 +151,13 @@ class Tvdb
         return $response['data'];
     }
 
+    function get_season_episodes($showId, $season)
+    {
+        $data = [];
+        $response = json_decode($this->apiCall('GET', 'series/' . $showId . '/episodes/query', array('airedSeason' => $season)));
+        return $response->data;
+    }
+
     /// <summary>
     /// Makes a request to the tvdb api with the given data
     /// </summary>

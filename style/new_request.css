@@ -46,7 +46,7 @@ form select {
     margin-right: 10px;
 }
 
-.searchResult div {
+.searchResult .matchText {
     width: auto;
     font-size: small;
     position: relative;

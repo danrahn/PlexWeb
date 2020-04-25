@@ -11,6 +11,7 @@
 
 require_once "includes/common.php";
 require_once "includes/config.php";
+require_once "includes/tvdb.php";
 
 $type = get('type');
 
@@ -25,7 +26,7 @@ switch ($type)
         break;
     default:
         session_start();
-        verify_loggedin();
+        verify_loggedin(FALSE /*redirect*/, "" /*return*/, TRUE /*json*/);
         break;
 }
 
@@ -78,6 +79,9 @@ function process_request($type)
             break;
         case "search":
             $message = search(get("query"), get("kind"));
+            break;
+        case "season_details":
+            $message = get_season_details(get("path"));
             break;
         case "search_external":
             $message = search_external(get("query"), get("kind"));
@@ -1107,9 +1111,15 @@ function search($query, $kind)
             $res = "";
             foreach ($copies as $file)
             {
-                $newRes = $file['videoResolution'];
+                $newRes = (string)$file['videoResolution'];
                 if ($newRes)
                 {
+                    $lastChar = $newRes[strlen($newRes) - 1];
+                    if ($lastChar != 'k' && $lastChar != 'p' && $lastChar != 'i')
+                    {
+                        $newRes .= 'p';
+                    }
+
                     $res .= $newRes . ", ";
                 }
             }
@@ -1119,6 +1129,11 @@ function search($query, $kind)
             {
                 $res = substr($res, 0, $len - 2);
                 $item->resolution = $res;
+            }
+
+            if ($type == RequestType::TVShow)
+            {
+                $item->tvChildPath = (string)$result['key'];
             }
         }
 
@@ -1133,6 +1148,57 @@ function search($query, $kind)
     $final_obj->length = sizeof($results);
     $final_obj->top = $existing;
     return json_encode($final_obj);
+}
+
+function get_season_details($path)
+{
+    $details = new \stdClass();
+    $details->path = $path;
+    $seasonStatus = array();
+    $children = simplexml_load_string(curl(PLEX_SERVER . $path . '?' . PLEX_TOKEN));
+    $totalSeasons = 0;
+    $seasons = $children->xpath('Directory');
+
+    $tvdb_client = new Tvdb();
+    foreach ($seasons as $season)
+    {
+        if (!$season['type'] || $season['type'] != 'season')
+        {
+            continue;
+        }
+
+        $data = new \stdClass();
+        $data->season = (int)$season['index'];
+        $episodePath = $season['key'];
+        $episodes = simplexml_load_string(curl(PLEX_SERVER . $episodePath . '?' . PLEX_TOKEN));
+        $availableEpisodes = count($episodes);
+
+        if (isset($season['guid']) && strpos($season['guid'], 'thetvdb') !== FALSE)
+        {
+            $seasonGuid = substr($season['guid'], strpos($season['guid'], 'thetvdb') + 10);
+            $seasonGuid = substr($seasonGuid, 0, strpos($seasonGuid, '/'));
+            if (!$tvdb_client->ready())
+            {
+                $tvdb->login();
+            }
+
+            if ($totalSeasons == 0)
+            {
+                $details->totalSeasons = $tvdb_client->get_series($seasonGuid)['season'];
+            }
+
+            $totalEpisodes = count($tvdb_client->get_season_episodes($seasonGuid, $data->season));
+            $data->complete = $totalEpisodes == $availableEpisodes;
+        }
+        else
+        {
+            $data->unknown = TRUE;
+        }
+        $seasonStatus[] = $data;
+    }
+
+    $details->seasons = $seasonStatus;
+    return json_encode($details);
 }
 
 /// <summary>

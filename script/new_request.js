@@ -47,6 +47,7 @@ function suggestionChanged()
 
     $("#matchHolder").style.display = "block";
     searchTimer = setTimeout(searchItem, 250);
+
     internalSearchTimer = setTimeout(searchInternal, 250);
 }
 
@@ -111,11 +112,6 @@ function searchInternal()
 {
     // For now only search for movies, since TV shows can have requests for different seasons
     let type = $("#type").value;
-    if (type == "tv")
-    {
-        clearElement("existingMatchContainer");
-        return;
-    }
 
     let name = $("#name").value;
     let parameters =
@@ -133,6 +129,10 @@ function searchInternal()
         {
             $("#existingMatchHolder").style.display = "block";
             buildItems(response.top, "existingMatchContainer");
+        }
+        else
+        {
+            $("#existingMatchHolder").style.display = "none";
         }
     };
 
@@ -277,8 +277,14 @@ function buildItems(matches, holder)
             )
         });
 
-        let div = buildNode("div");
-        div.appendChild(buildNode("span", {}, (match.title ? match.title : match.name) + " "));
+        let div = buildNode("div", { "class" : "matchText" });
+        let titleText = (match.title ? match.title : match.name) + ' ';
+        if (match.resolution)
+        {
+            titleText += `(${match.resolution}) - `;
+        }
+
+        div.appendChild(buildNode("span", {}, titleText));
         let release = match.release_date;
         if (!release)
         {
@@ -294,6 +300,37 @@ function buildItems(matches, holder)
             {
                 "click" : goToExternal
             }));
+
+        // For TV shows, give the option to get information about what seasons are available
+        if (match.tvChildPath)
+        {
+            div.appendChild(buildNode('hr'));
+            let seasonHolder = buildNode('div', { 'class' : "seasonDetailsHolder" });
+            seasonHolder.appendChild(buildNode('a', { "seasonpath" : match.tvChildPath}, "Click to load season details",
+                {
+                    "click" : function()
+                    {
+                        this.innerHTML = 'Loading...';
+                        let parameters =
+                        {
+                            "type" : "season_details",
+                            "path" : this.getAttribute("seasonPath")
+                        };
+                        let successFunc = buildSeasonDetails;
+                        let failureFunc = function(response, request)
+                        {
+                            let text = $(`a[seasonpath="${request.path}"]`)[0];
+                            text.parentElement.appendChild(buildNode("span", {}, "Error getting season details"));
+                            text.parentElement.removeChild(text);
+                        };
+
+                        sendHtmlJsonRequest("process_request.php", parameters, successFunc, failureFunc, parameters);
+                    }
+                }
+            ));
+
+            div.appendChild(seasonHolder);
+        }
 
         item.appendChild(img);
         item.appendChild(div);
@@ -313,6 +350,101 @@ function buildItems(matches, holder)
     });
 
     container.appendChild(button);
+}
+
+function buildSeasonDetails(response, request)
+{
+    let seasonsArr = [];
+
+    logTmi("Building season details");
+
+    let complete = [];
+    let incomplete = [];
+    let missing = [];
+    let totalSeasons = response.totalSeasons;
+    let seasonIndex = 0;
+    for (let i = 1; i <= totalSeasons; ++i)
+    {
+        if (i > response.seasons[response.seasons.length - 1].season)
+        {
+            logTmi(`Adding season ${i} to missing array`);
+            missing.push(i);
+            continue;
+        }
+
+        while (i < response.seasons[seasonIndex].season)
+        {
+            logTmi(`Adding season ${i} to missing array`);
+            missing.push(i);
+            ++i;
+        }
+
+        if (response.seasons[seasonIndex].complete)
+        {
+            logTmi(`Adding season ${i} to complete array`);
+            complete.push(i);
+            ++seasonIndex;
+        }
+        else
+        {
+            logTmi(`Adding season ${i} to incomplete array`);
+            incomplete.push(i);
+            ++seasonIndex;
+        }
+    }
+
+    logTmi(complete, 'Complete');
+    logTmi(incomplete, 'Incomplete');
+    logTmi(missing, 'Missing');
+
+    const buildSeasons = function(seasons)
+    {
+        if (seasons.length == 0)
+        {
+            return '';
+        }
+
+        const getSequence = (start, end) => start + (start == end ? '' : '-' + end) + ', ';
+        let seasonStr = '';
+        let first = parseInt(seasons[0]);
+        let prev = first;
+        for (let iSeason = 1; iSeason < seasons.length; ++iSeason)
+        {
+            const season = seasons[iSeason];
+            if (season != prev + 1)
+            {
+                seasonStr += getSequence(first, prev);
+                first = season;
+                prev = first;
+                continue;
+            }
+
+            prev = season;
+        }
+
+        seasonStr += getSequence(first, prev);
+        return seasonStr.substring(0, seasonStr.length - 2);
+    };
+
+    let seasonString = '';
+    if (complete.length != 0)
+    {
+        seasonString += 'Complete: ' + buildSeasons(complete) + ' &mdash; ';
+    }
+    if (incomplete.length != 0)
+    {
+        seasonString += 'Incomplete: ' + buildSeasons(incomplete) + ' &mdash; ';
+    }
+    if (missing.length != 0)
+    {
+        seasonString += 'Missing: ' + buildSeasons(missing) + ' &mdash; ';
+    }
+
+    seasonString = seasonString.substring(0, seasonString.length - 9);
+    let oldText = $(`a[seasonpath="${request.path}"]`)[0];
+    let attachTo = oldText.parentNode;
+    attachTo.removeChild(oldText);
+    attachTo.appendChild(buildNode('span', {}, seasonString));
 }
 
 /// <summary>

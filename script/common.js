@@ -84,7 +84,7 @@ function sendHtmlJsonRequest(url, parameters, successFunc, failFunc, additionalP
                 logError(response.Error, `Error querying ${url}${sanitized}`);
                 if (failFunc)
                 {
-                    failFunc(response);
+                    failFunc(response, this);
                 }
 
                 return;
