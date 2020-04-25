@@ -77,6 +77,14 @@ CREATE TABLE `imdb_tv_cache` (
  PRIMARY KEY (`entry`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci
 
+CREATE TABLE `tmdb_cache` (
+ `id` int(11) NOT NULL AUTO_INCREMENT,
+ `tmdb_id` int(11) NOT NULL,
+ `imdb_id` varchar(32) COLLATE utf8_unicode_ci NOT NULL,
+ `date_added` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+ PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci
+
 CREATE TABLE `logins` (
  `id` int(11) NOT NULL AUTO_INCREMENT,
  `userid` int(11) NOT NULL,
