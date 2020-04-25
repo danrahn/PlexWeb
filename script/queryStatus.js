@@ -1,5 +1,6 @@
 let baseTitle = "";
 let hasChanged = false;
+let previous = { 'p' : 0, 's' : 0 };
 function queryStatus()
 {
     let http = new XMLHttpRequest();
@@ -15,17 +16,27 @@ function queryStatus()
         try
         {
             let response = JSON.parse(this.responseText);
-            logVerbose(response);
+            logTmi(response);
             if (response.play == 0 && response.pause == 0)
             {
                 // Only reset the title if we've previously changed it to avoid constant title updates
                 if (hasChanged)
                 {
+                    logVerbose('No more active items, clearing status');
                     hasChanged = false;
                     document.querySelector('title').innerHTML = baseTitle;
                 }
                 return;
             }
+
+            if (response.play == previous.p && response.pause == previous.s)
+            {
+                return;
+            }
+
+            logVerbose(response, 'Status changed');
+            previous.p = response.play;
+            previous.s = response.pause;
 
             hasChanged = true;
             let prepend = "";
