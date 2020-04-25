@@ -1100,7 +1100,7 @@ function search($query, $kind)
         $item->title = (string)$result['title'];
         $item->thumb = 'thumb' . $result['thumb'];
         $item->year = (string)$result['year'];
-        $item->imdbid = substr($result['guid'], strpos($result['guid'], '://') + 3); 
+        $item->imdbid = get_imdb_link_from_guid((string)$result['guid'], $type);
         if (RequestType::is_audio($type))
         {
             // Todo - search Audible/music apis?
@@ -1150,6 +1150,75 @@ function search($query, $kind)
     return json_encode($final_obj);
 }
 
+function extract_id_from_guid($guid)
+{
+    $guid = substr($guid, strpos($guid, '://') + 3);
+    if (($lang = strpos($guid, '?')) != -1)
+    {
+        return substr($guid, 0, $lang);
+    }
+
+    return $guid;
+}
+
+function get_imdb_link_from_guid($guid, $type)
+{
+    global $db;
+    $id = extract_id_from_guid($guid);
+    if (strpos($guid, "imdb") !== FALSE)
+    {
+        return $id;
+    }
+
+    if (strpos($guid, "themoviedb") !== FALSE || strpos($guid, "tmdb") !== FALSE)
+    {
+        $query = "SELECT imdb_id FROM tmdb_cache WHERE tmdb_id=$id";
+        $result = $db->query($query);
+        if ($result && $result->num_rows == 1)
+        {
+            return $result->fetch_row()[0];
+        }
+
+        $endpoint = 'movie/';
+        if ($type == RequestType::TVShow)
+        {
+            $endpoint = 'tv/';
+        }
+
+        $url = TMDB_URL . 'movie/' . $id . TMDB_TOKEN;
+        // $url = $_SERVER["HTTP_REFERER"] . 'media_search.php?type=1&query=' . $tmdb . '&by_id=true';
+        $imdb = json_decode(curl($url))->imdb_id;
+        $result = $db->query("INSERT INTO tmdb_cache (tmdb_id, imdb_id) VALUES ($id, '$imdb')");
+        return $imdb;
+    }
+
+    if (strpos($guid, "thetvdb") != -1)
+    {
+        $query = "SELECT imdb_link FROM imdb_tv_cache WHERE show_id=$id AND season=-1 AND episode=-1";
+        $result = $db->query($query);
+        if ($result && $result->num_rows == 1)
+        {
+            return $result->fetch_row()[0];
+        }
+
+        $tvdb_client = new Tvdb();
+        if (!$tvdb_client->ready())
+        {
+            return $guid;
+        }
+
+        $imdb = $tvdb_client->get_series($id)['imdbId'];
+        $result = $db->query("INSERT INTO imdb_tv_cache (show_id, season, episode, imdb_link) VALUES ($id, -1, -1, '$imdb')");
+        return $imdb;
+    }
+
+    // Unknown agent. Just return the id if we can
+    return $id;
+}
+
+/// <summary>
+/// Returns informaton about what seasons are available on plex versus total seasons
+/// </summary>
 function get_season_details($path)
 {
     $details = new \stdClass();
@@ -2171,8 +2240,26 @@ function curl($url)
     $ch = curl_init();
     curl_setopt($ch, CURLOPT_URL, $url);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
 
     $return = curl_exec($ch);
+
+    if (curl_errno($ch))
+    {
+        $return = '{ "curl error" : "' . curl_error($ch) . '" }';
+    }
+    else
+    {
+        switch ($http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE))
+        {
+            case 200:
+                break;
+            default:
+                $return = '{ "Bad curl response" : ' . $http_code . ' }';
+                break;
+        }
+    }
+
     curl_close($ch);
     return $return;
 }
