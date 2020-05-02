@@ -123,8 +123,8 @@ function log(obj, description, freeze, level)
 
     const print = function(output, text, obj, level, colors)
     {
-        textColor = `color: ${colors[level][2 + g_darkConsole]}`;
-        titleColor = `color: ${colors[level][g_darkConsole]}`;
+        let textColor = `color: ${colors[level][2 + g_darkConsole]}`;
+        let titleColor = `color: ${colors[level][g_darkConsole]}`;
         output(text, textColor, titleColor, textColor, titleColor, textColor, obj);
     }
 
