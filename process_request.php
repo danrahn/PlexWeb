@@ -1977,11 +1977,6 @@ function get_activites($num, $page, $filter)
 
     $query = "SELECT COUNT(*) FROM activities " . $filter_string;
 
-    if ($_SESSION['level'] < 100)
-    {
-        $query .= " WHERE `user_id`=$current_user ";
-    }
-
     $result = $db->query($query);
     if (!$result)
     {
