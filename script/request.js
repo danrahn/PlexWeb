@@ -315,11 +315,36 @@ window.addEventListener("load", function()
         sendHtmlJsonRequest("media_search.php", parameters, successFunc, failureFunc);
     }
 
+    function getStatusSpan(status)
+    {
+        let statusSpan = buildNode("span",
+            {"class" : `status${status}`},
+            [
+                "Pending",
+                "Complete",
+                "Denied",
+                "In Progress",
+                "Waiting"
+            ][status]);
+
+        if (parseInt(document.body.getAttribute("isAdmin")) == 1)
+        {
+            setupSpanDoubleClick(statusSpan);
+        }
+
+        return statusSpan;
+    }
+
     function getNonMediaInfo()
     {
         let outerContainer = buildNode("div", {"id" : "innerInfoContainer"});
         let container = buildNode("div", {"id" : "mediaDetails"});
-        container.appendChild(buildNode("div", {"id" : "mediaTitle"}, `Request: ${document.body.getAttribute("requestName")}`));
+
+        let title = buildNode("div", { "id" : "mediaTitle" }, `Request: ${document.body.getAttribute("requestName")} - `);
+        let status = parseInt(document.body.getAttribute("requestStatus"));
+        title.appendChild(getStatusSpan(status));
+        container.appendChild(title);
+
         outerContainer.appendChild(container);
         $("#infoContainer").innerHTML = "";
         $("#infoContainer").appendChild(outerContainer);
@@ -343,23 +368,8 @@ window.addEventListener("load", function()
         let title = buildNode("div", {"id" : "mediaTitle"});
         let status = parseInt(document.body.getAttribute("requestStatus"));
 
-        let statusSpan = buildNode("span",
-            {"class" : `status${status}`},
-            [
-                "Pending",
-                "Complete",
-                "Denied",
-                "In Progress",
-                "Waiting"
-            ][status]);
-
-        if (parseInt(document.body.getAttribute("isAdmin")) == 1)
-        {
-            setupSpanDoubleClick(statusSpan);
-        }
-
         title.innerHTML = (data.title || data.name) + " - ";
-        title.appendChild(statusSpan);
+        title.appendChild(getStatusSpan(status));
 
         let release = data.release_date || data.first_air_date;
         let year = buildNode("div", {"id" : "mediaYear"}, release.length > 4 ? release.substring(0, 4)  : "Unknown Release Date");
