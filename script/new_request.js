@@ -9,6 +9,15 @@ window.addEventListener("load", function()
     $("#external_id").addEventListener("input", searchSpecificExternal);
 });
 
+function setInputVisibility(id, vis)
+{
+    let ele = $(`#${id}`);
+    ele.style.display = null;
+    ele.classList.remove("hiddenInputStart");
+    ele.classList.add(!vis ? "hiddenInput" : "visibleInput");
+    ele.classList.remove(vis ? "hiddenInput" : "visibleInput");
+}
+
 /// <summary>
 /// Update UI when request options change
 /// </summar>
@@ -17,7 +26,7 @@ function selectChanged()
     let value = $("#type").value;
     if (value == "none")
     {
-        setVisibility("nameHolder", false);
+        setInputVisibility("nameHolder", false);
         $("#matchHolder").style.display = "none";
         $("#existingMatchHolder").style.display = "none";
         setVisibility("suggestions", false);
@@ -25,7 +34,7 @@ function selectChanged()
         return;
     }
 
-    setVisibility("nameHolder", true);
+    setInputVisibility("nameHolder", true);
     suggestionChanged();
 }
 
@@ -120,6 +129,8 @@ function searchInternal()
         "kind" : type,
         "query" : name
     };
+
+    clearElement("existingMatchContainer");
 
     let successFunc = function(response)
     {

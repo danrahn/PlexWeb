@@ -203,6 +203,29 @@ hr {
     overflow-y: scroll;
 }
 
+.hiddenInputStart {
+    visibility: hidden;
+    opacity: 0;
+    height: 0;
+    overflow: hidden;
+}
+
+.hiddenInput {
+    visibility: hidden;
+    opacity: 0;
+    height: 0;
+    overflow: hidden;
+    transition: visibility 0.25s, opacity 0.25s linear, height 0.25s linear;
+}
+
+.visibleInput {
+    visibility: visible;
+    opacity: 1;
+    height: 25px;
+    overflow: hidden;
+    transition: visibility 0.25s, opacity 0.25s linear, height 0.25s linear;
+}
+
 @media (orientation: landscape), (min-width: 767px) {
     /* width*/
     ::-webkit-scrollbar {

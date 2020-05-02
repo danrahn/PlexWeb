@@ -47,23 +47,6 @@ input[type=checkbox]:focus {
     outline: none;
     border: 1px solid rgb(255, 127, 0);
 }
-
-.hiddenInput {
-    visibility: hidden;
-    opacity: 0;
-    height: 0;
-    overflow: hidden;
-    transition: visibility 0.25s, opacity 0.25s linear, height 0.25s linear;
-}
-
-.visibleInput {
-    visibility: visible;
-    opacity: 1;
-    height: 25px;
-    overflow: hidden;
-    transition: visibility 0.25s, opacity 0.25s linear, height 0.25s linear;
-
-}
     </style>
 </head>
 <body>

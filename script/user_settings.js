@@ -127,6 +127,7 @@ function emailChangeListenerCore(ele)
     if (ele.value.match(validEmailRegex))
     {
         logTmi("valid email found");
+        ele.style.backgroundColor = null;
         setVisible(document.querySelector("input[name=emailalerts]").parentNode, true);
     }
     else

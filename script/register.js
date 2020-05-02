@@ -212,4 +212,16 @@ function keyDownEvent(e)
         }
     }
 
+    if (pass.value.length == 0)
+    {
+        conf.parentNode.classList.remove("visibleInput");
+        conf.parentNode.classList.add("hiddenInput");
+    }
+    else
+    {
+        conf.parentNode.style.display = "block";
+        conf.parentNode.classList.remove("hiddenInput");
+        conf.parentNode.classList.add("visibleInput");
+    }
+
 }

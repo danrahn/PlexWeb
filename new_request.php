@@ -34,7 +34,7 @@ requireSSL();
                     <?php if ($_SESSION['level'] >= 100) {?> <option value="audiobook">Audiobook</option> <?php } ?>
                     <!-- <option value="music">Music</option> -->
                 </select></div>
-                <div class="formInput" id="nameHolder"><label for="name">Suggestion:</label><input type="text" name="name" id="name" maxlength=128></div>
+                <div class="formInput hiddenInputStart" id="nameHolder"><label for="name">Suggestion:</label><input type="text" name="name" id="name" maxlength=128></div>
                 <div id="existingMatchHolder">
                     <div id="existingMatchContainer"></div>
                 </div>
