@@ -154,33 +154,43 @@ window.addEventListener("load", function()
         {
             let match = matches[i];
             let item = buildNode("div",
-                {"className" : "searchResult", "tmdbid" : match.id},
+                {
+                    "class" : "searchResult",
+                    "title" : match.title ? match.title : match.name,
+                    "tmdbid" : match.id
+                },
                 0,
-                {"click" : clickSuggestion});
-            let img;
-            if (match.poster_path)
-            {
-                img = buildNode("img", {
-                    "src" :
-                    `https://image.tmdb.org/t/p/w92${match.poster_path}`,
-                    "style" : "height: 70px"
-                });
-            }
+                { "click" : clickSuggestion });
 
-            let div = buildNode("div");
+            let type = parseInt(document.body.getAttribute("requestType"));
+            if (type != 2) { type = 1; }
+            let img = buildNode("img", {
+                "src" : (match.poster_path ? 
+                `https://image.tmdb.org/t/p/w92${match.poster_path}` :
+                    (match.thumb ?
+                        match.thumb :
+                        `poster/${type == 1 ? 'movie' : 'tv'}default.png`
+                    )
+                ),
+                "style" : "height: 70px"
+            });
+
+            let div = buildNode("div", { "class" : "matchText" });
             let release = match.release_date;
             if (release === null || release === undefined)
             {
                 release = match.first_air_date;
             }
 
+            let titleText = (match.title ? match.title : match.name) + ' ';
+            div.appendChild(buildNode('span', {}, titleText));
             let href = buildNode("a",
                 {"href" : "#"},
-                (match.title ? match.title : match.name) + (release.length > 4 ? (" (" + release.substring(0, 4) + ")") : ""),
+                (release.length > 4 ? (" (" + release.substring(0, 4) + ")") : ""),
                 { "click" : goToImdb});
 
             div.appendChild(href);
-            if (img) item.appendChild(img);
+            item.appendChild(img);
             item.appendChild(div);
 
             container.appendChild(item);
@@ -201,7 +211,7 @@ window.addEventListener("load", function()
     function goToImdb()
     {
         let parameters = { "type" : parseInt(document.body.getAttribute("requestType")), "query" : this.parentNode.parentNode.getAttribute("tmdbid"), "by_id" : "true" };
-        let successFunc = function(respons, request)
+        let successFunc = function(response, request)
         {
             logInfo(response);
             if (response.imdb_id)

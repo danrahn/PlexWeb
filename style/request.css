@@ -211,6 +211,42 @@ a:hover {
     text-shadow: -1px 0 #313131, 0 1px #313131, 1px 0 #313131, 0 -1px #313131;
 }
 
+.searchResult {
+    border: 1px solid #2e2e2e;
+    overflow: hidden;
+    width: calc(100% - 2px);
+    height: 70px;
+    vertical-align: middle;
+    background-color: rgba(0,0,0,0.1);
+}
+
+.searchResult:hover {
+    background-color: rgba(0,0,0,0.2);
+}
+
+.selectedSuggestion {
+    background-color: #2E5E3E;
+}
+.selectedSuggestion:hover {
+    background-color: #1E4E2E;
+}
+
+.searchResult img {
+    height: 100%;
+    float: left;
+    margin-right: 10px;
+}
+
+.searchResult .matchText {
+    width: auto;
+    font-size: small;
+    position: relative;
+    top: 50%;
+    -ms-transform: translateY(-50%);
+    -webkit-transform: translateY(-50%);
+    transform: translateY(-50%);
+}
+
 @media (orientation: landscape), (min-width: 767px) {
     #innerInfoContainer {
         float: left;
