@@ -199,11 +199,12 @@ function build_js($file, ...$includes)
 {
     if (try_get("nomin"))
     {
-        echo "<script>\n" . include_js($file) . "</script>\n\n";
         foreach ($includes as $include)
         {
             echo "<script>\n" . include_js($include) . "</script>\n\n";
         }
+
+        echo "<script>\n" . include_js($file) . "</script>\n\n";
     }
     else
     {
@@ -394,11 +395,16 @@ function send_email_forget($to, $content, $subject)
 /// </summary>
 function ieCheck()
 {
-	$ua = strtolower($_SERVER['HTTP_USER_AGENT']);
-	if (strpos($ua, "msie") !== FALSE ||
-		(strpos($ua, "trident") !== FALSE && strpos($ua, "11.") !== FALSE))
-	{
-		header("Location: ie.html");
-	}
+    if (!isset($_SERVER['HTTP_USER_AGENT']))
+    {
+        return;
+    }
+
+    $ua = strtolower($_SERVER['HTTP_USER_AGENT']);
+    if (strpos($ua, "msie") !== FALSE ||
+        (strpos($ua, "trident") !== FALSE && strpos($ua, "11.") !== FALSE))
+    {
+        header("Location: ie.html");
+    }
 }
 ?>
