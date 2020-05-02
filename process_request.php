@@ -1108,27 +1108,24 @@ function search($query, $kind)
         else
         {
             $copies = $result->xpath('Media');
-            $res = "";
+            $resolutions = array();
             foreach ($copies as $file)
             {
-                $newRes = (string)$file['videoResolution'];
-                if ($newRes)
+                $res = (string)$file['videoResolution'];
+                if ($res)
                 {
-                    $lastChar = $newRes[strlen($newRes) - 1];
-                    if ($lastChar != 'k' && $lastChar != 'p' && $lastChar != 'i')
+                    $lastChar = $res[strlen($res) - 1];
+                    if ($lastChar != 'k' && $lastChar != 'p' && $lastChar != 'i' && $lastChar != 'd')
                     {
-                        $newRes .= 'p';
+                        $res .= 'p';
                     }
 
-                    $res .= $newRes . ", ";
+                    $resolutions[$res] = TRUE;
                 }
             }
-
-            $len = strlen($res);
-            if ($len > 0)
+            if (count($resolutions) > 0)
             {
-                $res = substr($res, 0, $len - 2);
-                $item->resolution = $res;
+                $item->resolution = join(', ', array_keys($resolutions));
             }
 
             if ($type == RequestType::TVShow)
