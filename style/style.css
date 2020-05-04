@@ -3,7 +3,7 @@ html, body {
 }
 
 #plexFrame {
-    background: rgba(0,0,0,0) url("res/noise.8b05ce45d0df59343e206bc9ae78d85d.png") repeat scroll 0% 0%;
+    background: rgba(0,0,0,0) url("/plex/res/noise.8b05ce45d0df59343e206bc9ae78d85d.png") repeat scroll 0% 0%;
     margin: 0;
     border: 0;
     overflow: auto;
@@ -12,14 +12,14 @@ html, body {
 }
 
 body {
-    background-image: url("res/preset-light.770a0981b66e038d3ffffbcc4f5a26a4.png");
+    background-image: url("/plex/res/preset-light.770a0981b66e038d3ffffbcc4f5a26a4.png");
     background-size: cover;
     margin: 0;
     padding: 0;
     font-family: sans-serif;
 }
 
-h1, h2, h3 {
+h1, h2, h3, h4 {
     margin-top: 10px;
     text-align: center;
 }
@@ -182,7 +182,8 @@ hr {
 }
 
 .statusBad {
-    color: #832e2e;
+    /*color: #832e2e;*/
+    color: #A33e3e;
 }
 
 #logout {
@@ -191,7 +192,7 @@ hr {
     bottom: 5px;
 }
 
-#login a, #register a, #logout a {
+#login a, #register a, #logout a, #welcome a {
     color: #80A020;
 }
 

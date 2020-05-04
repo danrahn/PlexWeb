@@ -24,9 +24,31 @@ window.addEventListener("load", function()
             }
         });
 
+        setupMarkdown();
+
         $("#newCommentButton").addEventListener("click", addComment);
         addNavListener();
         getComments();
+    }
+
+    function isAdmin()
+    {
+        return parseInt(document.body.getAttribute("isAdmin")) == 1;
+    }
+
+    function setupMarkdown()
+    {
+        $('#newComment').addEventListener('change', parseMarkdown);
+        $('#newComment').addEventListener('keyup', parseMarkdown);
+    }
+
+    function parseMarkdown()
+    {
+        const text = $('#newComment').value;
+        $('#mdHolder').style.display = text.length == 0 ? "none" : "block";
+
+        logTmi(`Parsing "${text}"`);
+        $('#mdPreview').innerHTML = new Markdown(text).parse();
     }
 
     let selectedSuggestion;
@@ -327,7 +349,7 @@ window.addEventListener("load", function()
                 "Waiting"
             ][status]);
 
-        if (parseInt(document.body.getAttribute("isAdmin")) == 1)
+        if (isAdmin())
         {
             setupSpanDoubleClick(statusSpan);
         }
@@ -532,23 +554,10 @@ window.addEventListener("load", function()
                     })
                 );
 
-            let fixedupContent = comment[1].replace(/[&<>"\/]/g, function(s) {
-                const entityMap = {
-                    "&": "&amp;",
-                    "<": "&lt;",
-                    ">": "&gt;",
-                    '"': '&quot;',
-                    "'": '&#39;',
-                    "/": '&#x2F;'
-                };
+            // Try the new markdown parser
+            let fixedupContent = new Markdown(comment[1]).parse();
 
-                return entityMap[s];
-            });
-
-            let markdownUrlRegex = /\[(.*?)\]\((.*?)\)/gm;
-            fixedupContent = "<span>" + fixedupContent.replace(markdownUrlRegex, '<a href="$2" target="_blank">$1</a>') + "</span>";
-
-            let content = buildNode("div", {"class" : "commentContent"}, fixedupContent);
+            let content = buildNode("div", {"class" : "commentContent md"}, fixedupContent);
 
             info.appendChild(name);
             info.appendChild(date);

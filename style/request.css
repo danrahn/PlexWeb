@@ -247,6 +247,26 @@ a:hover {
     transform: translateY(-50%);
 }
 
+#mdPreview {
+    margin: 0;
+    padding-top: 10px;
+    padding-bottom: 10px;
+    background: rgba(0, 0, 0, 0.2);
+}
+
+#mdHolder {
+    background: rgba(0, 0, 0, 0.2);
+    clear: both;
+    width: 100%;
+    height: auto;
+    overflow: auto;
+    float: left;
+    margin-top: 10px;
+    margin-bottom: 10px;
+    font-size: smaller;
+    border: 1px solid #616161;
+}
+
 @media (orientation: landscape), (min-width: 767px) {
     #innerInfoContainer {
         float: left;

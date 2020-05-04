@@ -51,7 +51,7 @@ function get_details($req_id)
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#3C5260" />
     <title>Plex Request</title>
-    <?php get_css("style", "nav", "request"); ?>
+    <?php get_css("style", "nav", "markdown", "request"); ?>
 </head>
 <body
     isAdmin="<?= (isset($_SESSION['level']) && $_SESSION['level'] >= 100) ? 1 : 0 ?>"
@@ -64,7 +64,7 @@ function get_details($req_id)
     externalId="<?= $details->external_id?>">
     <div id="plexFrame">
         <?php include "nav.php" ?>
-        <?php if (!$details->is_media_request) { ?>
+        <?php if (!$details->is_media_request || $details->external_id) { ?>
             <div id="infoContainer">Getting info...</div>
             <div id="commentsHolder">
                 <div style="margin-bottom: 10px" class="commentHeader">Comments:</div>
@@ -72,9 +72,13 @@ function get_details($req_id)
                     
                 </div>
                 <textarea id="newComment" placeholder="Add comment..."></textarea>
+                <div id="mdHolder" style="display: none">
+                    <div id="mdHeader" class="commentInfo">Comment Preview (with in-progress <a href="https://www.markdownguide.org/basic-syntax" target="_none">Markdown</a> support):</div>
+                    <div id="mdPreview" class="md"></div>
+                </div>
                 <input type="button" id="newCommentButton" value="Add Comment" style="float: left; clear: both; margin-top: 5px; padding: 10px" />
             </div>
-        <?php } else if (!$details->external_id) { ?>
+        <?php } else { ?>
             <div class="formContainer" id="info">
                 <div class="formTitle">The request for <?= $details->request_name ?> was made with an older version of this website. Please choose the correct item below</div>
                 <form id="searchForm" style="overflow: auto">
@@ -88,18 +92,8 @@ function get_details($req_id)
                     <div id="imdbResult"></div>
                 </form>
             </div>
-        <?php } else { ?>
-            <div id="infoContainer">Getting info...</div>
-            <div id="commentsHolder">
-                <div style="margin-bottom: 10px" class="commentHeader">Comments:</div>
-                <div id="comments">
-                    
-                </div>
-                <textarea id="newComment" placeholder="Add comment..."></textarea>
-                <input type="button" id="newCommentButton" value="Add Comment" style="float: left; clear: both; margin-top: 5px; padding: 10px" />
-            </div>
         <?php } ?>
     </div>
 </body>
-<?php build_js("request", "consolelog", "animate", "common", "queryStatus", "nav"); ?>
+<?php build_js("request", "consolelog", "animate", "common", "queryStatus", "nav", "markdown"); ?>
 </html>

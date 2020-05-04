@@ -1,0 +1,38 @@
+.md {
+    color: #c1c1c1;
+}
+
+.mdDiv {
+    margin: 10px;
+}
+
+.md a {
+    color: #80A020;
+}
+
+.md a:hover {
+    color: #608020;
+}
+
+.md code {
+    background: rgba(0, 0, 0, 0.3);
+    padding: 3px 5px 3px 5px;
+}
+
+.md pre {
+    /*background: rgba(0, 0, 0, 0.2);*/
+    font-size: 1rem;
+    padding-top: 0.3rem;
+    line-height: 1rem;
+    background: linear-gradient(to bottom, #0003 0, #0003 0.3rem, #4442 0.3rem, #4442 1.3rem, #0003 1.3rem, #0003 2rem);
+    background-size: 100% 2rem;
+    overflow: auto;
+}
+
+.md blockquote {
+    color: #a1a1a1;
+    margin-left: 10px;
+    border-left: 4px solid #919191;
+    padding-left: 10px;
+    font-style: italic;
+}
