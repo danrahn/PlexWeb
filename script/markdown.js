@@ -418,11 +418,12 @@ class Markdown {
                 case '#':
                 {
                     // Headers need to be at the start of a line (or at least the first non-whitespace character)
+                    // Nested within a ListItem is still fine though, as long as they're at the beginning
                     let newline = this.text.lastIndexOf('\n', i);
-                    {
-                        // 
-                    }
-                    if (this.text.substring(newline + 1, i).length != 0)
+
+                    let between = this.text.substring(newline + 1, i);
+                    if (between.replace(' ', '').length != 0 &&
+                        (this.currentRun.state != State.ListItem || !/^ *(\*|\d+\.) /.test(between)))
                     {
                         continue;
                     }
@@ -1020,13 +1021,34 @@ class Markdown {
                     }
 
                     let nestLevel = 1;
-                    while (i - nestLevel >= 0 && this.text[i - nestLevel] == '>')
+                    let offset = 1;
+                    while (i - offset >= 0 && /[> ]/.test(this.text[i - offset]))
                     {
-                        ++nestLevel;
+                        if (this.text[i - offset] == '>')
+                        {
+                            ++nestLevel;
+                        }
+
+                        ++offset;
                     }
 
-                    // Must be the beginning of the line, not even whitespace
-                    if (i - nestLevel != -1 && this.text[i - nestLevel] != '\n')
+                    // Must be the beginning of the line
+                    let prevNewline = this.text.lastIndexOf('\n', i);
+                    let regex;
+                    if (this.currentRun.state != State.ListItem)
+                    {
+                        regex = new RegExp(`^>{${nestLevel}}$`);
+                    }
+                    else if (this.currentRun.parent.state == State.OrderedList)
+                    {
+                        regex = new RegExp(`^(\\d+\\.)?>{${nestLevel}}$`);
+                    }
+                    else
+                    {
+                        regex = new RegExp(`^(\\*)?>{${nestLevel}}$`);
+                    }
+                    if (!regex.test(this.text.substring(prevNewline + 1, i + 1).replace(/ /g, '')))
+                    // if (i - nestLevel != -1 && this.text[i - nestLevel] != '\n')
                     {
                         continue;
                     }
@@ -1058,22 +1080,25 @@ class Markdown {
                         let next = this.text[lineEnd + 1];
                         if (next == '\n')
                         {
-                            // Double line break, we're done
+                            // Double line break, we're done.
+                            // Note that we might want to change this for listitems, which
+                            // allows additional newlines if the next non-blank line is indented
+                            // 2+ spaces.
                             end = lineEnd;
                             break;
                         }
-                        
-                        if (next != '>')
-                        {
-                            // Not a newline, but not an indicator. Keep it in the group
-                            lineEnd = this.text.indexOf('\n', lineEnd + 1);
-                            continue;
-                        }
 
-                        let nextNest = 1;
-                        while (lineEnd + nextNest + 1 < this.text.length && this.text[lineEnd + nextNest + 1] == '>')
+                        let nextNest = 0;
+                        let nextChar;
+                        let nextOffset = 1;
+                        while (lineEnd + nextOffset < this.text.length && /[> ]/.test((nextChar = this.text[lineEnd + nextOffset])))
                         {
-                            ++nextNest;
+                            if (nextChar == '>')
+                            {
+                                ++nextNest;
+                            }
+
+                            ++nextOffset;
                         }
 
                         if (nextNest < nestLevel)
@@ -1601,8 +1626,19 @@ class Run
 
     transform(newText)
     {
+        // First, detect escaped characters and remove the escape, unless
+        // we're in code, in which case we display everything as-is.
+        // "\*" becomes "*", "\_" becomes "_", etc.
+
+        // Display inline and block code blocks as-is, but everything else should
+        // strip escapes - 
+        if (this.state != State.InlineCode && this.state != State.CodeBlock)
+        {
+            newText = this.escapeChars(newText, '\\*`_+~>');
+        }
+
         // All items should have htmlentities replaced
-        newText = newText.replace(/[&<>"'\/]/g, function(ch)
+        return newText.replace(/[&<>"'\/]/g, function(ch)
         {
             const entityMap =
             {
@@ -1616,15 +1652,6 @@ class Run
 
             return entityMap[ch];
         });
-
-        // Display inline and block code blocks as-is, but everything else should
-        // strip escapes - "\*" becomes "*", "\_" becomes "_", etc.
-        if (this.state != State.InlineCode && this.state != State.CodeBlock)
-        {
-            return this.escapeChars(newText, '*`_+~>');
-        }
-
-        return newText;
     }
 }
 
@@ -1764,7 +1791,7 @@ class BlockQuote extends Run
                 continue;
             }
 
-            while (i + 1 < newText.length && newText[i + 1] == '>')
+            while (i + 1 < newText.length && /[> ]/.test(newText[i + 1]))
             {
                 ++i;
             }
