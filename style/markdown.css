@@ -19,6 +19,10 @@
     padding: 3px 5px 3px 5px;
 }
 
+.md h1, .md h2, .md h3, .md h4, .md h5, .md h6 {
+    text-align: left;
+}
+
 .md pre {
     /*background: rgba(0, 0, 0, 0.2);*/
     font-size: 1rem;
