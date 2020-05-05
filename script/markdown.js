@@ -149,25 +149,36 @@ class Markdown {
         // bit (even though it shouln't be).
         let data = { 'inList' : false, 'listEnd' : -1 };
         let spaces = '';
+        let subText = this.text.substring(0, index);
         for (let i = 0; i < 3; ++i)
         {
-            let prevList = this.text.lastIndexOf(`\n${spaces}* `, index);
+            const regex = new RegExp(`\n${spaces}(\\*|\\d+\\.) `, 'g');
+            let matches = [[-1, false]];
+            let lastMatch;
+            while ((lastMatch = regex.exec(subText)) != null)
+            {
+                matches.push([lastMatch.index, lastMatch[1] != '*']);
+            }
+
+            let prevList = matches[matches.length - 1][0];
             while (prevList != -1 && this._checkHr(prevList + 1, false /*addHr*/))
             {
-                prevList = this.text.lastIndexOf(`\n${spaces}* `, prevList - 1)
+                matches.pop();
+                prevList = matches[matches.length - 1][0];
             }
 
             if (prevList != -1)
             {
-                data.listEnd = this._ulEnd(prevList + spaces.length + 1, Math.floor(spaces.length / 2));
+                data.listEnd = this._listEnd(prevList + spaces.length + 1, Math.floor(spaces.length / 2), matches[matches.length - 1][1] /*ordered*/);
                 data.inList = data.listEnd > index;
                 return data;
             }
 
             // No newline needed if it's the start of the text
-            if (prevList == -1 && this.text.startsWith(`${spaces}* `) && !this._checkHr(0 /*addHr*/))
+            // if (prevList == -1 && this.text.startsWith(`${spaces}* `) && !this._checkHr(0 /*addHr*/))
+            if (prevList == -1 && new RegExp(`^${spaces}(\\*|\\d+\\.) `).test(this.text) && !this._checkHr(0 /*addHr*/))
             {
-                data.listEnd = this._ulEnd(spaces.length, Math.floor(spaces.length / 2));
+                data.listEnd = this._listEnd(spaces.length, Math.floor(spaces.length / 2), !this.text.startsWith(`${spaces}* `) /*ordered*/);
                 data.inList = data.listEnd > index;
                 return data;
             }
@@ -1081,6 +1092,48 @@ class Markdown {
                     // One level lasts until 
                     break;
                 }
+                case '0':
+                case '1':
+                case '2':
+                case '3':
+                case '4':
+                case '5':
+                case '6':
+                case '7':
+                case '8':
+                case '9':
+                {
+                    if (this._isEscaped(i) || i == this.text.length - 1 || !/\d+\. /.test(this.text.substring(i)))
+                    {
+                        continue;
+                    }
+
+                    // Two spaces adds a nesting level
+                    let prevNewline = this.text.lastIndexOf('\n', i);
+                    let spaces = this.text.substring(prevNewline + 1, i);
+                    if (!/^ *$/.test(spaces))
+                    {
+                        // Something other than spaces precedes this
+                        continue;
+                    }
+
+                    let nestLevel = Math.floor(spaces.length / 2);
+
+                    // First need to determine if this is a new list. If so, create the <ol>
+                    if (this.currentRun.state != State.OrderedList || nestLevel > this.currentRun.nestLevel)
+                    {
+                        // Need bounds for the entire list
+                        let end = this._listEnd(i, nestLevel, true /*ordered*/);
+                        let ol = new OrderedList(i, end, nestLevel, this.text.substring(i).match(/\d+/)[0], this.currentRun);
+                        this.currentRun = ol;
+                        logTmi(`Adding Ordered List: start=${i}, end=${end}, listStart=${ol.listStart}, nestLevel=${nestLevel}`);
+                    }
+
+                    let liEnd = this._liEnd(i, nestLevel, true /*ordered*/);
+                    let li = new ListItem(i, liEnd, this.currentRun);
+                    this.currentRun = li;
+                    logTmi(`Adding ListItem: start=${i}, end=${liEnd}, nestLevel=${nestLevel}`);
+                }
                 default:
                 {
                     break;
@@ -1110,8 +1163,8 @@ class Markdown {
         let spaces = this.text.substring(prevNewline + 1, start);
         if (!/^ *$/.test(spaces))
         {
-            // Something other than spaces precede this.
-            return false;
+            // Something other than spaces precedes this.
+            return false; 
         }
 
         let nestLevel = Math.floor(spaces.length / 2);
@@ -1124,13 +1177,13 @@ class Markdown {
             //    how many newlines there are.
             //    This also adjusts for nesting. Second-level lists can have items indented by four spaces to continue
 
-            let end = this._ulEnd(start, nestLevel);
+            let end = this._listEnd(start, nestLevel, false /*ordered*/);
             let ul = new UnorderedList(start, end, nestLevel, this.currentRun);
             this.currentRun = ul;
             logTmi(`Adding Unordered List: start=${start}, end=${end}, nestLevel=${nestLevel}`);
         }
 
-        let liEnd = this._liEnd(start, nestLevel);
+        let liEnd = this._liEnd(start, nestLevel, false /*ordered*/);
         let li = new ListItem(start, liEnd, this.currentRun);
         this.currentRun = li;
         logTmi(`Adding ListItem: start=${start}, end=${liEnd}, nestLevel=${nestLevel}`);
@@ -1197,7 +1250,7 @@ class Markdown {
                 // general content of any kind, or a new list item that's indented
                 // (minspaces + 1) * 2
                 let minspaces = (nestLevel + 1) * 2;
-                if (RegExp(`^ {0,${minspaces - 1}}\\* `).test(nextline))
+                if (RegExp(`^ {0,${minspaces - 1}}(?:\\*|\\d+\\.) `).test(nextline))
                 {
                     return end;
                 }
@@ -1213,7 +1266,7 @@ class Markdown {
     }
 
 
-    _ulEnd(start, nestLevel)
+    _listEnd(start, nestLevel, ordered)
     {
         let newline = this.text.indexOf('\n', start);
         if (newline == -1 || newline == this.text.length - 1)
@@ -1257,13 +1310,10 @@ class Markdown {
                 // item must be indented at 2 * nestLevel. If the next line is not
                 // a listitem and a potential continuation of the current li, it must
                 // be indented with (nestLevel + 1) * 2 spaces
-                //
-                // One exception is the top-level list, which can have a "single"
-                // double-newline and be part of the same group.
                 let minspaces = (nestLevel + 1) * 2;
                 if (!RegExp(`^ {${minspaces},}`).test(nextline))
                 {
-                    if (!RegExp(`^ {${minspaces - 2},${minspaces - 1}}\\* `).test(nextline))
+                    if (!RegExp(`^ {${minspaces - 2},${minspaces - 1}}${ordered ? '\\d+\\.' : '\\*' } `).test(nextline))
                     {
                         return end;
                     }
@@ -1273,9 +1323,12 @@ class Markdown {
             {
                 // Not a double newline, if it's a new listitem, it must be indented
                 // at least (nestLevel * 2) spaces. Otherwise, any level of indentation is fine
-                if (RegExp('^ *\\* ').test(nextline))
+                if (/^ *(?:\*|\d+\.) /.test(nextline))
                 {
-                    if (!RegExp(`^ {${nestLevel * 2},}`).test(nextline))
+                    // Also can't swap between ordered/unoredred with the same nesting level
+                    let minspaces = nestLevel * 2;
+                    if (!RegExp(`^ {${minspaces},}`).test(nextline) ||
+                        RegExp(`^ {${minspaces},${minspaces + 1}}${ordered ? '\\*' : '\\d+\\.'} `).test(nextline))
                     {
                         return end;
                     }
@@ -1687,7 +1740,7 @@ class Header extends Run
 
 class BlockQuote extends Run
 {
-    constructor(start, end, nestLevel, parent=null)
+    constructor(start, end, nestLevel, parent)
     {
         super(State.BlockQuote, start, parent);
         this.end = end;
@@ -1723,7 +1776,7 @@ class BlockQuote extends Run
 
 class UnorderedList extends Run
 {
-    constructor(start, end, nestLevel, parent=null)
+    constructor(start, end, nestLevel, parent)
     {
         super(State.UnorderedList, start, parent);
         this.end = end;
@@ -1736,9 +1789,33 @@ class UnorderedList extends Run
     }
 }
 
+class OrderedList extends Run
+{
+    constructor(start, end, nestLevel, listStart, parent)
+    {
+        super(State.OrderedList, start, parent);
+        this.end = end;
+        this.nestLevel = nestLevel;
+        this.listStart = listStart;
+
+        this.startContextLength = () => 0;
+        this.endContextLength = () => 0;
+
+        this.tag = function(end)
+        {
+            if (end)
+            {
+                return '</ol>';
+            }
+
+            return `<ol start='${this.listStart}'>`;
+        }
+    }
+}
+
 class ListItem extends Run
 {
-    constructor(start, end, parent=null)
+    constructor(start, end, parent)
     {
         super(State.ListItem, start, parent);
         this.end = end;
@@ -1752,7 +1829,7 @@ class ListItem extends Run
 
 class Url extends Run
 {
-    constructor(start, end, text, url, parent=null)
+    constructor(start, end, text, url, parent)
     {
         super(State.Url, start, parent);
         this.end = end;

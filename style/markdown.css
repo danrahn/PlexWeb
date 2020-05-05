@@ -23,6 +23,7 @@
     /*background: rgba(0, 0, 0, 0.2);*/
     font-size: 1rem;
     padding-top: 0.3rem;
+    padding-bottom: 0.3rem;
     line-height: 1rem;
     background: linear-gradient(to bottom, #0003 0, #0003 0.3rem, #4442 0.3rem, #4442 1.3rem, #0003 1.3rem, #0003 2rem);
     background-size: 100% 2rem;
