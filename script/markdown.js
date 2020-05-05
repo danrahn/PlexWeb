@@ -136,7 +136,12 @@ const isAlphanumeric = function(ch)
 class Markdown {
     constructor(text)
     {
-        this.text = text.trim();
+        let trim = 0;
+        while (text[trim] == '\n')
+        {
+            ++trim;
+        }
+        this.text = text.substring(trim);
         this.currentRun = null;
     }
 
@@ -189,6 +194,10 @@ class Markdown {
         return data;
     }
 
+    /// <summary>
+    /// This is pretty gross and breaks a lot of the encapsulation
+    /// of the main loop. Should really look into something else here.
+    /// </summary>
     _getNextDivEnd(start)
     {
         let index = start;
@@ -223,7 +232,53 @@ class Markdown {
             }
 
             // Now make sure we're not in a code block, which requires
-            // exactly three backticks on their own line
+            // exactly three backticks on their own line, or prefixes of
+            // at least 4 spaces preceded by two newlines
+
+            // Look for prefixed spaces first
+
+            let prevIndex = this.text.lastIndexOf('\n', end - 1);
+            let prevLine = this.text.substring(prevIndex + 1, end + 1);
+            let prevNew = 0;
+            let maybeBlock = false;
+            while (prevLine && prevLine.length > 0)
+            {
+                if (prevLine == '\n')
+                {
+                    ++prevNew;
+                }
+                else if (prevLine.startsWith('    '))
+                {
+                    maybeBlock = true;
+                    prevNew = 0;
+                }
+                else
+                {
+                    break;
+                }
+
+                let prevOld = prevIndex;
+                prevIndex = this.text.lastIndexOf('\n', prevIndex - 1);
+                prevLine = this.text.substring(prevIndex + 1, prevOld + 1);
+            }
+
+            if (maybeBlock && (prevNew > 1 || (prevIndex == -1 && (this.text.startsWith('    ') || this.text.startsWith('\n')))))
+            {
+                // Previous lines indicate we might be in a code block. We know
+                // we are if the next non-blank line is indented with 4+ spaces
+                let offset = 1;
+                while (offset + end < this.text.length && this.text[offset + end] == '\n')
+                {
+                    ++offset;
+                }
+
+                if (/    [^\n]/.test(this.text.substring(end + offset, end + offset + 5)))
+                {
+                    // We're definitely in a code block.
+                    index = end + offset + 5;
+                    continue;
+                }
+            }
 
             // If the first occurance of ``` is non-existant or beyond
             // our end bound, we're good to go. This will change once
@@ -511,7 +566,7 @@ class Markdown {
                             {
                                 // Nothing is allowed inside of code blocks, so if we've found the end
                                 // we can also move the cursor
-                                let block = new CodeBlock(i, end + 4, this.text, this.currentRun);
+                                let block = new CodeBlock(i, end + 4, this.text, true /*backtick*/, this.currentRun);
                                 i = end + 3;
                                 found = true;
                                 break;
@@ -1158,6 +1213,70 @@ class Markdown {
                     let li = new ListItem(i, liEnd, this.currentRun);
                     this.currentRun = li;
                     logTmi(`Adding ListItem: start=${i}, end=${liEnd}, nestLevel=${nestLevel}`);
+                }
+                case ' ':
+                {
+                    // Potential code block, alternative to three backticks
+
+                    // Deal with nesting later, but for now, this has to be the fourth space
+                    // and it must be preceded by two newlines.
+                    if (i < 6 ||
+                        i == this.text.length ||
+                        this.text[i + 1] == '\n' ||
+                        this.text.substring(i - 5, i) != '\n\n   ')
+                    {
+                        if (i != 3 || !this.text.startsWith('    ') || i == this.text.length - 1 || this.text[4] == '\n')
+                        {
+                            continue;
+                        }
+                    }
+
+                    // Find the end, i.e. the last line prefixed with 4+ spaces (excluding completely empty lines)
+                    let newline = this.text.indexOf('\n', i);
+                    let end;
+                    if (newline == -1 || newline == this.text.length - 1)
+                    {
+                        end = this.text.length;
+                    }
+                    else
+                    {
+                        end = newline;
+                        let next = this._indexOrLast('\n', newline + 1);
+                        let nextline = this.text.substring(newline + 1, next + 1);
+
+                        while (true)
+                        {
+                            if (nextline.length == 0)
+                            {
+                                break;
+                            }
+
+                            while (nextline == '\n')
+                            {
+                                newline = next;
+                                next = this._indexOrLast('\n', next + 1);
+                                nextline = this.text.substring(newline + 1, next + 1);
+                                if (nextline.length == 0)
+                                {
+                                    break;
+                                }
+                            }
+
+                            // If we're here, nextline actually has content
+                            if (!nextline.startsWith('    '))
+                            {
+                                break;
+                            }
+
+                            end = next;
+                            newline = next;
+                            next = this._indexOrLast('\n', next + 1);
+                            nextline = this.text.substring(newline + 1, next + 1);
+                        }
+                    }
+
+                    let codeblock = new CodeBlock(i - 3, end, this.text, false /*backtick*/, this.currentRun)
+                    i = end + 1;
                 }
                 default:
                 {
@@ -1887,20 +2006,48 @@ class Url extends Run
 
 class CodeBlock extends Run
 {
-    constructor(start, end, text, parent)
+    constructor(start, end, text, backtick, parent)
     {
         super(State.CodeBlock, start, parent);
         this.end = end;
         this.text = text.substring(start, end);
+        this.backtick = backtick;
 
         this.startContextLength = function()
         {
-            return this.text.indexOf('\n') + 1;
+            if (this.backtick)
+            {
+                return this.text.indexOf('\n') + 1;
+            }
+
+            return 4;
         }
 
-        this.endContextLength = () => 4;
+        this.endContextLength = function()
+        {
+            if (this.backtick)
+            {
+                return 4;
+            }
+
+            return 0;
+        }
 
         this.tag = (end) => `<${end ? '/' : ''}pre>`;
+    }
+
+    transform(newText, side)
+    {
+        if (this.backtick)
+        {
+            return newText;
+        }
+
+        // Don't use newText, we know what we want with this.text
+        let finalText = '';
+        let lines = this.text.split('\n');
+        lines.forEach((line) => finalText += (line.length == 0 ? '\n' : (line.substring(4) + '\n')));
+        return finalText;
     }
 }
 
