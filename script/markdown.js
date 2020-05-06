@@ -566,7 +566,7 @@ class Markdown {
                             {
                                 // Nothing is allowed inside of code blocks, so if we've found the end
                                 // we can also move the cursor
-                                let block = new CodeBlock(i, end + 4, this.text, true /*backtick*/, this.currentRun);
+                                let block = new BacktickCodeBlock(i, end + 4, this.text, this.currentRun);
                                 i = end + 3;
                                 found = true;
                                 break;
@@ -1218,17 +1218,45 @@ class Markdown {
                 {
                     // Potential code block, alternative to three backticks
 
-                    // Deal with nesting later, but for now, this has to be the fourth space
-                    // and it must be preceded by two newlines.
-                    if (i < 6 ||
-                        i == this.text.length ||
-                        this.text[i + 1] == '\n' ||
-                        this.text.substring(i - 5, i) != '\n\n   ')
+                    // Rules:
+                    // 1. If not in a list, must have 4 spaces at the start of the line, and an empty line above
+                    // 2. If in a list and on the same line as the start of a listitem,
+                    //    must be indented 5 spaces from the bullet start ('* ' plus four spaces')
+                    // 3. If in a list and _not_ on the same line as the start of a listitem, must be indented
+                    //    4 spaces plus (2 * (nestLevel + 1))
+                    let minspaces = 4;
+                    let firstIsList = false;
+                    if (this.currentRun.state == State.ListItem)
                     {
-                        if (i != 3 || !this.text.startsWith('    ') || i == this.text.length - 1 || this.text[4] == '\n')
+                        let nestLevel = this.currentRun.parent.nestLevel;
+                        minspaces += (nestLevel + 1) * 2;
+                        let type = this.currentRun.parent.state;
+                        let context = this.text.substring(this.text.lastIndexOf('\n', i) - 1, i + 1);
+                        let liStartRegex = new RegExp(`^.?\\n? {${nestLevel * 2}} ?${type == State.OrderedList ? '\\d+\\.' : '\\*'}     `);
+                        if (!liStartRegex.test(context))
+                        {
+                            // Not on the same line as the list item start, check if it's
+                            // a valid continuation
+                            if (!new RegExp(`^\n?\n? {${minspaces}}`).test(context))
+                            {
+                                continue;
+                            }
+                        }
+                        else
+                        {
+                            firstIsList = true;
+                        }
+
+                    }
+                    else
+                    {
+                        // Not in a list, just need 4+ spaces. substring is nice enough to adjust invalid bounds
+                        // in the case where we ask for a substring starting at a negative index
+                        if (!/^\n?\n?   $/.test(this.text.substring(i - 5, i)) || i == this.text.length - 1 || this.text[i + 1] == '\n')
                         {
                             continue;
                         }
+
                     }
 
                     // Find the end, i.e. the last line prefixed with 4+ spaces (excluding completely empty lines)
@@ -1243,6 +1271,7 @@ class Markdown {
                         end = newline;
                         let next = this._indexOrLast('\n', newline + 1);
                         let nextline = this.text.substring(newline + 1, next + 1);
+                        let regex = new RegExp(`^ {${minspaces}}`);
 
                         while (true)
                         {
@@ -1263,7 +1292,7 @@ class Markdown {
                             }
 
                             // If we're here, nextline actually has content
-                            if (!nextline.startsWith('    '))
+                            if (!regex.test(nextline))
                             {
                                 break;
                             }
@@ -1275,8 +1304,9 @@ class Markdown {
                         }
                     }
 
-                    let codeblock = new CodeBlock(i - 3, end, this.text, false /*backtick*/, this.currentRun)
-                    i = end + 1;
+                    let start = i - (firstIsList ? 4 : minspaces) + 1;
+                    let codeblock = new IndentCodeBlock(start, end, this.text, minspaces, firstIsList, this.currentRun)
+                    i = end - 1;
                 }
                 default:
                 {
@@ -2013,40 +2043,58 @@ class CodeBlock extends Run
         this.text = text.substring(start, end);
         this.backtick = backtick;
 
+        this.tag = (end) => `<${end ? '/' : ''}pre>`;
+    }
+}
+
+class BacktickCodeBlock extends CodeBlock
+{
+    constructor(start, end, text, parent)
+    {
+        super(start, end, text, true /*backtick*/, parent);
+
+        this.startContextLength = function() { return this.text.indexOf('\n') + 1; }
+        this.endContextLength = () => 4;
+    }
+}
+
+class IndentCodeBlock extends CodeBlock
+{
+    constructor(start, end, text, indent, firstIsList, parent)
+    {
+        super(start, end, text, false /*backtick*/, parent);
+        this.indent = indent;
+        this.firstIsList = firstIsList;
+
         this.startContextLength = function()
         {
-            if (this.backtick)
-            {
-                return this.text.indexOf('\n') + 1;
-            }
-
-            return 4;
-        }
-
-        this.endContextLength = function()
-        {
-            if (this.backtick)
+            if (firstIsList)
             {
                 return 4;
             }
 
-            return 0;
+            return indent;
         }
 
-        this.tag = (end) => `<${end ? '/' : ''}pre>`;
+        this.endContextLength = () => 0;
     }
 
     transform(newText, side)
     {
-        if (this.backtick)
-        {
-            return newText;
-        }
-
-        // Don't use newText, we know what we want with this.text
         let finalText = '';
         let lines = this.text.split('\n');
-        lines.forEach((line) => finalText += (line.length == 0 ? '\n' : (line.substring(4) + '\n')));
+        lines.forEach(function(line, i)
+        {
+            if (i == 0 && this.firstIsList)
+            {
+                finalText += line.substring(4) + '\n';
+            }
+            else
+            {
+                finalText += line.substring(this.indent) + '\n';
+            }
+        }, this);
+
         return finalText;
     }
 }
