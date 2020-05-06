@@ -477,7 +477,7 @@ class Markdown {
                     let newline = this.text.lastIndexOf('\n', i);
 
                     let between = this.text.substring(newline + 1, i);
-                    if (between.replace(' ', '').length != 0 &&
+                    if (between.replace(/ /g, '').length != 0 &&
                         (this.currentRun.state != State.ListItem || !/^ *(\*|\d+\.) /.test(between)))
                     {
                         continue;
@@ -542,44 +542,17 @@ class Markdown {
                 }
                 case '`':
                 {
-                    // Multiline code block if it's the start of a line and there are three of these
                     if (this._isEscaped(i))
                     {
                         continue;
                     }
 
-                    if ((i == 0 || this.text[i - 1] == '\n') &&
-                        i < this.text.length - 2 && this.text[i + 1] == '`' && this.text[i + 2] == '`')
+                    // Multiline code block if it's the start of a line and there are three of these
+                    let multilineBlockEnd = this._checkBacktickCodeBlock(i);
+                    if (multilineBlockEnd != -1)
                     {
-                        // Potential multiline code block
-
-                        // If I ever get around to it, text after the ticks indicates the language
-                        // (e.g. "```cpp" for C++). For now though, just ignore it.
-
-                        // Requires exactly three backticks on their own line. Anything else is a failure
-                        let end = i + 2;
-                        end = this.text.indexOf('\n```', end);
-                        let found = false;
-                        while (!found && end != -1)
-                        {
-                            if (end + 4 == this.text.length || this.text[end + 4] == '\n')
-                            {
-                                // Nothing is allowed inside of code blocks, so if we've found the end
-                                // we can also move the cursor
-                                let block = new BacktickCodeBlock(i, end + 4, this.text, this.currentRun);
-                                i = end + 3;
-                                found = true;
-                                break;
-                            }
-
-                            end = this.text.indexOf('\n```', end + 4);
-                        }
-
-                        if (found)
-                        {
-                            continue;
-                        }
-
+                        i = multilineBlockEnd - 1;
+                        continue;
                     }
 
                     // Couldn't parse as a code block, so try an inline block. Note that we need to match
@@ -1237,7 +1210,7 @@ class Markdown {
                         {
                             // Not on the same line as the list item start, check if it's
                             // a valid continuation
-                            if (!new RegExp(`^\n?\n? {${minspaces}}`).test(context))
+                            if (!new RegExp(`^\\n?\\n? {${minspaces}}`).test(context))
                             {
                                 continue;
                             }
@@ -1280,7 +1253,7 @@ class Markdown {
                                 break;
                             }
 
-                            while (nextline == '\n')
+                            while (/^ *\n/.test(nextline))
                             {
                                 newline = next;
                                 next = this._indexOrLast('\n', next + 1);
@@ -1320,6 +1293,95 @@ class Markdown {
         let perfStop = window.performance.now();
         logVerbose(`Parsed markdown in ${perfStop - perfStart}ms`);
         return html;
+    }
+
+    _checkBacktickCodeBlock(start)
+    {
+        if (!/```/.test(this.text.substring(start - 2, start + 1)))
+        {
+            return -1;
+        }
+
+        // If start ever get around to it, text after the ticks indicates the language
+        // (e.g. "```cpp" for C++). For now though, just ignore it.
+
+        let minspaces = 0;
+        let firstIsList = false;
+        if (this.currentRun.state == State.ListItem)
+        {
+            let nestLevel = this.currentRun.parent.nestLevel;
+            minspaces = (nestLevel + 1) * 2;
+            let type = this.currentRun.parent.state;
+            let context = this.text.substring(this.text.lastIndexOf('\n', start), start + 2);
+            let liStartRegex = new RegExp(`^\\n? {${nestLevel * 2}} ?${type == State.OrderedList ? '\\d+\\.' : '\\*'} \`\`\`\n`);
+            if (!liStartRegex.test(context))
+            {
+                // Not on the same line as the list item start, check if it's a valid continuation
+                if (!new RegExp(`^\\n {${minspaces}}\`\`\``).test(context))
+                {
+                    return -1;
+                }
+            }
+            else
+            {
+                firstIsList = true;
+            }
+        }
+        else
+        {
+            // Not within a list item, needs to be three backticks at the very beginning of the line
+            if (!/^\n?```\n?$/.test(this.text.substring(start - 3, start + 2)))
+            {
+                return -1;
+            }
+        }
+
+        // Each subsequent line must have at least minspaces before it, otherwise it's an invalid block
+        let newline = this.text.indexOf('\n', start);
+        if (newline == -1 || newline == this.text.length - 1)
+        {
+            return -1;
+        }
+
+        let end = newline;
+        let next = this._indexOrLast('\n', newline + 1);
+        let nextline = this.text.substring(newline + 1, next + 1);
+        let validLine = new RegExp(`^ {${minspaces}}`);
+        let validEnd = new RegExp(`^ {${minspaces}}\`\`\`\\n?$`);
+        while (true)
+        {
+            if (nextline.length == 0)
+            {
+                return -1;
+            }
+
+            while (/^ *\n$/.test(nextline))
+            {
+                newline = next;
+                next = this._indexOrLast('\n', next + 1);
+                nextline = this.text.substring(newline + 1, next + 1);
+                if (nextline.length == 0)
+                {
+                    return -1;
+                }
+            }
+
+            if (!validLine.test(nextline))
+            {
+                return -1;
+            }
+
+            if (validEnd.test(nextline))
+            {
+                let block = new BacktickCodeBlock(start - 2, next, minspaces, this.text, this.currentRun);
+                return next;
+            }
+
+            end = next;
+            newline = next;
+            next = this._indexOrLast('\n', next + 1);
+            nextline = this.text.substring(newline + 1, next + 1);
+        }
     }
 
     _checkUl(start)
@@ -2036,11 +2098,12 @@ class Url extends Run
 
 class CodeBlock extends Run
 {
-    constructor(start, end, text, backtick, parent)
+    constructor(start, end, text, indent, backtick, parent)
     {
         super(State.CodeBlock, start, parent);
         this.end = end;
         this.text = text.substring(start, end);
+        this.indent = indent;
         this.backtick = backtick;
 
         this.tag = (end) => `<${end ? '/' : ''}pre>`;
@@ -2064,9 +2127,9 @@ class CodeBlock extends Run
 
 class BacktickCodeBlock extends CodeBlock
 {
-    constructor(start, end, text, parent)
+    constructor(start, end, indent, text, parent)
     {
-        super(start, end, text, true /*backtick*/, parent);
+        super(start, end, text, indent, true /*backtick*/, parent);
 
         this.startContextLength = function() { return this.text.indexOf('\n') + 1; }
         this.endContextLength = () => 4;
@@ -2076,7 +2139,7 @@ class BacktickCodeBlock extends CodeBlock
     {
         this.buildCodeBlock(newText, function(line, i)
         {
-            this.finalText += this.lineNumber(i + 1, this.pad) + line + '\n';
+            this.finalText += this.lineNumber(i + 1, this.pad) + line.substring(this.indent) + '\n';
         });
 
         return this.finalText;
@@ -2087,8 +2150,7 @@ class IndentCodeBlock extends CodeBlock
 {
     constructor(start, end, text, indent, firstIsList, parent)
     {
-        super(start, end, text, false /*backtick*/, parent);
-        this.indent = indent;
+        super(start, end, text, indent, false /*backtick*/, parent);
         this.firstIsList = firstIsList;
 
         this.startContextLength = function()
