@@ -141,7 +141,10 @@ class Markdown {
         {
             ++trim;
         }
-        this.text = text.substring(trim);
+        text = text.substring(trim);
+
+        // Everything's easier with spaces
+        this.text = text.replace(/\t/g, '    ');
         this.currentRun = null;
     }
 
@@ -641,7 +644,7 @@ class Markdown {
                     }
 
                     // Unordered list. Returns true if we successfully parsed an unordered list item
-                    if (this._checkUl(i))
+                    if (this._checkList(i, false /*ordered*/))
                     {
                         break;
                     }
@@ -1160,36 +1163,8 @@ class Markdown {
                 case '8':
                 case '9':
                 {
-                    if (this._isEscaped(i) || i == this.text.length - 1 || !/\d+\. /.test(this.text.substring(i)))
-                    {
-                        continue;
-                    }
-
-                    // Two spaces adds a nesting level
-                    let prevNewline = this.text.lastIndexOf('\n', i);
-                    let spaces = this.text.substring(prevNewline + 1, i);
-                    if (!/^ *$/.test(spaces))
-                    {
-                        // Something other than spaces precedes this
-                        continue;
-                    }
-
-                    let nestLevel = Math.floor(spaces.length / 2);
-
-                    // First need to determine if this is a new list. If so, create the <ol>
-                    if (this.currentRun.state != State.OrderedList || nestLevel > this.currentRun.nestLevel)
-                    {
-                        // Need bounds for the entire list
-                        let end = this._listEnd(i, nestLevel, true /*ordered*/);
-                        let ol = new OrderedList(i, end, nestLevel, this.text.substring(i).match(/\d+/)[0], this.currentRun);
-                        this.currentRun = ol;
-                        logTmi(`Adding Ordered List: start=${i}, end=${end}, listStart=${ol.listStart}, nestLevel=${nestLevel}`);
-                    }
-
-                    let liEnd = this._liEnd(i, nestLevel, true /*ordered*/);
-                    let li = new ListItem(i, liEnd, this.currentRun);
-                    this.currentRun = li;
-                    logTmi(`Adding ListItem: start=${i}, end=${liEnd}, nestLevel=${nestLevel}`);
+                    this._checkList(i, true /*ordered*/);
+                    break;
                 }
                 case ' ':
                 {
@@ -1389,12 +1364,16 @@ class Markdown {
         }
     }
 
-    _checkUl(start)
+    _checkList(start, ordered)
     {
-        // Unordered lists. Interaction with other elements will be especially tricky, but this
-        // only deals with the list structure itself.
+        // Check if we're starting a list. This will definitely get tricky when mixing nested levels of blockquotes
+        // and additional lists
+        if (this._isEscaped(start) || start == this.text.length - 1)
+        {
+            return false;
+        }
 
-        if (this._isEscaped(start) || start == this.text.length - 1 || this.text[start + 1] != ' ')
+        if (ordered ? !/^\d+\. /.test(this.text.substring(start)) : this.text[start + 1] != ' ')
         {
             return false;
         }
@@ -1405,29 +1384,34 @@ class Markdown {
         if (!/^ *$/.test(spaces))
         {
             // Something other than spaces precedes this.
-            return false; 
+            return false;
         }
 
         let nestLevel = Math.floor(spaces.length / 2);
 
-        // First need to determine if this is a new list. If so, create the <ul>
-        if (this.currentRun.state != State.UnorderedList || nestLevel > this.currentRun.nestLevel)
+        // First need to determine if this is a new list. If so, create the ol/ul
+        if (this.currentRun.state != (ordered ? State.OrderedList : State.UnorderedList) || nestLevel > this.currentRun.nestLevel)
         {
-            // Need bounds for entire list. There are several rules that can trip us up.
-            // 1. If the next non-blank line is indented by two spaces, it's still part of the list, no matter
-            //    how many newlines there are.
-            //    This also adjusts for nesting. Second-level lists can have items indented by four spaces to continue
+            let listEnd = this._listEnd(start, nestLevel, ordered);
+            let list;
+            if (ordered)
+            {
+                list = new OrderedList(start, listEnd, nestLevel, this.text.substring(start).match(/\d+/)[0] /*listStart*/, this.currentRun);
+                logTmi(`Adding Ordered List: start=${start}, end=${listEnd}, listStart=${list.listStart}, nestLevel=${nestLevel}`);
+            }
+            else
+            {
+                list = new UnorderedList(start, listEnd, nestLevel, this.currentRun);
+                logTmi(`Adding Unordered List: start=${start}, end=${listEnd}, nestLevel=${nestLevel}`)
+            }
 
-            let end = this._listEnd(start, nestLevel, false /*ordered*/);
-            let ul = new UnorderedList(start, end, nestLevel, this.currentRun);
-            this.currentRun = ul;
-            logTmi(`Adding Unordered List: start=${start}, end=${end}, nestLevel=${nestLevel}`);
+            this.currentRun = list;
         }
 
-        let liEnd = this._liEnd(start, nestLevel, false /*ordered*/);
+        let liEnd = this._liEnd(start, nestLevel, ordered);
         let li = new ListItem(start, liEnd, this.currentRun);
         this.currentRun = li;
-        logTmi(`Adding ListItem: start=${start}, end=${liEnd}, nestLevel=${nestLevel}`);
+        logTmi(`Added ListItem: start=${start}, end=${liEnd}, nestLevel=${nestLevel}`);
         return true;
     }
 
