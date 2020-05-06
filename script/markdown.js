@@ -289,13 +289,13 @@ class Markdown {
                 searchFor = '\n' + searchFor;
             }
 
-            if (start + 4 != this.text.length)
-            {
-                searchFor += '\n';
-            }
-
             let cb = this.text.indexOf(searchFor, start);
             if (cb == -1 || cb > end)
+            {
+                return end;
+            }
+
+            if (!/^\n?```\w*\n?$/.test(this.text.substring(cb, this._indexOrLast('\n', cb + 1))))
             {
                 return end;
             }
@@ -1313,11 +1313,11 @@ class Markdown {
             minspaces = (nestLevel + 1) * 2;
             let type = this.currentRun.parent.state;
             let context = this.text.substring(this.text.lastIndexOf('\n', start), start + 2);
-            let liStartRegex = new RegExp(`^\\n? {${nestLevel * 2}} ?${type == State.OrderedList ? '\\d+\\.' : '\\*'} \`\`\`\n`);
+            let liStartRegex = new RegExp(`^\\n? {${nestLevel * 2}} ?${type == State.OrderedList ? '\\d+\\.' : '\\*'} \`\`\`\\w*\\n`);
             if (!liStartRegex.test(context))
             {
                 // Not on the same line as the list item start, check if it's a valid continuation
-                if (!new RegExp(`^\\n {${minspaces}}\`\`\``).test(context))
+                if (!new RegExp(`^\\n {${minspaces}}\`\`\`\\w*\\n`).test(context))
                 {
                     return -1;
                 }
@@ -1330,13 +1330,12 @@ class Markdown {
         else
         {
             // Not within a list item, needs to be three backticks at the very beginning of the line
-            if (!/^\n?```\n?$/.test(this.text.substring(start - 3, start + 2)))
+            if (!/^\n?```\w*\n?$/.test(this.text.substring(start - 3, start + 2)))
             {
                 return -1;
             }
         }
 
-        // Each subsequent line must have at least minspaces before it, otherwise it's an invalid block
         let newline = this.text.indexOf('\n', start);
         if (newline == -1 || newline == this.text.length - 1)
         {
@@ -1346,6 +1345,8 @@ class Markdown {
         let end = newline;
         let next = this._indexOrLast('\n', newline + 1);
         let nextline = this.text.substring(newline + 1, next + 1);
+
+        // Each subsequent line must have at least minspaces before it, otherwise it's an invalid block
         let validLine = new RegExp(`^ {${minspaces}}`);
         let validEnd = new RegExp(`^ {${minspaces}}\`\`\`\\n?$`);
         while (true)
@@ -2137,6 +2138,7 @@ class BacktickCodeBlock extends CodeBlock
 
     transform(newText, side)
     {
+        newText = super.transform(newText);
         this.buildCodeBlock(newText, function(line, i)
         {
             this.finalText += this.lineNumber(i + 1, this.pad) + line.substring(this.indent) + '\n';
@@ -2168,7 +2170,8 @@ class IndentCodeBlock extends CodeBlock
 
     transform(newText, side)
     {
-        this.buildCodeBlock(this.text, function(line, i)
+        newText = super.transform(this.text);
+        this.buildCodeBlock(newText, function(line, i)
         {
             const lineNumber = this.lineNumber(i + 1, this.pad);
             if (i == 0 && this.firstIsList)
