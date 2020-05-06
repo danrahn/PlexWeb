@@ -153,42 +153,46 @@ class Markdown {
         // Have some leeway here by allowing a top-level list to be indented a
         // bit (even though it shouln't be).
         let data = { 'inList' : false, 'listEnd' : -1 };
-        let spaces = '';
+        // let spaces = '';
         let subText = this.text.substring(0, index);
+        const regex = new RegExp(/\n( {0,2})(\*|\d+\.) /g);
+        let matches = [[[-1, false]], [], []];
+        let firstMatch = /^( {0,2})(\*|\d+\.) /.exec(subText);
+        if (firstMatch != null)
+        {
+            matches[firstMatch[1].length].push([0, firstMatch[2] != '*']);
+        }
+
+        let lastMatch;
+        while ((lastMatch = regex.exec(subText)) != null)
+        {
+            matches[lastMatch[1].length].push([lastMatch.index, lastMatch[2] != '*']);
+        }
+
+        // Start from outermost and work inwards
         for (let i = 0; i < 3; ++i)
         {
-            const regex = new RegExp(`\n${spaces}(\\*|\\d+\\.) `, 'g');
-            let matches = [[-1, false]];
-            let lastMatch;
-            while ((lastMatch = regex.exec(subText)) != null)
+            lastMatch = matches[i][matches[i].length - 1];
+            if (!lastMatch)
             {
-                matches.push([lastMatch.index, lastMatch[1] != '*']);
+                continue;
             }
 
-            let prevList = matches[matches.length - 1][0];
-            while (prevList != -1 && this._checkHr(prevList + 1, false /*addHr*/))
+            while (lastMatch[0] != -1 && this._checkHr(lastMatch[0] + 1, false /*addHr*/))
             {
-                matches.pop();
-                prevList = matches[matches.length - 1][0];
+                matches[i].pop();
+                lastMatch = matches[i][matches[i].length - 1];
             }
 
-            if (prevList != -1)
+            if (lastMatch[0] != -1)
             {
-                data.listEnd = this._listEnd(prevList + spaces.length + 1, Math.floor(spaces.length / 2), matches[matches.length - 1][1] /*ordered*/);
+                data.listEnd = this._listEnd(lastMatch[0] + i + 1, Math.floor(i / 2), lastMatch[1] /*ordered*/);
                 data.inList = data.listEnd > index;
-                return data;
+                if (data.inList)
+                {
+                    return data;
+                }
             }
-
-            // No newline needed if it's the start of the text
-            // if (prevList == -1 && this.text.startsWith(`${spaces}* `) && !this._checkHr(0 /*addHr*/))
-            if (prevList == -1 && new RegExp(`^${spaces}(\\*|\\d+\\.) `).test(this.text) && !this._checkHr(0 /*addHr*/))
-            {
-                data.listEnd = this._listEnd(spaces.length, Math.floor(spaces.length / 2), !this.text.startsWith(`${spaces}* `) /*ordered*/);
-                data.inList = data.listEnd > index;
-                return data;
-            }
-
-            spaces += ' ';
         }
 
         return data;
@@ -1288,7 +1292,7 @@ class Markdown {
             }
         }
 
-        logVerbose(topRun, 'Parsing tree');
+        logTmi(topRun, 'Parsing tree');
         let html = topRun.convert(this.text);
         let perfStop = window.performance.now();
         logVerbose(`Parsed markdown in ${perfStop - perfStart}ms`);
