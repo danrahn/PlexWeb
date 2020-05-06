@@ -2045,6 +2045,21 @@ class CodeBlock extends Run
 
         this.tag = (end) => `<${end ? '/' : ''}pre>`;
     }
+
+    buildCodeBlock(text, fn)
+    {
+        this.finalText = '';
+        let lines = text.split('\n');
+        this.pad = lines.length.toString().length;
+        lines.forEach(fn, this);
+    }
+
+    lineNumber(line, pad)
+    {
+        line = line.toString();
+        line += ' '.repeat(pad - line.length);
+        return `<span class='codeLineNumber'>${line}</span>`;
+    }
 }
 
 class BacktickCodeBlock extends CodeBlock
@@ -2055,6 +2070,16 @@ class BacktickCodeBlock extends CodeBlock
 
         this.startContextLength = function() { return this.text.indexOf('\n') + 1; }
         this.endContextLength = () => 4;
+    }
+
+    transform(newText, side)
+    {
+        this.buildCodeBlock(newText, function(line, i)
+        {
+            this.finalText += this.lineNumber(i + 1, this.pad) + line + '\n';
+        });
+
+        return this.finalText;
     }
 }
 
@@ -2081,21 +2106,20 @@ class IndentCodeBlock extends CodeBlock
 
     transform(newText, side)
     {
-        let finalText = '';
-        let lines = this.text.split('\n');
-        lines.forEach(function(line, i)
+        this.buildCodeBlock(this.text, function(line, i)
         {
+            const lineNumber = this.lineNumber(i + 1, this.pad);
             if (i == 0 && this.firstIsList)
             {
-                finalText += line.substring(4) + '\n';
+                this.finalText += lineNumber + line.substring(4) + '\n';
             }
             else
             {
-                finalText += line.substring(this.indent) + '\n';
+                this.finalText += lineNumber + line.substring(this.indent) + '\n';
             }
-        }, this);
+        });
 
-        return finalText;
+        return this.finalText;
     }
 }
 
