@@ -1921,9 +1921,9 @@ class Run
 
 class Break extends Run
 {
-    constructor(start, end, parent)
+    constructor(start, parent)
     {
-        super(State.LineBreak, start, end, parent);
+        super(State.LineBreak, start, start, parent);
     }
 
     tag(end) { return end ? '' : '<br />'; }
