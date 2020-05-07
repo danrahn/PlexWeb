@@ -55,3 +55,7 @@
     font-style: italic;
     font-weight: 100;
 }
+
+.md img {
+    max-width: 100%;
+}

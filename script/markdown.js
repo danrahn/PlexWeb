@@ -17,13 +17,13 @@ const State =
     CodeBlock : 8,
     BlockQuote : 9,
     Url : 10,
-    InlineCode : 11,
-    Bold : 12,
-    Underline : 13,
-    Italic : 14,
-    Strikethrough : 15
-
-
+    Image : 11,
+    InlineCode : 12,
+    Bold : 13,
+    Underline : 14,
+    Italic : 15,
+    Strikethrough : 16,
+    HtmlComment : 17
 }
 
 const stateError = (state) => console.error('Unknown state: ' + state);
@@ -42,6 +42,8 @@ const stateToStr = function(state)
             return 'Header';
         case State.Url:
             return 'Url';
+        case State.Image:
+            return 'Image';
         case State.InlineCode:
             return 'InlineCode';
         case State.BlockQuote:
@@ -62,6 +64,8 @@ const stateToStr = function(state)
             return 'OrderedList';
         case State.ListItem:
             return 'ListItem';
+        case State.HtmlComment:
+            return 'HTMLComment';
         default:
             return 'Unknown state: ' + state;
     }
@@ -76,6 +80,7 @@ const stateAllowedInState = function(state, current, index)
             return true;
         case State.LineBreak:
         case State.Hr:
+        case State.HtmlComment:
             return false;
         case State.Header:
         case State.Bold:
@@ -91,6 +96,8 @@ const stateAllowedInState = function(state, current, index)
             }
 
             return index < current.start + current.text.length + 1;
+        case State.Image:
+            return false;
         case State.InlineCode:
             return false; // Can't have anything inside of inline code blocks
         case State.BlockQuote:
@@ -229,6 +236,19 @@ class Markdown {
             if (end == -1)
             {
                 return this.text.length;
+            }
+
+            {
+                let htmlComment = this.text.lastIndexOf('<!--', end);
+                if (htmlComment != -1)
+                {
+                    htmlComment = this.text.indexOf('-->', htmlComment);
+                    if (htmlComment > end)
+                    {
+                        index = htmlComment;
+                        continue;
+                    }
+                }
             }
 
             let listData = this._inAList(end);
@@ -518,6 +538,45 @@ class Markdown {
                     logTmi(`Added header: start=${header.start}, end=${header.end}, level=${header.headerLevel}`);
                     break;
                 }
+                case '!':
+                {
+                    if (this._isEscaped(i) || i == this.text.length - 1 || this.text[i + 1] != '[')
+                    {
+                        continue;
+                    }
+
+                    let result = this._testUrl(i + 1);
+                    if (!result)
+                    {
+                        continue;
+                    }
+
+                    if (this.currentRun.end < result.end)
+                    {
+                        continue;
+                    }
+
+                    // Non-standard width/height syntax, since I explicitly don't want
+                    // to support direct HTML insertion.
+                    // ![AltText |w|h](url)
+                    let dimen = / \|(\d+)(?:\|(\d+))?$/.exec(result.text);
+                    let width = -1;
+                    let height = -1;
+                    if (dimen != null)
+                    {
+                        width = parseInt(dimen[1]);
+                        if (dimen[2])
+                        {
+                            height = parseInt(dimen[2]);
+                        }
+                    }
+
+                    let img = new Image(i, result.end, result.text, result.url, width, height, this.currentRun);
+
+                    // Nothing inside of an image allowed
+                    i = result.end - 1;
+                    break;
+                }
                 case '[':
                 {
                     if (!stateAllowedInState(State.Url, this.currentRun, i))
@@ -562,66 +621,19 @@ class Markdown {
                         continue;
                     }
 
-                    // Couldn't parse as a code block, so try an inline block. Note that we need to match
-                    // the exact number of initial backticks (before a newline, for now). This allows things like
-                    // "```` Start a code block with ``` ````".
-                    if (!stateAllowedInState(State.InlineCode, this.currentRun, i))
+                    // Couldn't parse as a code block, so try an inline block.
+                    let inlineEnd = this._checkInlineCode(i);
+                    if (inlineEnd != -1)
                     {
-                        continue;
+                        i = inlineEnd - 1;
                     }
-
-                    let findStr = '`';
-                    let start = i + 1;
-                    while (start < this.text.length && this.text[start] == '`')
-                    {
-                        findStr += '`';
-                        ++start;
-                    }
-
-                    if (i + (findStr.length * 2) - 1 >= this.text.length)
-                    {
-                        // Impossible for us to find a match. Need at least (2 * findstr) -1 beyond i
-                        continue;
-                    }
-
-                    // Require inline blocks to be on a single line. Not all parsers have this
-                    // restriction, but if someone is trying to inline a lot of code, they're
-                    // probably better off using a code block anyway.
-                    // Should probably revisit though. Multiline stuff can be useful in more general
-                    // cases. Instead of a single newline breaking this, a double newline will.
-                    let lineEnd = this.text.indexOf('\n', i);
-                    if (lineEnd == -1) { lineEnd = this.text.length; }
-                    let end = this.text.indexOf(findStr, i + 1);
-
-                    if (end == -1)
-                    {
-                        continue;
-                    }
-
-                    end += findStr.length;
-
-                    if (end > lineEnd || end > this.currentRun.end)
-                    {
-                        continue;
-                    }
-
-                    let inline = new InlineCodeRun(i, end, this.text, this.currentRun);
-                    this.currentRun = inline;
-
-                    // Can't add anything to an inline block, so increment the cursor
-                    i = end - 1;
-                    logTmi(`Added inline code block: start=${inline.start}, end=${inline.end}`);
                     break;
                 }
                 case '-':
                 {
                     if (this._checkHr(i))
                     {
-                        i = this.text.indexOf('\n', i) - 1;
-                        if (i == -2)
-                        {
-                            i = this.text.length;
-                        }
+                        i = this._indexOrLast('\n', i) - 1;
                     }
                     break;
                 }
@@ -634,26 +646,13 @@ class Markdown {
 
                     if (this._checkHr(i))
                     {
-                        i = this.text.indexOf('\n', i) - 1;
-                        if (i == -2)
-                        {
-                            i = this.text.length - 1;
-                        }
-
+                        i = this._indexOrLast('\n', i) - 1;
                         continue;
                     }
 
                     // Unordered list. Returns true if we successfully parsed an unordered list item
                     if (this._checkList(i, false /*ordered*/))
                     {
-                        break;
-                    }
-
-                    if (this.text.substring(this.text.lastIndexOf('\n') + 1, i).length == 0 &&
-                        i != this.text.length &&
-                        isWhitespace(this.text[i + 1]))
-                    {
-                        // Unordered lists. NYI
                         break;
                     }
                     /* __fallthrough, bold/italic */
@@ -663,12 +662,7 @@ class Markdown {
                     // First, check for HR
                     if (this._checkHr(i))
                     {
-                        i = this.text.indexOf('\n', i) - 1;
-                        if (i == -2)
-                        {
-                            i = this.text.length - 1;
-                        }
-
+                        i = this._indexOrLast('\n', i) - 1;
                         continue;
                     }
 
@@ -1260,6 +1254,25 @@ class Markdown {
                     let codeblock = new IndentCodeBlock(start, end, this.text, minspaces, firstIsList, this.currentRun)
                     i = end - 1;
                 }
+                case '<':
+                {
+                    if (!this.text.substring(i, i + 4) == '<!--')
+                    {
+                        continue;
+                    }
+
+                    let endComment = this.text.indexOf('-->', i);
+                    if (endComment == -1)
+                    {
+                        continue;
+                    }
+
+                    endComment += 3;
+
+                    let htmlComment = new HtmlComment(i, endComment, this.currentRun);
+                    i = endComment - 1;
+                    break;
+                }
                 default:
                 {
                     break;
@@ -1272,6 +1285,58 @@ class Markdown {
         let perfStop = window.performance.now();
         logVerbose(`Parsed markdown in ${perfStop - perfStart}ms`);
         return html;
+    }
+
+    _checkInlineCode(start)
+    {
+        // Note that we need to match the exact number of initial backticks
+        // (before a newline, for now). This allows things like
+        // "```` Start a code block with ``` ````".
+        if (!stateAllowedInState(State.InlineCode, this.currentRun, start))
+        {
+            return -1;
+        }
+
+        let findStr = '`';
+        let codeStart = start + 1;
+        while (codeStart < this.text.length && this.text[codeStart] == '`')
+        {
+            findStr += '`';
+            ++codeStart;
+        }
+
+        if (start + (findStr.length * 2) - 1 >= this.text.length)
+        {
+            // Impossible for us to find a match. Need at least (2 * findstr) -1 beyond start
+            return -1;
+        }
+
+        // Require inline blocks to be on a single line. Not all parsers have this
+        // restriction, but if someone is trying to inline a lot of code, they're
+        // probably better off using a code block anyway.
+        // Should probably revisit though. Multiline stuff can be useful in more general
+        // cases. Instead of a single newline breaking this, a double newline will.
+        let lineEnd = this._indexOrLast('\n', start);
+        let end = this.text.indexOf(findStr, start + 1);
+
+        if (end == -1)
+        {
+            return end;
+        }
+
+        end += findStr.length;
+
+        if (end > lineEnd || end > this.currentRun.end)
+        {
+            return -1;
+        }
+
+        let inline = new InlineCodeRun(start, end, this.text, this.currentRun);
+        this.currentRun = inline;
+        logTmi(`Added inline code block: codeStart=${inline.codeStart}, end=${inline.end}`);
+
+        // Can't add anything to an inline block, so increment the cursor
+        return end;
     }
 
     _checkBacktickCodeBlock(start)
@@ -1573,8 +1638,7 @@ class Markdown {
 
     _testUrl(start)
     {
-        let end = this.text.indexOf('\n', start);
-        end = end == -1 ? this.text.length : end;
+        let end = this._indexOrLast('\n', start);
         if (end - start < 5)
         {
             return false;
@@ -1595,16 +1659,16 @@ class Markdown {
             switch (this.text[i])
             {
                 case '[':
-                    if (i == start || toFind[idx] != ']')
+                    if (i == start || toFind[idx] != ']' || this._isEscaped(i))
                     {
                         break;
                     }
 
-                    // Nested link? If so, we only want the innermost nested layer
-                    // TODO: Check for ! (images)
-                    if (!this._isEscaped(i) && this._testUrl(i))
+                    // Nested link? Continue our search at the end of the nested link
+                    let innerUrl = this._testUrl(i);
+                    if (innerUrl)
                     {
-                        return false;
+                        i = innerUrl.end - 1;
                     }
                     break;
                 case ']':
@@ -1681,146 +1745,141 @@ class Markdown {
 
 class Run
 {
-    constructor(state, start, parent=null)
+    constructor(state, start, end, parent=null)
     {
         this.state = state;
         this.start = start;
-        this.end = 0;
+        this.end = end;
         this.parent = parent;
         if (parent != null)
         {
             parent.innerRuns.push(this);
         }
         this.innerRuns = [];
-        this.length = function() { return this.end - this.start; }
+    }
 
-        // Conversion process:
-        //  create start tag
-        //    if first child start is not this start, add from initialText
-        //  convert() children
-        //  create end tag
-        this.convert = function(initialText)
+    // Conversion process:
+    //  create start tag
+    //    if first child start is not this start, add from initialText
+    //  convert() children
+    //  create end tag
+    convert(initialText)
+    {
+        let ident = '';
+        let par = this.parent;
+        while (par != null)
         {
-            let ident = '';
-            let par = this.parent;
-            while (par != null)
-            {
-                par = par.parent;
-                ident += '   ';
-            }
+            par = par.parent;
+            ident += '   ';
+        }
 
-            logTmi(`${ident}Converting State.${stateToStr(this.state)} : ${this.start}-${this.end}. ${this.innerRuns.length} children.`);
-            let newText = this.tag(false /*end*/);
+        logTmi(`${ident}Converting State.${stateToStr(this.state)} : ${this.start}-${this.end}. ${this.innerRuns.length} children.`);
+        let newText = this.tag(false /*end*/);
 
-            let startWithContext = this.start + this.startContextLength();
-            let endWithContext = this.end - this.endContextLength();
-            if (this.innerRuns.length == 0)
-            {
-                newText += this.transform(initialText.substring(startWithContext, endWithContext), 0);
-                logTmi(`${ident}Returning '${newText + this.tag(true)}'`);
-                return newText + this.tag(true /*end*/);
-            }
-
-
-            if (startWithContext < this.innerRuns[0].start)
-            {
-                newText += this.transform(initialText.substring(startWithContext, this.innerRuns[0].start), -1);
-                logTmi(`${ident}Built: '${newText}'`);
-            }
-
-            for (let i = 0; i < this.innerRuns.length; ++i)
-            {
-                newText += this.innerRuns[i].convert(initialText, newText);
-                logTmi(`${ident}Built: '${newText}'`);
-                if (i != this.innerRuns.length - 1 && this.innerRuns[i].end < this.innerRuns[i + 1].start)
-                {
-                    newText += this.transform(initialText.substring(this.innerRuns[i].end, this.innerRuns[i + 1].start), -2);
-                    logTmi(`${ident}Built: '${newText}'`);
-                }
-            }
-
-            if (this.innerRuns[this.innerRuns.length - 1].end < endWithContext)
-            {
-                newText += this.transform(initialText.substring(this.innerRuns[this.innerRuns.length - 1].end, endWithContext), 1);
-                logTmi(`${ident}Built: '${newText}'`);
-            }
-
-            logTmi(`${ident}Built: '${newText + this.tag(true)}'`);
+        let startWithContext = this.start + this.startContextLength();
+        let endWithContext = this.end - this.endContextLength();
+        if (this.innerRuns.length == 0)
+        {
+            newText += this.transform(initialText.substring(startWithContext, endWithContext), 0);
+            logTmi(`${ident}Returning '${newText + this.tag(true)}'`);
             return newText + this.tag(true /*end*/);
         }
 
 
-        this.startContextLength = function() { return 0; }
-        this.endContextLength = function() { return 0; }
-
-        this.tag = () => '';
-
-        /// <summary>
-        /// Trims the given text, where side is one of the following:
-        ///  1. -2 : Don't trim
-        ///  2. -1 : Trim left only
-        ///  3.  0 : Trim both sides
-        ///  4.  1 : Trim right only
-        /// </summary>
-        this.trim = function(text, side)
+        if (startWithContext < this.innerRuns[0].start)
         {
-            switch (side)
+            newText += this.transform(initialText.substring(startWithContext, this.innerRuns[0].start), -1);
+            logTmi(`${ident}Built: '${newText}'`);
+        }
+
+        for (let i = 0; i < this.innerRuns.length; ++i)
+        {
+            newText += this.innerRuns[i].convert(initialText, newText);
+            logTmi(`${ident}Built: '${newText}'`);
+            if (i != this.innerRuns.length - 1 && this.innerRuns[i].end < this.innerRuns[i + 1].start)
             {
-                case 0:
-                    return text.trim();
-                case -1:
-                    return text.replace(/^\s+/gm, '');
-                case 1:
-                    return text.replace(/\s+$/gm, '');
-                default:
-                    return text;
+                newText += this.transform(initialText.substring(this.innerRuns[i].end, this.innerRuns[i + 1].start), -2);
+                logTmi(`${ident}Built: '${newText}'`);
             }
         }
 
-        this.wrapInDiv = function()
+        if (this.innerRuns[this.innerRuns.length - 1].end < endWithContext)
         {
-            return this.parent == null || this.parent.state == State.None;
-        };
+            newText += this.transform(initialText.substring(this.innerRuns[this.innerRuns.length - 1].end, endWithContext), 1);
+            logTmi(`${ident}Built: '${newText}'`);
+        }
 
-        this.escapeChars = function(text, chars)
+        logTmi(`${ident}Built: '${newText + this.tag(true)}'`);
+        return newText + this.tag(true /*end*/);
+    }
+
+    length() { return this.end - this.start; }
+
+    startContextLength() { return 0; }
+    endContextLength() { return 0; }
+
+    tag(end) { return ''; }
+
+    /// <summary>
+    /// Trims the given text, where side is one of the following:
+    ///  1. -2 : Don't trim
+    ///  2. -1 : Trim left only
+    ///  3.  0 : Trim both sides
+    ///  4.  1 : Trim right only
+    /// </summary>
+    trim(text, side)
+    {
+        switch (side)
         {
-            if (text.indexOf('\\') == -1)
-            {
+            case 0:
+                return text.trim();
+            case -1:
+                return text.replace(/^\s+/gm, '');
+            case 1:
+                return text.replace(/\s+$/gm, '');
+            default:
                 return text;
-            }
-
-            let newText = '';
-            for (let i = 0; i < text.length; ++i)
-            {
-                if (i == text.length - 1)
-                {
-                    // The last character can't be an escape, so just append it
-                    // and let the loop exit on its own
-                    newText += text[i];
-                    continue;
-                }
-
-                if (text[i] != '\\')
-                {
-                    newText += text[i];
-                    continue;
-                }
-
-                if (text[i + 1] == '\\' || chars.indexOf(text[i + 1]) != -1)
-                {
-                    ++i;
-                    newText += text[i];
-                    continue;
-                }
-                else
-                {
-                    // lonesome backslack. Treat it as a normal backslash character
-                    newText += '\\';
-                }
-            }
-
-            return newText;
         }
+    }
+
+    escapeChars(text, chars)
+    {
+        if (text.indexOf('\\') == -1)
+        {
+            return text;
+        }
+
+        let newText = '';
+        for (let i = 0; i < text.length; ++i)
+        {
+            if (i == text.length - 1)
+            {
+                // The last character can't be an escape, so just append it
+                // and let the loop exit on its own
+                newText += text[i];
+                continue;
+            }
+
+            if (text[i] != '\\')
+            {
+                newText += text[i];
+                continue;
+            }
+
+            if (text[i + 1] == '\\' || chars.indexOf(text[i + 1]) != -1)
+            {
+                ++i;
+                newText += text[i];
+                continue;
+            }
+            else
+            {
+                // lonesome backslack. Treat it as a normal backslash character
+                newText += '\\';
+            }
+        }
+
+        return newText;
     }
 
 
@@ -1853,28 +1912,31 @@ class Run
             return entityMap[ch];
         });
     }
+
+    static basicTag(tag, end)
+    {
+        return `<${end ? '/' : ''}${tag}>`;
+    }
 }
 
 class Break extends Run
 {
-    constructor(start, parent)
+    constructor(start, end, parent)
     {
-        super(State.LineBreak, start, parent);
-        this.end = start;
-        this.tag = (end) => end ? '' : '<br />';
-        this.wrapInDiv = () => false;
+        super(State.LineBreak, start, end, parent);
     }
+
+    tag(end) { return end ? '' : '<br />'; }
 }
 
 class Hr extends Run
 {
     constructor(start, end, parent)
     {
-        super(State.Hr, start, parent);
-        this.end = end;
-
-        this.tag = (end) => end ? '' : '<hr />';
+        super(State.Hr, start, end, parent);
     }
+
+    tag(end) { return end ? '' : '<hr />'; }
 
 
     // Indicators can have a variable number of characters, but we never want to actually print anything
@@ -1885,40 +1947,40 @@ class Div extends Run
 {
     constructor(start, end, text, parent)
     {
-        super(State.Div, start, parent);
-        this.end = end;
+        super(State.Div, start, end, parent);
         this.text = text.substring(start, end);
-        this.tag = function(end)
-        {
-            if (end)
-            {
-                return "</div>";
-            }
+    }
 
-            return '<div class="mdDiv">';
+    tag(end)
+    {
+        if (end)
+        {
+            return "</div>";
         }
 
-        this.startContextLength = function()
-        {
-            let newlines = 0;
-            while (this.text[newlines] == '\n')
-            {
-                ++newlines;
-            }
+        return '<div class="mdDiv">';
+    }
 
-            return newlines;
+    startContextLength()
+    {
+        let newlines = 0;
+        while (this.text[newlines] == '\n')
+        {
+            ++newlines;
         }
 
-        this.endContextLength = function()
-        {
-            let newlines = 0;
-            while (this.text[this.text.length - newlines - 1] == '\n')
-            {
-                --newlines;
-            }
+        return newlines;
+    }
 
-            return -newlines;
+    endContextLength()
+    {
+        let newlines = 0;
+        while (this.text[this.text.length - newlines - 1] == '\n')
+        {
+            --newlines;
         }
+
+        return -newlines;
     }
 
     transform(newText, side)
@@ -1929,20 +1991,20 @@ class Div extends Run
 
 class Header extends Run
 {
-    constructor(start, end, headerLevel, parent=null)
+    constructor(start, end, headerLevel, parent)
     {
-        super(State.Header, start, parent);
-        this.end = end;
+        super(State.Header, start, end, parent);
         this.headerLevel = headerLevel;
+    }
 
-        this.startContextLength = function() { return this.headerLevel + 1; }
+    startContextLength()
+    {
+        return this.headerLevel + 1;
+    }
 
-        this.tag = function(end)
-        {
-            return `<${end ? '/' : ''}h${this.headerLevel}>`;
-        }
-
-        this.wrapInDiv = () => false;
+    tag(end)
+    {
+        return `<${end ? '/' : ''}h${this.headerLevel}>`;
     }
 
 
@@ -1969,15 +2031,14 @@ class BlockQuote extends Run
 {
     constructor(start, end, nestLevel, parent)
     {
-        super(State.BlockQuote, start, parent);
-        this.end = end;
+        super(State.BlockQuote, start, end, parent);
         this.nestLevel = nestLevel;
-
-        this.startContextLength = () => 1;
-        this.endContextLength = () => 0;
-
-        this.tag = (end) => `<${end ? '/' : ''}blockquote>`;
     }
+
+    startContextLength() { return 1; }
+    endContextLength() { return 0; }
+
+    tag(end) { return Run.basicTag('blockquote', end); }
 
     transform(newText, side)
     {
@@ -2005,38 +2066,36 @@ class UnorderedList extends Run
 {
     constructor(start, end, nestLevel, parent)
     {
-        super(State.UnorderedList, start, parent);
-        this.end = end;
+        super(State.UnorderedList, start, end, parent);
         this.nestLevel = nestLevel;
-
-        this.startContextLength = () => 0;
-        this.endContextLength = () => 0;
-
-        this.tag = (end) => `<${end ? '/' : ''}ul>`;
     }
+
+    startContextLength() { return 0; }
+    endContextLength() { return 0; }
+
+    tag(end) { return Run.basicTag('ul', end); }
 }
 
 class OrderedList extends Run
 {
     constructor(start, end, nestLevel, listStart, parent)
     {
-        super(State.OrderedList, start, parent);
-        this.end = end;
+        super(State.OrderedList, start, end, parent);
         this.nestLevel = nestLevel;
         this.listStart = listStart;
+    }
 
-        this.startContextLength = () => 0;
-        this.endContextLength = () => 0;
+    startContextLength() { return 0; }
+    endContextLength() { return 0; }
 
-        this.tag = function(end)
+    tag(end)
+    {
+        if (end)
         {
-            if (end)
-            {
-                return '</ol>';
-            }
-
-            return `<ol start='${this.listStart}'>`;
+            return '</ol>';
         }
+
+        return `<ol start='${this.listStart}'>`;
     }
 }
 
@@ -2044,39 +2103,37 @@ class ListItem extends Run
 {
     constructor(start, end, parent)
     {
-        super(State.ListItem, start, parent);
-        this.end = end;
-
-        this.startContextLength = () => 2;
-        this.endContextLength = () => 0;
-
-        this.tag = (end) => `<${end ? '/' : ''}li>`;
+        super(State.ListItem, start, end, parent);
     }
+
+    startContextLength() { return 2; }
+    endContextLength() { return 0; }
+
+    tag(end) { return Run.basicTag('li', end); }
 }
 
 class Url extends Run
 {
     constructor(start, end, text, url, parent)
     {
-        super(State.Url, start, parent);
-        this.end = end;
+        super(State.Url, start, end, parent);
         this.text = text;
         this.url = url;
+    }
 
-        this.startContextLength = function() { return 1; }
+    startContextLength() { return 1; }
 
-        // The url should be stripped here, so subtract its length and ']()'
-        this.endContextLength = function() { return this.url.length + 3; }
+    // The url should be stripped here, so subtract its length and ']()'
+    endContextLength() { return this.url.length + 3; }
 
-        this.tag = function(end)
+    tag(end)
+    {
+        if (end)
         {
-            if (end)
-            {
-                return '</a>';
-            }
-
-            return `<a href="${encodeURI(this.url)}">`;
+            return '</a>';
         }
+
+        return `<a href="${encodeURI(this.url)}">`;
     }
 
     transform(newText, side)
@@ -2085,18 +2142,62 @@ class Url extends Run
     }
 }
 
+class Image extends Run
+{
+    constructor(start, end, altText, url, width, height, parent)
+    {
+        super(State.Image, start, end, parent);
+        this.altText = altText;
+        this.url = url;
+        this.width = width;
+        this.height = height;
+    }
+
+    // Nothing can be inside of images. The entire content is either
+    // the alt-text or url, neither of which can be styled
+    startContextLength() { return 0; }
+    endContextLength() { return this.end - this.start; }
+
+
+    tag(end)
+    {
+        if (end)
+        {
+            return '';
+        }
+
+        let base = `<img src="${encodeURI(this.url)}" altText=${super.transform(this.altText)}`;
+        if (this.width != -1)
+        {
+            base += ` width="${this.width}px"`;
+        }
+
+        if (this.height != -1)
+        {
+            base += ` height="${this.height}px"`;
+        }
+
+        return base + '>';
+    }
+
+    // Inline tag, no actual content
+    transform(newText, side)
+    {
+        return '';
+    }
+}
+
 class CodeBlock extends Run
 {
     constructor(start, end, text, indent, backtick, parent)
     {
-        super(State.CodeBlock, start, parent);
-        this.end = end;
+        super(State.CodeBlock, start, end, parent);
         this.text = text.substring(start, end);
         this.indent = indent;
         this.backtick = backtick;
-
-        this.tag = (end) => `<${end ? '/' : ''}pre>`;
     }
+
+    tag(end) { return Run.basicTag('pre', end); }
 
     buildCodeBlock(text, fn)
     {
@@ -2119,10 +2220,10 @@ class BacktickCodeBlock extends CodeBlock
     constructor(start, end, indent, text, parent)
     {
         super(start, end, text, indent, true /*backtick*/, parent);
-
-        this.startContextLength = function() { return this.text.indexOf('\n') + 1; }
-        this.endContextLength = () => 4;
     }
+
+    startContextLength() { return this.text.indexOf('\n') + 1; }
+    endContextLength() { return 4; }
 
     transform(newText, side)
     {
@@ -2142,19 +2243,19 @@ class IndentCodeBlock extends CodeBlock
     {
         super(start, end, text, indent, false /*backtick*/, parent);
         this.firstIsList = firstIsList;
+    }
 
-        this.startContextLength = function()
+    startContextLength()
+    {
+        if (firstInList)
         {
-            if (firstIsList)
-            {
-                return 4;
-            }
-
-            return indent;
+            return 4;
         }
 
-        this.endContextLength = () => 0;
+        return indent;
     }
+
+    endContextLength() { return 0; }
 
     transform(newText, side)
     {
@@ -2180,97 +2281,86 @@ class InlineCodeRun extends Run
 {
     constructor(start, end, text, parent)
     {
-        super(State.InlineCode, start, parent);
-        this.end = end;
+        super(State.InlineCode, start, end, parent);
         this.text = text.substring(start, end);
         this._backticks = 0;
         while(this.text[this._backticks] == '`')
         {
             ++this._backticks;
         }
-
-        this.startContextLength = function() { return this._backticks; }
-        this.endContextLength = function() { return this._backticks; }
-
-        this.tag = (end) => `<${end ? '/' : ''}code>`;
     }
+
+    startContextLength() { return this._backticks; }
+    endContextLength() { return this._backticks; }
+
+    tag(end) { return Run.basicTag('code', end); }
 }
 
 class Bold extends Run
 {
     constructor(start, end, parent)
     {
-        super(State.Bold, start, parent);
-        this.end = end;
-
-        this.startContextLength = () => 2;
-        this.endContextLength = () => 2;
-
-        this.tag = function(end)
-        {
-            return `<${end ? '/' : ''}strong>`;
-        }
+        super(State.Bold, start, end, parent);
     }
+
+    startContextLength() { return 2; }
+    endContextLength() { return 2; }
+
+    tag(end) { return Run.basicTag('strong', end); }
 }
 
 class Italic extends Run
 {
     constructor(start, end, parent)
     {
-        super (State.Italic, start, parent);
-        this.end = end;
-
-        this.startContextLength = () => 1;
-        this.endContextLength = () => 1;
-
-        this.tag = function(end)
-        {
-            return `<${end ? '/' : ''}em>`;
-        }
+        super (State.Italic, start, end, parent);
     }
+
+    startContextLength() { return 1; }
+    endContextLength() { return 1; }
+
+    tag(end) { return Run.basicTag('em', end); }
 }
 
 class Underline extends Run
 {
     constructor(start, end, parent)
     {
-        super(State.Underline, start, parent);
-        this.end = end;
-
-        this.startContextLength = () => 2;
-        this.endContextLength = () => 2;
-
-        this.tag = function(end)
-        {
-            if (end)
-            {
-                return '</ins>';
-            }
-
-            return '<ins>';
-        }
+        super(State.Underline, start, end, parent);
     }
+
+    startContextLength() { return 2; }
+    endContextLength() { return 2; }
+
+    tag(end) { return Run.basicTag('ins', end); }
 }
 
 class Strikethrough extends Run
 {
     constructor(start, end, parent)
     {
-        super(State.Strikethrough, start, parent);
-        this.end = end;
+        super(State.Strikethrough, start, end, parent);
+    }
 
-        this.startContextLength = () => 2;
-        this.endContextLength = () => 2;
+    startContextLength() { return 2; }
+    endContextLength() { return 2; }
 
-        this.tag = function(end)
-        {
-            if (end)
-            {
-                return '</s>';
-            }
+    tag(end) { return Run.basicTag('s', end); }
+}
 
-            return '<s>';
-        }
+class HtmlComment extends Run
+{
+    constructor(start, end, parent)
+    {
+        super(State.HtmlComment, start, end, parent);
+    }
+
+    tag(end) { return ''; }
+
+    transform(newText, side)
+    {
+        // Leave exactly as-is, we want it to be parsed as an HTML comment
+        return newText;
     }
 }
 
