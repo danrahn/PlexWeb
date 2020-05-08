@@ -152,216 +152,6 @@ class Markdown {
         this._reset('', false);
     }
 
-    _inAList(index)
-    {
-        // Loops backwards looking for the start of a list, then
-        // use the list find routine to see if `index` is inside the list
-
-        // Have some leeway here by allowing a top-level list to be indented a
-        // bit (even though it shouln't be).
-        let data = { 'inList' : false, 'listEnd' : -1 };
-        // let spaces = '';
-        let subText = this.text.substring(0, index);
-        const regex = new RegExp(/\n( {0,2})(\*|\d+\.) /g);
-        let matches = [[[-1, false]], [], []];
-        let firstMatch = /^( {0,2})(\*|\d+\.) /.exec(subText);
-        if (firstMatch != null)
-        {
-            matches[firstMatch[1].length].push([0, firstMatch[2] != '*']);
-        }
-
-        let lastMatch;
-        while ((lastMatch = regex.exec(subText)) != null)
-        {
-            matches[lastMatch[1].length].push([lastMatch.index, lastMatch[2] != '*']);
-        }
-
-        // Start from outermost and work inwards
-        for (let i = 0; i < 3; ++i)
-        {
-            lastMatch = matches[i][matches[i].length - 1];
-            if (!lastMatch)
-            {
-                continue;
-            }
-
-            while (lastMatch[0] != -1 && this._checkHr(lastMatch[0] + 1, false /*addHr*/))
-            {
-                matches[i].pop();
-                lastMatch = matches[i][matches[i].length - 1];
-            }
-
-            if (lastMatch[0] != -1)
-            {
-                data.listEnd = this._listEnd(lastMatch[0] + i + 1, Math.floor(i / 2), lastMatch[1] /*ordered*/);
-                data.inList = data.listEnd > index;
-                if (data.inList)
-                {
-                    return data;
-                }
-            }
-        }
-
-        return data;
-    }
-
-    /// <summary>
-    /// This is pretty gross and breaks a lot of the encapsulation
-    /// of the main loop. Should really look into something else here.
-    /// </summary>
-    _getNextDivEnd(start)
-    {
-        let index = start;
-
-        // If we're currently in a list, skip to the end of it
-        const isList = (state) => state == State.ListItem || state == State.OrderedList || state == State.UnorderedList
-        if (isList(this.currentRun.state))
-        {
-            // Traverse up to find end
-            let topList = this.currentRun;
-            while (isList(topList.parent.state))
-            {
-                topList = topList.parent;
-            }
-
-            index = topList.end;
-        }
-
-        while (true)
-        {
-            let end = this.text.indexOf('\n\n', index);
-            if (end == -1)
-            {
-                return this.text.length;
-            }
-
-            {
-                let htmlComment = this.text.lastIndexOf('<!--', end);
-                if (htmlComment != -1)
-                {
-                    htmlComment = this.text.indexOf('-->', htmlComment);
-                    if (htmlComment > end)
-                    {
-                        index = htmlComment;
-                        continue;
-                    }
-                }
-            }
-
-            let listData = this._inAList(end);
-            if (listData.inList)
-            {
-                index = listData.listEnd;
-                continue;
-            }
-
-            // Now make sure we're not in a code block, which requires
-            // exactly three backticks on their own line, or prefixes of
-            // at least 4 spaces preceded by two newlines
-
-            // Look for prefixed spaces first
-
-            let prevIndex = this.text.lastIndexOf('\n', end - 1);
-            let prevLine = this.text.substring(prevIndex + 1, end + 1);
-            let prevNew = 0;
-            let maybeBlock = false;
-            while (prevLine && prevLine.length > 0)
-            {
-                if (prevLine == '\n')
-                {
-                    ++prevNew;
-                }
-                else if (prevLine.startsWith('    '))
-                {
-                    maybeBlock = true;
-                    prevNew = 0;
-                }
-                else
-                {
-                    break;
-                }
-
-                let prevOld = prevIndex;
-                prevIndex = this.text.lastIndexOf('\n', prevIndex - 1);
-                prevLine = this.text.substring(prevIndex + 1, prevOld + 1);
-            }
-
-            if (maybeBlock && (prevNew > 0 || (prevIndex == -1 && (this.text.startsWith('    ') || this.text.startsWith('\n')))))
-            {
-                // Previous lines indicate we might be in a code block. We know
-                // we are if the next non-blank line is indented with 4+ spaces
-                let offset = 1;
-                while (offset + end < this.text.length && this.text[offset + end] == '\n')
-                {
-                    ++offset;
-                }
-
-                if (/    [^\n]/.test(this.text.substring(end + offset, end + offset + 5)))
-                {
-                    // We're definitely in a code block.
-                    index = end + offset + 5;
-                    continue;
-                }
-            }
-
-            // If the first occurance of ``` is non-existant or beyond
-            // our end bound, we're good to go. This will change once
-            // (nested) lists come into play
-            let searchFor = '```';
-            if (start != 0)
-            {
-                searchFor = '\n' + searchFor;
-            }
-
-            let cb = this.text.indexOf(searchFor, start);
-            if (cb == -1 || cb > end)
-            {
-                searchFor = searchFor.replace(/`/g, '~');
-                let cb = this.text.indexOf(searchFor, start);
-                if (cb == -1 || cb > end)
-                {
-                    return end;
-                }
-            }
-
-            let markers = searchFor[searchFor.length - 1].repeat(3);
-            if (!new RegExp(`^\\n?${markers} *[\\S]*\\n?$`).test(this.text.substring(cb, this._indexOrLast('\n', cb + 1))))
-            {
-                return end;
-            }
-
-            // Darn, we might be in a code block
-            let inBlock = true;
-            while (true)
-            {
-                cb = this.text.indexOf(`\n${markers}`, cb + 1);
-                if (cb == -1)
-                {
-                    break;
-                }
-
-
-
-                if (cb + 4 == this.text.length || this.text[cb + 4] == '\n')
-                {
-                    if (cb > end)
-                    {
-                        break;
-                    }
-
-                    inBlock = !inBlock;
-                }
-            }
-
-            if (!inBlock)
-            {
-                return end;
-            }
-
-            index = end + 2;
-        }
-    }
-
     _checkHr(index, addHr=true)
     {
         let sep = this.text[index];
@@ -684,6 +474,216 @@ class Markdown {
         return html;
     }
 
+    _inAList(index)
+    {
+        // Loops backwards looking for the start of a list, then
+        // use the list find routine to see if `index` is inside the list
+
+        // Have some leeway here by allowing a top-level list to be indented a
+        // bit (even though it shouln't be).
+        let data = { 'inList' : false, 'listEnd' : -1 };
+        // let spaces = '';
+        let subText = this.text.substring(0, index);
+        const regex = new RegExp(/\n( {0,2})(\*|\d+\.) /g);
+        let matches = [[[-1, false]], [], []];
+        let firstMatch = /^( {0,2})(\*|\d+\.) /.exec(subText);
+        if (firstMatch != null)
+        {
+            matches[firstMatch[1].length].push([0, firstMatch[2] != '*']);
+        }
+
+        let lastMatch;
+        while ((lastMatch = regex.exec(subText)) != null)
+        {
+            matches[lastMatch[1].length].push([lastMatch.index, lastMatch[2] != '*']);
+        }
+
+        // Start from outermost and work inwards
+        for (let i = 0; i < 3; ++i)
+        {
+            lastMatch = matches[i][matches[i].length - 1];
+            if (!lastMatch)
+            {
+                continue;
+            }
+
+            while (lastMatch[0] != -1 && this._checkHr(lastMatch[0] + 1, false /*addHr*/))
+            {
+                matches[i].pop();
+                lastMatch = matches[i][matches[i].length - 1];
+            }
+
+            if (lastMatch[0] != -1)
+            {
+                data.listEnd = this._listEnd(lastMatch[0] + i + 1, Math.floor(i / 2), lastMatch[1] /*ordered*/);
+                data.inList = data.listEnd > index;
+                if (data.inList)
+                {
+                    return data;
+                }
+            }
+        }
+
+        return data;
+    }
+
+    /// <summary>
+    /// This is pretty gross and breaks a lot of the encapsulation
+    /// of the main loop. Should really look into something else here.
+    /// </summary>
+    _getNextDivEnd(start)
+    {
+        let index = start;
+
+        // If we're currently in a list, skip to the end of it
+        const isList = (state) => state == State.ListItem || state == State.OrderedList || state == State.UnorderedList
+        if (isList(this.currentRun.state))
+        {
+            // Traverse up to find end
+            let topList = this.currentRun;
+            while (isList(topList.parent.state))
+            {
+                topList = topList.parent;
+            }
+
+            index = topList.end;
+        }
+
+        while (true)
+        {
+            let end = this.text.indexOf('\n\n', index);
+            if (end == -1)
+            {
+                return this.text.length;
+            }
+
+            {
+                let htmlComment = this.text.lastIndexOf('<!--', end);
+                if (htmlComment != -1)
+                {
+                    htmlComment = this.text.indexOf('-->', htmlComment);
+                    if (htmlComment > end)
+                    {
+                        index = htmlComment;
+                        continue;
+                    }
+                }
+            }
+
+            let listData = this._inAList(end);
+            if (listData.inList)
+            {
+                index = listData.listEnd;
+                continue;
+            }
+
+            // Now make sure we're not in a code block, which requires
+            // exactly three backticks on their own line, or prefixes of
+            // at least 4 spaces preceded by two newlines
+
+            // Look for prefixed spaces first
+
+            let prevIndex = this.text.lastIndexOf('\n', end - 1);
+            let prevLine = this.text.substring(prevIndex + 1, end + 1);
+            let prevNew = 0;
+            let maybeBlock = false;
+            while (prevLine && prevLine.length > 0)
+            {
+                if (prevLine == '\n')
+                {
+                    ++prevNew;
+                }
+                else if (prevLine.startsWith('    '))
+                {
+                    maybeBlock = true;
+                    prevNew = 0;
+                }
+                else
+                {
+                    break;
+                }
+
+                let prevOld = prevIndex;
+                prevIndex = this.text.lastIndexOf('\n', prevIndex - 1);
+                prevLine = this.text.substring(prevIndex + 1, prevOld + 1);
+            }
+
+            if (maybeBlock && (prevNew > 0 || (prevIndex == -1 && (this.text.startsWith('    ') || this.text.startsWith('\n')))))
+            {
+                // Previous lines indicate we might be in a code block. We know
+                // we are if the next non-blank line is indented with 4+ spaces
+                let offset = 1;
+                while (offset + end < this.text.length && this.text[offset + end] == '\n')
+                {
+                    ++offset;
+                }
+
+                if (/    [^\n]/.test(this.text.substring(end + offset, end + offset + 5)))
+                {
+                    // We're definitely in a code block.
+                    index = end + offset + 5;
+                    continue;
+                }
+            }
+
+            // If the first occurance of ``` is non-existant or beyond
+            // our end bound, we're good to go. This will change once
+            // (nested) lists come into play
+            let searchFor = '```';
+            if (start != 0)
+            {
+                searchFor = '\n' + searchFor;
+            }
+
+            let cb = this.text.indexOf(searchFor, start);
+            if (cb == -1 || cb > end)
+            {
+                searchFor = searchFor.replace(/`/g, '~');
+                let cb = this.text.indexOf(searchFor, start);
+                if (cb == -1 || cb > end)
+                {
+                    return end;
+                }
+            }
+
+            let markers = searchFor[searchFor.length - 1].repeat(3);
+            if (!new RegExp(`^\\n?${markers} *[\\S]*\\n?$`).test(this.text.substring(cb, this._indexOrLast('\n', cb + 1))))
+            {
+                return end;
+            }
+
+            // Darn, we might be in a code block
+            let inBlock = true;
+            while (true)
+            {
+                cb = this.text.indexOf(`\n${markers}`, cb + 1);
+                if (cb == -1)
+                {
+                    break;
+                }
+
+
+
+                if (cb + 4 == this.text.length || this.text[cb + 4] == '\n')
+                {
+                    if (cb > end)
+                    {
+                        break;
+                    }
+
+                    inBlock = !inBlock;
+                }
+            }
+
+            if (!inBlock)
+            {
+                return end;
+            }
+
+            index = end + 2;
+        }
+    }
+
     _processNewline(start)
     {
         // Single \n is a <br>. If we're in a list item though, any number
@@ -709,10 +709,10 @@ class Markdown {
             logTmi(`Added Line Break: start=${start}, end=${start}`);
             return start;
         }
-        // else if (this.currentRun.state == State.ListItem &&
-        //     i >= this.currentRun.start &&
-        //     i < this.currentRun.end)
-        else if (this._inAList(start).inList)
+        else if (this.currentRun.state == State.ListItem ||
+            this.currentRun.state == State.OrderedList ||
+            this.currentRun.state == State.UnorderedList)
+        // else if (this._inAList(start).inList)
         {
             new Break(start, this.currentRun);
 
