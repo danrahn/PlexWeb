@@ -143,20 +143,9 @@ const isAlphanumeric = function(ch)
 }
 
 class Markdown {
-    constructor(text, inlineOnly=false)
+    constructor()
     {
-        let trim = 0;
-        while (text[trim] == '\n')
-        {
-            ++trim;
-        }
-        text = text.substring(trim);
-
-        // Everything's easier with spaces
-        this.text = text.replace(/\t/g, '    ');
-        this.currentRun = null;
-
-        this._inlineOnly = inlineOnly;
+        this._reset('', false);
     }
 
     _inAList(index)
@@ -401,8 +390,48 @@ class Markdown {
         return true;
     }
 
-    parse()
+    _trimInput(text)
     {
+        let trim = 0;
+        while (text[trim] == '\n')
+        {
+            ++trim;
+        }
+
+        text = text.substring(trim);
+
+        // Everything's easier with spaces
+        return text.replace(/\t/g, '    ');
+    }
+
+    _reset(text, inlineOnly)
+    {
+        this.text = text;
+        this.sameText = false;
+        this._inlineOnly = inlineOnly;
+        this.currentRun = null;
+        this._cachedParse = '';
+        this._inParse = false;
+    }
+
+    parse(text, inlineOnly=false)
+    {
+        if (this._inParse)
+        {
+            log("Can't call parse when we're already parsing!", 0, 0, LOG.Critical);
+            return '';
+        }
+        text = this._trimInput(text);
+        if (this._cachedParse.length != 0 && this._inlineOnly == inlineOnly && this.text == text)
+        {
+            logTmi('Identical content, returning cached content');
+            this.sameText = true;
+            return this._cachedParse;
+        }
+
+        this._reset(text, inlineOnly);
+        this._inParse = true;
+
         let perfStart = window.performance.now();
         let topRun = new Run(State.None, 0, null);
         topRun.end = this.text.length;
@@ -477,8 +506,7 @@ class Markdown {
                                     pState != State.Header &&
                                     pState != State.BlockQuote &&
                                     pState != State.ListItem &&
-                                    pState != State.IndentCodeBlock &&
-                                    pState != State.BacktickCodeBlock &&
+                                    pState != State.CodeBlock &&
                                     pState != State.LineBreak)) &&
                                 pState != State.UnorderedList &&
                                 pState != State.OrderedList)
@@ -1206,100 +1234,14 @@ class Markdown {
                 }
                 case ' ':
                 {
-                    // Potential code block, alternative to three backticks
-                    if (this._inlineOnly)
+                    // Potential code block, alternative to three backticks/tildes
+
+                    let blockEnd = this._checkIndentCodeBlock(i);
+                    if (blockEnd != -1)
                     {
-                        continue;
+                        i = blockEnd - 1;
                     }
-                    // Rules:
-                    // 1. If not in a list, must have 4 spaces at the start of the line, and an empty line above
-                    // 2. If in a list and on the same line as the start of a listitem,
-                    //    must be indented 5 spaces from the bullet start ('* ' plus four spaces')
-                    // 3. If in a list and _not_ on the same line as the start of a listitem, must be indented
-                    //    4 spaces plus (2 * (nestLevel + 1))
-                    let minspaces = 4;
-                    let firstIsList = false;
-                    if (this.currentRun.state == State.ListItem)
-                    {
-                        let nestLevel = this.currentRun.parent.nestLevel;
-                        minspaces += (nestLevel + 1) * 2;
-                        let type = this.currentRun.parent.state;
-                        let context = this.text.substring(this.text.lastIndexOf('\n', i) - 1, i + 1);
-                        let liStartRegex = new RegExp(`^.?\\n? {${nestLevel * 2}} ?${type == State.OrderedList ? '\\d+\\.' : '\\*'}     `);
-                        if (!liStartRegex.test(context))
-                        {
-                            // Not on the same line as the list item start, check if it's
-                            // a valid continuation
-                            if (!new RegExp(`^\\n?\\n? {${minspaces}}`).test(context))
-                            {
-                                continue;
-                            }
-                        }
-                        else
-                        {
-                            firstIsList = true;
-                        }
-
-                    }
-                    else
-                    {
-                        // Not in a list, just need 4+ spaces. substring is nice enough to adjust invalid bounds
-                        // in the case where we ask for a substring starting at a negative index
-                        if (!/^\n?\n?   $/.test(this.text.substring(i - 5, i)) || i == this.text.length - 1 || this.text[i + 1] == '\n')
-                        {
-                            continue;
-                        }
-
-                    }
-
-                    // Find the end, i.e. the last line prefixed with 4+ spaces (excluding completely empty lines)
-                    let newline = this.text.indexOf('\n', i);
-                    let end;
-                    if (newline == -1 || newline == this.text.length - 1)
-                    {
-                        end = this.text.length;
-                    }
-                    else
-                    {
-                        end = newline;
-                        let next = this._indexOrLast('\n', newline + 1);
-                        let nextline = this.text.substring(newline + 1, next + 1);
-                        let regex = new RegExp(`^ {${minspaces}}`);
-
-                        while (true)
-                        {
-                            if (nextline.length == 0)
-                            {
-                                break;
-                            }
-
-                            while (/^ *\n/.test(nextline))
-                            {
-                                newline = next;
-                                next = this._indexOrLast('\n', next + 1);
-                                nextline = this.text.substring(newline + 1, next + 1);
-                                if (nextline.length == 0)
-                                {
-                                    break;
-                                }
-                            }
-
-                            // If we're here, nextline actually has content
-                            if (!regex.test(nextline))
-                            {
-                                break;
-                            }
-
-                            end = next;
-                            newline = next;
-                            next = this._indexOrLast('\n', next + 1);
-                            nextline = this.text.substring(newline + 1, next + 1);
-                        }
-                    }
-
-                    let start = i - (firstIsList ? 4 : minspaces) + 1;
-                    let codeblock = new IndentCodeBlock(start, end, this.text, minspaces, firstIsList, this.currentRun)
-                    i = end - 1;
+                    break;
                 }
                 case '<':
                 {
@@ -1323,218 +1265,11 @@ class Markdown {
                 case '|':
                 {
                     // Tables
-
-                    // Could break from what I have been doing and take a different approach:
-                    // 1. Find the bounds of the entire table
-                    // 2. Create a 2D array of cells containing start and end indexes
-                    // 3. For each cell, invoke a new parser and store the result
-                    // 4. When it's time to display, don't do any transformations
-                    //    and directly display the contents we already converted
-
-                    // Breaking inline spans will also be interesting, and only a problem because
-                    // pipes at the ends of the table are optional.
-
-                    if (this._isEscaped(i))
+                    let tableEnd = this._checkTable(i);
+                    if (tableEnd != -1)
                     {
-                        continue;
+                        i = tableEnd - 1;
                     }
-
-
-
-                    // First, check to see if we're actually in a table. Basic rules:
-                    // 1. Pipes are required to separate columns, but ends are not required
-                    // 2. Three dashes are necessary on the next line for each column. ':' determines alignment
-
-                    let nextbreak = this.text.indexOf('\n', i);
-                    if (nextbreak == -1)
-                    {
-                        // Need at least two lines
-                        continue;
-                    }
-
-                    // Watch out for nests. We can be nested in either a listitem or blockquote
-                    let thisLineStart = this.text.lastIndexOf('\n', i) + 1;
-                    let blockEnd = this.text.length;
-                    if (this.currentRun.state == State.ListItem || this.currentRun.state == State.BlockQuote)
-                    {
-                        if (thisLineStart <= this.currentRun.start)
-                        {
-                            thisLineStart = this.currentRun.start + this.currentRun.startContextLength();
-                        }
-
-                        blockEnd = this.currentRun.end;
-                    }
-
-                    let thisLine = this.text.substring(thisLineStart, nextbreak);
-
-                    let defineEnd = this._indexOrLast('\n', nextbreak + 1);
-                    if (defineEnd > blockEnd)
-                    {
-                        continue;
-                    }
-
-                    let defineLine = this.text.substring(nextbreak + 1, defineEnd);
-
-                    // The definition line _must_ be on its own, so we can be stricter about contents. Still
-                    // allow arbitrary spaces though, so collapse them to make parsing the definition easier
-                    let definition = defineLine.replace(/ /g, '');
-
-                    let quoteRegex;
-                    if (this.currentRun.state == State.BlockQuote)
-                    {
-                        quoteRegex = new RegExp(`^( *> *){${this.currentRun.nestLevel}}`);
-                        definition = definition.replace(quoteRegex, '');
-                    }
-
-                    if (definition.indexOf('|') == -1)
-                    {
-                        continue;
-                    }
-
-                    // First and last can be empty, but everyting else has to match
-                    const splitAndTrim = function(line, self)
-                    {
-                        if (line.indexOf('|') == -1)
-                        {
-                            return [];
-                        }
-
-                        line = line.trim();
-                        let arr = [];
-                        let span = '';
-                        for (let i = 0; i < line.length; ++i)
-                        {
-                            if (line[i] == '|' && !self._isEscaped(i))
-                            {
-                                arr.push(span);
-                                span = '';
-                                continue;
-                            }
-
-                            span += line[i];
-                        }
-
-                        if (span.length != 0)
-                        {
-                            arr.push(span);
-                        }
-
-                        if (arr.length == 1)
-                        {
-                            return arr;
-                        }
-
-                        if (arr[arr.length - 1].length == 0)
-                        {
-                            arr.pop();
-                        }
-
-                        if (arr[0].length == 0)
-                        {
-                            arr.splice(0, 1);
-                        }
-
-                        return arr;
-                    }
-
-                    let groups = splitAndTrim(definition, this);
-
-                    let table =
-                    {
-                        "header" : [],
-                        "rows" : [],
-                        "columnAlign" : [],
-                    };
-
-                    let valid = true;
-                    for (let j = 0; j < groups.length; ++j)
-                    {
-                        let col = groups[j];
-                        if (!/^:?-{3,}:?$/.test(col))
-                        {
-                            valid = false;
-                            break;
-                        }
-
-                        // -2 means don't have specific alignment
-                        table.columnAlign.push(-2);
-
-                        if (col.startsWith(':'))
-                        {
-                            table.columnAlign[j] = col.endsWith(':') ? 0 : -1;
-                        }
-                        else if (col.endsWith(':'))
-                        {
-                            table.columnAlign[j] = 1;
-                        }
-                    }
-
-                    if (!valid)
-                    {
-                        continue;
-                    }
-
-                    // We have valid column definitions. Now back to the header
-                    let headers = splitAndTrim(thisLine, this);
-
-                    for (let j = 0; j < groups.length; ++j)
-                    {
-                        table.header.push(j >= headers.length ? '' : headers[j]);
-                    }
-
-                    // Now look for the rows
-                    let newline = defineEnd;
-                    let end = newline;
-                    let next = this._indexOrLast('\n', newline + 1);
-                    let nextline = this.text.substring(newline + 1, next);
-                    while (true)
-                    {
-                        if (nextline.length == 0 || nextline == '\n' || next > blockEnd)
-                        {
-                            break;
-                        }
-
-                        if (this.currentRun.state == State.BlockQuote)
-                        {
-                            nextline = nextline.replace(quoteRegex, '');
-                            if (nextline.startsWith('>'))
-                            {
-                                break;
-                            }
-                        }
-
-                        let split = splitAndTrim(nextline, this);
-                        if (split.length == 0)
-                        {
-                            break;
-                        }
-                        let row = [];
-                        for (let j = 0; j < groups.length; ++j)
-                        {
-                            row.push(j >= split.length ? '' : split[j]);
-                        }
-
-                        table.rows.push(row);
-
-                        end = next;
-                        newline = next;
-                        next = this._indexOrLast('\n', newline + 1);
-                        nextline = this.text.substring(newline + 1, next);
-                    }
-
-                    // Run markdown on individual cells.
-                    for (let row = 0; row < table.rows.length; ++row)
-                    {
-                        for (let col = 0; col < table.rows[row].length; ++col)
-                        {
-                            table.rows[row][col] =  new Markdown(table.rows[row][col], true /*inlineOnly*/).parse();
-                        }
-                    }
-
-                    new Table(thisLineStart, end, table, this.currentRun);
-                    logTmi(`Added Table: start=${thisLineStart}, end=${end}, $rows=${table.rows.length}, cols=${table.header.length}`);
-                    i = end - 1;
-
                     break;
                 }
                 default:
@@ -1546,9 +1281,327 @@ class Markdown {
 
         logTmi(topRun, 'Parsing tree');
         let html = topRun.convert(this.text);
+        this._cachedParse = html;
+        this._inParse = false;
         let perfStop = window.performance.now();
         logVerbose(`Parsed markdown in ${perfStop - perfStart}ms`);
         return html;
+    }
+
+    _checkIndentCodeBlock(start)
+    {
+        if (this._inlineOnly)
+        {
+            return -1;
+        }
+        // Rules:
+        // 1. If not in a list, must have 4 spaces at the start of the line, and an empty line above
+        // 2. If in a list and on the same line as the start of a listitem,
+        //    must be indented 5 spaces from the bullet start ('* ' plus four spaces')
+        // 3. If in a list and _not_ on the same line as the start of a listitem, must be indented
+        //    4 spaces plus (2 * (nestLevel + 1))
+
+
+        // Before using more complicated regex, just check to see if there are at least four spaces
+        if (start < 3 ||
+            this.text[start - 1] != ' ' ||
+            this.text[start - 2] != ' ' ||
+            this.text[start - 3] != ' ')
+        {
+            return -1;
+        }
+
+        let minspaces = 4;
+        let firstIsList = false;
+        if (this.currentRun.state == State.ListItem)
+        {
+            let nestLevel = this.currentRun.parent.nestLevel;
+            minspaces += (nestLevel + 1) * 2;
+            let type = this.currentRun.parent.state;
+            let context = this.text.substring(this.text.lastIndexOf('\n', start) - 1, start + 1);
+            let liStartRegex = new RegExp(`^.?\\n? {${nestLevel * 2}} ?${type == State.OrderedList ? '\\d+\\.' : '\\*'}     `);
+            if (!liStartRegex.test(context))
+            {
+                // Not on the same line as the list item start, check if it's
+                // a valid continuation
+                if (!new RegExp(`^\\n?\\n? {${minspaces}}`).test(context))
+                {
+                    return -1;
+                }
+            }
+            else
+            {
+                firstIsList = true;
+            }
+
+        }
+        else
+        {
+            // Not in a list, just need 4+ spaces. substring is nice enough to adjust invalid bounds
+            // in the case where we ask for a substring starting at a negative index
+            if (!/^\n?\n?   $/.test(this.text.substring(start - 5, start)) || start == this.text.length - 1 || this.text[start + 1] == '\n')
+            {
+                return -1;
+            }
+
+        }
+
+        // Find the end, i.e. the last line prefixed with 4+ spaces (excluding completely empty lines)
+        let newline = this.text.indexOf('\n', start);
+        let end;
+        if (newline == -1 || newline == this.text.length - 1)
+        {
+            end = this.text.length;
+        }
+        else
+        {
+            end = newline;
+            let next = this._indexOrLast('\n', newline + 1);
+            let nextline = this.text.substring(newline + 1, next + 1);
+            let regex = new RegExp(`^ {${minspaces}}`);
+
+            while (true)
+            {
+                if (nextline.length == 0)
+                {
+                    break;
+                }
+
+                while (/^ *\n/.test(nextline))
+                {
+                    newline = next;
+                    next = this._indexOrLast('\n', next + 1);
+                    nextline = this.text.substring(newline + 1, next + 1);
+                    if (nextline.length == 0)
+                    {
+                        break;
+                    }
+                }
+
+                // If we're here, nextline actually has content
+                if (!regex.test(nextline))
+                {
+                    break;
+                }
+
+                end = next;
+                newline = next;
+                next = this._indexOrLast('\n', next + 1);
+                nextline = this.text.substring(newline + 1, next + 1);
+            }
+        }
+
+        let blockStart = start - (firstIsList ? 4 : minspaces) + 1;
+        let codeblock = new IndentCodeBlock(blockStart, end, this.text, minspaces, firstIsList, this.currentRun);
+        logTmi(`Added Indent Code Block: start=${blockStart}, end=${end}, minspaces=${minspaces}`);
+        return end;
+    }
+
+    _checkTable(start)
+    {
+        // Break from what I have been doing and take a different approach:
+        // 1. Find the bounds of the entire table
+        // 2. Create a 2D array of cells containing start and end indexes
+        // 3. For each cell, invoke a new parser and store the result
+        // 4. When it's time to display, don't do any transformations
+        //    and directly display the contents we already converted
+
+        if (this._isEscaped(start))
+        {
+            return -1;
+        }
+
+        // First, check to see if we're actually in a table. Basic rules:
+        // 1. Pipes are required to separate columns, but pipes on either end are optional
+        // 2. Three dashes are necessary on the next line for each column. ':' determines alignment
+
+        let nextbreak = this.text.indexOf('\n', start);
+        if (nextbreak == -1)
+        {
+            // Need at least two lines
+            return -1;
+        }
+
+        // Watch out for nests. We can be nested in either a listitem or blockquote. Maybe both
+        let thisLineStart = this.text.lastIndexOf('\n', start) + 1;
+        let blockEnd = this.text.length;
+        if (this.currentRun.state == State.ListItem || this.currentRun.state == State.BlockQuote)
+        {
+            if (thisLineStart <= this.currentRun.start)
+            {
+                thisLineStart = this.currentRun.start + this.currentRun.startContextLength();
+            }
+
+            blockEnd = this.currentRun.end;
+        }
+
+        let thisLine = this.text.substring(thisLineStart, nextbreak);
+
+        let defineEnd = this._indexOrLast('\n', nextbreak + 1);
+        if (defineEnd > blockEnd)
+        {
+            return -1;
+        }
+
+        let defineLine = this.text.substring(nextbreak + 1, defineEnd);
+
+        // The definition line _must_ be on its own, so we can be stricter about contents. Still
+        // allow arbitrary spaces though, so collapse them to make parsing the definition easier
+        let definition = defineLine.replace(/ /g, '');
+
+        let quoteRegex;
+        if (this.currentRun.state == State.BlockQuote)
+        {
+            quoteRegex = new RegExp(`^( *> *){${this.currentRun.nestLevel}}`);
+            definition = definition.replace(quoteRegex, '');
+        }
+
+        // First and last can be empty, but everyting else has to match
+        const splitAndTrim = function(line, self)
+        {
+            if (line.indexOf('|') == -1)
+            {
+                return [];
+            }
+
+            line = line.trim();
+            let arr = [];
+            let span = '';
+            for (let i = 0; i < line.length; ++i)
+            {
+                if (line[i] == '|' && !self._isEscaped(i))
+                {
+                    arr.push(span);
+                    span = '';
+                    continue;
+                }
+
+                span += line[i];
+            }
+
+            if (span.length != 0)
+            {
+                arr.push(span);
+            }
+
+            // Don't trim away everything in the list if it's empty,
+            // we need some indication that we found some semblence
+            // of a table row.
+            if (arr.length > 1 && arr[arr.length - 1].length == 0)
+            {
+                arr.pop();
+            }
+
+            if (arr.length > 1 && arr[0].length == 0)
+            {
+                arr.splice(0, 1);
+            }
+
+            return arr;
+        }
+
+        let groups = splitAndTrim(definition, this);
+        if (groups.length == 0)
+        {
+            return -1; // No columns defined
+        }
+
+        let table =
+        {
+            "header" : [],
+            "rows" : [],
+            "columnAlign" : [],
+        };
+
+        let valid = true;
+        for (let i = 0; i < groups.length; ++i)
+        {
+            let col = groups[i];
+            if (!/^:?-{3,}:?$/.test(col))
+            {
+                valid = false;
+                break;
+            }
+
+            // -2 means don't have specific alignment
+            table.columnAlign.push(-2);
+
+            if (col.startsWith(':'))
+            {
+                table.columnAlign[i] = col.endsWith(':') ? 0 : -1;
+            }
+            else if (col.endsWith(':'))
+            {
+                table.columnAlign[i] = 1;
+            }
+        }
+
+        if (!valid)
+        {
+            return -1;
+        }
+
+        // We have valid column definitions. Now back to the header
+        let headers = splitAndTrim(thisLine, this);
+
+        for (let i = 0; i < groups.length; ++i)
+        {
+            // Fill the front rows first and push empty strings to any rows we didn't find content for
+            table.header.push(i >= headers.length ? '' : headers[i]);
+        }
+
+        // Now look for the rows
+        let newline = defineEnd;
+        let end = newline;
+        let next = this._indexOrLast('\n', newline + 1);
+        let nextline = this.text.substring(newline + 1, next);
+        while (true)
+        {
+            if (nextline.length == 0 || nextline == '\n' || next > blockEnd)
+            {
+                break;
+            }
+
+            if (this.currentRun.state == State.BlockQuote)
+            {
+                nextline = nextline.replace(quoteRegex, '');
+                if (nextline.startsWith('>'))
+                {
+                    break;
+                }
+            }
+
+            let split = splitAndTrim(nextline, this);
+            if (split.length == 0)
+            {
+                break;
+            }
+            let row = [];
+            for (let i= 0; i < groups.length; ++i)
+            {
+                row.push(i >= split.length ? '' : split[i]);
+            }
+
+            table.rows.push(row);
+
+            end = next;
+            newline = next;
+            next = this._indexOrLast('\n', newline + 1);
+            nextline = this.text.substring(newline + 1, next);
+        }
+
+        // Run markdown on individual cells.
+        for (let row = 0; row < table.rows.length; ++row)
+        {
+            for (let col = 0; col < table.rows[row].length; ++col)
+            {
+                table.rows[row][col] =  new Markdown().parse(table.rows[row][col], true /*inlineOnly*/);
+            }
+        }
+
+        new Table(thisLineStart, end, table, this.currentRun);
+        logTmi(`Added Table: start=${thisLineStart}, end=${end}, $rows=${table.rows.length}, cols=${table.header.length}`);
+        return end;
     }
 
     _checkInlineCode(start)
@@ -2068,27 +2121,22 @@ class Run
         if (startWithContext < this.innerRuns[0].start)
         {
             newText += this.transform(initialText.substring(startWithContext, this.innerRuns[0].start), -1);
-            logTmi(`${ident}Built: '${newText}'`);
         }
 
         for (let i = 0; i < this.innerRuns.length; ++i)
         {
             newText += this.innerRuns[i].convert(initialText, newText);
-            logTmi(`${ident}Built: '${newText}'`);
             if (i != this.innerRuns.length - 1 && this.innerRuns[i].end < this.innerRuns[i + 1].start)
             {
                 newText += this.transform(initialText.substring(this.innerRuns[i].end, this.innerRuns[i + 1].start), -2);
-                logTmi(`${ident}Built: '${newText}'`);
             }
         }
 
         if (this.innerRuns[this.innerRuns.length - 1].end < endWithContext)
         {
             newText += this.transform(initialText.substring(this.innerRuns[this.innerRuns.length - 1].end, endWithContext), 1);
-            logTmi(`${ident}Built: '${newText}'`);
         }
 
-        logTmi(`${ident}Built: '${newText + this.tag(true)}'`);
         return newText + this.tag(true /*end*/);
     }
 
@@ -2706,7 +2754,7 @@ const testMarkdown = function(testStr='')
     }
 
     logInfo(`testing: '${testStr}'`);
-    return new Markdown(testStr).parse();
+    return new Markdown().parse(testStr);
 }
 
 const testSuite = function()
@@ -2818,7 +2866,7 @@ const testCore = function(testStrings)
 {
     testStrings.forEach(function(str)
     {
-        let result = new Markdown(str.input).parse();
+        let result = new Markdown().parse(str.input);
         if (result == str.expected)
         {
             logInfo(`    Passed! [${str.input}] => [${str.expected}]`);

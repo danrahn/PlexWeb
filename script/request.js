@@ -42,13 +42,20 @@ window.addEventListener("load", function()
         $('#newComment').addEventListener('keyup', parseMarkdown);
     }
 
+    let mdPreview = new Markdown();
     function parseMarkdown()
     {
         const text = $('#newComment').value;
         $('#mdHolder').style.display = text.length == 0 ? "none" : "block";
 
         logTmi(`Parsing "${text}"`);
-        $('#mdPreview').innerHTML = new Markdown(text).parse();
+        let html == mdPreview.parse(text);
+
+        // No need to redraw if the content is the same as our last result.
+        if (!mdPreview.sameText)
+        {
+            $('#mdPreview').innerHTML = html;
+        }
     }
 
     let selectedSuggestion;
@@ -555,7 +562,7 @@ window.addEventListener("load", function()
                 );
 
             // Try the new markdown parser
-            let fixedupContent = new Markdown(comment[1]).parse();
+            let fixedupContent = new Markdown().parse(comment[1]);
 
             let content = buildNode("div", {"class" : "commentContent md"}, fixedupContent);
 

@@ -65,12 +65,13 @@ require_once "includes/common.php";
 <script src="script/common.js"></script>
 <script src="script/markdown.js"></script>
 <script>
+
+let md = new Markdown();
 function parseMarkdown()
 {
     const text = $('#query').value;
     logTmi(`Parsing "${text}"`);
-    let md = new Markdown(text);
-    let html = md.parse();
+    let html = md.parse(text);
     $('.md')[0].innerHTML = html;
 }
 $('#markdownSubmit').addEventListener('click', parseMarkdown);
