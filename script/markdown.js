@@ -459,178 +459,23 @@ class Markdown {
             {
                 case '\n':
                 {
-                    // Single \n is a <br>. If we're in a list item though, any number
-                    // of newlines collapses into a single br
-                    const innerRuns = this.currentRun.innerRuns;
-                    let previousRun = innerRuns.length == 0 ? null : innerRuns[innerRuns.length - 1];
-                    if (i == this.text.length - 1 || this.text[i + 1] != '\n')
-                    {
-                        // Don't add one if the previous element is already a block type
-                        if (previousRun && (previousRun.end == i &&
-                            (previousRun.state == State.Hr ||
-                                previousRun.state == State.Header ||
-                                previousRun.state == State.BlockQuote ||
-                                previousRun.state == State.ListItem) ||
-                                previousRun.state == State.UnorderedList ||
-                                previousRun.state == State.OrderedList))
-                        {
-                            continue;
-                        }
-
-                        new Break(i, this.currentRun);
-                        logTmi(`Added Line Break: start=${i}, end=${i}`);
-                        continue;
-                    }
-                    // else if (this.currentRun.state == State.ListItem &&
-                    //     i >= this.currentRun.start &&
-                    //     i < this.currentRun.end)
-                    else if (this._inAList(i).inList)
-                    {
-                        new Break(i, this.currentRun);
-
-                        // Collapse newlines
-                        let twoBreaks = false;
-                        let oldI = i;
-                        while (i + 1 < this.text.length && this.text[i + 1] == '\n')
-                        {
-                            twoBreaks = true;
-                            ++i;
-                        }
-
-                        if (twoBreaks && this.currentRun.state == State.ListItem)
-                        {
-                            // Only add a seoncd break if the previoius element is not a block type
-                            let pState = previousRun ? previousRun.state : State.None;
-                            if ((previousRun.end != oldI ||
-                                (pState != State.Hr &&
-                                    pState != State.Header &&
-                                    pState != State.BlockQuote &&
-                                    pState != State.ListItem &&
-                                    pState != State.CodeBlock &&
-                                    pState != State.LineBreak)) &&
-                                pState != State.UnorderedList &&
-                                pState != State.OrderedList)
-                            {
-                                new Break(i, this.currentRun);
-                            }
-                        }
-                        continue;
-                    }
-
-                    // Multiple newlines indicates a break in the text. These technically
-                    // should probably be paragraphs (<p>), but there are nesting rules
-                    // with paragraphs that I don't want to deal with. Use a div instead
-                    // since it can just as easily be styled as a paragraph without all the
-                    // rules attached.
-
-                    // Multiple \n is a paragraph, but we have to check for items that shouln't go into
-                    // paragraphs:
-                    //  1. Headers (hX)
-                    //  2. blockquotes (blockquote)
-                    //  3. lists (ol/ul)
-                    //       Look for '*' or '#.'
-                    //       If found, continue until
-                    //          three newlines are found (two empty lines)
-                    //          OR two newlines
-                    //              IF the next line does not follow the list pattern
-                    //              AND is not indented at a greater level
-                    //          OR a single newline
-                    //              IF the next line is another "block" item
-                    //              AND is indented less than three spaces
-                    //  4. Code blocks (pre)
-                    //  5. Tables (table)
-
-                    let start = i;
-                    while (i + 1 < this.text.length && this.text[i + 1] == '\n')
-                    {
-                        ++i;
-                    }
-
-                    // TODO: Watch out for nested items in lists, see (3) above
-                    let end = this._getNextDivEnd(i);
-                    let div = new Div(start, end, this.text, this.currentRun);
-                    this.currentRun = div;
-                    logTmi(`Added Div: start=${start}, end=${end}`);
+                    i = this._processNewline(i);
                     break;
                 }
                 case '#':
                 {
-                    // Headers need to be at the start of a line (or at least the first non-whitespace character)
-                    // Nested within a ListItem is still fine though, as long as they're at the beginning
-                    let newline = this.text.lastIndexOf('\n', i);
-
-                    let between = this.text.substring(newline + 1, i);
-                    if (between.replace(/ /g, '').length != 0 &&
-                        (this.currentRun.state != State.ListItem || !/^ *(\*|\d+\.) /.test(between)))
-                    {
-                        continue;
-                    }
-
-                    if (!stateAllowedInState(State.Header, this.currentRun, i))
-                    {
-                        continue;
-                    }
-
-                    let headingLevel = 1;
-                    while (i + 1 < this.text.length && this.text[i + 1] == '#')
-                    {
-                        ++headingLevel;
-                        ++i;
-                    }
-
-                    // h6 is the highest heading level possible,
-                    // and there must be a space after the header declaration
-                    if (headingLevel > 6 || i == this.text.length - 1 || this.text[i + 1] != ' ')
-                    {
-                        // Reset i and continue
-                        i -= (headingLevel - 1);
-                        continue;
-                    }
-
-                    let end = this.text.indexOf('\n', i);
-                    if (end == -1) { end = this.text.length };
-                    let header = new Header(i - headingLevel + 1, end, headingLevel, this.currentRun);
-                    this.currentRun = header;
-                    logTmi(`Added header: start=${header.start}, end=${header.end}, level=${header.headerLevel}`);
+                    i = this._checkHeader(i);
                     break;
                 }
                 case '!':
                 {
-                    if (this._isEscaped(i) || i == this.text.length - 1 || this.text[i + 1] != '[')
+                    let imageEnd = this._checkImage(i);
+                    if (imageEnd != -1)
                     {
-                        continue;
+                        // Nothing inside of an image is allowed
+                        i = imageEnd - 1;
                     }
 
-                    let result = this._testUrl(i + 1);
-                    if (!result)
-                    {
-                        continue;
-                    }
-
-                    if (this.currentRun.end < result.end)
-                    {
-                        continue;
-                    }
-
-                    // Non-standard width/height syntax, since I explicitly don't want
-                    // to support direct HTML insertion.
-                    // ![AltText |w|h](url)
-                    let dimen = / \|(\d+)(?:\|(\d+))?$/.exec(result.text);
-                    let width = -1;
-                    let height = -1;
-                    if (dimen != null)
-                    {
-                        width = parseInt(dimen[1]);
-                        if (dimen[2])
-                        {
-                            height = parseInt(dimen[2]);
-                        }
-                    }
-
-                    let img = new Image(i, result.end, result.text, result.url, width, height, this.currentRun);
-
-                    // Nothing inside of an image allowed
-                    i = result.end - 1;
                     break;
                 }
                 case '[':
@@ -722,181 +567,12 @@ class Markdown {
                         continue;
                     }
 
-                    // Separators a tricky, as they can be nested, and can represent both
-                    // bold (2 separators) and italics (1 separator). The exact format is
-                    // determined by the ending separator.
-                    //
-                    // Another tricky thing. If separators are not matched (__A_), it should be
-                    // rendered as _<i>A</i>. So if we've reached the end of our block and have
-                    // too many separators, we need to drop a few of them from the format and
-                    // add them to the text.
-
-                    // A non-alphanumeric number should precede this.
-                    // Might want to tweak this a bit more by digging into surrounding/parent
-                    // runs.
-                    if (i != 0 && (isAlphanumeric(this.text[i - 1]) || this._isEscaped(i)))
+                    // Only returns true if we added a bold run, indicating that we should
+                    // also increment i as to not be included in a subsequent check
+                    if (this._checkBoldItalic(i))
                     {
-                        continue;
+                        ++i;
                     }
-
-                    let sep = this.text[i];
-
-                    // Man, I really need to compartmentalize this nasty processing loop
-                    if (sep == '_')
-                    {
-                        // TODO: Check for HR
-                    }
-
-                    // Also check that we aren't in any special regions of our current run
-                    let parentContextStartLength = this.currentRun.startContextLength();
-                    let parentContextEndLength = this.currentRun.endContextLength();
-                    if ((parentContextStartLength != 0 && i - this.currentRun.start < parentContextStartLength) ||
-                        (parentContextEndLength != 0 && this.currentRun.end - i <= parentContextEndLength))
-                    {
-                        continue;
-                    }
-
-                    let blockEnd = this.currentRun.end - this.currentRun.endContextLength();
-                    let separators = 1;
-                    let separatorIndex = i + 1;
-                    while (this.text[separatorIndex] == sep)
-                    {
-                        ++separators;
-                        ++separatorIndex;
-                    }
-
-                    // Next character in run must not be whitespace
-                    if (isWhitespace(this.text[separatorIndex]))
-                    {
-                        continue;
-                    }
-
-                    // Need to find a match for our separator.
-                    // Rules:
-                    //  An opening separator run must be preceeded by whitespace and end with non-whitespace
-                    // A closing separator run must be preceded by non-whitespace and end with whitespace
-                    let inline = false;
-                    for (; separators != 0 && separatorIndex < blockEnd; ++separatorIndex)
-                    {
-                        if (this.text[separatorIndex] == '`' && !this._isEscaped(separatorIndex))
-                        {
-                            inline = !inline;
-                        }
-
-                        if (this._isInline(inline, separatorIndex, blockEnd))
-                        {
-                            continue;
-                        }
-
-                        if (this.text[separatorIndex] != sep || this._isEscaped(separatorIndex))
-                        {
-                            continue;
-                        }
-
-                        // Check to see if it's the start of an opening or closing sequence
-                        let potentialSeparators = 1;
-                        let foundMatch = false;
-                        if (!isAlphanumeric(this.text[separatorIndex - 1]))
-                        {
-                            // Opening?
-                            let psi = separatorIndex + potentialSeparators;
-                            while (psi < blockEnd && this.text[psi] == sep)
-                            {
-                                ++potentialSeparators;
-                                ++psi;
-                            }
-
-                            if (psi == blockEnd || isWhitespace(this.text[psi]))
-                            {
-                                if (isWhitespace(this.text[separatorIndex - 1]))
-                                {
-                                    // Separators surrounded by whitespace, don't parse
-                                    separatorIndex = psi;
-                                    continue;
-                                }
-
-                                // non-alphanumeric + separators + whitespace. This
-                                // might actually be an end
-                                potentialSeparators = 1;
-                            }
-                            else
-                            {
-                                if (!isWhitespace(this.text[separatorIndex - 1]))
-                                {
-                                    // Assume that separators surrounded by
-                                    // punctiation is closing. It's ambiguous
-                                    // and some choice has to be made
-                                    potentialSeparators = 1;
-                                }
-                                else
-                                {
-                                    // Found an actual group of opening separators. Add it to our collection
-                                    foundMatch = true;
-                                    separators += potentialSeparators;
-                                    separatorIndex = psi;
-                                }
-                            }
-                        }
-
-                        if (!foundMatch)
-                        {
-                            // non-whitespace, see if it's an end sequence
-                            let psi = separatorIndex + potentialSeparators;
-                            while (psi < blockEnd && this.text[psi] == sep)
-                            {
-                                ++potentialSeparators;
-                                ++psi;
-                            }
-
-                            if (psi != blockEnd && isAlphanumeric(this.text[psi]))
-                            {
-                                // Group of separators with alphanumeric on either end,
-                                // skip over it
-                                separatorIndex = psi;
-                                continue;
-                            }
-
-                            if (potentialSeparators > separators)
-                            {
-                                separatorIndex += separators;
-                                separators = 0;
-                                break;
-                            }
-                            else
-                            {
-                                separatorIndex += potentialSeparators;
-                                separators -= potentialSeparators;
-                                if (separators == 0)
-                                {
-                                    break;
-                                }
-                            }
-                        }
-                    }
-
-                    if (separators != 0)
-                    {
-                        // Didn't find a match, move to the next character
-                        continue;
-                    }
-
-                    let bi;
-                    if (this.text[i + 1] == sep && this.text[separatorIndex - 2] == sep)
-                    {
-                        logTmi(`Adding bold run: start=${i}, end=${separatorIndex}`);
-                        bi = new Bold(i, separatorIndex, this.currentRun);
-
-                        // Also need to skip the next separator, as we've included it in
-                        // our match and we don't want to reprocess it.
-                        ++i
-                    }
-                    else
-                    {
-                        logTmi(`Adding italic run: start=${i}, end=${separatorIndex}`);
-                        bi = new Italic(i, separatorIndex, this.currentRun);
-                    }
-
-                    this.currentRun = bi;
 
                     break;
                 }
@@ -919,303 +595,17 @@ class Markdown {
                 }
                 case '+':
                 {
-                    // Depending on what online visualizer I use, this does a multitude of things.
-                    // Usuall two strikes through (~~A~~), but sometimes it only takes one (~A~).
-                    // For others, one creates a subscript, and three creates a code block. Gah.
-                    //
-                    // For this parser, keep things simple for now. Two indicates a strikethrough.
-                    // They can be nested (though you shouldn't need it...) just like '*' and '_'
-                    //
-                    // What can/should be shared with bold/italic? If nothing, it should at least
-                    // be shared with underline (++A++) like bold is shared with italic.
-                    if (i != 0 && (isAlphanumeric(this.text[i - 1]) || this.text[i - 1] == '\\'))
+                    if (this._checkStrikeAndUnderline(i))
                     {
-                        continue;
+                        // Skip over the second ~/+, as it's part of
+                        // the run we just created
+                        ++i;
                     }
-
-                    let sep = this.text[i];
-
-                    // Need at least 4 additional characters to make a complete run
-                    if (i >= this.text.length - 4 || this.text[i + 1] != sep)
-                    {
-                        continue;
-                    }
-
-                    let parentContextStartLength = this.currentRun.startContextLength();
-                    let parentContextEndLength = this.currentRun.endContextLength();
-                    if ((parentContextStartLength != 0 && i - this.currentRun.start < parentContextStartLength) ||
-                        (parentContextEndLength != 0 && this.currentRun.end - i <= parentContextEndLength))
-                    {
-                        continue;
-                    }
-
-                    let blockEnd = this.currentRun.end - this.currentRun.endContextLength();
-                    let separators = 2;
-                    let separatorIndex = i + 2;
-                    while (separatorIndex < this.text.length && this.text[separatorIndex] == sep)
-                    {
-                        ++separators;
-                        ++separatorIndex;
-                    }
-
-                    if (separators % 2 == 1)
-                    {
-                        //  Odd number of separators, not allowed here
-                        continue;
-                    }
-
-                    // Next character in run must not be whitespace
-                    if (isWhitespace(this.text[separatorIndex]))
-                    {
-                        continue;
-                    }
-
-                    // Need to find a match for our separator.
-                    // Keeping track of just inline code (and not block) is okay because we
-                    // currently don't allow these annotations to span multiple lines. If that
-                    // changes, this will have to change as well.
-                    let inline = false;
-                    for (; separators != 0 && separatorIndex < blockEnd; ++separatorIndex)
-                    {
-                        if (this.text[separatorIndex] == '`' && !this._isEscaped(separatorIndex))
-                        {
-                            inline = !inline;
-                        }
-
-                        if (this._isInline(inline, separatorIndex, blockEnd))
-                        {
-                            continue;
-                        }
-
-                        if (this.text[separatorIndex] != sep || this._isEscaped(separatorIndex))
-                        {
-                            continue;
-                        }
-
-                        // Check to see if it's the start of an opening or closing sequence
-                        let potentialSeparators = 1;
-                        let foundMatch = false;
-                        if (!isAlphanumeric(this.text[separatorIndex - 1]))
-                        {
-                            // Opening? (psi == potentialSeparatorIndex)
-                            let psi = separatorIndex + potentialSeparators;
-                            while (psi < blockEnd && this.text[psi] == sep)
-                            {
-                                ++potentialSeparators;
-                                ++psi;
-                            }
-
-                            if (psi == blockEnd || isWhitespace(this.text[psi]))
-                            {
-                                if (potentialSeparators == 1 || isWhitespace(this.text[separatorIndex - 1]))
-                                {
-                                    // Single separator or separators surrounded by whitespace, don't parse
-                                    separatorIndex = psi;
-                                    continue;
-                                }
-
-                                // non alphanumeric + separators + whitespace. This
-                                // might actually be an end
-                                potentialSeparators = 1;
-                            }
-                            else
-                            {
-                                if (!isWhitespace(this.text[separatorIndex - 1]))
-                                {
-                                    // Assume that separators surrounded by punctuation is
-                                    // closing. It's ambiguous and some choise has to be made
-                                    potentialSeparators = 1;
-                                }
-                                else
-                                {
-                                    // Found an actual group of opening separators. Add it to our collection
-                                    // Note that these separators must be in pairs of two, so if we have an
-                                    // odd number, round down.
-                                    foundMatch = true;
-                                    separators += potentialSeparators - (potentialSeparators % 2);
-                                    separatorIndex = psi;
-                                }
-                            }
-                        }
-
-                        if (!foundMatch)
-                        {
-                            // non-whitespace, see if it's an end sequence
-                            let psi = separatorIndex + potentialSeparators;
-                            while (psi < blockEnd && this.text[psi] == sep)
-                            {
-                                ++potentialSeparators;
-                                ++psi;
-                            }
-
-                            if (psi != blockEnd && isAlphanumeric(this.text[psi]))
-                            {
-                                // Group of separators with alphanumeric on either end,
-                                // skip over it
-                                separatorIndex = psi;
-                                continue;
-                            }
-
-                            if (potentialSeparators > separators)
-                            {
-                                separatorIndex += separators;
-                                separaators = 0;
-                                break;
-                            }
-                            else
-                            {
-                                separatorIndex += potentialSeparators;
-                                separators -= (potentialSeparators - (potentialSeparators % 2));
-                                if (separators == 0)
-                                {
-                                    break;
-                                }
-                            }
-                        }
-                    }
-
-                    if (separators != 0)
-                    {
-                        // Didn't find a match, move to the next character
-                        continue;
-                    }
-
-                    let su;
-                    if (sep == '+')
-                    {
-                        logTmi(`Adding underline run: start=${i}, end=${separatorIndex}`);
-                        su = new Underline(i, separatorIndex, this.currentRun);
-                    }
-                    else
-                    {
-                        logTmi(`Adding strikethrough run: start-${i}, end=${separatorIndex}`);
-                        su = new Strikethrough(i, separatorIndex, this.currentRun);
-                    }
-
-                    // Also need to skip the next separator, as we've included it in
-                    //  our match and we don't want to reprocess it
-                    ++i
-                    this.currentRun = su;
                     break;
                 }
                 case '>':
                 {
-                    // Blockquote rules:
-                    //  Starts with a '>'
-                    //  Can be continued on the next line without '>'
-                    //  Can be nested with additional '>', and can skip levels. The following is fine:
-                    //      > Hello
-                    //      >>> Hi
-                    //  You can 'unindent' by leaving a blank quote line:
-                    //      > Hello
-                    //      >> There
-                    //      >
-                    //      > Hi
-                    //
-                    // Make things easier by not allowing whitespace at all
-
-                    // First, it must not be escaped, and must be the first character of the line
-
-                    if (this._inlineOnly || this._isEscaped(i))
-                    {
-                        continue;
-                    }
-
-                    let nestLevel = 1;
-                    let offset = 1;
-                    while (i - offset >= 0 && /[> ]/.test(this.text[i - offset]))
-                    {
-                        if (this.text[i - offset] == '>')
-                        {
-                            ++nestLevel;
-                        }
-
-                        ++offset;
-                    }
-
-                    // Must be the beginning of the line
-                    let prevNewline = this.text.lastIndexOf('\n', i);
-                    let regex;
-                    if (this.currentRun.state != State.ListItem)
-                    {
-                        regex = new RegExp(`^>{${nestLevel}}$`);
-                    }
-                    else if (this.currentRun.parent.state == State.OrderedList)
-                    {
-                        regex = new RegExp(`^(\\d+\\.)?>{${nestLevel}}$`);
-                    }
-                    else
-                    {
-                        regex = new RegExp(`^(\\*)?>{${nestLevel}}$`);
-                    }
-                    if (!regex.test(this.text.substring(prevNewline + 1, i + 1).replace(/ /g, '')))
-                    // if (i - nestLevel != -1 && this.text[i - nestLevel] != '\n')
-                    {
-                        continue;
-                    }
-
-                    let parentState = this.currentRun.state;
-                    if (nestLevel > 1 && parentState != State.BlockQuote)
-                    {
-                        logError('Something went wrong! Nested blockquotes should have a blockquote parent, found ' + stateToStr(parentState));
-                        continue;
-                    }
-
-                    if (parentState == State.BlockQuote && this.currentRun.nestLevel >= nestLevel)
-                    {
-                        // Same or less nesting than parent, don't add another one
-                        continue;
-                    }
-
-                    // Now find where the blockquote ends.
-                    // Exit conditions:
-                    //  1. Double newline
-                    //  2. Less indentation
-                    //      2.a. Except when there are no indicators, as that means we should
-                    //          continue with the current nest level
-
-                    let lineEnd = this.text.indexOf('\n', i);
-                    let end = this.text.length; // By default, the blockquote covers the rest of the text
-                    while (lineEnd != -1 && lineEnd != this.text.length - 1)
-                    {
-                        let next = this.text[lineEnd + 1];
-                        if (next == '\n')
-                        {
-                            // Double line break, we're done.
-                            // Note that we might want to change this for listitems, which
-                            // allows additional newlines if the next non-blank line is indented
-                            // 2+ spaces.
-                            end = lineEnd;
-                            break;
-                        }
-
-                        let nextNest = 0;
-                        let nextChar;
-                        let nextOffset = 1;
-                        while (lineEnd + nextOffset < this.text.length && /[> ]/.test((nextChar = this.text[lineEnd + nextOffset])))
-                        {
-                            if (nextChar == '>')
-                            {
-                                ++nextNest;
-                            }
-
-                            ++nextOffset;
-                        }
-
-                        if (nextNest < nestLevel)
-                        {
-                            // Less indentation, we're done.
-                            end = lineEnd;
-                            break;
-                        }
-
-                        lineEnd = this.text.indexOf('\n', lineEnd + 1);
-                    }
-
-                    let blockquote = new BlockQuote(i, end, nestLevel, this.currentRun);
-                    this.currentRun = blockquote;
-
-                    // One level lasts until 
+                    this._checkBlockQuote(i);
                     break;
                 }
                 case '0':
@@ -1286,6 +676,650 @@ class Markdown {
         let perfStop = window.performance.now();
         logVerbose(`Parsed markdown in ${perfStop - perfStart}ms`);
         return html;
+    }
+
+    _processNewline(start)
+    {
+        // Single \n is a <br>. If we're in a list item though, any number
+        // of newlines collapses into a single br
+        const innerRuns = this.currentRun.innerRuns;
+        let previousRun = innerRuns.length == 0 ? null : innerRuns[innerRuns.length - 1];
+        if (start == this.text.length - 1 || this.text[start + 1] != '\n')
+        {
+            // Don't add one if the previous element is already a block type
+            if (previousRun && (previousRun.end == start &&
+                (previousRun.state == State.Hr ||
+                    previousRun.state == State.Header ||
+                    previousRun.state == State.BlockQuote ||
+                    previousRun.state == State.ListItem) ||
+                    previousRun.state == State.UnorderedList ||
+                    previousRun.state == State.OrderedList))
+            {
+                return start;
+            }
+
+            new Break(start, this.currentRun);
+            logTmi(`Added Line Break: start=${start}, end=${start}`);
+            return start;
+        }
+        // else if (this.currentRun.state == State.ListItem &&
+        //     i >= this.currentRun.start &&
+        //     i < this.currentRun.end)
+        else if (this._inAList(start).inList)
+        {
+            new Break(start, this.currentRun);
+
+            // Collapse newlines
+            let twoBreaks = false;
+            let oldStart = start;
+            while (start + 1 < this.text.length && this.text[start + 1] == '\n')
+            {
+                twoBreaks = true;
+                ++start;
+            }
+
+            if (twoBreaks && this.currentRun.state == State.ListItem)
+            {
+                // Only add a seoncd break if the previoius element is not a block type
+                let pState = previousRun ? previousRun.state : State.None;
+                if ((previousRun.end != oldStart ||
+                    (pState != State.Hr &&
+                        pState != State.Header &&
+                        pState != State.BlockQuote &&
+                        pState != State.ListItem &&
+                        pState != State.CodeBlock &&
+                        pState != State.LineBreak)) &&
+                    pState != State.UnorderedList &&
+                    pState != State.OrderedList)
+                {
+                    new Break(start, this.currentRun);
+                }
+            }
+
+            return start;
+        }
+
+        // Multiple newlines indicates a break in the text. These technically
+        // should probably be paragraphs (<p>), but there are nesting rules
+        // with paragraphs that I don't want to deal with. Use a div instead
+        // since it can just as easily be styled as a paragraph without all the
+        // rules attached.
+
+        // Multiple \n is a paragraph, but we have to check for items that shouln't go into
+        // paragraphs:
+        //  1. Headers (hX)
+        //  2. blockquotes (blockquote)
+        //  3. lists (ol/ul)
+        //       Look for '*' or '#.'
+        //       If found, continue until
+        //          three newlines are found (two empty lines)
+        //          OR two newlines
+        //              IF the next line does not follow the list pattern
+        //              AND is not indented at a greater level
+        //          OR a single newline
+        //              IF the next line is another "block" item
+        //              AND is indented less than three spaces
+        //  4. Code blocks (pre)
+        //  5. Tables (table)
+
+        let oldStart = start;
+        while (start + 1 < this.text.length && this.text[start + 1] == '\n')
+        {
+            ++start;
+        }
+
+        // TODO: Watch out for nested items in lists, see (3) above
+        let end = this._getNextDivEnd(start);
+        let div = new Div(oldStart, end, this.text, this.currentRun);
+        this.currentRun = div;
+        logTmi(`Added Div: start=${oldStart}, end=${end}`);
+        return start;
+    }
+
+    _checkHeader(start)
+    {
+        // Headers need to be at the start of a line (or at least the first non-whitespace character)
+        // Nested within a ListItem is still fine though, as long as they're at the beginning
+        let newline = this.text.lastIndexOf('\n', start);
+
+        let between = this.text.substring(newline + 1, start);
+        if (between.replace(/ /g, '').length != 0 &&
+            (this.currentRun.state != State.ListItem || !/^ *(\*|\d+\.) /.test(between)))
+        {
+            return start;
+        }
+
+        if (!stateAllowedInState(State.Header, this.currentRun, start))
+        {
+            return start;
+        }
+
+        let headingLevel = 1;
+        while (start + 1 < this.text.length && this.text[start + 1] == '#')
+        {
+            ++headingLevel;
+            ++start;
+        }
+
+        // h6 is the highest heading level possible,
+        // and there must be a space after the header declaration
+        if (headingLevel > 6 || start == this.text.length - 1 || this.text[start + 1] != ' ')
+        {
+            // Reset i and continue
+            start -= (headingLevel - 1);
+            return start;
+        }
+
+        let end = this.text.indexOf('\n', start);
+        if (end == -1) { end = this.text.length };
+        let header = new Header(start - headingLevel + 1, end, headingLevel, this.currentRun);
+        this.currentRun = header;
+        logTmi(`Added header: start=${header.start}, end=${header.end}, level=${header.headerLevel}`);
+        return start;
+    }
+
+    _checkImage(start)
+    {
+        if (this._isEscaped(start) || start == this.text.length - 1 || this.text[start + 1] != '[')
+        {
+            return -1;
+        }
+
+        let result = this._testUrl(start + 1);
+        if (!result)
+        {
+            return -1;
+        }
+
+        if (this.currentRun.end < result.end)
+        {
+            return -1;
+        }
+
+        // Non-standard width/height syntax, since I explicitly don't want
+        // to support direct HTML insertion.
+        // ![AltText |w|h](url)
+        let dimen = / \|(\d+)(?:\|(\d+))?$/.exec(result.text);
+        let width = -1;
+        let height = -1;
+        if (dimen != null)
+        {
+            width = parseInt(dimen[1]);
+            if (dimen[2])
+            {
+                height = parseInt(dimen[2]);
+            }
+        }
+
+        let img = new Image(start, result.end, result.text, result.url, width, height, this.currentRun);
+        return result.end;
+    }
+
+    _checkBoldItalic(start)
+    {
+        // Separators a tricky, as they can be nested, and can represent both
+        // bold (2 separators) and italics (1 separator). The exact format is
+        // determined by the ending separator.
+        //
+        // Another tricky thing. If separators are not matched (__A_), it should be
+        // rendered as _<i>A</i>. So if we've reached the end of our block and have
+        // too many separators, we need to drop a few of them from the format and
+        // add them to the text.
+
+        // A non-alphanumeric number should precede this.
+        // Might want to tweak this a bit more by digging into surrounding/parent
+        // runs.
+        if (start != 0 && (isAlphanumeric(this.text[start - 1]) || this._isEscaped(start)))
+        {
+            return false;
+        }
+
+        let sep = this.text[start];
+
+        // Man, I really need to compartmentalize this nasty processing loop
+
+        // Also check that we aren't in any special regions of our current run
+        let parentContextStartLength = this.currentRun.startContextLength();
+        let parentContextEndLength = this.currentRun.endContextLength();
+        if ((parentContextStartLength != 0 && start - this.currentRun.start < parentContextStartLength) ||
+            (parentContextEndLength != 0 && this.currentRun.end - start <= parentContextEndLength))
+        {
+            return false;
+        }
+
+        let blockEnd = this.currentRun.end - this.currentRun.endContextLength();
+        let separators = 1;
+        let separatorIndex = start + 1;
+        while (this.text[separatorIndex] == sep)
+        {
+            ++separators;
+            ++separatorIndex;
+        }
+
+        // Next character in run must not be whitespace
+        if (isWhitespace(this.text[separatorIndex]))
+        {
+            return false;
+        }
+
+        // Need to find a match for our separator.
+        // Rules:
+        //  An opening separator run must be preceeded by whitespace and end with non-whitespace
+        // A closing separator run must be preceded by non-whitespace and end with whitespace
+        let inline = false;
+        for (; separators != 0 && separatorIndex < blockEnd; ++separatorIndex)
+        {
+            if (this.text[separatorIndex] == '`' && !this._isEscaped(separatorIndex))
+            {
+                inline = !inline;
+            }
+
+            if (this._isInline(inline, separatorIndex, blockEnd))
+            {
+                continue;
+            }
+
+            if (this.text[separatorIndex] != sep || this._isEscaped(separatorIndex))
+            {
+                continue;
+            }
+
+            // Check to see if it's the start of an opening or closing sequence
+            let potentialSeparators = 1;
+            let foundMatch = false;
+            if (!isAlphanumeric(this.text[separatorIndex - 1]))
+            {
+                // Opening?
+                let psi = separatorIndex + potentialSeparators;
+                while (psi < blockEnd && this.text[psi] == sep)
+                {
+                    ++potentialSeparators;
+                    ++psi;
+                }
+
+                if (psi == blockEnd || isWhitespace(this.text[psi]))
+                {
+                    if (isWhitespace(this.text[separatorIndex - 1]))
+                    {
+                        // Separators surrounded by whitespace, don't parse
+                        separatorIndex = psi;
+                        continue;
+                    }
+
+                    // non-alphanumeric + separators + whitespace. This
+                    // might actually be an end
+                    potentialSeparators = 1;
+                }
+                else
+                {
+                    if (!isWhitespace(this.text[separatorIndex - 1]))
+                    {
+                        // Assume that separators surrounded by
+                        // punctiation is closing. It's ambiguous
+                        // and some choice has to be made
+                        potentialSeparators = 1;
+                    }
+                    else
+                    {
+                        // Found an actual group of opening separators. Add it to our collection
+                        foundMatch = true;
+                        separators += potentialSeparators;
+                        separatorIndex = psi;
+                    }
+                }
+            }
+
+            if (!foundMatch)
+            {
+                // non-whitespace, see if it's an end sequence
+                let psi = separatorIndex + potentialSeparators;
+                while (psi < blockEnd && this.text[psi] == sep)
+                {
+                    ++potentialSeparators;
+                    ++psi;
+                }
+
+                if (psi != blockEnd && isAlphanumeric(this.text[psi]))
+                {
+                    // Group of separators with alphanumeric on either end,
+                    // skip over it
+                    separatorIndex = psi;
+                    continue;
+                }
+
+                if (potentialSeparators > separators)
+                {
+                    separatorIndex += separators;
+                    separators = 0;
+                    break;
+                }
+                else
+                {
+                    separatorIndex += potentialSeparators;
+                    separators -= potentialSeparators;
+                    if (separators == 0)
+                    {
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (separators != 0)
+        {
+            // Didn't find a match, move to the next character
+            return false;
+        }
+
+        let isBold = false;
+        let bi;
+        if (this.text[start + 1] == sep && this.text[separatorIndex - 2] == sep)
+        {
+            logTmi(`Adding bold run: start=${start}, end=${separatorIndex}`);
+            bi = new Bold(start, separatorIndex, this.currentRun);
+            isBold = true;
+        }
+        else
+        {
+            logTmi(`Adding italic run: start=${start}, end=${separatorIndex}`);
+            bi = new Italic(start, separatorIndex, this.currentRun);
+        }
+
+        this.currentRun = bi;
+        return isBold;
+    }
+
+    _checkStrikeAndUnderline(start)
+    {
+        // Depending on what online visualizer I use, this does a multitude of things.
+        // Usuall two strikes through (~~A~~), but sometimes it only takes one (~A~).
+        // For others, one creates a subscript, and three creates a code block. Gah.
+        //
+        // For this parser, keep things simple for now. Two indicates a strikethrough.
+        // They can be nested (though you shouldn't need it...) just like '*' and '_'
+        //
+        // What can/should be shared with bold/italic? Loops are __very__ similar, but it
+        // gets tricky because '*' and '_' can be both bold _and_ italic
+        if (start != 0 && (isAlphanumeric(this.text[start - 1]) || this._isEscaped(start)))
+        {
+            return false;
+        }
+
+        let sep = this.text[start];
+
+        // Need at least 4 additional characters to make a complete run
+        if (start >= this.text.length - 4 || this.text[start + 1] != sep)
+        {
+            return false;
+        }
+
+        let parentContextStartLength = this.currentRun.startContextLength();
+        let parentContextEndLength = this.currentRun.endContextLength();
+        if ((parentContextStartLength != 0 && start - this.currentRun.start < parentContextStartLength) ||
+            (parentContextEndLength != 0 && this.currentRun.end - start <= parentContextEndLength))
+        {
+            return false;
+        }
+
+        let blockEnd = this.currentRun.end - this.currentRun.endContextLength();
+        let separators = 2;
+        let separatorIndex = start + 2;
+        while (separatorIndex < this.text.length && this.text[separatorIndex] == sep)
+        {
+            ++separators;
+            ++separatorIndex;
+        }
+
+        if (separators % 2 == 1)
+        {
+            //  Odd number of separators, not allowed here
+            return false;
+        }
+
+        // Next character in run must not be whitespace
+        if (isWhitespace(this.text[separatorIndex]))
+        {
+            return false;
+        }
+
+        // Need to find a match for our separator.
+        // Keeping track of just inline code (and not block) is okay because we
+        // currently don't allow these annotations to span multiple lines. If that
+        // changes, this will have to change as well.
+        let inline = false;
+        for (; separators != 0 && separatorIndex < blockEnd; ++separatorIndex)
+        {
+            if (this.text[separatorIndex] == '`' && !this._isEscaped(separatorIndex))
+            {
+                inline = !inline;
+            }
+
+            if (this._isInline(inline, separatorIndex, blockEnd))
+            {
+                continue;
+            }
+
+            if (this.text[separatorIndex] != sep || this._isEscaped(separatorIndex))
+            {
+                continue;
+            }
+
+            // Check to see if it's the start of an opening or closing sequence
+            let potentialSeparators = 1;
+            let foundMatch = false;
+            if (!isAlphanumeric(this.text[separatorIndex - 1]))
+            {
+                // Opening? (psi == potentialSeparatorIndex)
+                let psi = separatorIndex + potentialSeparators;
+                while (psi < blockEnd && this.text[psi] == sep)
+                {
+                    ++potentialSeparators;
+                    ++psi;
+                }
+
+                if (psi == blockEnd || isWhitespace(this.text[psi]))
+                {
+                    if (potentialSeparators == 1 || isWhitespace(this.text[separatorIndex - 1]))
+                    {
+                        // Single separator or separators surrounded by whitespace, don't parse
+                        separatorIndex = psi;
+                        continue;
+                    }
+
+                    // non alphanumeric + separators + whitespace. This
+                    // might actually be an end
+                    potentialSeparators = 1;
+                }
+                else
+                {
+                    if (!isWhitespace(this.text[separatorIndex - 1]))
+                    {
+                        // Assume that separators surrounded by punctuation is
+                        // closing. It's ambiguous and some choise has to be made
+                        potentialSeparators = 1;
+                    }
+                    else
+                    {
+                        // Found an actual group of opening separators. Add it to our collection
+                        // Note that these separators must be in pairs of two, so if we have an
+                        // odd number, round down.
+                        foundMatch = true;
+                        separators += potentialSeparators - (potentialSeparators % 2);
+                        separatorIndex = psi;
+                    }
+                }
+            }
+
+            if (!foundMatch)
+            {
+                // non-whitespace, see if it's an end sequence
+                let psi = separatorIndex + potentialSeparators;
+                while (psi < blockEnd && this.text[psi] == sep)
+                {
+                    ++potentialSeparators;
+                    ++psi;
+                }
+
+                if (psi != blockEnd && isAlphanumeric(this.text[psi]))
+                {
+                    // Group of separators with alphanumeric on either end,
+                    // skip over it
+                    separatorIndex = psi;
+                    continue;
+                }
+
+                if (potentialSeparators > separators)
+                {
+                    separatorIndex += separators;
+                    separaators = 0;
+                    break;
+                }
+                else
+                {
+                    separatorIndex += potentialSeparators;
+                    separators -= (potentialSeparators - (potentialSeparators % 2));
+                    if (separators == 0)
+                    {
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (separators != 0)
+        {
+            // Didn't find a match
+            return false;
+        }
+
+        let su;
+        if (sep == '+')
+        {
+            logTmi(`Adding underline run: start=${start}, end=${separatorIndex}`);
+            su = new Underline(start, separatorIndex, this.currentRun);
+        }
+        else
+        {
+            logTmi(`Adding strikethrough run: start-${start}, end=${separatorIndex}`);
+            su = new Strikethrough(start, separatorIndex, this.currentRun);
+        }
+
+        this.currentRun = su;
+        return true;
+    }
+
+    _checkBlockQuote(start)
+    {
+        // Blockquote rules:
+        //  Starts with a '>'
+        //  Can be continued on the next line without '>'
+        //  Can be nested with additional '>', and can skip levels. The following is fine:
+        //      > Hello
+        //      >>> Hi
+
+        if (this._inlineOnly || this._isEscaped(start))
+        {
+            return;
+        }
+
+        let nestLevel = 1;
+        let offset = 1;
+        while (start - offset >= 0 && /[> ]/.test(this.text[start - offset]))
+        {
+            if (this.text[start - offset] == '>')
+            {
+                ++nestLevel;
+            }
+
+            ++offset;
+        }
+
+        // Must be the beginning of the line, or nested in a list.
+        // This will get more complicated once arbitrary nesting is supported
+        let prevNewline = this.text.lastIndexOf('\n', start);
+        let regex;
+        if (this.currentRun.state != State.ListItem)
+        {
+            regex = new RegExp(`^>{${nestLevel}}$`);
+        }
+        else if (this.currentRun.parent.state == State.OrderedList)
+        {
+            regex = new RegExp(`^(\\d+\\.)?>{${nestLevel}}$`);
+        }
+        else
+        {
+            regex = new RegExp(`^(\\*)?>{${nestLevel}}$`);
+        }
+
+        if (!regex.test(this.text.substring(prevNewline + 1, start + 1).replace(/ /g, '')))
+        {
+            return;
+        }
+
+        let parentState = this.currentRun.state;
+        if (nestLevel > 1 && parentState != State.BlockQuote)
+        {
+            logError('Something went wrong! Nested blockquotes should have a blockquote parent, found ' + stateToStr(parentState));
+            return;
+        }
+
+        if (parentState == State.BlockQuote && this.currentRun.nestLevel >= nestLevel)
+        {
+            // Same or less nesting than parent, don't add another one
+            return;
+        }
+
+        // Now find where the blockquote ends.
+        // Some parsers allow things like
+        //
+        //    > Text
+        //    More text
+        //
+        // I don't feel like supporting that right now, so require the proper number of
+        // '>' on all lines.
+
+        let lineEnd = this.text.indexOf('\n', start);
+        let end = this.text.length; // By default, the blockquote covers the rest of the text
+        while (lineEnd != -1 && lineEnd != this.text.length - 1)
+        {
+            let next = this.text[lineEnd + 1];
+            if (next == '\n')
+            {
+                // Double line break, we're done.
+                // Note that we might want to change this for listitems, which
+                // allows additional newlines if the next non-blank line is indented
+                // 2+ spaces.
+                end = lineEnd;
+                break;
+            }
+
+            let nextNest = 0;
+            let nextChar;
+            let nextOffset = 1;
+            while (lineEnd + nextOffset < this.text.length && /[> ]/.test((nextChar = this.text[lineEnd + nextOffset])))
+            {
+                if (nextChar == '>')
+                {
+                    ++nextNest;
+                }
+
+                ++nextOffset;
+            }
+
+            if (nextNest < nestLevel)
+            {
+                // Less indentation, we're done.
+                end = lineEnd;
+                break;
+            }
+
+            lineEnd = this.text.indexOf('\n', lineEnd + 1);
+        }
+
+        let blockquote = new BlockQuote(start, end, nestLevel, this.currentRun);
+        this.currentRun = blockquote;
+
+        return;
     }
 
     _checkIndentCodeBlock(start)
