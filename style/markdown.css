@@ -1,5 +1,7 @@
 .md {
     color: #c1c1c1;
+    font-size: 12pt;
+    line-height: 17pt;
 }
 
 .mdDiv {
@@ -17,6 +19,7 @@
 .md code {
     background: rgba(0, 0, 0, 0.3);
     padding: 3px 5px 3px 5px;
+    font-size: 0.8rem;
 }
 
 .md h1, .md h2, .md h3, .md h4, .md h5, .md h6 {
@@ -25,7 +28,7 @@
 
 .md pre {
     /*background: rgba(0, 0, 0, 0.2);*/
-    font-size: 1rem;
+    font-size: 0.8rem;
     padding-top: 0.3rem;
     padding-bottom: 0.3rem;
     line-height: 1rem;
@@ -58,4 +61,41 @@
 
 .md img {
     max-width: 100%;
+}
+
+.md table, .md thead, .md td {
+    border-collapse: collapse;
+    padding: 5px 10px 5px 10px;
+    font-size: 10pt;
+}
+
+.md thead, .md td {
+    border-left: 1px solid #808080;
+    border-right: 1px solid #808080;
+    width: auto;
+    border-bottom: 1px solid #606060;
+}
+
+.md table {
+    width: auto;
+    background-color: rgba(0,0,0,.2);
+    color: #C1C1C1;
+}
+
+.md table:nth-child(even) {
+    background-color: rgba(0,0,0,0.1);
+}
+
+.md thead {
+    background-color: rgba(0,40,0,.3);
+    border-top: 1px solid #808080;
+    font-weight: bold;
+}
+
+.md th {
+    background-color: rgba(0,100,0,.2);
+}
+
+.md tr:hover {
+    background-color: rgba(0,0,0,0.1);
 }

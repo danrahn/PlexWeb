@@ -118,6 +118,8 @@ const blockMarkdown = function(state)
     {
         case State.Header:
         case State.BlockQuote:
+        case State.BacktickCodeBlock:
+        case State.IndentCodeBlock:
             return true;
         default:
             return false;
@@ -141,7 +143,7 @@ const isAlphanumeric = function(ch)
 }
 
 class Markdown {
-    constructor(text)
+    constructor(text, inlineOnly=false)
     {
         let trim = 0;
         while (text[trim] == '\n')
@@ -153,6 +155,8 @@ class Markdown {
         // Everything's easier with spaces
         this.text = text.replace(/\t/g, '    ');
         this.currentRun = null;
+
+        this._inlineOnly = inlineOnly;
     }
 
     _inAList(index)
@@ -289,7 +293,7 @@ class Markdown {
                 prevLine = this.text.substring(prevIndex + 1, prevOld + 1);
             }
 
-            if (maybeBlock && (prevNew > 1 || (prevIndex == -1 && (this.text.startsWith('    ') || this.text.startsWith('\n')))))
+            if (maybeBlock && (prevNew > 0 || (prevIndex == -1 && (this.text.startsWith('    ') || this.text.startsWith('\n')))))
             {
                 // Previous lines indicate we might be in a code block. We know
                 // we are if the next non-blank line is indented with 4+ spaces
@@ -322,7 +326,7 @@ class Markdown {
                 return end;
             }
 
-            if (!/^\n?```\w*\n?$/.test(this.text.substring(cb, this._indexOrLast('\n', cb + 1))))
+            if (!/^\n?```[\S]*\n?$/.test(this.text.substring(cb, this._indexOrLast('\n', cb + 1))))
             {
                 return end;
             }
@@ -398,12 +402,15 @@ class Markdown {
         topRun.end = this.text.length;
         this.currentRun = topRun;
 
-        // Always wrap our first element in a div
+        // Always wrap our first element in a div if we're not inline-only
         let i;
-        for (i = 0; i < this.text.length && this.text[i] == '\n'; ++i);
-        let end = this._getNextDivEnd(i);
-        let div = new Div(0, end, this.text, this.currentRun);
-        this.currentRun = div;
+        if (!this._inlineOnly)
+        {
+            for (i = 0; i < this.text.length && this.text[i] == '\n'; ++i);
+            let end = this._getNextDivEnd(i);
+            let div = new Div(0, end, this.text, this.currentRun);
+            this.currentRun = div;
+        }
 
         for (i = 0; i < this.text.length; ++i)
         {
@@ -1044,7 +1051,7 @@ class Markdown {
 
                     // First, it must not be escaped, and must be the first character of the line
 
-                    if (this._isEscaped(i))
+                    if (this._inlineOnly || this._isEscaped(i))
                     {
                         continue;
                     }
@@ -1163,7 +1170,10 @@ class Markdown {
                 case ' ':
                 {
                     // Potential code block, alternative to three backticks
-
+                    if (this._inlineOnly)
+                    {
+                        continue;
+                    }
                     // Rules:
                     // 1. If not in a list, must have 4 spaces at the start of the line, and an empty line above
                     // 2. If in a list and on the same line as the start of a listitem,
@@ -1273,6 +1283,223 @@ class Markdown {
                     i = endComment - 1;
                     break;
                 }
+                case '|':
+                {
+                    // Tables
+
+                    // Could break from what I have been doing and take a different approach:
+                    // 1. Find the bounds of the entire table
+                    // 2. Create a 2D array of cells containing start and end indexes
+                    // 3. For each cell, invoke a new parser and store the result
+                    // 4. When it's time to display, don't do any transformations
+                    //    and directly display the contents we already converted
+
+                    // Breaking inline spans will also be interesting, and only a problem because
+                    // pipes at the ends of the table are optional.
+
+                    if (this._isEscaped(i))
+                    {
+                        continue;
+                    }
+
+
+
+                    // First, check to see if we're actually in a table. Basic rules:
+                    // 1. Pipes are required to separate columns, but ends are not required
+                    // 2. Three dashes are necessary on the next line for each column. ':' determines alignment
+
+                    let nextbreak = this.text.indexOf('\n', i);
+                    if (nextbreak == -1)
+                    {
+                        // Need at least two lines
+                        continue;
+                    }
+
+                    // Watch out for nests. We can be nested in either a listitem or blockquote
+                    let thisLineStart = this.text.lastIndexOf('\n', i) + 1;
+                    let blockEnd = this.text.length;
+                    if (this.currentRun.state == State.ListItem || this.currentRun.state == State.BlockQuote)
+                    {
+                        if (thisLineStart <= this.currentRun.start)
+                        {
+                            thisLineStart = this.currentRun.start + this.currentRun.startContextLength();
+                        }
+
+                        blockEnd = this.currentRun.end;
+                    }
+
+                    let thisLine = this.text.substring(thisLineStart, nextbreak);
+
+                    let defineEnd = this._indexOrLast('\n', nextbreak + 1);
+                    if (defineEnd > blockEnd)
+                    {
+                        continue;
+                    }
+
+                    let defineLine = this.text.substring(nextbreak + 1, defineEnd);
+
+                    // The definition line _must_ be on its own, so we can be stricter about contents. Still
+                    // allow arbitrary spaces though, so collapse them to make parsing the definition easier
+                    let definition = defineLine.replace(/ /g, '');
+
+                    let quoteRegex;
+                    if (this.currentRun.state == State.BlockQuote)
+                    {
+                        quoteRegex = new RegExp(`^( *> *){${this.currentRun.nestLevel}}`);
+                        definition = definition.replace(quoteRegex, '');
+                    }
+
+                    if (definition.indexOf('|') == -1)
+                    {
+                        continue;
+                    }
+
+                    // First and last can be empty, but everyting else has to match
+                    const splitAndTrim = function(line, self)
+                    {
+                        if (line.indexOf('|') == -1)
+                        {
+                            return [];
+                        }
+
+                        line = line.trim();
+                        let arr = [];
+                        let span = '';
+                        for (let i = 0; i < line.length; ++i)
+                        {
+                            if (line[i] == '|' && !self._isEscaped(i))
+                            {
+                                arr.push(span);
+                                span = '';
+                                continue;
+                            }
+
+                            span += line[i];
+                        }
+
+                        if (span.length != 0)
+                        {
+                            arr.push(span);
+                        }
+
+                        if (arr.length == 1)
+                        {
+                            return arr;
+                        }
+
+                        if (arr[arr.length - 1].length == 0)
+                        {
+                            arr.pop();
+                        }
+
+                        if (arr[0].length == 0)
+                        {
+                            arr.splice(0, 1);
+                        }
+
+                        return arr;
+                    }
+
+                    let groups = splitAndTrim(definition, this);
+
+                    let table =
+                    {
+                        "header" : [],
+                        "rows" : [],
+                        "columnAlign" : [],
+                    };
+
+                    let valid = true;
+                    for (let j = 0; j < groups.length; ++j)
+                    {
+                        let col = groups[j];
+                        if (!/^:?-{3,}:?$/.test(col))
+                        {
+                            valid = false;
+                            break;
+                        }
+
+                        // -2 means don't have specific alignment
+                        table.columnAlign.push(-2);
+
+                        if (col.startsWith(':'))
+                        {
+                            table.columnAlign[j] = col.endsWith(':') ? 0 : -1;
+                        }
+                        else if (col.endsWith(':'))
+                        {
+                            table.columnAlign[j] = 1;
+                        }
+                    }
+
+                    if (!valid)
+                    {
+                        continue;
+                    }
+
+                    // We have valid column definitions. Now back to the header
+                    let headers = splitAndTrim(thisLine, this);
+
+                    for (let j = 0; j < groups.length; ++j)
+                    {
+                        table.header.push(j >= headers.length ? '' : headers[j]);
+                    }
+
+                    // Now look for the rows
+                    let newline = defineEnd;
+                    let end = newline;
+                    let next = this._indexOrLast('\n', newline + 1);
+                    let nextline = this.text.substring(newline + 1, next);
+                    while (true)
+                    {
+                        if (nextline.length == 0 || nextline == '\n' || next > blockEnd)
+                        {
+                            break;
+                        }
+
+                        if (this.currentRun.state == State.BlockQuote)
+                        {
+                            nextline = nextline.replace(quoteRegex, '');
+                            if (nextline.startsWith('>'))
+                            {
+                                break;
+                            }
+                        }
+
+                        let split = splitAndTrim(nextline, this);
+                        if (split.length == 0)
+                        {
+                            break;
+                        }
+                        let row = [];
+                        for (let j = 0; j < groups.length; ++j)
+                        {
+                            row.push(j >= split.length ? '' : split[j]);
+                        }
+
+                        table.rows.push(row);
+
+                        end = next;
+                        newline = next;
+                        next = this._indexOrLast('\n', newline + 1);
+                        nextline = this.text.substring(newline + 1, next);
+                    }
+
+                    // Run markdown on individual cells.
+                    for (let row = 0; row < table.rows.length; ++row)
+                    {
+                        for (let col = 0; col < table.rows[row].length; ++col)
+                        {
+                            table.rows[row][col] =  new Markdown(table.rows[row][col], true /*inlineOnly*/).parse();
+                        }
+                    }
+
+                    new Table(thisLineStart, end, table, this.currentRun);
+                    logTmi(`Added Table: start=${thisLineStart}, end=${end}, $rows=${table.rows.length}, cols=${table.header.length}`);
+                    i = end - 1;
+
+                    break;
+                }
                 default:
                 {
                     break;
@@ -1341,13 +1568,19 @@ class Markdown {
 
     _checkBacktickCodeBlock(start)
     {
-        if (!/```/.test(this.text.substring(start - 2, start + 1)))
+        if (this._inlineOnly || !/```/.test(this.text.substring(start - 2, start + 1)))
         {
             return -1;
         }
 
         // If start ever get around to it, text after the ticks indicates the language
         // (e.g. "```cpp" for C++). For now though, just ignore it.
+
+        let newline = this.text.indexOf('\n', start);
+        if (newline == -1 || newline == this.text.length - 1)
+        {
+            return -1;
+        }
 
         let minspaces = 0;
         let firstIsList = false;
@@ -1374,16 +1607,10 @@ class Markdown {
         else
         {
             // Not within a list item, needs to be three backticks at the very beginning of the line
-            if (!/^\n?```\w*\n?$/.test(this.text.substring(start - 3, start + 2)))
+            if (!/^\n?```[\S]*\n?$/.test(this.text.substring(start - 3, newline)))
             {
                 return -1;
             }
-        }
-
-        let newline = this.text.indexOf('\n', start);
-        if (newline == -1 || newline == this.text.length - 1)
-        {
-            return -1;
         }
 
         let end = newline;
@@ -1433,7 +1660,7 @@ class Markdown {
     {
         // Check if we're starting a list. This will definitely get tricky when mixing nested levels of blockquotes
         // and additional lists
-        if (this._isEscaped(start) || start == this.text.length - 1)
+        if (this._inlineOnly || this._isEscaped(start) || start == this.text.length - 1)
         {
             return false;
         }
@@ -2247,12 +2474,12 @@ class IndentCodeBlock extends CodeBlock
 
     startContextLength()
     {
-        if (firstInList)
+        if (this.firstInList)
         {
             return 4;
         }
 
-        return indent;
+        return this.indent;
     }
 
     endContextLength() { return 0; }
@@ -2274,6 +2501,58 @@ class IndentCodeBlock extends CodeBlock
         });
 
         return this.finalText;
+    }
+}
+
+class Table extends Run
+{
+    constructor(start, end, table, parent)
+    {
+        super(State.Table, start, end, parent);
+        this.table = table;
+    }
+
+    startContextLength() { return 0; }
+    endContextLength() { return 0; }
+
+    tag(end) { return Run.basicTag('table', end); }
+
+    transform(newText, side)
+    {
+        const wrap = (text, wrapper) => `<${wrapper}>${text}</${wrapper}>`;
+        const td = function(text, align)
+        {
+            if (align == -2)
+            {
+                return `<td>${text}</td>`;
+            }
+
+            return '<td align="' + (align == -1 ? 'left' : align == 0 ? 'center' : 'right') + `">${text}</td>`;
+        }
+        // Ignore the text and use our table to build this up
+        let text = '';
+        let header = '';
+        for (let i = 0; i < this.table.header.length; ++i)
+        {
+            header += td(this.table.header[i], this.table.columnAlign[i]);
+        }
+
+        header = wrap(wrap(header, 'tr'), 'thead');
+
+        let body = '';
+        for (let row = 0; row < this.table.rows.length; ++row)
+        {
+            let rowText = '';
+            for (let col = 0; col < this.table.rows[row].length; ++col)
+            {
+                rowText += td(this.table.rows[row][col], this.table.columnAlign[col]);
+            }
+
+            body += wrap(rowText, 'tr');
+        }
+
+        body = wrap(body, 'tbody');
+        return header + body;
     }
 }
 
