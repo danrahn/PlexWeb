@@ -5,19 +5,27 @@
     width: 100vw;
     height: 100vh;
     background-color: rgba(0,0,0,0.6);
+    overflow: scroll;
 }
 
 #overlayContainer {
-    margin: auto;
     width: auto;
     height: auto;
     padding: 20px;
     background-color: rgba(0,0,0,0.3);
     color: rgb(196, 196, 196);
+}
+
+.defaultOverlay {
     margin-top: 25vh;
 }
 
-#overlayContainer div {
+.fullOverlay {
+    margin-top: 50px;
+    margin-bottom: 50px;
+}
+
+#overlayContainer > div {
     padding-bottom: 20px;
     margin: auto;
     display: block;
@@ -39,4 +47,20 @@
     margin: auto;
     margin-top: 10px;
     padding: 10px;
+}
+
+/* Desktop/Landscape */
+@media (orientation: landscape), (min-width: 767px) {
+    .fullOverlay {
+        margin-left: 5%;
+        margin-right: 5%;
+    }
+}
+
+/* Phone/Portrait */
+@media all and (orientation: portrait) and (max-width: 767px) {
+    .fullOverlay {
+        margin-left: 10px;
+        margin-right: 10px;
+    }
 }

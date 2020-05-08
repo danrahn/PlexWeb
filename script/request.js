@@ -40,6 +40,7 @@ window.addEventListener("load", function()
     {
         $('#newComment').addEventListener('change', parseMarkdown);
         $('#newComment').addEventListener('keyup', parseMarkdown);
+        $('#mdhelp').addEventListener('click', showMarkdownHelp);
     }
 
     let mdPreview = new Markdown();
@@ -49,13 +50,18 @@ window.addEventListener("load", function()
         $('#mdHolder').style.display = text.length == 0 ? "none" : "block";
 
         logTmi(`Parsing "${text}"`);
-        let html == mdPreview.parse(text);
+        let html = mdPreview.parse(text);
 
         // No need to redraw if the content is the same as our last result.
         if (!mdPreview.sameText)
         {
             $('#mdPreview').innerHTML = html;
         }
+    }
+
+    function showMarkdownHelp()
+    {
+        overlay('<div class="mdHelp">' + markdownHelp() + '</div>', 'Got It', overlayDismiss, true /*dismissable*/);
     }
 
     let selectedSuggestion;

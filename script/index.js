@@ -58,8 +58,6 @@ window.addEventListener('load', function()
             $("#tooltip").style.display = "none";
         }, 100);
     });
-
-    addOverlayListener();
 });
 
 /// <summary>
@@ -906,19 +904,4 @@ function msToHms(ms)
     {
         return (minutes < 10 ? ("0" + minutes) : minutes) + ":" + (seconds < 10 ? ("0" + seconds) : seconds);
     }
-}
-
-function addOverlayListener()
-{
-    document.body.addEventListener("keyup", function(e)
-    {
-        if (e.keyCode == 27 /*esc*/)
-        {
-            let overlay = $("#mainOverlay");
-            if (overlay && !!overlay.getAttribute("dismissable") && overlay.style.opacity == "1")
-            {
-                Animation.queue({"opacity": 0}, overlay, 250, true /*deleteAfterTransition*/);
-            }
-        }
-    });
 }

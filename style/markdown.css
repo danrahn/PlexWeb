@@ -2,6 +2,7 @@
     color: #c1c1c1;
     font-size: 12pt;
     line-height: 17pt;
+    text-align: left;
 }
 
 .mdDiv {
@@ -35,6 +36,7 @@
     background: linear-gradient(to bottom, #0003 0, #0003 0.3rem, #4442 0.3rem, #4442 1.3rem, #0003 1.3rem, #0003 2rem);
     background-size: 100% 2rem;
     overflow: auto;
+    border-right: 5px solid #0003;
 }
 
 .md blockquote {
@@ -98,4 +100,21 @@
 
 .md tr:hover {
     background-color: rgba(0,0,0,0.1);
+}
+
+.md ul, .md ol {
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+/* Desktop/Landscape */
+@media (orientation: landscape), (min-width: 767px) {
+
+}
+
+/* Phone/Portrait */
+@media all and (orientation: portrait) and (max-width: 767px) {
+    .md ol, .md ul {
+        padding-left: 15px;
+    }
 }

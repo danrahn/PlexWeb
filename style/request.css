@@ -249,8 +249,8 @@ a:hover {
 
 #mdPreview {
     margin: 0;
-    padding-top: 10px;
-    padding-bottom: 10px;
+    padding-top: 5px;
+    padding-bottom: 5px;
     background: rgba(0, 0, 0, 0.2);
 }
 
@@ -261,10 +261,26 @@ a:hover {
     height: auto;
     overflow: auto;
     float: left;
-    margin-top: 10px;
-    margin-bottom: 10px;
+    margin-top: 5px;
+    margin-bottom: 5px;
     font-size: smaller;
     border: 1px solid #616161;
+}
+
+#mdCallout {
+    clear: both;
+    float: left;
+    font-size: 10pt;
+    margin-top: 3px;
+    margin-bottom: 3px;
+    color: #919191;
+}
+
+/* Markdown Help should have a darker background than the default overlay background */
+.mdHelp {
+    background: rgba(70, 70, 70, 0.75);
+    padding-top: 5px;
+    padding-bottom: 5px;
 }
 
 @media (orientation: landscape), (min-width: 767px) {

@@ -22,6 +22,8 @@ function overlay(message, buttonText, buttonFunc, dismissable=true)
     );
 }
 
+const overlayDismiss = () => Animation.queue({"opacity": 0}, $("#mainOverlay"), 250, true /*deleteAfterTransition*/);
+
 /// <summary>
 /// Generic overlay builder
 /// </summary>
@@ -45,12 +47,13 @@ function buildOverlay(dismissable, ...children)
                     e.target.id == "mainOverlay" &&
                     e.target.style.opacity == 1)
                 {
-                    Animation.queue({"opacity": 0}, overlay, 250, true /*deleteAfterTransition*/);
+                    overlayDismiss();
+                    // Animation.queue({"opacity": 0}, overlay, 250, true /*deleteAfterTransition*/);
                 }
             }
         });
 
-    let container = buildNode("div", {"id" : "overlayContainer"});
+    let container = buildNode("div", {"id" : "overlayContainer", "class" : "defaultOverlay" });
     children.forEach(function(element)
     {
         container.appendChild(element);
@@ -59,4 +62,24 @@ function buildOverlay(dismissable, ...children)
     overlay.appendChild(container);
     document.body.appendChild(overlay);
     Animation.queue({"opacity" : 1}, overlay, 250);
+    if (container.clientHeight / window.innerHeight > 0.7)
+    {
+        container.classList.remove('defaultOverlay');
+        container.classList.add('fullOverlay');
+    }
+
+    window.addEventListener('keydown', _overlayKeyListener, false);
+}
+
+function _overlayKeyListener(e)
+{
+    if (e.keyCode == 27 /*esc*/)
+    {
+        let overlay = $('#mainOverlay');
+        if (overlay && !!overlay.getAttribute('dismissable') && overlay.style.opacity == '1')
+        {
+            window.removeEventListener('keydown', _overlayKeyListener, false);
+            overlayDismiss();
+        }
+    }
 }

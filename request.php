@@ -51,7 +51,7 @@ function get_details($req_id)
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#3C5260" />
     <title>Plex Request</title>
-    <?php get_css("style", "nav", "markdown", "request"); ?>
+    <?php get_css("style", "nav", "overlay", "markdown", "request"); ?>
 </head>
 <body
     isAdmin="<?= (isset($_SESSION['level']) && $_SESSION['level'] >= 100) ? 1 : 0 ?>"
@@ -72,8 +72,9 @@ function get_details($req_id)
                     
                 </div>
                 <textarea id="newComment" placeholder="Add comment..."></textarea>
+                <div id="mdCallout">(Comments now support <a id="mdhelp" href="#">Markdown</a>)</div>
                 <div id="mdHolder" style="display: none">
-                    <div id="mdHeader" class="commentInfo">Comment Preview (with in-progress <a href="https://www.markdownguide.org/basic-syntax" target="_none">Markdown</a> support):</div>
+                    <div id="mdHeader" class="commentInfo">Comment Preview:</div>
                     <div id="mdPreview" class="md"></div>
                 </div>
                 <input type="button" id="newCommentButton" value="Add Comment" style="float: left; clear: both; margin-top: 5px; padding: 10px" />
@@ -95,5 +96,5 @@ function get_details($req_id)
         <?php } ?>
     </div>
 </body>
-<?php build_js("request", "consolelog", "animate", "common", "queryStatus", "nav", "markdown"); ?>
+<?php build_js("request", "consolelog", "animate", "common", "queryStatus", "nav", "overlay", "markdown"); ?>
 </html>
