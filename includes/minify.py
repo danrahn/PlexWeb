@@ -175,8 +175,35 @@ def run_cmd(file, options):
         cmd = ['terser', file, '-o', 'min/' + clean_file, '-c', ','.join(options), '-m']
     else:
         print('Unsupported OS:', os)
-    print(str(subprocess.check_output(cmd)))
+    output = subprocess.check_output(cmd, stderr=subprocess.STDOUT).decode('utf-8')
+    process_output(output)
     print()
+
+
+def process_output(output):
+    lines = output.split('\n')
+    pure = 0
+    for line in lines:
+        if (len(line) == 0):
+            continue
+
+        # __PURE__ warnings are usually just noise. Collapse them into a single statement
+        if line.lower().startswith('warn: dropping __pure__'):
+            pure += 1
+            continue
+
+        # Other errors might be more interesting. Since it's parsing temporary
+        # files, print out the line in question so we can get more context
+        file = line[line.rfind('[') + 1:line.rfind(':')]
+        fileLine = int(line[line.rfind(':') + 1:line.rfind(',')])
+
+        print(line)
+        print('    >', get_lines(file).split('\n')[fileLine - 1].strip())
+
+
+
+    if pure != 0:
+        print('Dropped', pure, 'pure calls')
 
 
 def clean_tmp():
