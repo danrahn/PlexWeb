@@ -16,14 +16,15 @@ const State =
     Header : 7,
     CodeBlock : 8,
     BlockQuote : 9,
-    Url : 10,
-    Image : 11,
-    InlineCode : 12,
-    Bold : 13,
-    Underline : 14,
-    Italic : 15,
-    Strikethrough : 16,
-    HtmlComment : 17
+    Table : 10,
+    Url : 11,
+    Image : 12,
+    InlineCode : 13,
+    Bold : 14,
+    Underline : 15,
+    Italic : 16,
+    Strikethrough : 17,
+    HtmlComment : 18
 }
 
 const stateError = (state) => console.error('Unknown state: ' + state);
@@ -66,6 +67,8 @@ const stateToStr = function(state)
             return 'ListItem';
         case State.HtmlComment:
             return 'HTMLComment';
+        case State.Table:
+            return 'Table';
         default:
             return 'Unknown state: ' + state;
     }
@@ -87,6 +90,7 @@ const stateAllowedInState = function(state, current, index)
         case State.Underline:
         case State.Italic:
         case State.Strikethrough:
+        case State.Table:
             return !blockMarkdown(state); // Only inline features allowed
         case State.Url:
             // Can still have inline stuff here. Though not in the url itself so be careful
@@ -361,14 +365,8 @@ class Markdown {
     _checkHr(index, addHr=true)
     {
         let sep = this.text[index];
-        if (index != 0 && this.text[index - 1] != '\n')
-        {
-            return false;
-        }
-
-        let linebreak = this.text.indexOf('\n', index);
-        if (linebreak == -1) { linebreak = this.text.length; }
-        let line = this.text.substring(index, linebreak).replace(/ /g, '');
+        let linebreak = this._indexOrLast('\n', index);
+        let line = this.text.substring(this.text.lastIndexOf('\n', index) + 1, linebreak).replace(/ /g, '');
         if (line.length < 3)
         {
             return false;
@@ -635,6 +633,14 @@ class Markdown {
                 }
                 case '<':
                 {
+                    // Allow two things. Line breaks and comments
+                    if (!this._isEscaped(i) && /<br ?\/?>/.test(this.text.substring(i, i + 5)))
+                    {
+                        let br = new Break(i, this.currentRun);
+                        br.end = this.text.indexOf('>', i) + 1;
+                        continue;
+                    }
+
                     if (!this.text.substring(i, i + 4) == '<!--')
                     {
                         continue;
@@ -648,7 +654,7 @@ class Markdown {
 
                     endComment += 3;
 
-                    let htmlComment = new HtmlComment(i, endComment, this.currentRun);
+                    new HtmlComment(i, endComment, this.currentRun);
                     i = endComment - 1;
                     break;
                 }
@@ -691,7 +697,8 @@ class Markdown {
                 (previousRun.state == State.Hr ||
                     previousRun.state == State.Header ||
                     previousRun.state == State.BlockQuote ||
-                    previousRun.state == State.ListItem) ||
+                    previousRun.state == State.ListItem ||
+                    previousRun.state == State.CodeBlock) ||
                     previousRun.state == State.UnorderedList ||
                     previousRun.state == State.OrderedList))
             {
@@ -722,7 +729,7 @@ class Markdown {
             {
                 // Only add a seoncd break if the previoius element is not a block type
                 let pState = previousRun ? previousRun.state : State.None;
-                if ((previousRun.end != oldStart ||
+                if ((previousRun == null || previousRun.end != oldStart ||
                     (pState != State.Hr &&
                         pState != State.Header &&
                         pState != State.BlockQuote &&
@@ -838,20 +845,28 @@ class Markdown {
 
         // Non-standard width/height syntax, since I explicitly don't want
         // to support direct HTML insertion.
-        // ![AltText |w|h](url)
-        let dimen = / \|(\d+)(?:\|(\d+))?$/.exec(result.text);
+        // ![AltText w=X,h=Y](url)
+        let dimen = / ([wh])=(\d+)(?:,h=(\d+))?$/.exec(result.text);
         let width = -1;
         let height = -1;
         if (dimen != null)
         {
-            width = parseInt(dimen[1]);
-            if (dimen[2])
+            if (dimen[3])
+            {
+                width = parseInt(dimen[2]);
+                height = parseInt(dimen[3]);
+            }
+            else if (dimen[1] == 'w')
+            {
+                width = parseInt(dimen[2]);
+            }
+            else
             {
                 height = parseInt(dimen[2]);
             }
         }
 
-        let img = new Image(start, result.end, result.text, result.url, width, height, this.currentRun);
+        new Image(start, result.end, result.text, result.url, width, height, this.currentRun);
         return result.end;
     }
 
@@ -1426,7 +1441,19 @@ class Markdown {
         }
 
         let blockStart = start - (firstIsList ? 4 : minspaces) + 1;
-        let codeblock = new IndentCodeBlock(blockStart, end, this.text, minspaces, firstIsList, this.currentRun);
+
+        // Somewhat hacky, but if we're in a list and have an indented code block, remove any preceding line
+        // breaks, as this has enough padding on its own
+        if (this.currentRun.state == State.ListItem)
+        {
+            let innerRuns = this.currentRun.innerRuns;
+            if (innerRuns.length > 0 && innerRuns[innerRuns.length - 1].state == State.LineBreak)
+            {
+                this.currentRun.innerRuns.pop();
+            }
+        }
+
+        new IndentCodeBlock(blockStart, end, this.text, minspaces, firstIsList, this.currentRun);
         logTmi(`Added Indent Code Block: start=${blockStart}, end=${end}, minspaces=${minspaces}`);
         return end;
     }
@@ -1773,7 +1800,18 @@ class Markdown {
 
             if (validEnd.test(nextline))
             {
-                let block = new BacktickCodeBlock(start - 2, next, minspaces, this.text, this.currentRun);
+                // Somewhat hacky, but if we're in a list and have an indented code block, remove any preceding line
+                // breaks, as this has enough padding on its own
+                if (this.currentRun.state == State.ListItem)
+                {
+                    let innerRuns = this.currentRun.innerRuns;
+                    if (innerRuns.length > 0 && innerRuns[innerRuns.length - 1].state == State.LineBreak)
+                    {
+                        this.currentRun.innerRuns.pop();
+                    }
+                }
+
+                new BacktickCodeBlock(start - 2, next, minspaces, this.text, this.currentRun);
                 return next;
             }
 
@@ -2254,7 +2292,7 @@ class Run
         // strip escapes - 
         if (this.state != State.InlineCode && this.state != State.CodeBlock)
         {
-            newText = this.escapeChars(newText, '\\*`_+~>');
+            newText = this.escapeChars(newText, '\\*`_+~<>');
         }
 
         // All items should have htmlentities replaced
@@ -2288,6 +2326,7 @@ class Break extends Run
     }
 
     tag(end) { return end ? '' : '<br />'; }
+    transform(newText) { return ''; }
 }
 
 class Hr extends Run
@@ -2664,7 +2703,6 @@ class Table extends Run
             return '<td align="' + (align == -1 ? 'left' : align == 0 ? 'center' : 'right') + `">${text}</td>`;
         }
         // Ignore the text and use our table to build this up
-        let text = '';
         let header = '';
         for (let i = 0; i < this.table.header.length; ++i)
         {
