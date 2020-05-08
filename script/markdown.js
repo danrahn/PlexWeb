@@ -323,10 +323,16 @@ class Markdown {
             let cb = this.text.indexOf(searchFor, start);
             if (cb == -1 || cb > end)
             {
-                return end;
+                searchFor = searchFor.replace(/`/g, '~');
+                let cb = this.text.indexOf(searchFor, start);
+                if (cb == -1 || cb > end)
+                {
+                    return end;
+                }
             }
 
-            if (!/^\n?```[\S]*\n?$/.test(this.text.substring(cb, this._indexOrLast('\n', cb + 1))))
+            let markers = searchFor[searchFor.length - 1].repeat(3);
+            if (!new RegExp(`^\\n?${markers} *[\\S]*\\n?$`).test(this.text.substring(cb, this._indexOrLast('\n', cb + 1))))
             {
                 return end;
             }
@@ -335,7 +341,7 @@ class Markdown {
             let inBlock = true;
             while (true)
             {
-                cb = this.text.indexOf('\n```', cb + 1);
+                cb = this.text.indexOf(`\n${markers}`, cb + 1);
                 if (cb == -1)
                 {
                     break;
@@ -455,6 +461,7 @@ class Markdown {
 
                         // Collapse newlines
                         let twoBreaks = false;
+                        let oldI = i;
                         while (i + 1 < this.text.length && this.text[i + 1] == '\n')
                         {
                             twoBreaks = true;
@@ -463,7 +470,21 @@ class Markdown {
 
                         if (twoBreaks && this.currentRun.state == State.ListItem)
                         {
-                            new Break(i, this.currentRun);
+                            // Only add a seoncd break if the previoius element is not a block type
+                            let pState = previousRun ? previousRun.state : State.None;
+                            if ((previousRun.end != oldI ||
+                                (pState != State.Hr &&
+                                    pState != State.Header &&
+                                    pState != State.BlockQuote &&
+                                    pState != State.ListItem &&
+                                    pState != State.IndentCodeBlock &&
+                                    pState != State.BacktickCodeBlock &&
+                                    pState != State.LineBreak)) &&
+                                pState != State.UnorderedList &&
+                                pState != State.OrderedList)
+                            {
+                                new Break(i, this.currentRun);
+                            }
                         }
                         continue;
                     }
@@ -852,6 +873,22 @@ class Markdown {
                     break;
                 }
                 case '~':
+                {
+                    if (this._isEscaped(i))
+                    {
+                        continue;
+                    }
+
+                    // Multiline code block if there are three of these in a row
+                    let multilineBlockEnd = this._checkBacktickCodeBlock(i);
+                    if (multilineBlockEnd != -1)
+                    {
+                        i = multilineBlockEnd - 1;
+                        continue;
+                    }
+
+                    /*__fallthrough for strikethrough*/
+                }
                 case '+':
                 {
                     // Depending on what online visualizer I use, this does a multitude of things.
@@ -1568,7 +1605,11 @@ class Markdown {
 
     _checkBacktickCodeBlock(start)
     {
-        if (this._inlineOnly || !/```/.test(this.text.substring(start - 2, start + 1)))
+        let marker = this.text[start];
+        let markers = marker.repeat(3);
+
+        // Why am I checking backwards? Doesn't it make more sense to trigger this after I see the first one?
+        if (this._inlineOnly || !new RegExp(markers).test(this.text.substring(start - 2, start + 1)))
         {
             return -1;
         }
@@ -1589,12 +1630,12 @@ class Markdown {
             let nestLevel = this.currentRun.parent.nestLevel;
             minspaces = (nestLevel + 1) * 2;
             let type = this.currentRun.parent.state;
-            let context = this.text.substring(this.text.lastIndexOf('\n', start), start + 2);
-            let liStartRegex = new RegExp(`^\\n? {${nestLevel * 2}} ?${type == State.OrderedList ? '\\d+\\.' : '\\*'} \`\`\`\\w*\\n`);
+            let context = this.text.substring(this.text.lastIndexOf('\n', start), newline + 1);
+            let liStartRegex = new RegExp(`^\\n? {${nestLevel * 2}} ?${type == State.OrderedList ? '\\d+\\.' : '\\*'} {1,3}${markers} *\\S*\\n`);
             if (!liStartRegex.test(context))
             {
                 // Not on the same line as the list item start, check if it's a valid continuation
-                if (!new RegExp(`^\\n {${minspaces}}\`\`\`\\w*\\n`).test(context))
+                if (!new RegExp(`^\\n {${minspaces},${minspaces + 3}}${markers} *\\S*\\n`).test(context))
                 {
                     return -1;
                 }
@@ -1607,7 +1648,7 @@ class Markdown {
         else
         {
             // Not within a list item, needs to be three backticks at the very beginning of the line
-            if (!/^\n?```[\S]*\n?$/.test(this.text.substring(start - 3, newline)))
+            if (!new RegExp(`^\\n?${markers} *\\S*\\n?$`).test(this.text.substring(start - 3, newline + 1)))
             {
                 return -1;
             }
@@ -1619,7 +1660,7 @@ class Markdown {
 
         // Each subsequent line must have at least minspaces before it, otherwise it's an invalid block
         let validLine = new RegExp(`^ {${minspaces}}`);
-        let validEnd = new RegExp(`^ {${minspaces}}\`\`\`\\n?$`);
+        let validEnd = new RegExp(`^ {${minspaces},${minspaces + 3}}${markers}\\n?$`);
         while (true)
         {
             if (nextline.length == 0)
@@ -1735,10 +1776,15 @@ class Markdown {
                 return end;
             }
 
-            // Double newline, find the next non-empty line
-            let doubleNew = nextline == '\n';
+            let cEmpty = 0;
             while (nextline == '\n')
             {
+                ++cEmpty;
+                if (cEmpty == 2)
+                {
+                    return end;
+                }
+
                 newline = next;
                 next = this._indexOrLast('\n', next + 1);
                 nextline = this.text.substring(newline + 1, next + 1);
@@ -1750,7 +1796,7 @@ class Markdown {
             }
 
             // If we're here, nextline actually has content
-            if (doubleNew)
+            if (cEmpty == 1)
             {
                 // If there is a line break within the list, the list item
                 // only continues if there are (minspaces + 1) * 2 spaces before
@@ -1804,11 +1850,17 @@ class Markdown {
             {
                 return end;
             }
-            
-            // Double newline, find the next non-newline line
-            let doubleNew = nextline == '\n';
+
+            let cEmpty = 0;
             while (nextline == '\n')
             {
+                ++cEmpty;
+                if (cEmpty == 2)
+                {
+                    // Two blank lines kills the list
+                    return end;
+                }
+
                 newline = next;
                 next = this.text.indexOf('\n', next + 1);
                 if (next == -1) { next = this.text.length; }
@@ -1821,7 +1873,7 @@ class Markdown {
             }
 
             // If we're here, nextline actually has content
-            if (doubleNew)
+            if (cEmpty == 1)
             {
                 // If there is a line break within the list, the next list
                 // item must be indented at 2 * nestLevel. If the next line is not
@@ -2450,7 +2502,7 @@ class BacktickCodeBlock extends CodeBlock
     }
 
     startContextLength() { return this.text.indexOf('\n') + 1; }
-    endContextLength() { return 4; }
+    endContextLength() { return this.text.length - this.text.lastIndexOf('\n'); }
 
     transform(newText, side)
     {
