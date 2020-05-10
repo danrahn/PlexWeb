@@ -122,8 +122,7 @@ const blockMarkdown = function(state)
     {
         case State.Header:
         case State.BlockQuote:
-        case State.BacktickCodeBlock:
-        case State.IndentCodeBlock:
+        case State.CodeBlock:
             return true;
         default:
             return false;
@@ -150,6 +149,7 @@ class Markdown {
     constructor()
     {
         this._reset('', false);
+        this._newparse = true;
     }
 
     _checkHr(index, addHr=true)
@@ -199,6 +199,7 @@ class Markdown {
         this._inlineOnly = inlineOnly;
         this.currentRun = null;
         this._cachedParse = '';
+        this._parseTime = 0;
         this._inParse = false;
     }
 
@@ -210,7 +211,10 @@ class Markdown {
             return '';
         }
         text = this._trimInput(text);
-        if (this._cachedParse.length != 0 && this._inlineOnly == inlineOnly && this.text == text)
+        if (this._cachedParse.length != 0 &&
+            this._inlineOnly == inlineOnly &&
+            this._newparse == this._usedNewParse &&
+            this.text == text)
         {
             logTmi('Identical content, returning cached content');
             this.sameText = true;
@@ -219,6 +223,7 @@ class Markdown {
 
         this._reset(text, inlineOnly);
         this._inParse = true;
+        this._usedNewParse = this._newparse;
 
         let perfStart = window.performance.now();
         let topRun = new Run(State.None, 0, null);
@@ -227,7 +232,7 @@ class Markdown {
 
         // Always wrap our first element in a div if we're not inline-only
         let i;
-        if (!this._inlineOnly)
+        if (!this._inlineOnly && !this._newparse)
         {
             for (i = 0; i < this.text.length && this.text[i] == '\n'; ++i);
             let end = this._getNextDivEnd(i);
@@ -466,11 +471,19 @@ class Markdown {
         }
 
         logTmi(topRun, 'Parsing tree');
-        let html = topRun.convert(this.text);
+        let html = topRun.convert(this.text, this._newparse);
         this._cachedParse = html;
         this._inParse = false;
         let perfStop = window.performance.now();
-        logVerbose(`Parsed markdown in ${perfStop - perfStart}ms`);
+        this._parseTime = perfStop - perfStart;
+        if (this._inlineOnly)
+        {
+            logTmi(`Parsed inline markdown in ${perfStop - perfStart}ms`);
+        }
+        else
+        {
+            logVerbose(`Parsed markdown in ${perfStop - perfStart}ms`);
+        }
         return html;
     }
 
@@ -686,6 +699,11 @@ class Markdown {
 
     _processNewline(start)
     {
+        if (this._newparse)
+        {
+            return start;
+        }
+
         // Single \n is a <br>. If we're in a list item though, any number
         // of newlines collapses into a single br
         const innerRuns = this.currentRun.innerRuns;
@@ -1907,7 +1925,7 @@ class Markdown {
                 ++cEmpty;
                 if (cEmpty == 2)
                 {
-                    return end;
+                    return end + 2;
                 }
 
                 newline = next;
@@ -1916,7 +1934,7 @@ class Markdown {
                 if (nextline.length == 0)
                 {
                     // Just a bunch of newlines at the end without additional context
-                    return end;
+                    return end + 2;
                 }
             }
 
@@ -1929,7 +1947,7 @@ class Markdown {
                 let minspaces = (nestLevel + 1) * 2;
                 if (!RegExp(`^ {${minspaces},}`).test(nextline))
                 {
-                    return end;
+                    return end + 2;
                 }
             }
             else
@@ -1940,7 +1958,7 @@ class Markdown {
                 let minspaces = (nestLevel + 1) * 2;
                 if (RegExp(`^ {0,${minspaces - 1}}(?:\\*|\\d+\\.) `).test(nextline))
                 {
-                    return end;
+                    return end + 1;
                 }
             }
 
@@ -1949,8 +1967,6 @@ class Markdown {
             next = this._indexOrLast('\n', next + 1);
             nextline = this.text.substring(newline + 1, next + 1);
         }
-
-        return end;
     }
 
 
@@ -1983,7 +1999,7 @@ class Markdown {
                 if (cEmpty == 2)
                 {
                     // Two blank lines kills the list
-                    return end;
+                    return end + 2;
                 }
 
                 newline = next;
@@ -1993,7 +2009,7 @@ class Markdown {
                 if (nextline.length == 0)
                 {
                     // Just a bunch of newlines at the end without additional context
-                    return end;
+                    return end + 2;
                 }
             }
 
@@ -2009,7 +2025,7 @@ class Markdown {
                 {
                     if (!RegExp(`^ {${minspaces - 2},${minspaces - 1}}${ordered ? '\\d+\\.' : '\\*' } `).test(nextline))
                     {
-                        return end;
+                        return end + 2;
                     }
                 }
             }
@@ -2024,7 +2040,7 @@ class Markdown {
                     if (!RegExp(`^ {${minspaces},}`).test(nextline) ||
                         RegExp(`^ {${minspaces},${minspaces + 1}}${ordered ? '\\*' : '\\d+\\.'} `).test(nextline))
                     {
-                        return end;
+                        return end + 1;
                     }
                 }
             }
@@ -2034,10 +2050,7 @@ class Markdown {
             next = this.text.indexOf('\n', next + 1);
             if (next == -1) { next = this.text.length; }
             nextline = this.text.substring(newline + 1, next + 1);
-            continue;
         }
-
-        return end;
     }
 
     _testUrl(start)
@@ -2167,7 +2180,7 @@ class Run
     //    if first child start is not this start, add from initialText
     //  convert() children
     //  create end tag
-    convert(initialText)
+    convert(initialText, newParse=false)
     {
         let ident = '';
         let par = this.parent;
@@ -2175,6 +2188,11 @@ class Run
         {
             par = par.parent;
             ident += '   ';
+        }
+
+        if (newParse && this.shouldProcessNewlines())
+        {
+            this.parseNewlines(initialText);
         }
 
         logTmi(`${ident}Converting State.${stateToStr(this.state)} : ${this.start}-${this.end}. ${this.innerRuns.length} children.`);
@@ -2197,7 +2215,7 @@ class Run
 
         for (let i = 0; i < this.innerRuns.length; ++i)
         {
-            newText += this.innerRuns[i].convert(initialText, newText);
+            newText += this.innerRuns[i].convert(initialText, newParse);
             if (i != this.innerRuns.length - 1 && this.innerRuns[i].end < this.innerRuns[i + 1].start)
             {
                 newText += this.transform(initialText.substring(this.innerRuns[i].end, this.innerRuns[i + 1].start), -2);
@@ -2279,6 +2297,298 @@ class Run
         }
 
         return newText;
+    }
+
+    shouldProcessNewlines()
+    {
+        switch (this.state)
+        {
+            case State.None:
+            case State.ListItem:
+            case State.BlockQuote:
+                return true;
+
+            case State.LineBreak:
+            case State.Div: // This indicates we've already processed this block
+            case State.Header:
+            case State.Url:
+            case State.Image:
+            case State.InlineCode:
+            case State.Bold:
+            case State.Underline:
+            case State.Italic:
+            case State.Strikethrough:
+            case State.UnorderedList: // Taken care of by individual ListItems
+            case State.OrderedList:   // Taken care of by individual ListItems
+            case State.Hr:
+            case State.HtmlComment:
+            case State.Table:
+            case State.CodeBlock:
+                return false;
+            default:
+                logWarn('Unknown state: ' + this.state);
+                return false
+        }
+    }
+
+    isBlockElement()
+    {
+        switch (this.state)
+        {
+            case State.OrderedList:
+            case State.UnorderedList:
+            case State.ListItem:
+            case State.Table:
+            case State.BlockQuote:
+            case State.CodeBlock:
+            case State.Header:
+            case State.Hr:
+            case State.HtmlComment:
+                return true;
+            default:
+                return false;
+        }
+    }
+
+
+    parseNewlines(text)
+    {
+        // Go until we find a block element
+        let start = this.start;
+        let end = this.end;
+        let previousRun = this;
+        for (let iRun = 0; iRun < this.innerRuns.length; ++iRun)
+        {
+            let run = this.innerRuns[iRun];
+
+            if (!run.isBlockElement())
+            {
+                previousRun = run;
+                continue;
+            }
+
+            end = run.start;
+
+            if (start == end)
+            {
+                previousRun = run;
+                start = run.end;
+                continue;
+            }
+
+            iRun += this._parseNewlinesCore(text, start, end, previousRun, run);
+            start = run.end;
+            previousRun = run;
+        }
+
+        // One final parse to get the trailing content
+        if (start < this.end)
+        {
+            let nextRun = null;
+            if (this.parent != null)
+            {
+                let iNext = this.parent.innerRuns.indexOf(this) + 1;
+                if (iNext != this.parent.innerRuns.length)
+                {
+                    nextRun = this.parent.innerRuns[iNext];
+                }
+                else
+                {
+                    nextRun = this.parent;
+                }
+            }
+            this._parseNewlinesCore(text, start, this.end, previousRun, nextRun);
+        }
+    }
+
+    /// <summary>
+    /// Core routine to add breaks and divs to this element
+    /// </summary>
+    _parseNewlinesCore(text, start, end, previousRun, nextRun)
+    {
+        // Look for breaks first, then worry about divs
+        let newline = text.indexOf('\n', start);
+        let doubles = [];
+        let cBreaks = 0;
+        while (newline != -1 && newline < end)
+        {
+            // Also allow for arbitrary spaces here
+            let cNewlines = 1;
+            let offset = 1;
+            while (newline + offset < end)
+            {
+                let next = text[newline + offset];
+                if (next == '\n')
+                {
+                    ++cNewlines;
+                }
+                else if (next == ' ')
+                {
+                }
+                else
+                {
+                    break;
+                }
+
+                ++offset;
+            }
+
+            let atTop = newline == previousRun.end;
+            let atBottom = nextRun != null && newline + offset == nextRun.start;
+
+            if (cNewlines > 1 && this.state == State.None)
+            {
+                if ((!atTop && !atBottom) || cNewlines > 2)
+                {
+                    doubles.push([newline, newline + offset]);
+                    newline = text.indexOf('\n', newline + offset);
+                    continue;
+                }
+            }
+
+            const shouldAdd = (state, comp) => !comp.isBlockElement() ||
+                    (state == State.ListItem &&
+                        (comp.state == State.ListItem ||
+                            comp.state == State.OrderedList ||
+                            comp.state == State.UnorderedList));
+
+            if (atTop)
+            {
+                // We're at the start of the block, only add a break under certain conditions
+                if (shouldAdd(this.state, previousRun))
+                {
+                    this._insertBreak(newline);
+                    ++cBreaks;
+                }
+            }
+            else if (atBottom)
+            {
+                if (shouldAdd(this.state, nextRun))
+                {
+                    this._insertBreak(newline);
+                    ++cBreaks;
+                }
+            }
+            else
+            {
+                this._insertBreak(newline);
+                ++cBreaks;
+            }
+
+            // Second break (or first, depending on the state above)
+            if (cNewlines > 1)
+            {
+                if (atTop)
+                {
+                    if (cNewlines > 2 || shouldAdd(this.state, previousRun))
+                    {
+                        this._insertBreak(newline + 1);
+                        ++cBreaks;
+                    }
+                }
+                else if (atBottom)
+                {
+                    if (cNewlines > 2 || shouldAdd(this.state, nextRun))
+                    {
+                        this._insertBreak(newline + 1);
+                        ++cBreaks;
+                    }
+                }
+                else
+                {
+                    this._insertBreak(newline + 1);
+                    ++cBreaks;
+                }
+            }
+
+            // if (cNewlines > 2 ||
+            //     (cNewlines > 1 &&
+            //         ((!atTop || !previousRun.isBlockElement()) &&
+            //             (!atBottom || !nextRun.isBlockElement()))))
+            // {
+            //     this._insertBreak(newline + 1);
+            //     ++cBreaks;
+            // }
+
+            newline = text.indexOf('\n', newline + offset);
+        }
+
+        // Only add divs for top-level content
+        let divDiff = 0;
+        if (this.state == State.None)
+        {
+            // Need at least one encompassing div
+            divDiff += this._insertDiv(start, doubles.length == 0 ? end : doubles[0][1], text);
+
+            for (let idiv = 0; idiv < doubles.length - 1; ++idiv)
+            {
+                divDiff += this._insertDiv(doubles[idiv][1], doubles[idiv + 1][1], text);
+            }
+
+            if (doubles.length != 0 && doubles[doubles.length - 1][1] < end - 1)
+            {
+                divDiff += this._insertDiv(doubles[doubles.length - 1][1], end, text);
+            }
+        }
+
+        return cBreaks + divDiff;
+    }
+
+    _insertDiv(start, end, text)
+    {
+        if (this.innerRuns.length == 0 || end < this.innerRuns[0].start)
+        {
+            let div = new Div(start, end, text, null /*parent*/);
+            this.innerRuns.splice(0, 0, div);
+            return 1;
+        }
+
+        // First, find the child to insert this div before, i.e.
+        // first child whose start is greater than the div start
+        let insert = this.innerRuns.length;
+        for (let i = 0; i < this.innerRuns.length; ++i)
+        {
+            if (this.innerRuns[i].start >= start)
+            {
+                insert = i;
+                break;
+            }
+        }
+
+        // Now find the number of child elements to wrap in the div
+        let splice = 0;
+        for (let i = insert; i < this.innerRuns.length; ++i)
+        {
+            if (this.innerRuns[i].end <= end)
+            {
+                ++splice;
+            }
+        }
+
+        let div = new Div(start, end, text, null /*parent*/);
+        div.innerRuns = this.innerRuns.splice(insert, splice, div);
+        div.parent = this;
+        return 1 - splice;
+    }
+
+    _insertBreak(index)
+    {
+        if (this.innerRuns.length == 0 || this.innerRuns[0].start >= index)
+        {
+            this.innerRuns.splice(0, 0, new Break(index));
+            return;
+        }
+
+        for (let i = 0; i < this.innerRuns.length; ++i)
+        {
+            if (this.innerRuns[i].start >= index)
+            {
+                this.innerRuns.splice(i, 0, new Break(index));
+                return;
+            }
+        }
+
+        this.innerRuns.push(new Break(index));
     }
 
 
