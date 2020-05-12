@@ -1241,6 +1241,13 @@ class Markdown {
         return true;
     }
 
+    _isInListType()
+    {
+        return this.currentRun.state == State.ListItem ||
+            this.currentRun.state == State.OrderedList ||
+            this.currentRun.state == State.UnorderedList;
+    }
+
     _checkBlockQuote(start)
     {
         // Blockquote rules:
@@ -1271,18 +1278,49 @@ class Markdown {
         // This will get more complicated once arbitrary nesting is supported
         let prevNewline = this.text.lastIndexOf('\n', start);
         let regex;
-        if (this.currentRun.state != State.ListItem)
+        if (!this._isInListType())
         {
             regex = new RegExp(`^>{${nestLevel}}$`);
         }
-        else if (this.currentRun.parent.state == State.OrderedList)
-        {
-            regex = new RegExp(`^(\\d+\\.)?>{${nestLevel}}$`);
-        }
         else
         {
-            regex = new RegExp(`^(\\*)?>{${nestLevel}}$`);
+            // Determine if our highest level parent is a blockquote or a list
+            let regexStr = '>';
+            let runCur = this.currentRun.state == State.ListItem ? this.currentRun.parent : this.currentRun;
+            let lastState = runCur.state;
+            while (runCur != null &&
+                (lastState == State.BlockQuote || lastState == State.UnorderedList || lastState == State.OrderedList))
+            {
+                switch (lastState)
+                {
+                    case State.OrderedList:
+                        regexStr = ' *(\\d+\\.)? *' + regexStr;
+                        break;
+                    case State.UnorderedList:
+                        regexStr = ' *(\\*)? *' + regexStr;
+                        break;
+                    case State.BlockQuote:
+                        regexStr = ' *> *' + regexStr;
+                        break;
+                }
+
+                runCur = runCur.parent;
+                if (runCur != null)
+                {
+                    lastState = runCur.state;
+                }
+            }
+
+            regex = new RegExp(regexStr);
         }
+        // else if (this.currentRun.parent.state == State.OrderedList)
+        // {
+        //     regex = new RegExp(`^(\\d+\\.)?>{${nestLevel}}$`);
+        // }
+        // else
+        // {
+        //     regex = new RegExp(`^(\\*)?>{${nestLevel}}$`);
+        // }
 
         if (!regex.test(this.text.substring(prevNewline + 1, start + 1).replace(/ /g, '')))
         {
@@ -1849,21 +1887,53 @@ class Markdown {
             return false;
         }
 
+        // let regexString = ordered ? '^\\d+\\. ' : ' ';
+        // // Are we nested in a blockquote?
+        // if (this.currentRun.state == State.BlockQuote)
+        // {
+        //     regexString = ` *> *{${this.currentRun.nestLevel}}` + regexString;
+        // }
         if (ordered ? !/^\d+\. /.test(this.text.substring(start)) : this.text[start + 1] != ' ')
         {
             return false;
         }
 
+        // if (!new Regex(regexString).test(this.text.substring(start)))
+
         // Two spaces adds a nesting level
         let prevNewline = this.text.lastIndexOf('\n', start);
-        let spaces = this.text.substring(prevNewline + 1, start);
-        if (!/^ *$/.test(spaces))
+        let prefix = this.text.substring(prevNewline + 1, start);
+        let regexString = '^ *$';
+        let curRun = this.currentRun;
+        let quoteNests = 0;
+        while (curRun != null)
         {
-            // Something other than spaces precedes this.
+            if (curRun.state == State.BlockQuote)
+            {
+                ++quoteNests;
+            }
+
+            curRun = curRun.parent;
+        }
+        if (quoteNests != 0)
+        {
+            regexString = `( *> *){${quoteNests}}`;
+        }
+
+        if (!new RegExp(regexString).test(prefix))
+        // if (!/^ *$/.test(spaces))
+        {
+            // Something other than spaces/blockquotes precedes this.
             return false;
         }
 
-        let nestLevel = Math.floor(spaces.length / 2);
+        let nestLevel = 0;
+        while (start - nestLevel > 0 && this.text[start - nestLevel - 1] == ' ')
+        {
+            ++nestLevel;
+        }
+
+        nestLevel = Math.floor(nestLevel / 2);
 
         // First need to determine if this is a new list. If so, create the ol/ul
         if (this.currentRun.state != (ordered ? State.OrderedList : State.UnorderedList) || nestLevel > this.currentRun.nestLevel)
@@ -1884,7 +1954,7 @@ class Markdown {
             this.currentRun = list;
         }
 
-        let liEnd = this._liEnd(start, nestLevel, ordered);
+        let liEnd = Math.min(this.currentRun.end, this._liEnd(start, nestLevel, ordered));
         let li = new ListItem(start, liEnd, this.currentRun);
         this.currentRun = li;
         logTmi(`Added ListItem: start=${start}, end=${liEnd}, nestLevel=${nestLevel}`);
@@ -1898,8 +1968,89 @@ class Markdown {
     }
 
 
+    _liEndBlockQuote(start, nestLevel)
+    {
+        // Special handling for lists within blockquotes. Cand probably be
+        // combined, but this makes it easier
+        let blockRegexPrefix = `^.*( *> *){${this.currentRun.parent.nestLevel - 1}} *>`;
+        let blockRegexNewline = new RegExp(blockRegexPrefix + ' *\\n');
+        let parentEnd = this.currentRun.end;
+
+        let newline = this.text.indexOf('\n', start);
+        if (newline == -1 || newline == this.text.length - 1)
+        {
+            return parentEnd;
+        }
+
+        let end = newline;
+        let next = this.text.indexOf('\n', newline + 1);
+        if (next == -1) { next = parentEnd; }
+        let nextline = this.text.substring(newline + 1, next + 1);
+
+        while (true)
+        {
+            if (nextline.length == 0)
+            {
+                return end;
+            }
+
+            let cEmpty = 0;
+            while (blockRegexNewline.test(nextline))
+            {
+                ++cEmpty;
+                if (cEmpty == 2)
+                {
+                    // Two 'blank' lines kills the list
+                    return end;
+                }
+
+                newline = next;
+                next = this.text.indexOf('\n', next + 1);
+                if (next == -1) { next = parentEnd; }
+                nextline = this.text.substring(newline + 1, next + 1);
+                if (nextline.length == 0)
+                {
+                    return end;
+                }
+            }
+
+            if (cEmpty == 1)
+            {
+                let minspaces = (nestLevel + 1) * 2;
+                if (!RegExp(blockRegexNewline + ` {${minspaces},}`).test(nextline))
+                {
+                    return end;
+                }
+            }
+            else
+            {
+                let minspaces = (nestLevel + 1) * 2;
+                if (RegExp(blockRegexPrefix + `  {0,${minspaces - 1}}(?:\\*|\\d+\\.) `).test(nextline))
+                {
+                    return end;
+                }
+            }
+
+            end = next;
+            newline = next;
+            next = this.text.indexOf('\n', next + 1);
+            if (next == -1) { next = parentEnd; }
+            if (newline > next)
+            {
+                return parentEnd;
+            }
+            nextline = this.text.substring(newline + 1, next + 1);
+        }
+    }
+
+
     _liEnd(start, nestLevel)
     {
+        if (this.currentRun.parent.state == State.BlockQuote)
+        {
+            return this._liEndBlockQuote(start, nestLevel);
+        }
+
         // This is really just the ulEnd loop, but for a single li. Write this up then
         // look into sharing based on the slight differences.
         let newline = this.text.indexOf('\n', start);
@@ -1970,8 +2121,96 @@ class Markdown {
     }
 
 
+    _listEndBlockQuote(start, nestLevel, ordered)
+    {
+        // Special handling for lists within blockquotes. Cand probably be
+        // combined, but this makes it easier
+        let blockRegexPrefix = `^.*( *> *){${this.currentRun.nestLevel - 1}} *>`;
+        let blockRegexNewline = new RegExp(blockRegexPrefix + ' *\\n');
+        let parentEnd = this.currentRun.end;
+
+        let newline = this.text.indexOf('\n', start);
+        if (newline == -1 || newline >= parentEnd)
+        {
+            return parentEnd;
+        }
+
+        let end = newline;
+        let next = this.text.indexOf('\n', newline + 1);
+        if (next == -1) { next = parentEnd; }
+        let nextline = this.text.substring(newline + 1, next + 1);
+        while (true)
+        {
+            if (nextline.length == 0 || next + 1)
+            {
+                return end;
+            }
+
+            let cEmpty = 0;
+            while (blockRegexNewline.test(nextline))
+            {
+                ++cEmpty;
+                if (cEmpty == 2)
+                {
+                    // Two 'blank' lines kills the list
+                    return end;
+                }
+
+                newline = next;
+                next = this.text.indexOf('\n', next + 1);
+                if (next == -1) { next = parentEnd; }
+                nextline = this.text.substring(newline + 1, next + 1);
+                if (nextline.length == 0)
+                {
+                    return end;
+                }
+            }
+
+            if (cEmpty == 1)
+            {
+                let minspaces = (nestLevel + 1) * 2;
+                if (!new RegExp(blockRegexPrefix + `  {${minspaces},}`).test(nextline))
+                {
+                    if (!RegExp(blockRegexPrefix + `  {${minspaces - 2},${minspaces - 1}}${ordered ? '\\d+\\.' : '\\*' } `).test(nextline))
+                    {
+                        return end;
+                    }
+                }
+            }
+            else
+            {
+                if (RegExp(blockRegexPrefix + '  *(?:\\*|\\d+\\.) ').test(nextline))
+                {
+                    // Also can't swap between ordered/unoredred with the same nesting level
+                    let minspaces = nestLevel * 2;
+                    if (!RegExp(blockRegexPrefix + `  {${minspaces},}`).test(nextline) ||
+                        RegExp(blockRegexPrefix + `  {${minspaces},${minspaces + 1}}${ordered ? '\\*' : '\\d+\\.'} `).test(nextline))
+                    {
+                        return end + 1;
+                    }
+                }
+            }
+
+            end = next;
+            newline = next;
+            next = this.text.indexOf('\n', next + 1);
+            if (next == -1) { next = parentEnd; }
+            if (newline > next || newline > parentEnd)
+            {
+                return parentEnd;
+            }
+            nextline = this.text.substring(newline + 1, next + 1);
+        }
+    }
+
+
     _listEnd(start, nestLevel, ordered)
     {
+        if (this.currentRun.state == State.BlockQuote)
+        {
+            return this._listEndBlockQuote(start, nestLevel, ordered);
+        }
+
         let newline = this.text.indexOf('\n', start);
         if (newline == -1 || newline == this.text.length - 1)
         {
@@ -2784,6 +3023,14 @@ class UnorderedList extends Run
     endContextLength() { return 0; }
 
     tag(end) { return Run.basicTag('ul', end); }
+
+    transform(newText, side)
+    {
+        // Nothing is allowed inside of lists other than
+        // list items, so return an empty string. This
+        // also helps remove pesky blockquote artifacts
+        return '';
+    }
 }
 
 class OrderedList extends Run
@@ -2807,6 +3054,14 @@ class OrderedList extends Run
 
         return `<ol start='${this.listStart}'>`;
     }
+
+    transform(newText, side)
+    {
+        // Nothing is allowed inside of lists other than
+        // list items, so return an empty string. This
+        // also helps remove pesky blockquote artifacts
+        return '';
+    }
 }
 
 class ListItem extends Run
@@ -2820,6 +3075,43 @@ class ListItem extends Run
     endContextLength() { return 0; }
 
     tag(end) { return Run.basicTag('li', end); }
+
+    transform(newText, side)
+    {
+        // Need to go up our chain to see how many `>` to look for and remove
+        let cBlock = 0;
+        let parent = this.parent;
+        while (parent != null)
+        {
+            if (parent.state == State.BlockQuote)
+            {
+                ++cBlock;
+            }
+
+            parent = parent.parent;
+        }
+
+        let lines = newText.split('\n');
+        for (let i = 1; i < lines.length; ++i)
+        {
+            let line = lines[i];
+            let found = 0;
+            let j = 0;
+            while (j < line.length && found != cBlock)
+            {
+                if (line[j] == '>')
+                {
+                    ++found;
+                }
+
+                ++j;
+            }
+
+            lines[i] = line.substring(j);
+        }
+
+        return lines.join('\n');
+    }
 }
 
 class Url extends Run
@@ -2957,7 +3249,7 @@ class IndentCodeBlock extends CodeBlock
 
     startContextLength()
     {
-        if (this.firstInList)
+        if (this.firstIsList)
         {
             return 4;
         }
