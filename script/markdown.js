@@ -210,6 +210,7 @@ class Markdown {
             log("Can't call parse when we're already parsing!", 0, 0, LOG.Critical);
             return '';
         }
+
         text = this._trimInput(text);
         if (this._cachedParse.length != 0 &&
             this._inlineOnly == inlineOnly &&
@@ -229,6 +230,8 @@ class Markdown {
         let topRun = new Run(State.None, 0, null);
         topRun.end = this.text.length;
         this.currentRun = topRun;
+
+        this._urls = {};
 
         // Always wrap our first element in a div if we're not inline-only
         let i;
@@ -295,7 +298,21 @@ class Markdown {
                         continue;
                     }
 
-                    let url = new Url(i, result.end, result.text, result.url, this.currentRun);
+                    let url;
+                    if (result.type == 0)
+                    {
+                        url = new Url(i, result.end, result.text, result.url, this.currentRun);
+                    }
+                    else if (result.type == 1)
+                    {
+                        url = new ExtendedUrl(i, result.end, result.text, result.url, this._urls, this.currentRun);
+                    }
+                    else
+                    {
+                        url = new ExtendedUrlTag(i, result.end, this.currentRun);
+                        i = result.end - 1;
+                    }
+
                     this.currentRun = url;
                     logTmi(`Added url: start=${url.start}, end=${url.end}, text=${url.text}, url=${url.url}`);
                     break;
@@ -2307,7 +2324,8 @@ class Markdown {
         {
             text : '',
             url : 0,
-            end : 0
+            end : 0,
+            type : 0 // 0 == regular link. 1 == "footer" syntax
         }
 
         for (let i = start; i < end; ++i)
@@ -2315,7 +2333,20 @@ class Markdown {
             switch (this.text[i])
             {
                 case '[':
-                    if (i == start || toFind[idx] != ']' || this._isEscaped(i))
+                    if (i == start || this._isEscaped(i))
+                    {
+                        break;
+                    }
+
+                    if (toFind[idx] == '(' && this.text[i - 1] == ']')
+                    {
+                        idx = 0;
+                        ret.url = i + 1;
+                        ret.type = 1;
+                        break;
+                    }
+
+                    if (toFind[idx] != ']')
                     {
                         break;
                     }
@@ -2328,9 +2359,16 @@ class Markdown {
                     }
                     break;
                 case ']':
-                    if (toFind[idx] != ']' || this._isInline(inline, i, end) || (i > start && this.text[i - 1] == '\\'))
+                    if (toFind[idx] != ']' || this._isInline(inline, i, end) || this._isEscaped(i))
                     {
                         break;
+                    }
+
+                    if (ret.type == 1)
+                    {
+                        ret.url = this.text.substring(ret.url, i);
+                        ret.end = i + 1;
+                        return ret;
                     }
 
                     ret.text = this.text.substring(start, i);
@@ -2362,12 +2400,32 @@ class Markdown {
                     ret.end = i + 1;
                     return ret;
                 case '`':
-                    if (i == start || this.text[i - 1] == '\\')
+                    if (this._isEscaped(i))
                     {
                         break;
                     }
 
                     inline = !inline;
+                case ':':
+                    if (toFind[idx] != '(' ||
+                        this.text[i - 1] != ']' ||
+                        this._isEscaped(i) ||
+                        i == this.text.length - 1 ||
+                        this.text[i + 1] != ' ')
+                    {
+                        break;
+                    }
+
+                    let urlEnd = this._indexOrLast('\n', start);
+                    if (urlEnd - (i + 2) < 1)
+                    {
+                        return false;
+                    }
+
+                    this._urls[ret.text.substring(1)] = this.text.substring(i + 2, urlEnd);
+                    ret.type = 2;
+                    ret.end = urlEnd;
+                    return ret;
                 default:
                     break;
             }
@@ -3141,6 +3199,64 @@ class Url extends Run
     transform(newText, side)
     {
         return super.transform(this.escapeChars(newText, '[]'));
+    }
+}
+
+class ExtendedUrl extends Url
+{
+    constructor(start, end, text, url, urls, parent)
+    {
+        super(start, end, text, url, parent);
+        this.urls = urls;
+        this.urlLink = url;
+        this.converted = false;
+    }
+
+    _convertUrl()
+    {
+        if (this.converted)
+        {
+            return;
+        }
+
+        if (this.url in this.urls)
+        {
+            this.url = this.urls[this.url];
+        }
+        else
+        {
+            logError('Could not find link match for ' + this.url);
+            return '';
+        }
+
+        this.converted = true;
+    }
+
+
+    endContextLength()
+    {
+        return this.urlLink.length + 3;
+    }
+
+    tag(end)
+    {
+        this._convertUrl();
+        return super.tag(end);
+    }
+}
+
+class ExtendedUrlTag extends Run
+{
+    constructor(start, end, parent)
+    {
+        super(State.HtmlComment, start, end, parent);
+    }
+
+    tag(end) { return end ? ' -->' : '<!-- '; }
+
+    transform(newText, side)
+    {
+        return newText;
     }
 }
 
