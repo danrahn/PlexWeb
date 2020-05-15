@@ -6,7 +6,8 @@
 }
 
 .mdDiv {
-    margin: 10px;
+    margin-top: 10px;
+    margin-bottom: 10px;
 }
 
 .md a {
@@ -103,8 +104,8 @@
 }
 
 .md ul, .md ol {
-    margin-top: 10px;
-    margin-bottom: 10px;
+    margin-top: 5px;
+    margin-bottom: 5px;
 }
 
 /* Desktop/Landscape */
