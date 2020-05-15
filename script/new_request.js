@@ -252,7 +252,7 @@ function buildItems(matches, holder)
     container.innerHTML = "";
     container.appendChild(buildNode("hr"));
 
-    container.appendChild(buildNode("p", {"style" : "margin-bottom: 5px"}, external ? "Existing Items:" : "Results:"));   
+    container.appendChild(buildNode("p", {"style" : "margin-bottom: 5px"}, external ? "Existing Items:" : "Results:"));
 
     let max = Math.min(matches.length, 10);
     for (let i = 0; i < max; ++i)
@@ -365,8 +365,6 @@ function buildItems(matches, holder)
 
 function buildSeasonDetails(response, request)
 {
-    let seasonsArr = [];
-
     logTmi("Building season details");
 
     let complete = [];
@@ -574,8 +572,56 @@ function submitSelected()
 
     let successFunc = function(response)
     {
-        window.location.href = "https://danrahn.com/plex/request.php?id=" + response.req_id;
-    }
+        if (!response.exists)
+        {
+            // window.location.href = "https://danrahn.com/plex/request.php?id=" + response.req_id;
+            return;
+        }
+
+        // The user has already made a request for this item. Ask them to add
+        // a comment to the existing request instead
+        let status = [ "Pending", "Complete", "Denied", "In Progress", "Waiting" ][response.status]
+        let secondaryText = 'Would you like to add a comment to the existing request?';
+        let message = buildNode(
+            'div',
+            {},
+            `You have already made a request for '${response.name}', and its status is '${status}'.<br><br>${secondaryText}`)
+        let button1 = buildNode(
+            "input",
+            {
+                "type" : "button",
+                "id" : "overlayOK",
+                "value" : "Go to Request",
+                "style" : "width: 120px; margin-right: 10px; display: inline",
+                "rid" : response.rid
+            },
+            0,
+            {
+                "click" : goToRequest
+            });
+
+        let button2 = buildNode(
+            "input",
+            {
+                "type" : "button",
+                "id" : "overlayCancel",
+                "value" : "Cancel",
+                "style" : "width: 120px; display: inline",
+            },
+            0,
+            {
+                "click" : overlayDismiss
+            });
+
+        let outerButtonContainer = buildNode('div', { 'class' : 'formInput', 'style' : 'text-align: center' });
+        let buttonContainer = buildNode('div', { "style" : "float: right; overflow: auto; width: 100%; margin: auto" } );
+        buttonContainer.appendChild(button1);
+        buttonContainer.appendChild(button2);
+        outerButtonContainer.appendChild(buttonContainer);
+
+        buildOverlay(true /*dismissable*/, message, outerButtonContainer);
+    };
+
     let failureFunc = function()
     {
         let buttons = $(".matchContinue");
@@ -588,6 +634,16 @@ function submitSelected()
         }
     }
     sendHtmlJsonRequest("process_request.php", parameters, successFunc, failureFunc);
+}
+
+/// <summary>
+/// Callback for if the request already exists and
+/// the user chooses to navigate to it.
+/// </summary>
+function goToRequest()
+{
+    let rid = this.getAttribute("rid");
+    window.location = "request.php?id=" + rid;
 }
 
 function setVisibility(id, visible)

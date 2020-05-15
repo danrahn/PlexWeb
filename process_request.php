@@ -328,6 +328,25 @@ function process_suggestion($suggestion, $type, $comment)
     return json_success();
 }
 
+function request_exists($external_id, $userid)
+{
+    global $db;
+    $query = "SELECT id, request_name, satisfied FROM user_requests WHERE username_id=$userid AND external_id=$external_id";
+    $result = $db->query($query);
+    if ($result && $result->num_rows != 0)
+    {
+        $row = $result->fetch_row();
+        $existing_request = new \stdClass();
+        $existing_request->exists = TRUE;
+        $existing_request->rid = $row[0];
+        $existing_request->name = $row[1];
+        $existing_request->status = $row[2];
+        return $existing_request;
+    }
+
+    return NULL;
+}
+
 function process_suggestion_new($suggestion, $type, $external_id, $poster)
 {
     $type = RequestType::get_type_from_str($type);
@@ -342,10 +361,16 @@ function process_suggestion_new($suggestion, $type, $external_id, $poster)
         return json_error("Unknown media type: " . $_POST['mediatype']);
     }
 
+    $userid = (int)$_SESSION['id'];
+    $existing_request = request_exists($external_id, $userid);
+    if ($existing_request != NULL)
+    {
+        return json_encode($existing_request);
+    }
+
     global $db;
     $suggestion = $db->real_escape_string($suggestion);
     $poster = $db->real_escape_string($poster);
-    $userid = (int)$_SESSION['id'];
     $query = "INSERT INTO user_requests (username_id, request_type, request_name, external_id, comment, poster_path) VALUES ($userid, $type, '$suggestion', $external_id, '', '$poster')";
     if (!$db->query($query))
     {
