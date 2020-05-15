@@ -41,6 +41,7 @@ window.addEventListener("load", function()
         $('#newComment').addEventListener('change', parseMarkdown);
         $('#newComment').addEventListener('keyup', parseMarkdown);
         $('#mdhelp').addEventListener('click', showMarkdownHelp);
+        $('#newComment').addEventListener('keydown', captureTab);
     }
 
     let mdPreview = new Markdown();
@@ -62,6 +63,41 @@ window.addEventListener("load", function()
     function showMarkdownHelp()
     {
         overlay('<div class="mdHelp">' + markdownHelp() + '</div>', 'Got It', overlayDismiss, true /*dismissable*/);
+    }
+
+    /// <summary>
+    /// When in the 'new comment' box, capture tab keypresses and convert them
+    /// into text insertion. This will break general tab navigation, but with
+    /// a markdown editor it's much more likely that the user wants to indent
+    /// and not move focus to the next element on the page.
+    /// </summary>
+    function captureTab(e)
+    {
+        // It will probably just cause more confusion for people, but we can break out of the textarea if caps lock is on.
+        if (e.keyCode != 9 /*tab*/ || e.ctrlKey || e.shiftKey || e.altKey || e.getModifierState('CapsLock'))
+        {
+            return;
+        }
+
+        let comment = $('#newComment');
+        let start = comment.selectionStart;
+        let lastNewline = comment.value.lastIndexOf('\n', start);
+        let spaces = ' '.repeat(4 - (start - (lastNewline + 1)) % 4);
+
+        // insertText gives us undo support. If it's not available, we can still
+        // insert the spaces, but undo will break.
+        if (document.queryCommandSupported('insertText'))
+        {
+            document.execCommand('insertText', false, spaces);
+        }
+        else
+        {
+            comment.value = comment.value.substring(0, start) + spaces + comment.value.substring(start);
+            comment.selectionStart = start + spaces.length;
+            comment.selectionEnd = comment.selectionStart;
+        }
+
+        e.preventDefault();
     }
 
     let selectedSuggestion;
@@ -530,6 +566,7 @@ window.addEventListener("load", function()
         let params = { "type" : "add_comment", "req_id" : parseInt(document.body.getAttribute("reqId")), "content" : text };
         let successFunc = function()
         {
+            $('#mdHolder').style.display = "none";
             getComments();
         };
         let failureFunc = function(response, request)
