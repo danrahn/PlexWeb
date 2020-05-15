@@ -488,7 +488,7 @@ class Markdown {
         }
 
         logTmi(topRun, 'Parsing tree');
-        let html = topRun.convert(this.text, this._newparse);
+        let html = topRun.convert(this.text, this._newparse, this._inlineOnly).trim();
         this._cachedParse = html;
         this._inParse = false;
         let perfStop = window.performance.now();
@@ -2477,7 +2477,7 @@ class Run
     //    if first child start is not this start, add from initialText
     //  convert() children
     //  create end tag
-    convert(initialText, newParse=false)
+    convert(initialText, newParse=false, inlineOnly=false)
     {
         let ident = '';
         let par = this.parent;
@@ -2487,7 +2487,7 @@ class Run
             ident += '   ';
         }
 
-        if (newParse && this.shouldProcessNewlines())
+        if (newParse && !inlineOnly && this.shouldProcessNewlines())
         {
             this.parseNewlines(initialText);
         }
@@ -2512,7 +2512,7 @@ class Run
 
         for (let i = 0; i < this.innerRuns.length; ++i)
         {
-            newText += this.innerRuns[i].convert(initialText, newParse);
+            newText += this.innerRuns[i].convert(initialText, newParse, inlineOnly);
             if (i != this.innerRuns.length - 1 && this.innerRuns[i].end < this.innerRuns[i + 1].start)
             {
                 newText += this.transform(initialText.substring(this.innerRuns[i].end, this.innerRuns[i + 1].start), -2);
@@ -2814,17 +2814,25 @@ class Run
         let divDiff = 0;
         if (this.state == State.None)
         {
-            // Need at least one encompassing div
-            divDiff += this._insertDiv(start, doubles.length == 0 ? end : doubles[0][1], text);
+            // Need at least one encompassing div, except for special cases where the div
+            // doesn't actually encompass an entire line.
+            if (end == text.length || text[end] == '\n')
+            {
+                divDiff += this._insertDiv(start, doubles.length == 0 ? end : doubles[0][1], text);
+            }
 
             for (let idiv = 0; idiv < doubles.length - 1; ++idiv)
             {
                 divDiff += this._insertDiv(doubles[idiv][1], doubles[idiv + 1][1], text);
             }
 
-            if (doubles.length != 0 && doubles[doubles.length - 1][1] < end - 1)
+            if (doubles.length != 0)
             {
-                divDiff += this._insertDiv(doubles[doubles.length - 1][1], end, text);
+                let lastEnd = doubles[doubles.length - 1][1];
+                if (lastEnd < end - 1 || (end == text.length && lastEnd == end - 1))
+                {
+                    divDiff += this._insertDiv(doubles[doubles.length - 1][1], end, text);
+                }
             }
         }
 
@@ -2929,7 +2937,7 @@ class Break extends Run
 {
     constructor(start, parent)
     {
-        super(State.LineBreak, start, start, parent);
+        super(State.LineBreak, start, start + 1, parent);
     }
 
     tag(end) { return end ? '' : '<br />'; }
@@ -3555,28 +3563,47 @@ const testSuite = function()
     testInline();
     testBold();
     testItalic();
+    testStrikethrough();
+    testUnderline();
+    testHr();
+    testBr();
 
     testMixed();
+}
+
+const buildTests = function(...tests)
+{
+    let testStrings = [];
+    for (let i = 0; i < tests.length; ++i)
+    {
+        testStrings.push({ input : tests[i][0], expected : tests[i][1] });
+    }
+
+    return testStrings;
+}
+
+const divWrap = function(str)
+{
+    return `<div class="mdDiv">${str}</div>`;
 }
 
 const testHeaders = function()
 {
     logInfo('Testing Basic Header Functionality');
-    let testStrings =
-    [
-        { input : '# Header 1', expected : '<div class="mdDiv"><h1>Header 1</h1></div>' },
-        { input : '## Header 2', expected : '<div class="mdDiv"><h2>Header 2</h2></div>' },
-        { input : '### Header 3', expected : '<div class="mdDiv"><h3>Header 3</h3></div>' },
-        { input : '#### Header 4', expected : '<div class="mdDiv"><h4>Header 4</h4></div>' },
-        { input : '##### Header 5', expected : '<div class="mdDiv"><h5>Header 5</h5></div>' },
-        { input : '###### Header 6', expected : '<div class="mdDiv"><h6>Header 6</h6></div>' },
-        { input : '####### Header 7', expected : '<div class="mdDiv">####### Header 7</div>' },
-        { input : '##Header 2', expected : '<div class="mdDiv">##Header 2</div>' },
-        { input : '  ## Header 2', expected : '<div class="mdDiv"><h2>Header 2</h2></div>' },
-        { input : '##   Header 2', expected : '<div class="mdDiv"><h2>Header 2</h2></div>' },
-        { input : '  ##   Header 2', expected : '<div class="mdDiv"><h2>Header 2</h2></div>' },
-        { input : ' ## Header 2 ###  ', expected : '<div class="mdDiv"><h2>Header 2</h2></div>' }
-    ];
+    let testStrings = buildTests(
+        ['# Header 1', '<h1>Header 1</h1>'],
+        ['## Header 2', '<h2>Header 2</h2>'],
+        ['### Header 3', '<h3>Header 3</h3>'],
+        ['#### Header 4', '<h4>Header 4</h4>'],
+        ['##### Header 5', '<h5>Header 5</h5>'],
+        ['###### Header 6', '<h6>Header 6</h6>'],
+        ['####### Header 7', '<div class="mdDiv">####### Header 7</div>'],
+        ['##Header 2', '<div class="mdDiv">##Header 2</div>'],
+        ['  ## Header 2', '<h2>Header 2</h2>'],
+        ['##   Header 2', '<h2>Header 2</h2>'],
+        ['  ##   Header 2', '<h2>Header 2</h2>'],
+        [' ## Header 2 ###  ', '<h2>Header 2</h2>']
+    );
 
     testCore(testStrings);
 }
@@ -3584,29 +3611,28 @@ const testHeaders = function()
 const testUrl = function()
 {
     logInfo('Testing Basic Url Functionality');
-    let testStrings =
-    [
-        {
-            input : '[Link](danrahn.com)',
-            expected : '<div class="mdDiv"><a href="danrahn.com">Link</a></div>'
-        },
-        {
-            input : '[Add some text here](https://danrahn.com)',
-            expected : '<div class="mdDiv"><a href="https://danrahn.com">Add some text here</a></div>'
-        },
-        {
-            input : '[https://backwards.com](Uh oh!)',
-            expected : '<div class="mdDiv"><a href="Uh%20oh!">https:&#x2f;&#x2f;backwards.com</a></div>'
-        },
-        {
-            input : '[Link[](danrahn.com)',
-            expected : '<div class="mdDiv">[Link<a href="danrahn.com"></a></div>'
-        },
-        {
-            input : '[Link[Link](danrahn.com)](danrahn.com)',
-            expected : '<div class="mdDiv">[Link<a href="danrahn.com">Link</a>](danrahn.com)</div>'
-        }
-    ];
+    let testStrings = buildTests(
+        [
+            '[Link](danrahn.com)',
+            '<div class="mdDiv"><a href="danrahn.com">Link</a></div>'
+        ],
+        [
+            '[Add some text here](https://danrahn.com)',
+            '<div class="mdDiv"><a href="https://danrahn.com">Add some text here</a></div>'
+        ],
+        [
+            '[https://backwards.com](Uh oh!)',
+            '<div class="mdDiv"><a href="Uh%20oh!">https:&#x2f;&#x2f;backwards.com</a></div>'
+        ],
+        [
+            '[Link[](danrahn.com)',
+            '<div class="mdDiv">[Link<a href="danrahn.com"></a></div>'
+        ],
+        [
+            '[Outer[Inner](inner.com)](outer.com)',
+            '<div class="mdDiv"><a href="outer.com">Outer<a href="inner.com">Inner</a></a></div>'
+        ]
+    );
 
     testCore(testStrings);
 }
@@ -3614,46 +3640,161 @@ const testUrl = function()
 const testInline = function()
 {
     logInfo('Testing Basic Inline Functionality');
+    let testStrings = buildTests(
+        ['`Inline Code`', divWrap('<code>Inline Code</code>')],
+        ['\\`Inline Code`', divWrap('`Inline Code`')],
+        ['``Inline ` Code``', divWrap('<code>Inline ` Code</code>')],
+        ['`This isn\'t closed', divWrap('`This isn&#39;t closed')],
+        ['`Hello _**++~~There~~++**_`', divWrap('<code>Hello _**++~~There~~++**_</code>')],
+        ['`[Link](index.php)`', divWrap('<code>[Link](index.php)</code>')]
+    );
+
+    testCore(testStrings);
 }
 
 const testBold = function()
 {
     logInfo('Testing Basic Bold Functionality');
+    let testStrings = buildTests(
+        ['**This is bold text**', divWrap('<strong>This is bold text</strong>')],
+        ['** This is not bold text**', divWrap('** This is not bold text**')],
+        ['Mismatched **Bold **Tags**', divWrap('Mismatched **Bold <strong>Tags</strong>')],
+        ['****Nested Bold****', divWrap('<strong><strong>Nested Bold</strong></strong>')],
+        [
+            '****Different** **Nest** Patterns**',
+            divWrap('<strong><strong>Different</strong> <strong>Nest</strong> Patterns</strong>')
+        ],
+        ['__This is bold text__', divWrap('<strong>This is bold text</strong>')],
+        ['__ This is not bold text__', divWrap('__ This is not bold text__')],
+        ['Mismatched __Bold __Tags__', divWrap('Mismatched __Bold <strong>Tags</strong>')],
+        ['____Nested Bold____', divWrap('<strong><strong>Nested Bold</strong></strong>')],
+        [
+            '____Different__ __Nest__ Patterns__',
+            divWrap('<strong><strong>Different</strong> <strong>Nest</strong> Patterns</strong>')
+        ],
+        ['__**Bold^2**__', divWrap('<strong><strong>Bold^2</strong></strong>')],
+        ['__**Bold?__**', divWrap('<strong>**Bold?</strong>**')]
+    );
+
+    testCore(testStrings);
 }
 
 const testItalic = function()
 {
     logInfo('Testing Basic Italic Functionality');
+    let testStrings = buildTests(
+        ['*This is italic text*', divWrap('<em>This is italic text</em>')],
+        ['* This is not italic text*', divWrap('* This is not italic text*')],
+        ['Mismatched *italic *Tags*', divWrap('Mismatched *italic <em>Tags</em>')],
+        [
+            '**Different* *Nest* Patterns*',
+            divWrap('<em><em>Different</em> <em>Nest</em> Patterns</em>')
+        ],
+        ['_This is italic text_', divWrap('<em>This is italic text</em>')],
+        ['_ This is not italic text_', divWrap('_ This is not italic text_')],
+        ['Mismatched _italic _Tags_', divWrap('Mismatched _italic <em>Tags</em>')],
+        [
+            '__Different_ _Nest_ Patterns_',
+            divWrap('<em><em>Different</em> <em>Nest</em> Patterns</em>')
+        ],
+        ['_*italic^2*_', divWrap('<em><em>italic^2</em></em>')],
+        ['_*italic?_*', divWrap('<em>*italic?</em>*')]
+    );
+
+    testCore(testStrings);
+}
+
+const testStrikethrough = function()
+{
+    logInfo('Testing Basic Strikethrough Functionality');
+    let testStrings = buildTests(
+        ['~~This text has a line going through it~~', divWrap('<s>This text has a line going through it</s>')],
+        ['~~ This is not strikethrough~~', divWrap('~~ This is not strikethrough~~')],
+        ['Mismatched ~~Strikethrough ~~Tags~~', divWrap('Mismatched ~~Strikethrough <s>Tags</s>')],
+        ['~~~~Nested Strikethrough~~~~', divWrap('<s><s>Nested Strikethrough</s></s>')],
+        [
+            '~~~~Different~~ ~~Nest~~ Patterns~~',
+            divWrap('<s><s>Different</s> <s>Nest</s> Patterns</s>')
+        ]
+    );
+
+    testCore(testStrings);
+}
+
+
+const testUnderline = function()
+{
+    logInfo('Testing Basic Strikethrough Functionality');
+    let testStrings = buildTests(
+        ['++This text is underlined++', divWrap('<ins>This text is underlined</ins>')],
+        ['++ This is not underlined++', divWrap('++ This is not underlined++')],
+        ['Mismatched ++Underline ++Tags++', divWrap('Mismatched ++Underline <ins>Tags</ins>')],
+        ['++++Nested Underline++++', divWrap('<ins><ins>Nested Underline</ins></ins>')],
+        [
+            '++++Different++ ++Nest++ Patterns++',
+            divWrap('<ins><ins>Different</ins> <ins>Nest</ins> Patterns</ins>')
+        ]
+    );
+
+    testCore(testStrings);
+}
+
+const testHr = function()
+{
+    logInfo('Testing Horizontal Rules');
+    let testStrings = buildTests(
+        ['---', '<hr />'],
+        ['***', '<hr />'],
+        ['___', '<hr />'],
+        ['----------', '<hr />'],
+        ['* * *', '<hr />'],
+        ['  _    _    _    _', '<hr />']
+    );
+
+    testCore(testStrings);
+}
+
+const testBr = function()
+{
+    logInfo('Testing Line Breaks');
+    let testStrings = buildTests(
+        ['A\nB', divWrap('A<br />B')],
+        ['A\n\nB', divWrap('A') + divWrap('B')],
+        ['A\nB\nC', divWrap('A<br />B<br />C')]
+    );
+
+    testCore(testStrings);
 }
 
 const testMixed = function()
 {
     logInfo('Testing Mixed Functionality');
-    let testStrings =
-    [
-        {
-            input : '# ___Header_ [`1`](link)__',
-            expected : '<div class="mdDiv"><h1><strong><em>Header</em> <a href="link"><code>1</code></a></strong></h1></div>'
-        },
-        {
-            input : '# ___Header__ [`1`](link)_',
-            expected : '<div class="mdDiv"><h1><em><strong>Header</strong> <a href="link"><code>1</code></a></em></h1></div>'
-        },
-        {
-            input : '**_Hello_**',
-            expected : '<div class="mdDiv"><strong><em>Hello</em></strong></div>'
-        },
-        {
-            input : '**_Hello**_',
-            expected : '<div class="mdDiv"><strong>_Hello</strong>_</div>'
-        }
-    ];
+    let testStrings = buildTests(
+        [
+            '# ___Header_ [`1`](link)__',
+            '<h1><strong><em>Header</em> <a href="link"><code>1</code></a></strong></h1>'
+        ],
+        [
+            '# ___Header__ [`1`](link)_',
+            '<h1><em><strong>Header</strong> <a href="link"><code>1</code></a></em></h1>'
+        ],
+        [
+            '**_Hello_**',
+            '<div class="mdDiv"><strong><em>Hello</em></strong></div>'
+        ],
+        [
+            '**_Hello**_',
+            '<div class="mdDiv"><strong>_Hello</strong>_</div>'
+        ]
+    );
 
     testCore(testStrings);
 }
 
 const testCore = function(testStrings)
 {
+    let logSav = g_logLevel;
+    g_logLevel = LOG.Info;
     testStrings.forEach(function(str)
     {
         let result = new Markdown().parse(str.input);
@@ -3666,12 +3807,13 @@ const testCore = function(testStrings)
             logWarn(`    FAIL! Input: [${str.input}]\n\tExpected: [${str.expected}]\n\tActual: [${result}]`);
         }
     });
+    g_logLevel = logSav;
 }
 
 let _helpMarkdown = new Markdown();
 function markdownHelp()
 {
     // http://www.howtocreate.co.uk/tutorials/jsexamples/syntax/prepareInline.html
-    const helpText = 'Hello! This is my Markdown Parser. It\'s a bit slow, but what do you expect from someone who wrote it from scratch in their spare time?  The following is written with the parser, so anything that works here should work everywhere.\n\n## Parser Status\n\n### Complete\n\n* **Inline Elements**\n  1. **Bold** - `**Bold**` or `__Bold__`\n  2. *Italic* - `*Italic*` or `_Italic_`\n  3. ++Underline++ - `++Underline++`\n  4. ~~Strikethrough~~ - `~~Strikethrough~~`\n  5. ***++~~All Four At Once~~++*** - `***++~~All Four At Once~~++***`\n  6. `Inline Code Snippets` - `` `Inline Code Snippets` ``\n    * Escape backticks by surrounding with more backticks: ```` ```I can escape two backticks (``) with this``` ````\n  7. [Links](markdown.php) - `[Links](markdown.php)`\n    * Links can also be [++*Formatted*++](markdown.php) - `[++*Formatted*++](markdown.php)`\n  8. **Images** - `![Cat w=100](https:\/\/cdn.mos.cms.futurecdn.net\/VSy6kJDNq2pSXsCzb6cvYF.jpg)`\n    ![Cat w=100](https:\/\/cdn.mos.cms.futurecdn.net\/VSy6kJDNq2pSXsCzb6cvYF.jpg)\n    * General form: `![AltText w=Width,h=Height](url)`:\n      * `![AltText](url)`\n      * `![AltText w=100](url)`\n      * `![AltText h=100](url)`\n      * `![AltText w=100,h=50](url)`\n\n* **Block Elements**\n  1. `# Header1`, `## Header2`, ... , `###### Header6`\n    ### Header3\n  2. **Code Blocks** - Either indented with four spaces (and a blank line above), or surrounded with three backticks (`` ` ``) or tildes (`~`)\n    ```\n\n        Code Block\n          Note that when nested in a list, the block must be indented 4 + (nestlevel * 2) spaces:\n          1. Level 1\n            * Level 2\n\n                  Code Block\n    ```\n    Or\n\n        ```\n        Code Block\n        ```\n  3. Lists\n    ```\n    3. Ordered lists will start at the first number given\n    6. And always increase by one, regardless of what is written\n    5. I can continue a list item on the next line\n    without indenting\n\n      But if I want to add a line break, it must be indented 2 additional spaces\n      1. Nested lists must be indented 2 spaces from their parent\n        * Ordered and unordered lists can be nested together\n          ~~~\n          Tilde\/Backtick code blocks must start two spaces\n          after the bullet, even if there\'s no line break\n          ~~~\n    ```\n    3. Ordered lists will start at the first number given\n    6. And always increase by one, regardless of what is written\n    5. I can continue a list item on the next line\n    without indenting\n\n      But if I want to add a line break, it must be indented 2 additional spaces\n      1. Nested lists must be indented 2 spaces from their parent\n        * Ordered and unordered lists can be nested together\n          ~~~\n          Tilde\/Backtick code blocks must start two spaces\n          after the bullet, even if there\'s no line break\n          ~~~\n  4. **Block Quotes**\n    ```\n    >A Quote:\n    >> These can be nested\n    >>> By adding more \'>\'\n    >>\\> Escape these (and most other special characters) with backslashes\n    ```\n    >You said:\n    >> These can be nested\n    >>> By adding more \'>\'\n    >>\\> Escape these (and most other special characters) with backslashes\n  5. **Tables**\n    ```\n    | Column1          | Column2   | Column3 |\n    |:-----------------|:---------:|---:|\n    Pipes at the start | and end | are optional\n    | Left-Aligned | Centered | Right-Aligned |\n    | Second row defines<br>the columns. | At least 3 dashes<br>are required | but more are allowed |\n    || Multiple Pipes | for empty cells |\n    | Add line breaks<br>with \\<br>\n    | ++Cells can be formatted++ | [with any inline elements](#) | ![Cat w=50](https:\/\/cdn.mos.cms.futurecdn.net\/VSy6kJDNq2pSXsCzb6cvYF.jpg) |\n    ```\n    | Column1          | Column2   | Column3 |\n    |:-----------------|:---------:|---:|\n    Pipes at the start | and end | are optional\n    | Left-Aligned | Centered | Right-Aligned |\n    | Second row defines<br>the columns. | At least 3 dashes<br>are required | but more are allowed |\n    || Multiple Pipes | for empty cells |\n    | Add line breaks<br>with \\<br>\n    | ++Cells can be formatted++ | [with any inline elements](#) | ![Cat w=50](https:\/\/cdn.mos.cms.futurecdn.net\/VSy6kJDNq2pSXsCzb6cvYF.jpg) |\n  6. **Horizontal Rules** - at least 3 `-`, `*`, or `_` on their own line\n    ```\n    ---\n    *   *   *   *\n        _ _ _ _\n    ```\n    ---\n    *   *   *   *\n        _ _ _ _\n\n### In Progress\/Not Done\n* **Nesting** - This is the biggest current issue. While most things play nice with nested lists and nested block quotes, nesting lists\/quotes within quotes\/lists needs work. This includes downstream issues with elements that span multiple lines (code blocks\/tables), who will have to know whether leading `>`, `*`, `\\d+\\.` are expected and should be ignored.\n* **Alternate Links**\n  ```\n  [Click Me!][1]\n  ...\n  [1]: https:\/\/example.com\n  ```\n* Many other things I\'m sure';
+    const helpText = 'Hello! This is my Markdown Parser. It\'s a bit slow, but what do you expect from someone who wrote it from scratch in their spare time?  The following is written with the parser, so anything that works here should work everywhere.\n\n## Parser Status\n\n### Complete\n\n* **Inline Elements**\n  1. **Bold** - `**Bold**` or `__Bold__`\n  2. *Italic* - `*Italic*` or `_Italic_`\n  3. ++Underline++ - `++Underline++`\n  4. ~~Strikethrough~~ - `~~Strikethrough~~`\n  5. ***++~~All Four At Once~~++*** - `***++~~All Four At Once~~++***`\n  6. `Inline Code Snippets` - `` `Inline Code Snippets` ``\n    * Escape backticks by surrounding with more backticks: ```` ```I can escape two backticks (``) with this``` ````\n  7. [Links](markdown.php) - `[Links](markdown.php)`\n    * Links can also be [++*Formatted*++](markdown.php) - `[++*Formatted*++](markdown.php)`\n  8. **Images** - `![Cat w=100](https:\/\/cdn.mos.cms.futurecdn.net\/VSy6kJDNq2pSXsCzb6cvYF.jpg)`\n    ![Cat w=100](https:\/\/cdn.mos.cms.futurecdn.net\/VSy6kJDNq2pSXsCzb6cvYF.jpg)\n    * General form: `![AltText w=Width,h=Height](url)`:\n      * `![AltText](url)`\n      * `![AltText w=100](url)`\n      * `![AltText h=100](url)`\n      * `![AltText w=100,h=50](url)`\n\n* **Block Elements**\n  1. `# Header1`, `## Header2`, ... , `###### Header6`\n    ### Header3\n  2. **Code Blocks** - Either indented with four spaces (and a blank line above), or surrounded with three backticks (`` ` ``) or tildes (`~`)\n    ```\n\n        Code Block\n          Note that when nested in a list, the block must be indented 4 + (nestlevel * 2) spaces:\n          1. Level 1\n            * Level 2\n\n                  Code Block\n    ```\n    Or\n\n        ```\n        Code Block\n        ```\n  3. Lists\n    ```\n    3. Ordered lists will start at the first number given\n    6. And always increase by one, regardless of what is written\n    5. I can continue a list item on the next line\n    without indenting\n\n      But if I want to add a line break, it must be indented 2 additional spaces\n      1. Nested lists must be indented 2 spaces from their parent\n        * Ordered and unordered lists can be nested together\n          ~~~\n          Tilde\/Backtick code blocks must start two spaces\n          after the bullet, even if there\'s no line break\n          ~~~\n    ```\n    3. Ordered lists will start at the first number given\n    6. And always increase by one, regardless of what is written\n    5. I can continue a list item on the next line\n    without indenting\n\n      But if I want to add a line break, it must be indented 2 additional spaces\n      1. Nested lists must be indented 2 spaces from their parent\n        * Ordered and unordered lists can be nested together\n          ~~~\n          Tilde\/Backtick code blocks must start two spaces\n          after the bullet, even if there\'s no line break\n          ~~~\n  4. **Block Quotes**\n    ```\n    >A Quote:\n    >> These can be nested\n    >>> By adding more \'>\'\n    >>\\> Escape these (and most other special characters) with backslashes\n    ```\n    >You said:\n    >> These can be nested\n    >>> By adding more \'>\'\n    >>\\> Escape these (and most other special characters) with backslashes\n  5. **Tables**\n    ```\n    | Column1          | Column2   | Column3 |\n    |:-----------------|:---------:|---:|\n    Pipes at the start | and end | are optional\n    | Left-Aligned | Centered | Right-Aligned |\n    | Second row defines<br>the columns. | At least 3 dashes<br>are required | but more are allowed |\n    || Multiple Pipes | for empty cells |\n    | Add line breaks<br>with \\<br>\n    | ++Cells can be formatted++ | [with any inline elements](#) | ![Cat w=150](https:\/\/cdn.mos.cms.futurecdn.net\/VSy6kJDNq2pSXsCzb6cvYF.jpg) |\n    ```\n    | Column1          | Column2   | Column3 |\n    |:-----------------|:---------:|---:|\n    Pipes at the start | and end | are optional\n    | Left-Aligned | Centered | Right-Aligned |\n    | Second row defines<br>the columns. | At least 3 dashes<br>are required | but more are allowed |\n    || Multiple Pipes | for empty cells |\n    | Add line breaks<br>with \\<br>\n    | ++Cells can be formatted++ | [with any inline elements](#) | ![Cat w=150](https:\/\/cdn.mos.cms.futurecdn.net\/VSy6kJDNq2pSXsCzb6cvYF.jpg) |\n  6. **Horizontal Rules** - at least 3 `-`, `*`, or `_` on their own line\n    ```\n    ---\n    *   *   *   *\n        _ _ _ _\n    ```\n    ---\n    *   *   *   *\n        _ _ _ _\n\n### In Progress\/Not Done\n* **Nesting** - This is the biggest current issue. While most things play nice with nested lists and nested block quotes, nesting lists\/quotes within quotes\/lists needs work. This includes downstream issues with elements that span multiple lines (code blocks\/tables), who will have to know whether leading `>`, `*`, `\\d+\\.` are expected and should be ignored.\n* **Alternate Links**\n  ```\n  [Click Me!][1]\n  ...\n  [1]: https:\/\/example.com\n  ```\n* Many other things I\'m sure';
     return '<div class="md">' + _helpMarkdown.parse(helpText) + '</div>';
 }
