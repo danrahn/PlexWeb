@@ -48,10 +48,10 @@ window.addEventListener("load", function()
     function parseMarkdown()
     {
         const text = $('#newComment').value;
-        $('#mdHolder').style.display = text.length == 0 ? "none" : "block";
 
         logTmi(`Parsing "${text}"`);
         let html = mdPreview.parse(text);
+        $('#mdHolder').style.display = (text.length != 0 && mdPreview.markdownPresent) ? "block" : "none";
 
         // No need to redraw if the content is the same as our last result.
         if (!mdPreview.sameText)

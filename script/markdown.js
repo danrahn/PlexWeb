@@ -488,6 +488,7 @@ class Markdown {
         }
 
         logTmi(topRun, 'Parsing tree');
+        this.markdownPresent = topRun.innerRuns.length != 0;
         let html = topRun.convert(this.text, this._newparse, this._inlineOnly).trim();
         this._cachedParse = html;
         this._inParse = false;
