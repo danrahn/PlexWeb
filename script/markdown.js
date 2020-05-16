@@ -3061,6 +3061,12 @@ class BlockQuote extends Run
     {
         // Look for 'newline + >' and remove them.
         let transformed = '';
+        if (newText[0] != '\n')
+        {
+            // Always want to start with a newline
+            newText = '\n' + newText;
+        }
+
         for (let i = 0; i < newText.length; ++i)
         {
             if (newText[i] != '\n')
