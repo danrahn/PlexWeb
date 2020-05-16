@@ -209,8 +209,7 @@ function build_js($file, ...$includes)
     else
     {
         // When minified, the minified script should have already bundled
-        // the includes with the main script, and surrounded it in an anonymous function
-        echo "<script>" . include_js($file) . "</script>";
+        echo '<script src="min/' . $file . '.min.js"></script>';
     }
 }
 
