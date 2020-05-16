@@ -65,6 +65,14 @@ function setupForgotForm()
         sendHtmlJsonRequest("process_request.php", parameters, successFunc);
     });
 
+    $('#username').addEventListener('keydown', function(e)
+    {
+        if (e.keyCode == 13 /*enter*/ && !e.ctrlKey && !e.shiftKey && !e.altKey)
+        {
+            $('#go').click();
+        }
+    });
+
     $("#forgotUser").addEventListener("click", function()
     {
         // From for phone# or email. If none, pop this
