@@ -25,6 +25,7 @@ window.addEventListener("load", function()
         });
 
         setupMarkdown();
+        setupMarkdownHelpers();
 
         $("#newCommentButton").addEventListener("click", addComment);
         addNavListener();
@@ -42,6 +43,245 @@ window.addEventListener("load", function()
         $('#newComment').addEventListener('keyup', parseMarkdown);
         $('#mdhelp').addEventListener('click', showMarkdownHelp);
         $('#newComment').addEventListener('keydown', captureTab);
+    }
+
+    function setupMarkdownHelpers()
+    {
+        $('#addBold').addEventListener('click', mdDispatch);
+        $('#addUnderline').addEventListener('click', mdDispatch);
+        $('#addItalic').addEventListener('click', mdDispatch);
+        $('#addStrikethrough').addEventListener('click', mdDispatch);
+        $('#addLink').addEventListener('click', addLink);
+        $('#addImage').addEventListener('click', addPhoto);
+    }
+
+    function mdDispatch()
+    {
+        switch (this.id)
+        {
+            case 'addBold':
+                mdSurround('**');
+                break;
+            case 'addUnderline':
+                mdSurround('++');
+                break;
+            case 'addItalic':
+                mdSurround('_');
+                break;
+            case 'addStrikethrough':
+                mdSurround('~~');
+                break;
+            default:
+                break;
+        }
+    }
+
+    function getLinkOkCancelButtons(isPhoto)
+    {
+        let okayButton = buildNode(
+            'input',
+            {
+                'type' : 'button',
+                'id' : 'addLinkOk',
+                'value' : 'Insert',
+                'style' : 'width: 100px; margin-right: 10px; display: inline',
+                'isPhoto' : isPhoto ? 1 : 0
+            },
+            0,
+            {
+                'click' : function()
+                {
+                    let comment = $('#newComment');
+                    let link = $('#addLinkLink').value;
+                    let text = $('#addLinkText').value;
+                    let newText;
+                    if (this.getAttribute('isPhoto') == '1')
+                    {
+                        let width = parseInt($('#insertWidth').value);
+                        let height = parseInt($('#insertHeight').value);
+                        let whString = ' ';
+                        if (width != 0 && !isNaN(width))
+                        {
+                            whString += `w=${width}`;
+                        }
+
+                        if (height != 0 && !isNaN(height))
+                        {
+                            whString += `${whString.length > 1 ? ',' : ''}h=${height}`;
+                        }
+
+                        newText = `![${text}${whString}](${link})`;
+                    }
+                    else
+                    {
+                        newText = `[${text}](${link})`;
+                    }
+
+                    comment.focus();
+                    if (document.queryCommandSupported('insertText'))
+                    {
+                        // This is deprecated, but it's the only way I've found to do it that supports undo.
+                        let start = comment.selectionStart;
+                        document.execCommand('insertText', false, newText);
+                        comment.setSelectionRange(start + newText.length, start + newText.length);
+                    }
+                    else
+                    {
+                        comment.setRangeText(newText, comment.selectionStart, comment.selectionEnd, 'select');
+                    }
+
+                    overlayDismiss();
+                    parseMarkdown();
+                }
+            });
+        let cancelButton = buildNode(
+            'input',
+            {
+                'type' : 'button',
+                'value' : 'Cancel',
+                'style' : 'width: 100px; display: inline'
+            },
+            0,
+            {
+                'click' : overlayDismiss
+            });
+
+        let outerButtonContainer = buildNode('div', { 'class' : 'formInput', 'style' : 'text-align: center' });
+        let buttonContainer = buildNode('div', { "style" : "float: right; overflow: auto; width: 100%; margin: auto" } );
+        buttonContainer.appendChild(okayButton);
+        buttonContainer.appendChild(cancelButton);
+        outerButtonContainer.appendChild(buttonContainer);
+        return outerButtonContainer;
+    }
+
+    function addLinkOrPhoto(isPhoto)
+    {
+        const keyUpHandler = function(e)
+        {
+            if (e.keyCode == 13 && !e.ctrlKey && !e.shiftKey && !e.altKey)
+            {
+                e.stopPropagation();
+                $('#addLinkOk').click();
+            }
+        };
+
+        let comment = $('#newComment');
+        let initialText = comment.value.substring(comment.selectionStart, comment.selectionEnd);
+        let title = buildNode('h4', {}, `Insert ${isPhoto ? 'Image' : 'Hyperlink'}`);
+        let linkText = buildNode('div', {}, 'URL:');
+        let linkInput = buildNode(
+            'input',
+            {
+                'type' : 'text',
+                'id' : 'addLinkLink',
+
+            },
+            0,
+            {
+                'keyup' : keyUpHandler
+            });
+        let displayText = buildNode('div', {}, isPhoto ? 'Alt Text (optional):' : 'Display Text');
+        let displayInput = buildNode(
+            'input',
+            {
+                'type' : 'text',
+                'id' : 'addLinkText',
+                'value' : initialText
+            },
+            0,
+            {
+                'keyup' : keyUpHandler
+            });
+
+        let dimenText;
+        let dimensions;
+        if (isPhoto)
+        {
+            dimenText = buildNode('div', {}, 'Width and Height (optional)');
+            let width = buildNode(
+                'input',
+                {
+                    'type' : 'text',
+                    'id' : 'insertWidth',
+                    'style' : 'width: 75px; display: inline',
+                    'placeholder' : 'Width (px)'
+                },
+                0,
+                {
+                    'keyup' : keyUpHandler
+                });
+            let span = buildNode('span', { 'style' : 'margin-left: 10px; margin-right: 10px' }, 'by');
+            let height = buildNode(
+                'input',
+                {
+                    'type' : 'text',
+                    'id' : 'insertHeight',
+                    'style' : 'width: 75px; display: inline',
+                    'placeholder' : 'Height (px)'
+                },
+                0,
+                {
+                    'keyup' : keyUpHandler
+                });
+
+            dimensions = buildNode('div', { 'class' : 'formInput', 'style' : 'text-align: center' });
+            let dimenContainer = buildNode('div', { "style" : "float: right; overflow: auto; width: 100%; margin: auto" } );
+            dimenContainer.appendChild(width);
+            dimenContainer.appendChild(span);
+            dimenContainer.appendChild(height);
+            dimensions.appendChild(dimenContainer);
+        }
+
+        let container = buildNode('div', { 'id' : 'mdInsertOverlay'});
+        container.appendChild(title);
+        container.appendChild(linkText);
+        container.appendChild(linkInput);
+        container.appendChild(displayText);
+        container.appendChild(displayInput);
+        if (isPhoto)
+        {
+            container.appendChild(dimenText);
+            container.appendChild(dimensions);
+        }
+
+        container.appendChild(getLinkOkCancelButtons(isPhoto));
+
+        buildOverlay(true, container);
+        $('#addLinkLink').focus();
+    }
+
+    function addPhoto()
+    {
+        addLinkOrPhoto(true /*isPhoto*/);
+    }
+
+    function addLink()
+    {
+        addLinkOrPhoto(false /*isPhoto*/);
+    }
+
+    function mdSurround(ch)
+    {
+        let comment = $('#newComment');
+        let start = comment.selectionStart;
+        let end = comment.selectionEnd;
+        comment.focus();
+        let surround = (start == end) ? 'Text' : comment.value.substring(comment.selectionStart, comment.selectionEnd);
+
+        if (document.queryCommandSupported('insertText'))
+        {
+            // This is deprecated, but it's the only way I've found to do it that supports undo.
+            document.execCommand('insertText', false, ch + surround + ch);
+        }
+        else
+        {
+            let newText = ch + surround + ch;
+            comment.setRangeText(newText);
+        }
+
+        comment.setSelectionRange(start + ch.length, start + surround.length + ch.length)
+
+        parseMarkdown();
     }
 
     let mdPreview = new Markdown();

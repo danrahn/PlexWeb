@@ -249,6 +249,7 @@ a:hover {
 
 #mdPreview {
     margin: 0;
+    padding: 5px 10px 5px 10px;
     padding-top: 5px;
     padding-bottom: 5px;
     background: rgba(0, 0, 0, 0.2);
@@ -279,9 +280,70 @@ a:hover {
 /* Markdown Help should have a darker background than the default overlay background */
 .mdHelp {
     background: rgba(70, 70, 70, 0.75);
-    padding-top: 5px;
-    padding-bottom: 5px;
+    padding: 5px 10px 5px 10px;
 }
+
+#mdHelper {
+    margin-top: 30px;
+    margin-bottom: -30px;
+    overflow: auto;
+}
+
+.mdButton {
+    float: left;
+    display: inline;
+    margin: 0px;
+    text-align: center;
+    width: 30px;
+    height: 30px;
+    font-size: 10pt;
+    border-radius: 0px;
+    border: 2px solid #818181;
+    font-weight: bold;
+}
+
+#addBold {
+    font-weight: 900;
+}
+
+#addUnderline {
+    text-decoration: underline;
+}
+
+#addItalic {
+    font-style: italic;
+}
+
+#addStrikethrough {
+    text-decoration: line-through;
+}
+
+#mdHelper button {
+    background-color: rgba(63, 66, 69);
+    padding: 4px;
+}
+
+#mdHelper button:hover {
+    background-color: rgba(83, 86, 89);
+    padding: 4px;
+}
+
+#mdHelper button img {
+    width: 18px;
+    filter: invert(90%);
+}
+
+#mdInsertOverlay div {
+    padding: 0;
+    margin: 5px;
+}
+
+#mdInsertOverlay input[type=text] {
+    width: 250px;
+    max-width: 80%;
+    margin-bottom: 20px;
+}
+
 
 @media (orientation: landscape), (min-width: 767px) {
     #innerInfoContainer {

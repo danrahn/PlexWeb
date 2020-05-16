@@ -71,6 +71,14 @@ function get_details($req_id)
                 <div id="comments">
                     
                 </div>
+                <div id="mdHelper">
+                    <input type="button" class="mdButton" id="addBold" value="B" title="Bold" />
+                    <input type="button" class="mdButton" id="addUnderline" value="U" title="Underline" />
+                    <input type="button" class="mdButton" id="addItalic" value="I" title="Italic" />
+                    <input type="button" class="mdButton" id="addStrikethrough" value="S" title="Strikethrough" />
+                    <button class="mdButton" id="addLink" title="Insert Link"><img src="icon/mdLink.png" altText="Insert Link" /></button>
+                    <button class="mdButton" id="addImage" title="Insert Image"><img src="icon/mdImage.png" altText="Insert Image" /></button>
+                </div>
                 <textarea id="newComment" placeholder="Add comment..."></textarea>
                 <div id="mdCallout">(Comments now support <a id="mdhelp" href="#">Markdown</a>)</div>
                 <div id="mdHolder" style="display: none">
