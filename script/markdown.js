@@ -1936,7 +1936,7 @@ class Markdown {
         }
         if (quoteNests != 0)
         {
-            regexString = `( *> *){${quoteNests}}`;
+            regexString = `( *> *){${quoteNests}}$`;
         }
 
         if (!new RegExp(regexString).test(prefix))
