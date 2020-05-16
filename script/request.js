@@ -53,6 +53,7 @@ window.addEventListener("load", function()
         $('#addStrikethrough').addEventListener('click', mdDispatch);
         $('#addLink').addEventListener('click', addLink);
         $('#addImage').addEventListener('click', addPhoto);
+        $('#showMdHelp').addEventListener('click', showMarkdownHelp);
     }
 
     function mdDispatch()

@@ -66,6 +66,10 @@
     max-width: 100%;
 }
 
+.md table {
+    margin: unset;
+}
+
 .md table, .md thead, .md td {
     border-collapse: collapse;
     padding: 5px 10px 5px 10px;
