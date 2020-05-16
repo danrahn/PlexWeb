@@ -97,17 +97,42 @@ window.addEventListener("load", function()
                     let newText;
                     if (this.getAttribute('isPhoto') == '1')
                     {
-                        let width = parseInt($('#insertWidth').value);
-                        let height = parseInt($('#insertHeight').value);
-                        let whString = ' ';
+                        let width = $('#insertWidth').value;
+                        let height = $('#insertHeight').value;
+                        let widthP = false;
+                        let heightP = false;
+                        if (width.endsWith('px'))
+                        {
+                            width = parseInt(width.substring(0, width.length - 2));
+                        }
+                        else if (width.endsWith('%'))
+                        {
+                            widthP = true;
+                            width = parseInt(width.substring(0, width.length - 1));
+                        }
+
+                        if (height.endsWith('px'))
+                        {
+                            height = parseInt(height.substring(0, height.length - 2));
+                        }
+                        else if (height.endsWith('%'))
+                        {
+                            heightP = true;
+                            height = parseInt(height.substring(0, height.length - 1));
+                        }
+
+                        logInfo(width);
+                        logInfo(height);
+
+                        let whString = text.length > 0 ? ' ' : '';
                         if (width != 0 && !isNaN(width))
                         {
-                            whString += `w=${width}`;
+                            whString = `w=${width}${widthP ? '%' : ''}`;
                         }
 
                         if (height != 0 && !isNaN(height))
                         {
-                            whString += `${whString.length > 1 ? ',' : ''}h=${height}`;
+                            whString += `${whString.length > 1 ? ',' : ''}h=${height}${heightP ? '%' : ''}`;
                         }
 
                         newText = `![${text}${whString}](${link})`;
@@ -204,7 +229,7 @@ window.addEventListener("load", function()
                     'type' : 'text',
                     'id' : 'insertWidth',
                     'style' : 'width: 75px; display: inline',
-                    'placeholder' : 'Width (px)'
+                    'placeholder' : 'Width (px or %)'
                 },
                 0,
                 {
@@ -217,7 +242,7 @@ window.addEventListener("load", function()
                     'type' : 'text',
                     'id' : 'insertHeight',
                     'style' : 'width: 75px; display: inline',
-                    'placeholder' : 'Height (px)'
+                    'placeholder' : 'Height (px or %)'
                 },
                 0,
                 {
@@ -260,6 +285,10 @@ window.addEventListener("load", function()
         addLinkOrPhoto(false /*isPhoto*/);
     }
 
+    /// <summary>
+    /// Surrounds the currently highlighted text with the specific pattern. If nothing is highlighted,
+    /// add a placeholder value and highlight that.
+    /// </summary>
     function mdSurround(ch)
     {
         let comment = $('#newComment');
