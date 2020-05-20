@@ -33,6 +33,7 @@ function verify_loggedin($redirect = FALSE, $return = "", $json = FALSE)
             json_error_and_exit("Not Authorized");
         }
 
+        header('HTTP/1.1 401 Unauthorized', true, 401);
         error_and_exit(401);
     }
 }
