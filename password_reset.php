@@ -5,11 +5,11 @@ session_start();
 require_once "includes/common.php";
 require_once "includes/config.php";
 
-verify_loggedin();
-if ($_SESSION['level'] < 100)
+if (!isset($_SESSION['level']) || $_SESSION['level'] < 100)
 {
     error_and_exit(403);
 }
+verify_loggedin();
 ?>
 
 <!DOCTYPE html>
