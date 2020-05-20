@@ -208,8 +208,13 @@ function build_js($file, ...$includes)
     }
     else
     {
-        // When minified, the minified script should have already bundled
-        echo '<script src="min/' . $file . '.min.js"></script>';
+        // When minified, we add the md5 hash of the script to the filename, so
+        // do a fuzzy glob match and use the first result. Combining the md5 hash
+        // with a large max-age cache-control setting in httpd.conf results in the
+        // best of both worlds: clients get the latest bits as soon as they available,
+        // and when the content doesn't change, clients can use the cached version
+        // without pinging us.
+        echo '<script src="' . glob("min/$file.*.min.js")[0] . '"></script>';
     }
 }
 

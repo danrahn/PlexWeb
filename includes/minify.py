@@ -7,6 +7,7 @@ This allows for maximally minized javascript that's contained to a single file p
 '''
 
 import glob
+import hashlib
 import os
 import platform
 import shutil
@@ -90,8 +91,10 @@ def needs_parse(file, includes, modified_dates):
     We only need to parse if last modified date of the minified file is older
     than the PHP file or any of the scripts it includes
     '''
-    min_file = 'min/' + file[:file.rfind('.')] + '.min.js'
-    min_mod = 0 if not os.path.exists(min_file) else os.stat(min_file).st_mtime
+    min_file = 'min/' + file[:file.rfind('.')] + '.*.min.js'
+    fileglob = glob.glob(min_file)
+    min_mod = 0 if len(fileglob) == 0 else os.stat(fileglob[0]).st_mtime
+    # min_mod = 0 if not os.path.exists(min_file) else os.stat(min_file).st_mtime
     php_mod = os.stat(file).st_mtime
 
     if php_mod > min_mod:
@@ -164,7 +167,10 @@ def minify():
 
 
 def run_cmd(file, options):
-    clean_file = file[file.find(os.sep) + 1:file.find('.')] + '.min.js'
+    base_file = file[file.find(os.sep) + 1:file.find('.')]
+    remove_existing(base_file);
+    file_hash = get_hash(file);
+    clean_file = base_file + '.' + file_hash + '.min.js'
     print('Minifying', clean_file)
     system = platform.system();
     if system == 'Windows':
@@ -178,6 +184,16 @@ def run_cmd(file, options):
     output = subprocess.check_output(cmd, stderr=subprocess.STDOUT).decode('utf-8')
     process_output(output)
     print()
+
+
+def remove_existing(base):
+    for file in glob.glob('min' + os.sep + base + '*.min.js'):
+        os.remove(file);
+
+
+def get_hash(file):
+    with open(file, 'rb') as filebytes:
+        return hashlib.md5(filebytes.read()).hexdigest()
 
 
 def process_output(output):
