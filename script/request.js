@@ -230,7 +230,7 @@ window.addEventListener("load", function()
                     'type' : 'text',
                     'id' : 'insertWidth',
                     'style' : 'width: 75px; display: inline',
-                    'placeholder' : 'Width (px or %)'
+                    'placeholder' : 'Width'
                 },
                 0,
                 {
@@ -243,7 +243,7 @@ window.addEventListener("load", function()
                     'type' : 'text',
                     'id' : 'insertHeight',
                     'style' : 'width: 75px; display: inline',
-                    'placeholder' : 'Height (px or %)'
+                    'placeholder' : 'Height'
                 },
                 0,
                 {
@@ -696,14 +696,35 @@ window.addEventListener("load", function()
         let container = $("#infoContainer");
         container.innerHTML = "";
 
-        let backdrop = buildNode("img", {
-            "src" : `https://image.tmdb.org/t/p/original${data.backdrop_path}`,
-            "id" : "mediaBackdrop"
-        });
+        let backdrop;
+        if (data.backdrop_path)
+        {
+            let backdrop = buildNode("img", {
+                "src" : `https://image.tmdb.org/t/p/original${data.backdrop_path}`,
+                "id" : "mediaBackdrop"
+            });
+        }
 
         let innerContainer = buildNode("div", {"id" : "innerInfoContainer"});
 
-        let poster = buildNode("img", {"src" : `poster${data.poster_path}&large=1`, "id" : "mediaPoster"});
+        let posterPath = data.poster_path;
+        if (!posterPath)
+        {
+            switch (parseInt(document.body.getAttribute("requestType")))
+            {
+                case 1:
+                    posterPath = '/moviedefault.png';
+                    break;
+                case 2:
+                    posterPath = '/tvdefault.png';
+                    break;
+                default:
+                    posterPath = '/viewstream.png';
+                    break;
+            }
+        }
+
+        let poster = buildNode("img", {"src" : `poster${posterPath}&large=1`, "id" : "mediaPoster"});
         let details = buildNode("div", {"id" : "mediaDetails"});
 
         let title = buildNode("div", {"id" : "mediaTitle"});
@@ -744,7 +765,11 @@ window.addEventListener("load", function()
         innerContainer.appendChild(poster);
         innerContainer.appendChild(details);
 
-        container.appendChild(backdrop);
+        if (backdrop)
+        {
+            container.appendChild(backdrop);
+        }
+
         container.appendChild(innerContainer);
     }
 

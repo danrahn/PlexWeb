@@ -1748,6 +1748,7 @@ function get_requests($num, $page, $filter)
 
 function get_poster_path($request)
 {
+    global $db;
     $type = RequestType::get_type((int)$request->t);
     $endpoint = "";
     $json = NULL;
@@ -1776,6 +1777,7 @@ function get_poster_path($request)
         return "/viewstream.png";
     }
 
+    // Our search didn't return anything. Revert to defaults
     if ($json == NULL)
     {
         switch ($type)
@@ -1790,18 +1792,37 @@ function get_poster_path($request)
     }
 
     $json = json_decode($json);
+    $poster_path = '';
     if (isset($json->poster_path) && $json->poster_path)
     {
         $poster_path = $json->poster_path;
-        $query = "UPDATE user_requests SET poster_path='$json->poster_path' WHERE id=$request->rid";
-        $inner_res = $db->query($query);
-        if ($inner_res === FALSE)
-        {
-            return db_error();
-        }
-
-        return $poster_path;
     }
+    else
+    {
+        // We got a valid response, but there's no poster. Give up hope
+        // of finding a poster and set it to the default image
+        switch ($type)
+        {
+            case RequestType::Movie:
+                $poster_path = "/moviedefault.png";
+                break;
+            case RequestType::TVShow:
+                $poster_path = "/tvdefault.png";
+                break;
+            default:
+                $poster_path = "/viewstream.png";
+                break;
+        }
+    }
+
+    $query = "UPDATE user_requests SET poster_path='$poster_path' WHERE id=$request->rid";
+    $inner_res = $db->query($query);
+    if ($inner_res === FALSE)
+    {
+        return db_error();
+    }
+
+    return $poster_path;
 }
 
 /// <summary>

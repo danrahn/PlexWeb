@@ -258,10 +258,11 @@ function buildItems(matches, holder)
     for (let i = 0; i < max; ++i)
     {
         let match = matches[i];
+
         let item = buildNode("div", {
             "class" : "searchResult",
             "title" : match.title ? match.title : match.name,
-            "poster" : match.poster_path ? match.poster_path : match.thumb
+            "poster" : match.poster_path ? match.poster_path : match.thumb ? match.thumb : `/${$("#type").value}default.png`
         },
         0,
         external ? {} : {
@@ -554,7 +555,7 @@ function submitSelected()
 
     const tmdbid = selectedSuggestion.getAttribute("tmdbid");
     const title = selectedSuggestion.getAttribute("title");
-    const poster = selectedSuggestion.getAttribute("poster");
+    let poster = selectedSuggestion.getAttribute("poster");
     if (!tmdbid || !title)
     {
         logError("Required fields not set");
@@ -574,7 +575,7 @@ function submitSelected()
     {
         if (!response.exists)
         {
-            // window.location.href = "https://danrahn.com/plex/request.php?id=" + response.req_id;
+            window.location.href = "https://danrahn.com/plex/request.php?id=" + response.req_id;
             return;
         }
 

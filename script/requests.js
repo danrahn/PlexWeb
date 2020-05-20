@@ -9,6 +9,7 @@ window.addEventListener("load", function()
     setupKeyboardNavigation();
 });
 
+
 /// <summary>
 /// Ask the server for user requests dependent on the current page and filter
 /// </summary>
@@ -82,7 +83,7 @@ function buildRequest(request, sortOrder)
 
     let imgHolder = buildNode("div", {"class" : "imgHolder"});
     let imgA = buildNode("a", {"href" : `request.php?id=${request.rid}`});
-    let img = buildNode("img", {"src" : `poster/${request.p}`});
+    let img = buildNode("img", {"src" : `poster${request.p}`});
     imgA.appendChild(img);
     imgHolder.appendChild(imgA);
 
