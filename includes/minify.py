@@ -187,7 +187,7 @@ def run_cmd(file, options):
 
 
 def remove_existing(base):
-    for file in glob.glob('min' + os.sep + base + '*.min.js'):
+    for file in glob.glob('min' + os.sep + base + '.*.min.js'):
         os.remove(file);
 
 
