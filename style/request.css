@@ -294,12 +294,13 @@ a:hover {
     display: inline;
     margin: 0px;
     text-align: center;
-    width: 30px;
-    height: 30px;
-    font-size: 10pt;
     border-radius: 0px;
-    border: 2px solid #818181;
+    border-left: 1px solid #818181;
+    border-right: none;
+    border-top: none;
+    border-bottom: none;
     font-weight: bold;
+    vertical-align: middle;
 }
 
 #addBold {
@@ -321,6 +322,11 @@ a:hover {
 #mdHelper button {
     background-color: rgba(63, 66, 69);
     padding: 4px;
+    border-style: solid;
+    border-left: 1px solid #818181;
+    border-right: none;
+    border-top: none;
+    border-bottom: none;
 }
 
 #mdHelper button:hover {
@@ -329,7 +335,8 @@ a:hover {
 }
 
 #mdHelper button img {
-    width: 18px;
+    vertical-align: middle;
+    line-height: 26px;
     filter: invert(90%);
 }
 
@@ -420,6 +427,16 @@ a:hover {
         margin-top: 30px;
         background-color: rgba(63, 66, 69, 0.7);
     }
+
+    .mdButton {
+        width: 30px;
+        height: 30px;
+        font-size: 10pt;
+    }
+
+    #mdHelper button img {
+        width: 18px;
+    }
 }
 
 @media all and (orientation: portrait) and (max-width: 767px) {
@@ -500,5 +517,15 @@ a:hover {
 
     .commentInfo {
         font-size: smaller;
+    }
+
+    .mdButton {
+        width: 26px;
+        height: 26px;
+        font-size: 9pt;
+    }
+
+    #mdHelper button img {
+        width: 14px;
     }
 }
