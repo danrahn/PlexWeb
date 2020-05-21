@@ -699,7 +699,7 @@ window.addEventListener("load", function()
         let backdrop;
         if (data.backdrop_path)
         {
-            let backdrop = buildNode("img", {
+            backdrop = buildNode("img", {
                 "src" : `https://image.tmdb.org/t/p/original${data.backdrop_path}`,
                 "id" : "mediaBackdrop"
             });
@@ -844,7 +844,110 @@ window.addEventListener("load", function()
         sendHtmlJsonRequest("process_request.php", params, successFunc, failureFunc);
     }
 
-    function addComment()
+    /// <summary>
+    /// Takes the given CSS file and inlines styles into the given text
+    /// </summary>
+    function inlineCSS(css, text)
+    {
+        let cssElements = parseCss(css);
+
+        for (let selector in cssElements)
+        {
+            if (!cssElements.hasOwnProperty(selector))
+            {
+                continue;
+            }
+
+            let eleStyle = cssElements[selector];
+
+            if (selector.startsWith('.'))
+            {
+                // We have a class. Make the generally unsafe assumption
+                // that classes are standalone from anything else
+                text = text.replace(new RegExp(`class="${selector.substring(1)}`, 'g'), `style="${eleStyle}" class="${selector.substring(1)}`);
+            }
+            else if (selector.indexOf(':') != -1)
+            {
+                // pseudo element. Do nothing for now
+            }
+            else
+            {
+                // Some elements have additional properties
+                if (selector == 'a')
+                {
+                    text = text.replace(/<a href/g, '<a style="' + eleStyle + '" href');
+                }
+                else if (selector == 'img')
+                {
+                    text = text.replace(/<img src/g, '<img style="' + eleStyle + '" src');
+                }
+                else
+                {
+                    text = text.replace(new RegExp(`<${selector}>`, 'g'), `<${selector} style="${eleStyle}">`);
+                }
+            }
+
+        }
+
+        return `<div style="${cssElements.base}">${text}</div>`;
+    }
+
+    /// <summary>
+    /// Returns a dictionary mapping selectors to styles
+    /// for the given css.
+    /// </summary>
+    function parseCss(css)
+    {
+        let style = {};
+
+        // Many shortcuts are taken based on what we expect the CSS structure to be.
+        // This is by no means a generalized CSS parser
+
+        // Assume the first element is the base .md element
+        if (!css.startsWith('.md {'))
+        {
+            log("Unexpected start to Markdown CSS. Email notifications will be styled incorrectly.", 0, 0, LOG.Critical);
+            return style;
+        }
+
+        const addStyle = function(ele, eleStyle, style)
+        {
+            if (!style[ele])
+            {
+                style[ele] = '';
+            }
+
+            logVerbose(`Adding style for ${ele}: ${eleStyle}`);
+            style[ele] += eleStyle;
+        }
+
+        let start = css.match(/^\.md \{([^}]*)\}/m)[1];
+        style.base = start.trim().replace(/\n */g, ' ');
+
+        let regex = /\n\.md ([^{]+) ?\{([^}]+)\}/g;
+        let match;
+        while ((match = regex.exec(css)) != null)
+        {
+            let elements = match[1];
+            let eleStyle = match[2].trim().replace(/\n */g, ' ');
+            if (elements.indexOf(' .md ') == -1)
+            {
+                addStyle(elements.trim(), eleStyle, style);
+            }
+            else
+            {
+                elements = elements.split(', .md');
+                for (let ele in elements)
+                {
+                    addStyle(elements[ele].trim(), eleStyle, style);
+                }
+            }
+        }
+
+        return style;
+    }
+
+    async function addComment()
     {
         let comment = $("#newComment");
         let text = comment.value;
@@ -855,10 +958,31 @@ window.addEventListener("load", function()
         }
 
         comment.value = "";
-
         logInfo("Adding comment: " + text);
 
         let params = { "type" : "add_comment", "req_id" : parseInt(document.body.getAttribute("reqId")), "content" : text };
+
+        // For markdown content, we do a lot of extra work to style the text correctly.
+        // For the best results, it's probably better to inline all the relevant CSS for
+        // each individual element. However, that has its own challenges, namely creating
+        // simplified CSS and HTML parsers to correctly inject everything. A prototype version
+        // is implemented, but is currently unused. Gmail and Outlook are correctly handling
+        // style sheets embedded directly in the email, and that's good enough for me for now.
+        if (mdPreview.markdownPresent)
+        {
+            const preParse = false;
+            let mdText = mdPreview.parse(text);
+            if (preParse)
+            {
+                let css = await fetch('style/markdown.css').then(response => response.text().then(text => text));
+                params.md = inlineCSS(css, mdText);
+            }
+            else
+            {
+                params.md = mdText;
+            }
+        }
+
         let successFunc = function()
         {
             $('#mdHolder').style.display = "none";

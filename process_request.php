@@ -387,7 +387,7 @@ function process_suggestion_new($suggestion, $type, $external_id, $poster)
 
     $row = $result->fetch_assoc();
     $id = $row['id'];
-    send_notifications_if_needed("create", get_user_from_request($id), $suggestion, "", $id);
+    send_notifications_if_needed("create", get_user_from_request($id), $suggestion, "", $id, FALSE /*is_markdown*/);
 
     // Add an entry to the activity table
     if (!add_create_activity($id, $userid))
@@ -592,7 +592,15 @@ function add_request_comment($req_id, $content)
         return db_error();
     }
 
-    send_notifications_if_needed("comment", get_user_from_request($req_id), $req_name, $content, $req_id);
+    $md_content = try_get("md");
+    if ($md_content)
+    {
+        send_notifications_if_needed("comment", get_user_from_request($req_id), $req_name, $md_content, $req_id, TRUE /*is_markdown*/);
+    }
+    else
+    {
+        send_notifications_if_needed("comment", get_user_from_request($req_id), $req_name, $content, $req_id, FALSE /*is_markdown*/);
+    }
 
     // Need to get the ID of this comment to add it to the activity table
     $query = "SELECT `id` FROM request_comments WHERE `req_id`=$req_id AND `user_id`=$userid AND `content`='$content' ORDER BY `timestamp` DESC";
@@ -741,7 +749,7 @@ function update_admin_comment($req_id, $content, $requester)
     }
 
     // Failure to send notificactions won't be considered a failure
-    send_notifications_if_needed("comment", $requester, $req_name, $content, $req_id);
+    send_notifications_if_needed("comment", $requester, $req_name, $content, $req_id, FALSE /*is_markdown*/);
     return json_success();
 }
 
@@ -812,14 +820,15 @@ function update_req_status($req_id, $status, $requester)
 
     $status_str = array("Pending", "Approved", "Denied", "In Progress", "Waiting")[$status];
 
-    send_notifications_if_needed("status", $requester, $req_name, $status_str, $req_id);
+    send_notifications_if_needed("status", $requester, $req_name, $status_str, $req_id, FALSE /*is_markdown*/);
     return json_success();
 }
+
 
 /// <summary>
 /// Send email and text notifications if the user has requested them
 /// </summary>
-function send_notifications_if_needed($type, $requester, $req_name, $content, $req_id)
+function send_notifications_if_needed($type, $requester, $req_name, $content, $req_id, $is_markdown)
 {
     if ($type != "create" && $requester->id == $_SESSION['id'] && $_SESSION['level'] != 100)
     {
@@ -831,10 +840,39 @@ function send_notifications_if_needed($type, $requester, $req_name, $content, $r
     switch ($type)
     {
         case "comment":
-            $text = "A comment has been added to your request for " . $req_name . ":\n\t" . $content . "\n\nhttps://plex.danrahn.com/request.php?id=" . $req_id;
-            $email .= "<div>A comment has been added to your request for " . $req_name . ":\n" . $content . "</div><br />";
-            $email .= "<br />View your request here: https://plex.danrahn.com/request.php?id=" . $req_id;
-            $email .= "</div></body></html>";
+            if ($is_markdown)
+            {
+                $text = "A comment has been added to your request for " . $req_name . ". See it here: https://plex.danrahn.com/request.php?id=" . $req_id;
+            }
+            else
+            {
+                $text = "A comment has been added to your request for " . $req_name . ":\n\t" . $content . "\n\nhttps://plex.danrahn.com/request.php?id=" . $req_id;
+            }
+
+            // Emails have more formatting and also displays markdown correctly
+            $style_noise = 'url("https://danrahn.com/plex/res/noise.8b05ce45d0df59343e206bc9ae78d85d.png")';
+            $email_style = '<style>.markdownEmailContent { background: rgba(0,0,0,0) ' . $style_noise . ' repeat scroll 0% 0%; ';
+            $email_style .= 'color: #c1c1c1 !important; border: 5px solid #919191; } ';
+            $email_style .= '.md { color: #c1c1c1 !important; } ';
+            $email_style .= '.h1Title { margin-top: 0; padding: 20px; border-bottom: 5px solid #919191; } ';
+            $email_style .= '</style>';
+
+            $body_background = "url('https://danrahn.com/plex/res/preset-light.770a0981b66e038d3ffffbcc4f5a26a4.png')";
+
+            $subheader = '<h3 style="padding: 0 20px 0 20px;">A comment has been added to your request for ' . $req_name . ':</h3>';
+
+            $email = '<html><head><style>' . file_get_contents("style/markdown.css") . '</style>';
+            $email .= $email_style;
+            $email .= '</head><body style="background-image: ' . $body_background . '; background-size: cover;">';
+            $email .=   '<div class="markdownEmailContent">';
+            $email .=     '<h1 class="h1Title">New Comment</h1>';
+            $email .=     $subheader;
+            $email .=     '<div class="md" style="padding: 0 20px 20px 20px"><div style="padding-left: 20px">';
+            $email .=        $content;
+            $email .=     '</div><br>';
+            $email .=     "View your request <a href='https://plex.danrahn.com/request.php?id=" . $req_id . "'>here</a>.";
+            $email .=   '</div>';
+            $email .= '</div></body></html>';
             break;
         case "status":
             $text = "The status of your request has changed:\nRequest: " . $req_name . "\nStatus: " . $content . "\n\nhttps://plex.danrahn.com/request.php?id=" . $req_id;
