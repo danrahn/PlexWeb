@@ -1794,12 +1794,7 @@ class Markdown {
             return -1;
         }
 
-        // Require inline blocks to be on a single line. Not all parsers have this
-        // restriction, but if someone is trying to inline a lot of code, they're
-        // probably better off using a code block anyway.
-        // Should probably revisit though. Multiline stuff can be useful in more general
-        // cases. Instead of a single newline breaking this, a double newline will.
-        let lineEnd = this._indexOrLast('\n', start);
+        let lineEnd = this._indexOrLast('\n\n', start);
         let end = this.text.indexOf(findStr, start + 1);
 
         if (end == -1)
@@ -1810,6 +1805,13 @@ class Markdown {
         end += findStr.length;
 
         if (end > lineEnd || end > this.currentRun.end)
+        {
+            return -1;
+        }
+
+        // To distinguish from potential multiline backtick blocks, ensure
+        // that if we do have newlines, there is some content before the end
+        if (/\n *$/.test(this.text.substring(start, end - findStr.length)))
         {
             return -1;
         }
@@ -2938,7 +2940,7 @@ class Run
             }
         }
 
-        logWarn("We shouldn't be able to get here");
+        return 0;
     }
 
 
