@@ -130,7 +130,10 @@ const testBold = function()
             divWrap('<strong><strong>Different</strong> <strong>Nest</strong> Patterns</strong>')
         ],
         ['__**Bold^2**__', divWrap('<strong><strong>Bold^2</strong></strong>')],
-        ['__**Bold?__**', divWrap('<strong>**Bold?</strong>**')]
+        ['__**Bold?__**', divWrap('<strong>**Bold?</strong>**')],
+        ['**Multiline\nSupport**', divWrap('<strong>Multiline<br>Support</strong>')],
+        ['**More\nThan\nTwo**', divWrap('<strong>More<br>Than<br>Two</strong>')],
+        ['**Double\n\nNewline**', divWrap('**Double') + divWrap("Newline**")]
     );
 
     testCore(testStrings);
@@ -141,7 +144,7 @@ const testItalic = function()
     logInfo('Testing Basic Italic Functionality');
     let testStrings = buildTests(
         ['*This is italic text*', divWrap('<em>This is italic text</em>')],
-        ['* This is not italic text*', divWrap('* This is not italic text*')],
+        ['* This is not italic text*', '<ul><li>This is not italic text*</li></ul>'],
         ['Mismatched *italic *Tags*', divWrap('Mismatched *italic <em>Tags</em>')],
         [
             '**Different* *Nest* Patterns*',
@@ -155,7 +158,10 @@ const testItalic = function()
             divWrap('<em><em>Different</em> <em>Nest</em> Patterns</em>')
         ],
         ['_*italic^2*_', divWrap('<em><em>italic^2</em></em>')],
-        ['_*italic?_*', divWrap('<em>*italic?</em>*')]
+        ['_*italic?_*', divWrap('<em>*italic?</em>*')],
+        ['_Multiline\nSupport_', divWrap('<em>Multiline<br>Support</em>')],
+        ['_More\nThan\nTwo_', divWrap('<em>More<br>Than<br>Two</em>')],
+        ['_Double\n\nNewline_', divWrap('_Double') + divWrap("Newline_")]
     );
 
     testCore(testStrings);
@@ -172,7 +178,10 @@ const testStrikethrough = function()
         [
             '~~~~Different~~ ~~Nest~~ Patterns~~',
             divWrap('<s><s>Different</s> <s>Nest</s> Patterns</s>')
-        ]
+        ],
+        ['~~Multiline\nSupport~~', divWrap('<s>Multiline<br>Support</s>')],
+        ['~~More\nThan\nTwo~~', divWrap('<s>More<br>Than<br>Two</s>')],
+        ['~~Double\n\nNewline~~', divWrap('~~Double') + divWrap("Newline~~")]
     );
 
     testCore(testStrings);
@@ -190,7 +199,10 @@ const testUnderline = function()
         [
             '++++Different++ ++Nest++ Patterns++',
             divWrap('<ins><ins>Different</ins> <ins>Nest</ins> Patterns</ins>')
-        ]
+        ],
+        ['++Multiline\nSupport++', divWrap('<ins>Multiline<br>Support</ins>')],
+        ['++More\nThan\nTwo++', divWrap('<ins>More<br>Than<br>Two</ins>')],
+        ['++Double\n\nNewline++', divWrap('++Double') + divWrap("Newline++")]
     );
 
     testCore(testStrings);
@@ -261,7 +273,7 @@ const testCore = function(testStrings)
         }
         else
         {
-            logWarn(`    FAIL! Input: [${str.input}]\n\tExpected: [${str.expected}]\n\tActual: [${result}]`);
+            logWarn(`    FAIL! Input: [${str.input}]\n\tExpected: [${str.expected}]\n\tActual:   [${result}]`);
         }
     });
     g_logLevel = logSav;

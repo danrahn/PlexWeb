@@ -959,6 +959,7 @@ class Markdown {
         //  An opening separator run must be preceeded by whitespace and end with non-whitespace
         // A closing separator run must be preceded by non-whitespace and end with whitespace
         let inline = false;
+        let newline = false;
         for (; separators != 0 && separatorIndex < blockEnd; ++separatorIndex)
         {
             if (this.text[separatorIndex] == '`' && !this._isEscaped(separatorIndex))
@@ -970,6 +971,20 @@ class Markdown {
             {
                 continue;
             }
+
+            if (this.text[separatorIndex] == '\n')
+            {
+                if (newline)
+                {
+                    // double newline, inline element can't continue
+                    return false;
+                }
+
+                newline = true;
+                continue;
+            }
+
+            newline = false;
 
             if (this.text[separatorIndex] != sep || this._isEscaped(separatorIndex))
             {
@@ -1139,6 +1154,7 @@ class Markdown {
         // currently don't allow these annotations to span multiple lines. If that
         // changes, this will have to change as well.
         let inline = false;
+        let newline = false;
         for (; separators != 0 && separatorIndex < blockEnd; ++separatorIndex)
         {
             if (this.text[separatorIndex] == '`' && !this._isEscaped(separatorIndex))
@@ -1150,6 +1166,20 @@ class Markdown {
             {
                 continue;
             }
+
+            if (this.text[separatorIndex] == '\n')
+            {
+                if (newline)
+                {
+                    // double newline, inline element can't continue
+                    return false;
+                }
+
+                newline = true;
+                continue;
+            }
+
+            newline = false;
 
             if (this.text[separatorIndex] != sep || this._isEscaped(separatorIndex))
             {
@@ -2756,22 +2786,19 @@ class Run
                 // We're at the start of the block, only add a break under certain conditions
                 if (shouldAdd(this.state, previousRun))
                 {
-                    this._insertBreak(newline);
-                    ++cBreaks;
+                    cBreaks += this._insertBreak(newline);
                 }
             }
             else if (atBottom)
             {
                 if (shouldAdd(this.state, nextRun))
                 {
-                    this._insertBreak(newline);
-                    ++cBreaks;
+                    cBreaks += this._insertBreak(newline);
                 }
             }
             else
             {
-                this._insertBreak(newline);
-                ++cBreaks;
+                cBreaks += this._insertBreak(newline);
             }
 
             // Second break (or first, depending on the state above)
@@ -2781,22 +2808,19 @@ class Run
                 {
                     if (cNewlines > 2 || shouldAdd(this.state, previousRun))
                     {
-                        this._insertBreak(newline + 1);
-                        ++cBreaks;
+                        cBreaks += this._insertBreak(newline + 1);
                     }
                 }
                 else if (atBottom)
                 {
                     if (cNewlines > 2 || shouldAdd(this.state, nextRun))
                     {
-                        this._insertBreak(newline + 1);
-                        ++cBreaks;
+                        cBreaks += this._insertBreak(newline + 1);
                     }
                 }
                 else
                 {
-                    this._insertBreak(newline + 1);
-                    ++cBreaks;
+                    cBreaks += this._insertBreak(newline + 1);
                 }
             }
 
@@ -2883,19 +2907,38 @@ class Run
         if (this.innerRuns.length == 0 || this.innerRuns[0].start >= index)
         {
             this.innerRuns.splice(0, 0, new Break(index));
-            return;
+            return 1;
         }
 
-        for (let i = 0; i < this.innerRuns.length; ++i)
+        if (index >= this.innerRuns[this.innerRuns.length - 1].end)
+        {
+            this.innerRuns.push(new Break(index));
+            return 1;
+        }
+
+        for (let i = 1; i < this.innerRuns.length; ++i)
         {
             if (this.innerRuns[i].start >= index)
             {
+                if (index < this.innerRuns[i - 1].end)
+                {
+                    // Some inline elements can extend multiple lines. If we're
+                    // in the middle of one, don't add it and let the inline
+                    // element do it itself.
+                    if (this.innerRuns[i - 1].isBlockElement())
+                    {
+                        logWarn("Only inline elements should be hitting this");
+                    }
+
+                    return 0;
+                }
+
                 this.innerRuns.splice(i, 0, new Break(index));
-                return;
+                return 1;
             }
         }
 
-        this.innerRuns.push(new Break(index));
+        logWarn("We shouldn't be able to get here");
     }
 
 
@@ -3281,7 +3324,7 @@ class Image extends Run
     constructor(start, end, altText, url, width, height, parent)
     {
         super(State.Image, start, end, parent);
-        this.altText = altText;
+        this.altText = altText.substring(1);
         this.url = url;
         this.width = width;
         this.height = height;
@@ -3300,7 +3343,7 @@ class Image extends Run
             return '';
         }
 
-        let base = `<img src="${encodeURI(this.url)}" altText=${super.transform(this.altText)}`;
+        let base = `<img src="${encodeURI(this.url)}" altText="${super.transform(this.altText)}"`;
 
         let widthP = false;
         if (this.width.endsWith('px'))
@@ -3376,7 +3419,7 @@ class CodeBlock extends Run
     {
         line = line.toString();
         line += ' '.repeat(pad - line.length);
-        return `<span class='codeLineNumber'>${line}</span>`;
+        return `<span class="codeLineNumber">${line}</span>`;
     }
 }
 
@@ -3512,7 +3555,20 @@ class InlineCodeRun extends Run
     tag(end) { return Run.basicTag('code', end); }
 }
 
-class Bold extends Run
+class InlineFormat extends Run
+{
+    constructor(state, start, end, parent)
+    {
+        super(state, start, end, parent);
+    }
+
+    transform(newText, side)
+    {
+        return super.transform(newText).replace(/\n/g, '<br>');
+    }
+}
+
+class Bold extends InlineFormat
 {
     constructor(start, end, parent)
     {
@@ -3525,7 +3581,7 @@ class Bold extends Run
     tag(end) { return Run.basicTag('strong', end); }
 }
 
-class Italic extends Run
+class Italic extends InlineFormat
 {
     constructor(start, end, parent)
     {
@@ -3538,7 +3594,7 @@ class Italic extends Run
     tag(end) { return Run.basicTag('em', end); }
 }
 
-class Underline extends Run
+class Underline extends InlineFormat
 {
     constructor(start, end, parent)
     {
@@ -3551,7 +3607,7 @@ class Underline extends Run
     tag(end) { return Run.basicTag('ins', end); }
 }
 
-class Strikethrough extends Run
+class Strikethrough extends InlineFormat
 {
     constructor(start, end, parent)
     {
