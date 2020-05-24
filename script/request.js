@@ -1031,6 +1031,14 @@ window.addEventListener("load", function()
             let fixedupContent = new Markdown().parse(comment.content);
 
             let content = buildNode("div", {"class" : "commentContent md"}, fixedupContent);
+            if (parseInt(comment.editable) == 1 && isAdmin())
+            {
+                let editTools = buildNode('div', {'class' : 'commentEdit', 'commentId' : comment.id });
+
+                editTools.appendChild(commentAction('Edit', editComment));
+                editTools.appendChild(commentAction('Delete', deleteComment));
+                content.appendChild(editTools);
+            }
 
             info.appendChild(name);
             info.appendChild(date);
@@ -1040,5 +1048,26 @@ window.addEventListener("load", function()
 
             container.appendChild(holder);
         }
+    }
+
+    function editComment()
+    {
+        logVerbose('Editing comment ' + this.parentNode.getAttribute('commentId'));
+    }
+
+    function deleteComment()
+    {
+        logVerbose('Deleting comment ' + this.parentNode.getAttribute('commentId'));
+    }
+
+    function commentAction(action, fn)
+    {
+        let holder = buildNode('div', {'class' : 'commentAction'}, 0, { 'click' : fn });
+        let actionString = action + ' Comment';
+        let img = buildNode('img', {'src' : action + '.svg', 'title' : actionString, 'alt' : actionString});
+        let text = buildNode('span', {}, action);
+        holder.appendChild(img);
+        holder.appendChild(text);
+        return holder;
     }
 });
