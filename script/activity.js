@@ -135,7 +135,7 @@ function buildActivities(response)
         let tooltipDateOptions = { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: 'numeric' };
         let activityTime = buildNode("span",
             {"title" : new Date(activity.timestamp).toLocaleDateString('en-US', tooltipDateOptions)},
-            getDisplayDate(new Date(activity.timestamp)));
+            DateUtil.getDisplayDate(new Date(activity.timestamp)));
 
         textHolder.appendChild(span);
         textHolder.appendChild(activityTime);

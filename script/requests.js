@@ -104,11 +104,11 @@ function buildRequest(request, sortOrder)
 
     let requestDate = buildNode("span",
         {"title" : new Date(request.rd).toLocaleDateString('en-US', tooltipDateOptions)},
-        `Requested: ${getDisplayDate(new Date(request.rd))}`);
+        `Requested: ${DateUtil.getDisplayDate(new Date(request.rd))}`);
 
     let updateDate = buildNode("span",
         {"title" : new Date(request.ad).toLocaleDateString('en-US', tooltipDateOptions)},
-        `Last Update: ${getDisplayDate(new Date(request.ad))}`);
+        `Last Update: ${DateUtil.getDisplayDate(new Date(request.ad))}`);
 
     let requester = buildNode("span", {}, `Requested By: ${request.r}`);
 

@@ -1009,10 +1009,12 @@ window.addEventListener("load", function()
             let comment = comments[i];
             let holder = buildNode("div", {"class" : "commentHolder"});
             let info = buildNode("div", {"class" : "commentInfo"});
-            let name = buildNode("span", {}, comment[0])
+            let name = buildNode("span", {}, comment.user)
 
-            let date = buildNode("span", {},
-                new Date(comment[2]).toLocaleDateString("en-US",
+            let dateObj = new Date(comment.time);
+            let date = buildNode("span",
+                {
+                    'title' : dateObj.toLocaleDateString("en-US",
                     options={
                         year: "2-digit",
                         month: "numeric",
@@ -1021,10 +1023,12 @@ window.addEventListener("load", function()
                         minute: "numeric",
                         second: "numeric" 
                     })
+                },
+                DateUtil.getDisplayDate(dateObj)
                 );
 
             // Try the new markdown parser
-            let fixedupContent = new Markdown().parse(comment[1]);
+            let fixedupContent = new Markdown().parse(comment.content);
 
             let content = buildNode("div", {"class" : "commentContent md"}, fixedupContent);
 

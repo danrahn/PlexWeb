@@ -636,13 +636,14 @@ function get_request_comments($req_id)
         return json_error("bad request id");
     }
 
+    $uid = $_SESSION['id'];
     $req_userid = (int)$result->fetch_row()[0];
-    if ($_SESSION['level'] < 100 && $_SESSION['id'] != $req_userid)
+    if ($_SESSION['level'] < 100 && $uid != $req_userid)
     {
         return json_error("Not Authorized");
     }
 
-    $query = "SELECT u.username AS user, c.content AS content, c.timestamp AS time FROM `request_comments` c INNER JOIN `users` u ON c.user_id=u.id WHERE c.req_id=$req_id ORDER BY c.timestamp ASC";
+    $query = "SELECT u.username AS user, c.content AS content, c.timestamp AS time, u.id=$uid AS editable FROM `request_comments` c INNER JOIN `users` u ON c.user_id=u.id WHERE c.req_id=$req_id ORDER BY c.timestamp ASC";
     $result = $db->query($query);
     if ($result === FALSE)
     {
@@ -650,7 +651,8 @@ function get_request_comments($req_id)
     }
 
     $rows = array();
-    while ($r = $result->fetch_row())
+
+    while ($r = $result->fetch_assoc())
     {
         $rows[] = $r;
     }
