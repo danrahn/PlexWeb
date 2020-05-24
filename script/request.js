@@ -349,7 +349,7 @@ window.addEventListener("load", function()
             return;
         }
 
-        let comment = $('#newComment');
+        let comment = this;
         let start = comment.selectionStart;
         let lastNewline = comment.value.lastIndexOf('\n', start);
         let spaces = ' '.repeat(4 - (start - (lastNewline + 1)) % 4);
@@ -999,19 +999,36 @@ window.addEventListener("load", function()
         sendHtmlJsonRequest("process_request.php", params, successFunc, failureFunc, { "textSav" : text});
     }
 
+    let commentCache = {};
     function buildComments(comments)
     {
+        commentCache = {};
         let container = $("#comments");
         container.innerHTML = "";
 
         for (let i = 0; i < comments.length; ++i)
         {
             let comment = comments[i];
-            let holder = buildNode("div", {"class" : "commentHolder"});
+            let holder = buildNode("div", {"id" : "holder" + comment.id, "class" : "commentHolder"});
             let info = buildNode("div", {"class" : "commentInfo"});
-            let name = buildNode("span", {}, comment.user)
+            let name = buildNode("span", {'class' : 'commentAuthor'}, comment.user)
 
             let dateObj = new Date(comment.time);
+            let editTitle = '';
+            if (comment.last_edit)
+            {
+                editTitle = ' (edited ' +
+                    new Date(comment.last_edit).toLocaleDateString("en-US",
+                        options={
+                            year: "2-digit",
+                            month: "numeric",
+                            day : "numeric",
+                            hour: "numeric",
+                            minute: "numeric",
+                            second: "numeric" 
+                        }) + ')';
+            }
+
             let date = buildNode("span",
                 {
                     'title' : dateObj.toLocaleDateString("en-US",
@@ -1022,23 +1039,17 @@ window.addEventListener("load", function()
                         hour: "numeric",
                         minute: "numeric",
                         second: "numeric" 
-                    })
+                    }) + editTitle
                 },
-                DateUtil.getDisplayDate(dateObj)
+                DateUtil.getDisplayDate(dateObj) + (editTitle ? '*' : '')
             );
+
+            commentCache[comment.id] = comment.content;
 
             // Try the new markdown parser
             let fixedupContent = new Markdown().parse(comment.content);
 
             let content = buildNode("div", {"class" : "commentContent md"}, fixedupContent);
-            if (parseInt(comment.editable) == 1 && isAdmin())
-            {
-                let editTools = buildNode('div', {'class' : 'commentEdit', 'commentId' : comment.id });
-
-                editTools.appendChild(commentAction('Edit', editComment));
-                editTools.appendChild(commentAction('Delete', confirmDeleteComment));
-                content.appendChild(editTools);
-            }
 
             info.appendChild(name);
             info.appendChild(date);
@@ -1046,15 +1057,129 @@ window.addEventListener("load", function()
             holder.appendChild(info);
             holder.appendChild(content);
 
+            if (parseInt(comment.editable) == 1)
+            {
+                let editTools = buildNode('div', {'class' : 'commentEdit', 'commentId' : comment.id });
+
+                editTools.appendChild(commentAction('Edit', editComment));
+                editTools.appendChild(commentAction('Delete', confirmDeleteComment));
+                holder.appendChild(editTools);
+            }
+
             container.appendChild(holder);
         }
     }
 
+    /// <summary>
+    /// Launches the comment edit UI.
+    /// </summary>
     function editComment()
     {
-        logVerbose('Editing comment ' + this.parentNode.getAttribute('commentId'));
+        let commentId = this.parentNode.getAttribute('commentId');
+        if ($(`#editor${commentId}`))
+        {
+            // We're already editing
+            return;
+        }
+
+        let raw = commentCache[commentId];
+        if (!raw)
+        {
+            overlay('Something went wrong. Please try again later.', 'OK', overlayDismiss);
+        }
+
+        let holder = $(`#holder${commentId}`);
+
+        let buttonHolder = buildNode('div', { 'style' : 'float: left; padding: 3px' });
+        let okay = commentAction('Save', submitCommentEdit);
+        let cancel = commentAction('Cancel', function() { dismissEdit(this.getAttribute('commentId')); });
+        okay.setAttribute('commentId', commentId);
+        cancel.setAttribute('commentId', commentId);
+        buttonHolder.appendChild(okay);
+        buttonHolder.appendChild(cancel);
+        holder.insertBefore(buildNode('hr', {'style' : 'clear: both; margin: 0; height: 5px; border: none; border-bottom: 1px solid #616161'}), holder.children[1]);
+        holder.insertBefore(buttonHolder, holder.children[1]);
+
+        let editor = buildNode(
+            'textarea',
+            {'id' : 'editor' + commentId, 'class' : 'commentEditor', 'placeholder' : 'Edit comment...'},
+            raw,
+            {
+                'change' : parseEditMarkdown,
+                'keyup' : parseEditMarkdown,
+                'keydown' : captureTab
+            });
+        holder.insertBefore(editor, holder.children[1]);
+
+        editor.style.height = (editor.scrollHeight + 20) + 'px';
+        editor.focus();
     }
 
+    let mdEdit = new Markdown();
+    let editCur = '';
+    function parseEditMarkdown()
+    {
+        let sameEdit = true;
+        if (this.id != editCur)
+        {
+            editCur = this.id;
+            sameEdit = false;
+        }
+
+        let holder = this.parentNode;
+        const text = this.value;
+        let html = mdEdit.parse(this.value);
+        if (!sameEdit || !mdEdit.sameText)
+        {
+            this.parentNode.querySelector('.commentContent').innerHTML = html;
+        }
+    }
+
+    /// <summary>
+    /// Dismiss the comment edit controls and replaces the comment content
+    /// with our latest cached value.
+    /// </summary>
+    function dismissEdit(id)
+    {
+        let parent = $(`#holder${id}`);
+        parent.removeChild(parent.children[1]); // textarea
+        parent.removeChild(parent.children[1]); // buttons
+        parent.removeChild(parent.children[1]); // hr
+        parent.querySelector('.commentContent').innerHTML = new Markdown().parse(commentCache[id]);
+    }
+
+    /// <summary>
+    /// Submit the edited comment, as long as it's different than our cached value
+    /// </summary>
+    function submitCommentEdit()
+    {
+        let commentId = this.getAttribute('commentId');
+        let content = $(`#editor${commentId}`).value;
+        if (content == commentCache[commentId])
+        {
+            dismissEdit(commentId);
+            return;
+        }
+
+        let params = { 'type' : 'edit_comment', 'id' : commentId, 'content' : content };
+        let successFunc = function(response, request)
+        {
+            commentCache[request.commentId] = $(`#editor${request.commentId}`).value;
+            dismissEdit(request.commentId);
+        };
+
+        let failureFunc = function(response, request)
+        {
+            overlay(response.Error, 'OK', overlayDismiss);
+            dismissEdit(request.commentId);
+        };
+
+        sendHtmlJsonRequest("process_request.php", params, successFunc, failureFunc, { "commentId" : commentId});
+    }
+
+    /// <summary>
+    /// Ask the user if they're sure they want to delete their comment before actually doing it
+    /// </summary>
     function confirmDeleteComment(e)
     {
         // Make sure we're not already in a confirm situation
@@ -1083,7 +1208,10 @@ window.addEventListener("load", function()
         this.appendChild(confirmHolder);
     }
 
-    function cancelDelete(e)
+    /// <summary>
+    /// The user canceled the delete operation, remove the 'Are you sure' text
+    /// </summary>
+    function cancelDelete()
     {
         let grandparent = this.parentNode.parentNode;
         grandparent.removeChild(grandparent.children[grandparent.children.length - 1]);
@@ -1116,6 +1244,10 @@ window.addEventListener("load", function()
         sendHtmlJsonRequest("process_request.php", params, successFunc, failureFunc, { "commentId" : commentId });
     }
 
+    /// <summary>
+    /// Returns a comment action "button" with the icon an text based on the given
+    /// action string, executing the given function callback when clicked
+    /// </summary>
     function commentAction(action, fn)
     {
         let holder = buildNode('div', {'class' : 'commentAction'}, 0, { 'click' : fn });

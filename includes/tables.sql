@@ -50,10 +50,11 @@ CREATE TABLE `request_comments` (
  `user_id` int(11) NOT NULL,
  `content` text COLLATE utf8_unicode_ci NOT NULL,
  `timestamp` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ `last_edit` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
  PRIMARY KEY (`id`),
  KEY `req_id` (`req_id`),
  CONSTRAINT `request_comments_ibfk_1` FOREIGN KEY (`req_id`) REFERENCES `user_requests` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci
+) ENGINE=InnoDB AUTO_INCREMENT=143 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci
 
 CREATE TABLE `ip_cache` (
  `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -146,8 +147,11 @@ CREATE TABLE `password_reset` (
 ) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci
 
 # Triggers
-CREATE TRIGGER `UpdateCommentCount` AFTER INSERT ON `request_comments`
+CREATE TRIGGER `IncrementCommentCount` AFTER INSERT ON `request_comments`
  FOR EACH ROW UPDATE user_requests r SET r.comment_count=r.comment_count+1 WHERE r.id=NEW.req_id
+
+CREATE TRIGGER `DecrementCommentCount` AFTER INSERT ON `request_comments`
+ FOR EACH ROW UPDATE user_requests r SET r.comment_count=r.comment_count-1 WHERE r.id=NEW.req_id
 
  CREATE TRIGGER `DeleteActivities` BEFORE DELETE ON `request_comments`
  FOR EACH ROW DELETE FROM activities WHERE type=2 AND JSON_EXTRACT(data, "$.comment_id")=OLD.id

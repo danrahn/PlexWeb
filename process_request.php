@@ -128,6 +128,9 @@ function process_request($type)
         case "delete_comment":
             $message = delete_comment((int)get("comment_id"));
             break;
+        case "edit_comment":
+            $message = edit_comment((int)get("id"), get("content"));
+            break;
         default:
             return json_error("Unknown request type: " . $type);
     }
@@ -646,7 +649,7 @@ function get_request_comments($req_id)
         return json_error("Not Authorized");
     }
 
-    $query = "SELECT u.username AS user, c.content AS content, c.timestamp AS time, u.id=$uid AS editable, c.id AS id FROM `request_comments` c INNER JOIN `users` u ON c.user_id=u.id WHERE c.req_id=$req_id ORDER BY c.timestamp ASC";
+    $query = "SELECT u.username AS user, c.content AS content, c.timestamp AS time, u.id=$uid AS editable, c.id AS id, c.last_edit AS last_edit FROM `request_comments` c INNER JOIN `users` u ON c.user_id=u.id WHERE c.req_id=$req_id ORDER BY c.timestamp ASC";
     $result = $db->query($query);
     if ($result === FALSE)
     {
@@ -2313,21 +2316,31 @@ function forgot_password_admin($username, $email)
     return json_success();
 }
 
+function can_modify_comment($comment_id)
+{
+    global $db;
+    $result = $db->query("SELECT user_id FROM request_comments WHERE id=$comment_id");
+    if (!$result || $result->num_rows == 0)
+    {
+        return FALSE;
+    }
+
+    $uid = $_SESSION['id'];
+    $cuid = $result->fetch_row()[0];
+    if ($cuid != $uid)
+    {
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
 function delete_comment($comment_id)
 {
     global $db;
 
     // First, make sure the user is allowed to delete this comment
-    $uid = (int)$_SESSION["id"];
-    $query = "SELECT user_id FROM request_comments WHERE id=$comment_id";
-    $result = $db->query($query);
-    if (!$result || $result->num_rows == 0)
-    {
-        return json_error("Something went wrong, please try again later.");
-    }
-
-    $cuid = $result->fetch_row()[0];
-    if ($cuid != $uid)
+    if (!can_modify_comment($comment_id))
     {
         return json_error("You don't have permission to delete that comment!");
     }
@@ -2336,6 +2349,25 @@ function delete_comment($comment_id)
     if (!$result)
     {
         return db_error();
+    }
+
+    return json_success();
+}
+
+function edit_comment($comment_id, $content)
+{
+    global $db;
+
+    if (!can_modify_comment($comment_id))
+    {
+        return json_error("You don't have permission to edit that comment!");
+    }
+
+    $comment = $db->real_escape_string($content);
+    $result = $db->query("UPDATE request_comments SET content='$comment' WHERE id=$comment_id");
+    if (!$result)
+    {
+        return json_error("Something went wrong, please try again later");
     }
 
     return json_success();
