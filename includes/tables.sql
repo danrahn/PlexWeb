@@ -149,6 +149,9 @@ CREATE TABLE `password_reset` (
 CREATE TRIGGER `UpdateCommentCount` AFTER INSERT ON `request_comments`
  FOR EACH ROW UPDATE user_requests r SET r.comment_count=r.comment_count+1 WHERE r.id=NEW.req_id
 
+ CREATE TRIGGER `DeleteActivities` BEFORE DELETE ON `request_comments`
+ FOR EACH ROW DELETE FROM activities WHERE type=2 AND JSON_EXTRACT(data, "$.comment_id")=OLD.id
+
  CREATE TRIGGER `create_user_info` AFTER INSERT ON `users`
  FOR EACH ROW INSERT INTO user_info (userid, firstname, lastname, email, email_alerts, phone, phone_alerts, carrier)
     VALUES (NEW.id, '', '', '', 0, 0, 0, 'verizon')

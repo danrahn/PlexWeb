@@ -8,6 +8,15 @@ let DateUtil =
     {
         let now = new Date();
         let dateDiff = Math.abs(now - date);
+        if (dateDiff < 15000)
+        {
+            return 'Just Now';
+        }
+        else if (dateDiff < 60000)
+        {
+            return `${Math.floor(dateDiff / 1000)} seconds ago`;
+        }
+
         let minuteDiff = dateDiff / (1000 * 60);
         if (minuteDiff < 60)
         {

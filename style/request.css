@@ -382,6 +382,14 @@ a:hover {
     vertical-align: text-bottom;
 }
 
+.deleteConfirm:hover {
+    color: #C14141;
+}
+
+.deleteCancel:hover {
+    color: #c1c1c1;
+}
+
 
 @media (orientation: landscape), (min-width: 767px) {
     #innerInfoContainer {
@@ -438,7 +446,7 @@ a:hover {
     }
 
     #commentsHolder {
-        overflow: auto;
+        overflow: initial;
         float: left;
         padding: 20px;
         margin-left: 60px;

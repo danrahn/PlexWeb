@@ -125,6 +125,9 @@ function process_request($type)
         case "forgot_password_admin":
             $message = forgot_password_admin(get("username"), get("email"));
             break;
+        case "delete_comment":
+            $message = delete_comment((int)get("comment_id"));
+            break;
         default:
             return json_error("Unknown request type: " . $type);
     }
@@ -2306,6 +2309,34 @@ function forgot_password_admin($username, $email)
 
     $message = "Hello, $username. You recently requested a password reset at plex.danrahn.com. Click the following link to reset your password: https://plex.danrahn.com/reset?token=$token\n\nIf you did not request a password reset, you can ignore this message.";
     send_email_forget($email, $message, "Password Reset");
+
+    return json_success();
+}
+
+function delete_comment($comment_id)
+{
+    global $db;
+
+    // First, make sure the user is allowed to delete this comment
+    $uid = (int)$_SESSION["id"];
+    $query = "SELECT user_id FROM request_comments WHERE id=$comment_id";
+    $result = $db->query($query);
+    if (!$result || $result->num_rows == 0)
+    {
+        return json_error("Something went wrong, please try again later.");
+    }
+
+    $cuid = $result->fetch_row()[0];
+    if ($cuid != $uid)
+    {
+        return json_error("You don't have permission to delete that comment!");
+    }
+
+    $result = $db->query("DELETE FROM request_comments WHERE id=$comment_id");
+    if (!$result)
+    {
+        return db_error();
+    }
 
     return json_success();
 }

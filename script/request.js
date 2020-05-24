@@ -612,9 +612,9 @@ window.addEventListener("load", function()
         if (!selectedSuggestion)
         {
             let button = $("#matchContinue");
-            let color = new Color(button.getComputedStyle.backgroundColor, 500);
-            Animation.queue({"backgroundColor" : new Color(100, 66, 69)}, button);
-            Animation.queueDelayedAnimation({"backgroundColor" : color}, button, 500, 500, true);
+            let color = new Color(button.getComputedStyle.backgroundColor);
+            Animation.queue({"backgroundColor" : new Color(100, 66, 69)}, button, 500);
+            Animation.queueDelayed({"backgroundColor" : color}, button, 500, 500, true);
             return;
         }
 
@@ -1025,7 +1025,7 @@ window.addEventListener("load", function()
                     })
                 },
                 DateUtil.getDisplayDate(dateObj)
-                );
+            );
 
             // Try the new markdown parser
             let fixedupContent = new Markdown().parse(comment.content);
@@ -1036,7 +1036,7 @@ window.addEventListener("load", function()
                 let editTools = buildNode('div', {'class' : 'commentEdit', 'commentId' : comment.id });
 
                 editTools.appendChild(commentAction('Edit', editComment));
-                editTools.appendChild(commentAction('Delete', deleteComment));
+                editTools.appendChild(commentAction('Delete', confirmDeleteComment));
                 content.appendChild(editTools);
             }
 
@@ -1055,15 +1055,73 @@ window.addEventListener("load", function()
         logVerbose('Editing comment ' + this.parentNode.getAttribute('commentId'));
     }
 
+    function confirmDeleteComment(e)
+    {
+        // Make sure we're not already in a confirm situation
+        if (e.target.classList.contains('deleteConfirm') || e.target.classList.contains('deleteCancel'))
+        {
+            return;
+        }
+
+        const commentId = this.parentNode.getAttribute("commentId");
+        this.removeChild(this.childNodes[this.childNodes.length - 1]);
+
+        let confirmHolder = buildNode("span");
+        let confirm = buildNode("span", {}, "Are you sure? ");
+        let confirmYes = buildNode("span",
+            { 'id' : 'confirmDelete' + commentId, 'class' : 'deleteConfirm', 'commentId' : commentId },
+            'Yes',
+            { "click" : deleteComment });
+
+        let confirmMiddle = buildNode("span",{},"&nbsp;/&nbsp;");
+        let confirmCancel = buildNode("span", { "class" : "deleteCancel", "commentId" : commentId }, "Cancel", { "click" : cancelDelete });
+
+        confirmHolder.appendChild(confirm);
+        confirmHolder.appendChild(confirmYes);
+        confirmHolder.appendChild(confirmMiddle);
+        confirmHolder.appendChild(confirmCancel);
+        this.appendChild(confirmHolder);
+    }
+
+    function cancelDelete(e)
+    {
+        let grandparent = this.parentNode.parentNode;
+        grandparent.removeChild(grandparent.children[grandparent.children.length - 1]);
+        grandparent.appendChild(buildNode("span", {}, "Delete"));
+    }
+
+    /// <summary>
+    /// Deletes the specified comment from the request after the
+    /// user has confirmed that they do in fact want to delete the comment
+    /// </summary>
     function deleteComment()
     {
-        logVerbose('Deleting comment ' + this.parentNode.getAttribute('commentId'));
+        const commentId = this.getAttribute('commentId');
+        logVerbose('Deleting comment ' + commentId);
+
+        let params = { 'type' : 'delete_comment', 'comment_id' : commentId };
+        let successFunc = function(response, request)
+        {
+            let ele = $(`#confirmDelete${request.commentId}`);
+            Animation.queue({"color" : new Color(63, 100, 69)}, ele, 250);
+            Animation.queueDelayed({"color" : new Color(63, 66, 69)}, ele, 500, 250);
+            setTimeout(getComments, 1250);
+        };
+
+        let failureFunc = function(response)
+        {
+            overlay(response.Error, 'Okay', overlayDismiss, true /*dismissable*/);
+        };
+
+        sendHtmlJsonRequest("process_request.php", params, successFunc, failureFunc, { "commentId" : commentId });
     }
 
     function commentAction(action, fn)
     {
         let holder = buildNode('div', {'class' : 'commentAction'}, 0, { 'click' : fn });
         let actionString = action + ' Comment';
+
+        // Thanks to css.gg for the 'pen' and 'trash' svg icons
         let img = buildNode('img', {'src' : action + '.svg', 'title' : actionString, 'alt' : actionString});
         let text = buildNode('span', {}, action);
         holder.appendChild(img);
