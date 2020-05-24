@@ -29,7 +29,6 @@
 }
 
 .md pre {
-    /*background: rgba(0, 0, 0, 0.2);*/
     font-size: 0.8rem;
     padding-top: 0.3rem;
     padding-bottom: 0.3rem;
@@ -68,6 +67,9 @@
 
 .md table {
     margin: unset;
+    overflow: auto;
+    display: block;
+    background: none;
 }
 
 .md table, .md thead, .md td {
@@ -85,12 +87,8 @@
 
 .md table {
     width: auto;
-    background-color: rgba(0,0,0,.2);
+    max-width: 100%;
     color: #C1C1C1;
-}
-
-.md table:nth-child(even) {
-    background-color: rgba(0,0,0,0.1);
 }
 
 .md thead {
@@ -101,6 +99,18 @@
 
 .md th {
     background-color: rgba(0,100,0,.2);
+}
+
+.md tr {
+    overflow: auto;
+}
+
+.md tr:nth-child(odd) {
+    background-color: rgba(0,0,0,0.1);
+}
+
+.md tr:nth-child(even) {
+    background-color: rgba(0,0,0,0.3);
 }
 
 .md tr:hover {
