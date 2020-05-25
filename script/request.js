@@ -344,29 +344,67 @@ window.addEventListener("load", function()
     function captureTab(e)
     {
         // It will probably just cause more confusion for people, but we can break out of the textarea if caps lock is on.
-        if (e.keyCode != 9 /*tab*/ || e.ctrlKey || e.shiftKey || e.altKey || e.getModifierState('CapsLock'))
+        if (e.keyCode != 9 /*tab*/ || e.ctrlKey || e.altKey || e.getModifierState('CapsLock'))
         {
             return;
         }
 
         let comment = this;
         let start = comment.selectionStart;
-        let lastNewline = comment.value.lastIndexOf('\n', start);
-        let spaces = ' '.repeat(4 - (start - (lastNewline + 1)) % 4);
+        let startSav = start;
+        let currentSelection = comment.value.substring(start, comment.selectionEnd);
+        let hasSelection = currentSelection.length != 0;
+        let lastNewline = comment.value.lastIndexOf('\n', start - 1);
+
+        let prefixedSpaces = 0;
+        for (let i = lastNewline + 1; i < comment.selectionEnd; ++i, ++prefixedSpaces)
+        {
+            if (comment.value[i] != ' ')
+            {
+                break;
+            }
+        }
+
+        // Always select full lines just to make things easier. Ideally if we aren't selecting
+        // multiple lines and are not at the beginning of the line (or at least at the first
+        // non-whitespace character), we should do a replacement of the current selection instead
+        if (start != lastNewline + 1)
+        {
+            currentSelection = comment.value.substring(lastNewline + 1, start) + currentSelection;
+            start = lastNewline + 1;
+            comment.selectionStart = start;
+        }
+
+        let spaces = '    ';
+        if (prefixedSpaces % 4 != 0)
+        {
+            spaces = ' '.repeat(e.shiftKey ? prefixedSpaces % 4 : 4 - (prefixedSpaces % 4));
+        }
+
+        let newText;
+        if (e.shiftKey)
+        {
+            newText = currentSelection.replace(spaces, '').replace(new RegExp(`\n {0,${spaces.length}}`, 'g'), '\n');
+        }
+        else
+        {
+            newText = spaces + currentSelection.replace(/\n/g, '\n' + spaces);
+        }
 
         // insertText gives us undo support. If it's not available, we can still
         // insert the spaces, but undo will break.
         if (document.queryCommandSupported('insertText'))
         {
-            document.execCommand('insertText', false, spaces);
+            document.execCommand('insertText', false, newText);
         }
         else
         {
-            comment.value = comment.value.substring(0, start) + spaces + comment.value.substring(start);
-            comment.selectionStart = start + spaces.length;
-            comment.selectionEnd = comment.selectionStart;
+            comment.value = comment.value.substring(0, start) + newText + comment.value.substring(comment.selectionEnd);
         }
 
+        let spaceLen = e.shiftKey ? -spaces.length : spaces.length;
+        comment.selectionStart = hasSelection ? start : startSav + spaceLen;
+        comment.selectionEnd = hasSelection ? start + newText.length : comment.selectionStart;
         e.preventDefault();
     }
 
@@ -1111,7 +1149,7 @@ window.addEventListener("load", function()
             });
         holder.insertBefore(editor, holder.children[1]);
 
-        editor.style.height = (editor.scrollHeight + 20) + 'px';
+        editor.style.height = Math.min((editor.scrollHeight + 20), 350) + 'px';
         editor.focus();
     }
 
@@ -1126,8 +1164,6 @@ window.addEventListener("load", function()
             sameEdit = false;
         }
 
-        let holder = this.parentNode;
-        const text = this.value;
         let html = mdEdit.parse(this.value);
         if (!sameEdit || !mdEdit.sameText)
         {
