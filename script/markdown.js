@@ -239,11 +239,6 @@ class Markdown {
 
             switch (this.text[i])
             {
-                case '\n':
-                {
-                    i = this._processNewline(i);
-                    break;
-                }
                 case '#':
                 {
                     i = this._checkHeader(i);
@@ -527,7 +522,7 @@ class Markdown {
 
         let end = this.text.indexOf('\n', start);
         if (end == -1) { end = this.text.length };
-        let header = new Header(start - headingLevel + 1, end, headingLevel, this.currentRun);
+        let header = new Header(start - headingLevel + 1, end, headingLevel, this.text, this.currentRun);
         this.currentRun = header;
         logTmi(`Added header: start=${header.start}, end=${header.end}, level=${header.headerLevel}`);
         return start;
@@ -2381,7 +2376,7 @@ class Run
 
             if (!run.isBlockElement())
             {
-                previousRun = run;
+                // previousRun = run;
                 continue;
             }
 
@@ -2512,15 +2507,6 @@ class Run
                     cBreaks += this._insertBreak(newline + 1);
                 }
             }
-
-            // if (cNewlines > 2 ||
-            //     (cNewlines > 1 &&
-            //         ((!atTop || !previousRun.isBlockElement()) &&
-            //             (!atBottom || !nextRun.isBlockElement()))))
-            // {
-            //     this._insertBreak(newline + 1);
-            //     ++cBreaks;
-            // }
 
             newline = text.indexOf('\n', newline + offset);
         }
@@ -2740,10 +2726,12 @@ class Div extends Run
 
 class Header extends Run
 {
-    constructor(start, end, headerLevel, parent)
+    constructor(start, end, headerLevel, text, parent)
     {
         super(State.Header, start, end, parent);
         this.headerLevel = headerLevel;
+        this.id = text.substring(start, end).trim().toLowerCase();
+        this.id = this.id.replace(/ /g, '-').replace(/[^-_a-zA-Z0-9]/g, '').replace(/^-+/, '').replace(/-+$/, '');
     }
 
     startContextLength()
@@ -2753,7 +2741,12 @@ class Header extends Run
 
     tag(end)
     {
-        return `<${end ? '/' : ''}h${this.headerLevel}>`;
+        if (end)
+        {
+            return `</h${this.headerLevel}>`;
+        }
+
+        return `<h${this.headerLevel} id="${this.id}">`;
     }
 
 
@@ -2927,6 +2920,12 @@ class Url extends Run
         super(State.Url, start, end, parent);
         this.text = text;
         this.url = url;
+
+        // Links within the document should be all lowercase for consistency
+        if (this.url.startsWith('#'))
+        {
+            this.url = this.url.toLowerCase();
+        }
     }
 
     startContextLength() { return 1; }
@@ -3331,6 +3330,6 @@ let _helpMarkdown = new Markdown();
 function markdownHelp()
 {
     // http://www.howtocreate.co.uk/tutorials/jsexamples/syntax/prepareInline.html
-    const helpText = 'Hello! This is my Markdown Parser. It\'s a bit slow, but what do you expect from someone who wrote it from scratch in their spare time?  The following is written with the parser, so anything that works here should work everywhere.\n\n## Parser Status\n\n### Complete\n\n* **Inline Elements**\n  1. **Bold** - `**Bold**` or `__Bold__`\n  2. *Italic* - `*Italic*` or `_Italic_`\n  3. ++Underline++ - `++Underline++`\n  4. ~~Strikethrough~~ - `~~Strikethrough~~`\n  5. ***++~~All Four At Once~~++*** - `***++~~All Four At Once~~++***`\n  6. `Inline Code Snippets` - `` `Inline Code Snippets` ``\n    * Escape backticks by surrounding with more backticks: ```` ```I can escape two backticks (``) with this``` ````\n  7. [Links](markdown.php) - `[Links](markdown.php)`\n    * Links can also be [++*Formatted*++](markdown.php) - `[++*Formatted*++](markdown.php)`\n  8. **Images** - `![Poster w=100](poster\/zxGkno93ExrTMsJVllH6mzQ652z.jpg)`\n    ![Poster w=100](poster\/zxGkno93ExrTMsJVllH6mzQ652z.jpg)\n    * General form: `![AltText w=Width,h=Height](url)`:\n      * `![AltText](url)`\n      * `![AltText w=100](url)`\n      * `![AltText h=100](url)`\n      * `![AltText w=100,h=50](url)`\n\n* **Block Elements**\n  1. `# Header1`, `## Header2`, ... , `###### Header6`\n    ### Header3\n  2. **Code Blocks** - Either indented with four spaces (and a blank line above), or surrounded with three backticks (`` ` ``) or tildes (`~`)\n    ```\n\n        Code Block\n          Note that when nested in a list, the block must be indented 4 + (nestlevel * 2) spaces:\n          1. Level 1\n            * Level 2\n\n                  Code Block\n    ```\n    Or\n\n        ```\n        Code Block\n        ```\n  3. Lists\n    ```\n    3. Ordered lists will start at the first number given\n    6. And always increase by one, regardless of what is written\n    5. I can continue a list item on the next line\n    without indenting\n\n      But if I want to add a line break, it must be indented 2 additional spaces\n      1. Nested lists must be indented 2 spaces from their parent\n        * Ordered and unordered lists can be nested together\n          ~~~\n          Tilde\/Backtick code blocks must start two spaces\n          after the bullet, even if there\'s no line break\n          ~~~\n    ```\n    3. Ordered lists will start at the first number given\n    6. And always increase by one, regardless of what is written\n    5. I can continue a list item on the next line\n    without indenting\n\n      But if I want to add a line break, it must be indented 2 additional spaces\n      1. Nested lists must be indented 2 spaces from their parent\n        * Ordered and unordered lists can be nested together\n          ~~~\n          Tilde\/Backtick code blocks must start two spaces\n          after the bullet, even if there\'s no line break\n          ~~~\n  4. **Block Quotes**\n    ```\n    >A Quote:\n    >> These can be nested\n    >>> By adding more \'>\'\n    >>\\> Escape these (and most other special characters) with backslashes\n    ```\n    >You said:\n    >> These can be nested\n    >>> By adding more \'>\'\n    >>\\> Escape these (and most other special characters) with backslashes\n  5. **Tables**\n    ```\n    | Column1          | Column2   | Column3 |\n    |:-----------------|:---------:|---:|\n    Pipes at the start | and end | are optional\n    | Left-Aligned | Centered | Right-Aligned |\n    | Second row defines<br>the columns. | At least 3 dashes<br>are required | but more are allowed |\n    || Multiple Pipes | for empty cells |\n    | Add line breaks<br>with \\<br>\n    | ++Cells can be formatted++ | [with any inline elements](#) | ![Poster h=150](poster\/zxGkno93ExrTMsJVllH6mzQ652z.jpg) |\n    ```\n    | Column1          | Column2   | Column3 |\n    |:-----------------|:---------:|---:|\n    Pipes at the start | and end | are optional\n    | Left-Aligned | Centered | Right-Aligned |\n    | Second row defines<br>the columns. | At least 3 dashes<br>are required | but more are allowed |\n    || Multiple Pipes | for empty cells |\n    | Add line breaks<br>with \\<br>\n    | ++Cells can be formatted++ | [with any inline elements](#) | ![Poster h=150](poster\/zxGkno93ExrTMsJVllH6mzQ652z.jpg) |\n  6. **Horizontal Rules** - at least 3 `-`, `*`, or `_` on their own line\n    ```\n    ---\n    *   *   *   *\n        _ _ _ _\n    ```\n    ---\n    *   *   *   *\n        _ _ _ _\n\n### In Progress\/Not Done\n* **Nesting** - This is the biggest current issue. While most things play nice with nested lists and nested block quotes, nesting lists\/quotes within quotes\/lists needs work. This includes downstream issues with elements that span multiple lines (code blocks\/tables), who will have to know whether leading `>`, `*`, `\\d+\\.` are expected and should be ignored.\n* **Alternate Links**\n  ```\n  [Click Me!][1]\n  ...\n  [1]: https:\/\/example.com\n  ```\n* Many other things I\'m sure';
+    const helpText = '# Markdown Parser\n\nHello! This is my Markdown Parser. It\'s a bit slow, but what do you expect from someone who wrote it from scratch in their spare time?  The following is written with the parser, so anything that works here should work everywhere.\n\n## Parser Status\n\n### Complete\n\n* **Inline Elements**\n  1. **Bold** - `**Bold**` or `__Bold__`\n  2. *Italic* - `*Italic*` or `_Italic_`\n  3. ++Underline++ - `++Underline++`\n  4. ~~Strikethrough~~ - `~~Strikethrough~~`\n  5. ***++~~All Four At Once~~++*** - `***++~~All Four At Once~~++***`\n  6. `Inline Code Snippets` - `` `Inline Code Snippets` ``\n    * Escape backticks by surrounding with more backticks: ```` ```I can escape two backticks (``) with this``` ````\n  7. [Links](markdown.php) - `[Links](markdown.php)`\n    * Links can also be [++*Formatted*++](markdown.php) - `[++*Formatted*++](markdown.php)`\n  8. **Images** - `![Poster w=100](poster\/zxGkno93ExrTMsJVllH6mzQ652z.jpg)`\n    ![Poster w=100](poster\/zxGkno93ExrTMsJVllH6mzQ652z.jpg)\n    * General form: `![AltText w=Width,h=Height](url)`:\n      * `![AltText](url)`\n      * `![AltText w=100](url)`\n      * `![AltText h=100](url)`\n      * `![AltText w=100,h=50](url)`\n\n* **Block Elements**\n  1. `# Header1`, `## Header2`, ... , `###### Header6`\n    ### Header 3\n    Headers also create `id`s that can be referenced via links. `[Go to Header3](#header-3)`. Special characters are removed and spaces are replaced with dashes\n\n  2. **Code Blocks** - Either indented with four spaces (and a blank line above), or surrounded with three backticks (`` ` ``) or tildes (`~`)\n    ```\n\n        Code Block\n          Note that when nested in a list, the block must be indented 4 + (nestlevel * 2) spaces:\n          1. Level 1\n            * Level 2\n\n                  Code Block\n    ```\n    Or\n\n        ```\n        Code Block\n        ```\n  3. Lists\n    ```\n    3. Ordered lists will start at the first number given\n    6. And always increase by one, regardless of what is written\n    5. I can continue a list item on the next line\n    without indenting\n\n      But if I want to add a line break, it must be indented 2 additional spaces\n      1. Nested lists must be indented 2 spaces from their parent\n        * Ordered and unordered lists can be nested together\n          ~~~\n          Tilde\/Backtick code blocks must start two spaces\n          after the bullet, even if there\'s no line break\n          ~~~\n    ```\n    3. Ordered lists will start at the first number given\n    6. And always increase by one, regardless of what is written\n    5. I can continue a list item on the next line\n    without indenting\n\n      But if I want to add a line break, it must be indented 2 additional spaces\n      1. Nested lists must be indented 2 spaces from their parent\n        * Ordered and unordered lists can be nested together\n          ~~~\n          Tilde\/Backtick code blocks must start two spaces\n          after the bullet, even if there\'s no line break\n          ~~~\n  4. **Block Quotes**\n    ```\n    >A Quote:\n    >> These can be nested\n    >>> By adding more \'>\'\n    >>\\> Escape these (and most other special characters) with backslashes\n    ```\n    >You said:\n    >> These can be nested\n    >>> By adding more \'>\'\n    >>\\> Escape these (and most other special characters) with backslashes\n  5. **Tables**\n    ```\n    | Column1          | Column2   | Column3 |\n    |:-----------------|:---------:|---:|\n    Pipes at the start | and end | are optional\n    | Left-Aligned | Centered | Right-Aligned |\n    | Second row defines<br>the columns. | At least 3 dashes<br>are required | but more are allowed |\n    || Multiple Pipes | for empty cells |\n    | Add line breaks<br>with \\<br>\n    | ++Cells can be formatted++ | [with any inline elements](#) | ![Poster h=150](poster\/zxGkno93ExrTMsJVllH6mzQ652z.jpg) |\n    ```\n    | Column1          | Column2   | Column3 |\n    |:-----------------|:---------:|---:|\n    Pipes at the start | and end | are optional\n    | Left-Aligned | Centered | Right-Aligned |\n    | Second row defines<br>the columns. | At least 3 dashes<br>are required | but more are allowed |\n    || Multiple Pipes | for empty cells |\n    | Add line breaks<br>with \\<br>\n    | ++Cells can be formatted++ | [with any inline elements](#) | ![Poster h=150](poster\/zxGkno93ExrTMsJVllH6mzQ652z.jpg) |\n  6. **Horizontal Rules** - at least 3 `-`, `*`, or `_` on their own line\n    ```\n    ---\n    *   *   *   *\n        _ _ _ _\n    ```\n    ---\n    *   *   *   *\n        _ _ _ _\n\n### In Progress\/Not Done\n* **Nesting** - This is the biggest current issue. While most things play nice with nested lists and nested block quotes, nesting lists\/quotes within quotes\/lists needs work. This includes downstream issues with elements that span multiple lines (code blocks\/tables), who will have to know whether leading `>`, `*`, `\\d+\\.` are expected and should be ignored.\n* **Alternate Links**\n  ```\n  [Click Me!][1]\n  ...\n  [1]: https:\/\/example.com\n  ```\n* Many other things I\'m sure';
     return '<div class="md">' + _helpMarkdown.parse(helpText) + '</div>';
 }
