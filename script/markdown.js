@@ -149,7 +149,6 @@ class Markdown {
     constructor()
     {
         this._reset('', false);
-        this._newparse = true;
     }
 
     _checkHr(index, addHr=true)
@@ -214,7 +213,6 @@ class Markdown {
         text = this._trimInput(text);
         if (this._cachedParse.length != 0 &&
             this._inlineOnly == inlineOnly &&
-            this._newparse == this._usedNewParse &&
             this.text == text)
         {
             logTmi('Identical content, returning cached content');
@@ -224,7 +222,6 @@ class Markdown {
 
         this._reset(text, inlineOnly);
         this._inParse = true;
-        this._usedNewParse = this._newparse;
 
         let perfStart = window.performance.now();
         let topRun = new Run(State.None, 0, null);
@@ -232,18 +229,7 @@ class Markdown {
         this.currentRun = topRun;
 
         this._urls = {};
-
-        // Always wrap our first element in a div if we're not inline-only
-        let i;
-        if (!this._inlineOnly && !this._newparse)
-        {
-            for (i = 0; i < this.text.length && this.text[i] == '\n'; ++i);
-            let end = this._getNextDivEnd(i);
-            let div = new Div(0, end, this.text, this.currentRun);
-            this.currentRun = div;
-        }
-
-        for (i = 0; i < this.text.length; ++i)
+        for (let i = 0; i < this.text.length; ++i)
         {
             while (i == this.currentRun.end)
             {
@@ -489,7 +475,7 @@ class Markdown {
 
         logTmi(topRun, 'Parsing tree');
         this.markdownPresent = topRun.innerRuns.length != 0;
-        let html = topRun.convert(this.text, this._newparse, this._inlineOnly).trim();
+        let html = topRun.convert(this.text, this._inlineOnly).trim();
         this._cachedParse = html;
         this._inParse = false;
         let perfStop = window.performance.now();
@@ -503,320 +489,6 @@ class Markdown {
             logVerbose(`Parsed markdown in ${perfStop - perfStart}ms`);
         }
         return html;
-    }
-
-    _inAList(index)
-    {
-        // Loops backwards looking for the start of a list, then
-        // use the list find routine to see if `index` is inside the list
-
-        // Have some leeway here by allowing a top-level list to be indented a
-        // bit (even though it shouln't be).
-        let data = { 'inList' : false, 'listEnd' : -1 };
-        // let spaces = '';
-        let subText = this.text.substring(0, index);
-        const regex = new RegExp(/\n( {0,2})(\*|\d+\.) /g);
-        let matches = [[[-1, false]], [], []];
-        let firstMatch = /^( {0,2})(\*|\d+\.) /.exec(subText);
-        if (firstMatch != null)
-        {
-            matches[firstMatch[1].length].push([0, firstMatch[2] != '*']);
-        }
-
-        let lastMatch;
-        while ((lastMatch = regex.exec(subText)) != null)
-        {
-            matches[lastMatch[1].length].push([lastMatch.index, lastMatch[2] != '*']);
-        }
-
-        // Start from outermost and work inwards
-        for (let i = 0; i < 3; ++i)
-        {
-            lastMatch = matches[i][matches[i].length - 1];
-            if (!lastMatch)
-            {
-                continue;
-            }
-
-            while (lastMatch[0] != -1 && this._checkHr(lastMatch[0] + 1, false /*addHr*/))
-            {
-                matches[i].pop();
-                lastMatch = matches[i][matches[i].length - 1];
-            }
-
-            if (lastMatch[0] != -1)
-            {
-                data.listEnd = this._listEnd(lastMatch[0] + i + 1, Math.floor(i / 2), lastMatch[1] /*ordered*/);
-                data.inList = data.listEnd > index;
-                if (data.inList)
-                {
-                    return data;
-                }
-            }
-        }
-
-        return data;
-    }
-
-    /// <summary>
-    /// This is pretty gross and breaks a lot of the encapsulation
-    /// of the main loop. Should really look into something else here.
-    /// </summary>
-    _getNextDivEnd(start)
-    {
-        let index = start;
-
-        // If we're currently in a list, skip to the end of it
-        const isList = (state) => state == State.ListItem || state == State.OrderedList || state == State.UnorderedList
-        if (isList(this.currentRun.state))
-        {
-            // Traverse up to find end
-            let topList = this.currentRun;
-            while (isList(topList.parent.state))
-            {
-                topList = topList.parent;
-            }
-
-            index = topList.end;
-        }
-
-        while (true)
-        {
-            let end = this.text.indexOf('\n\n', index);
-            if (end == -1)
-            {
-                return this.text.length;
-            }
-
-            {
-                let htmlComment = this.text.lastIndexOf('<!--', end);
-                if (htmlComment != -1)
-                {
-                    htmlComment = this.text.indexOf('-->', htmlComment);
-                    if (htmlComment > end)
-                    {
-                        index = htmlComment;
-                        continue;
-                    }
-                }
-            }
-
-            let listData = this._inAList(end);
-            if (listData.inList)
-            {
-                index = listData.listEnd;
-                continue;
-            }
-
-            // Now make sure we're not in a code block, which requires
-            // exactly three backticks on their own line, or prefixes of
-            // at least 4 spaces preceded by two newlines
-
-            // Look for prefixed spaces first
-
-            let prevIndex = this.text.lastIndexOf('\n', end - 1);
-            let prevLine = this.text.substring(prevIndex + 1, end + 1);
-            let prevNew = 0;
-            let maybeBlock = false;
-            while (prevLine && prevLine.length > 0)
-            {
-                if (prevLine == '\n')
-                {
-                    ++prevNew;
-                }
-                else if (prevLine.startsWith('    '))
-                {
-                    maybeBlock = true;
-                    prevNew = 0;
-                }
-                else
-                {
-                    break;
-                }
-
-                let prevOld = prevIndex;
-                prevIndex = this.text.lastIndexOf('\n', prevIndex - 1);
-                prevLine = this.text.substring(prevIndex + 1, prevOld + 1);
-            }
-
-            if (maybeBlock && (prevNew > 0 || (prevIndex == -1 && (this.text.startsWith('    ') || this.text.startsWith('\n')))))
-            {
-                // Previous lines indicate we might be in a code block. We know
-                // we are if the next non-blank line is indented with 4+ spaces
-                let offset = 1;
-                while (offset + end < this.text.length && this.text[offset + end] == '\n')
-                {
-                    ++offset;
-                }
-
-                if (/    [^\n]/.test(this.text.substring(end + offset, end + offset + 5)))
-                {
-                    // We're definitely in a code block.
-                    index = end + offset + 5;
-                    continue;
-                }
-            }
-
-            // If the first occurance of ``` is non-existant or beyond
-            // our end bound, we're good to go. This will change once
-            // (nested) lists come into play
-            let searchFor = '```';
-            if (start != 0)
-            {
-                searchFor = '\n' + searchFor;
-            }
-
-            let cb = this.text.indexOf(searchFor, start);
-            if (cb == -1 || cb > end)
-            {
-                searchFor = searchFor.replace(/`/g, '~');
-                let cb = this.text.indexOf(searchFor, start);
-                if (cb == -1 || cb > end)
-                {
-                    return end;
-                }
-            }
-
-            let markers = searchFor[searchFor.length - 1].repeat(3);
-            if (!new RegExp(`^\\n?${markers} *[\\S]*\\n?$`).test(this.text.substring(cb, this._indexOrLast('\n', cb + 1))))
-            {
-                return end;
-            }
-
-            // Darn, we might be in a code block
-            let inBlock = true;
-            while (true)
-            {
-                cb = this.text.indexOf(`\n${markers}`, cb + 1);
-                if (cb == -1)
-                {
-                    break;
-                }
-
-
-
-                if (cb + 4 == this.text.length || this.text[cb + 4] == '\n')
-                {
-                    if (cb > end)
-                    {
-                        break;
-                    }
-
-                    inBlock = !inBlock;
-                }
-            }
-
-            if (!inBlock)
-            {
-                return end;
-            }
-
-            index = end + 2;
-        }
-    }
-
-    _processNewline(start)
-    {
-        if (this._newparse)
-        {
-            return start;
-        }
-
-        // Single \n is a <br>. If we're in a list item though, any number
-        // of newlines collapses into a single br
-        const innerRuns = this.currentRun.innerRuns;
-        let previousRun = innerRuns.length == 0 ? null : innerRuns[innerRuns.length - 1];
-        if (start == this.text.length - 1 || this.text[start + 1] != '\n')
-        {
-            // Don't add one if the previous element is already a block type
-            if (previousRun && (previousRun.end == start &&
-                (previousRun.state == State.Hr ||
-                    previousRun.state == State.Header ||
-                    previousRun.state == State.BlockQuote ||
-                    previousRun.state == State.ListItem ||
-                    previousRun.state == State.CodeBlock) ||
-                    previousRun.state == State.UnorderedList ||
-                    previousRun.state == State.OrderedList))
-            {
-                return start;
-            }
-
-            new Break(start, this.currentRun);
-            logTmi(`Added Line Break: start=${start}, end=${start}`);
-            return start;
-        }
-        else if (this.currentRun.state == State.ListItem ||
-            this.currentRun.state == State.OrderedList ||
-            this.currentRun.state == State.UnorderedList)
-        // else if (this._inAList(start).inList)
-        {
-            new Break(start, this.currentRun);
-
-            // Collapse newlines
-            let twoBreaks = false;
-            let oldStart = start;
-            while (start + 1 < this.text.length && this.text[start + 1] == '\n')
-            {
-                twoBreaks = true;
-                ++start;
-            }
-
-            if (twoBreaks && this.currentRun.state == State.ListItem)
-            {
-                // Only add a seoncd break if the previoius element is not a block type
-                let pState = previousRun ? previousRun.state : State.None;
-                if ((previousRun == null || previousRun.end != oldStart ||
-                    (pState != State.Hr &&
-                        pState != State.Header &&
-                        pState != State.BlockQuote &&
-                        pState != State.ListItem &&
-                        pState != State.CodeBlock &&
-                        pState != State.LineBreak)) &&
-                    pState != State.UnorderedList &&
-                    pState != State.OrderedList)
-                {
-                    new Break(start, this.currentRun);
-                }
-            }
-
-            return start;
-        }
-
-        // Multiple newlines indicates a break in the text. These technically
-        // should probably be paragraphs (<p>), but there are nesting rules
-        // with paragraphs that I don't want to deal with. Use a div instead
-        // since it can just as easily be styled as a paragraph without all the
-        // rules attached.
-
-        // Multiple \n is a paragraph, but we have to check for items that shouln't go into
-        // paragraphs:
-        //  1. Headers (hX)
-        //  2. blockquotes (blockquote)
-        //  3. lists (ol/ul)
-        //       Look for '*' or '#.'
-        //       If found, continue until
-        //          three newlines are found (two empty lines)
-        //          OR two newlines
-        //              IF the next line does not follow the list pattern
-        //              AND is not indented at a greater level
-        //          OR a single newline
-        //              IF the next line is another "block" item
-        //              AND is indented less than three spaces
-        //  4. Code blocks (pre)
-        //  5. Tables (table)
-
-        let oldStart = start;
-        while (start + 1 < this.text.length && this.text[start + 1] == '\n')
-        {
-            ++start;
-        }
-
-        // TODO: Watch out for nested items in lists, see (3) above
-        let end = this._getNextDivEnd(start);
-        let div = new Div(oldStart, end, this.text, this.currentRun);
-        this.currentRun = div;
-        logTmi(`Added Div: start=${oldStart}, end=${end}`);
-        return start;
     }
 
     _checkHeader(start)
@@ -1846,6 +1518,7 @@ class Markdown {
 
         let minspaces = 0;
         let firstIsList = false;
+        let language;
         if (this.currentRun.state == State.ListItem)
         {
             let nestLevel = this.currentRun.parent.nestLevel;
@@ -1856,10 +1529,17 @@ class Markdown {
             if (!liStartRegex.test(context))
             {
                 // Not on the same line as the list item start, check if it's a valid continuation
-                if (!new RegExp(`^\\n {${minspaces},${minspaces + 3}}${markers} *\\S*\\n`).test(context))
+                let match = context.match(new RegExp(`^\\n {${minspaces},${minspaces + 3}}${markers} *(\\S*)\\n`));
+                if (!match)
                 {
                     return -1;
                 }
+
+                language = match[1];
+                // if (!new RegExp(`^\\n {${minspaces},${minspaces + 3}}${markers} *\\S*\\n`).test(context))
+                // {
+                //     return -1;
+                // }
             }
             else
             {
@@ -1869,10 +1549,17 @@ class Markdown {
         else
         {
             // Not within a list item, needs to be three backticks at the very beginning of the line
-            if (!new RegExp(`^\\n?${markers} *\\S*\\n?$`).test(this.text.substring(start - 3, newline + 1)))
+            let match = this.text.substring(start - 3, newline + 1).match(new RegExp(`^\\n?${markers} *(\\S*)\\n?$`));
+            if (!match)
             {
                 return -1;
             }
+
+            language = match[1];
+            // if (!new RegExp(`^\\n?${markers} *\\S*\\n?$`).test(this.text.substring(start - 3, newline + 1)))
+            // {
+            //     return -1;
+            // }
         }
 
         let end = newline;
@@ -1918,7 +1605,7 @@ class Markdown {
                     }
                 }
 
-                new BacktickCodeBlock(start - 2, next, minspaces, this.text, this.currentRun);
+                new BacktickCodeBlock(start - 2, next, minspaces, this.text, language, this.currentRun);
                 return next;
             }
 
@@ -2511,7 +2198,7 @@ class Run
     //    if first child start is not this start, add from initialText
     //  convert() children
     //  create end tag
-    convert(initialText, newParse=false, inlineOnly=false)
+    convert(initialText, inlineOnly=false)
     {
         let ident = '';
         let par = this.parent;
@@ -2521,7 +2208,7 @@ class Run
             ident += '   ';
         }
 
-        if (newParse && !inlineOnly && this.shouldProcessNewlines())
+        if (!inlineOnly && this.shouldProcessNewlines())
         {
             this.parseNewlines(initialText);
         }
@@ -2546,7 +2233,7 @@ class Run
 
         for (let i = 0; i < this.innerRuns.length; ++i)
         {
-            newText += this.innerRuns[i].convert(initialText, newParse, inlineOnly);
+            newText += this.innerRuns[i].convert(initialText, inlineOnly);
             if (i != this.innerRuns.length - 1 && this.innerRuns[i].end < this.innerRuns[i + 1].start)
             {
                 newText += this.transform(initialText.substring(this.innerRuns[i].end, this.innerRuns[i + 1].start), -2);
@@ -3427,9 +3114,10 @@ class CodeBlock extends Run
 
 class BacktickCodeBlock extends CodeBlock
 {
-    constructor(start, end, indent, text, parent)
+    constructor(start, end, indent, text, language, parent)
     {
         super(start, end, text, indent, true /*backtick*/, parent);
+        this.language = language;
     }
 
     startContextLength() { return this.text.indexOf('\n') + 1; }
