@@ -73,7 +73,7 @@ function get_username()
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#3C5260" />
     <title>Plex Status</title>
-    <?php get_css("style", "nav", "overlay", "actions", "index") ?>
+    <?php get_css("style", "nav", "overlay", "actions", "tooltip", "index") ?>
 </head>
 <body>
 <script>
@@ -92,19 +92,19 @@ function plexOk()
         <div id="mediaentries">
         </div>
         <div id="actions">
-            <div class="action actionLeft">
+            <div class="action">
                 <a href="new_request.php" class="actionLink">
                     <img src="icon/new_request.png" class="actionImg" style="filter: invert(80)">
                     <span>New Request</span>
                 </a>
             </div>
-            <div class="action actionRight">
+            <div class="action">
                 <a href="requests.php" class="actionLink">
                     <img src="resource/requests_medium.png" class="actionImg" style="filter: invert(80)">
                     <span>View Requests</span>
                 </a>
             </div>
-            <div class="action actionRight">
+            <div class="action">
                 <a href="user_settings.php" class="actionLink">
                     <img src="resource/settings_medium.png" class="actionImg" style="filter: invert(80)">
                     <span>Settings</span>
@@ -116,5 +116,5 @@ function plexOk()
     <div id="tooltip"></div>
 </div>
 </body>
-<?php build_js("index", "consolelog", "animate", "common", "nav", "overlay"); ?>
+<?php build_js("index", "consolelog", "animate", "common", "nav", "overlay", "tooltip"); ?>
 </html>

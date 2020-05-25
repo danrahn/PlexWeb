@@ -19,12 +19,6 @@ NodeList.prototype.remove = HTMLCollection.prototype.remove = function()
 };
 
 /// <summary>
-/// Contains the setTimeout id of a scroll event, which will hide the progress tool tip when expired
-/// hide the tooltip
-/// </summary>
-let hideTooltipTimer = null;
-
-/// <summary>
 /// On load, request the active streams (if it's running) and set up the suggestion form handlers
 /// </summary>
 window.addEventListener('load', function()
@@ -45,19 +39,6 @@ window.addEventListener('load', function()
     {
         $("#activeNum").innerHTML = 0;
     }
-
-    $("#plexFrame").addEventListener("scroll", function() {
-        // On scroll, hide the tooltip (mainly for mobile devices)
-        // Add a bit of delay, as it is a bit jarring to have it immediately go away
-        if (hideTooltipTimer)
-        {
-            clearTimeout(hideTooltipTimer);
-        }
-
-        hideTooltipTimer = setTimeout(function() {
-            $("#tooltip").style.display = "none";
-        }, 100);
-    });
 });
 
 /// <summary>
@@ -782,30 +763,6 @@ function getIPInfo(ip, id)
     let attachedParameters = { "attachId" : id };
 
     sendHtmlJsonRequest("process_request.php", parameters, successFunc, undefined /*failFunc*/, attachedParameters);
-}
-
-/// <summary>
-/// Show a tooltip with the given text at a position relative to clientX/Y in event e
-/// </summary>
-function showTooltip(e, text)
-{
-    let max = $("#plexFrame").clientWidth - 180;
-    const left = Math.min(e.clientX, max) + "px";
-    const top = (e.clientY + 20) + "px";
-    let tooltip = $("#tooltip");
-    tooltip.style.left = left;
-    tooltip.style.top = top;
-
-    tooltip.innerHTML = text;
-    tooltip.style.display = "inline";
-}
-
-/// <summary>
-/// Dismisses the tooltip
-/// </summary>
-function dismissTooltip()
-{
-    $("#tooltip").style.display = "none";
 }
 
 /// <summary>

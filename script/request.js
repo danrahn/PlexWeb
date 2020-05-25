@@ -1055,7 +1055,7 @@ window.addEventListener("load", function()
             let editTitle = '';
             if (comment.last_edit)
             {
-                editTitle = ' (edited ' +
+                editTitle = '<br>Edited ' +
                     new Date(comment.last_edit).toLocaleDateString("en-US",
                         options={
                             year: "2-digit",
@@ -1064,12 +1064,12 @@ window.addEventListener("load", function()
                             hour: "numeric",
                             minute: "numeric",
                             second: "numeric" 
-                        }) + ')';
+                        });
             }
 
             let date = buildNode("span",
                 {
-                    'title' : dateObj.toLocaleDateString("en-US",
+                    'tt' : dateObj.toLocaleDateString("en-US",
                     options={
                         year: "2-digit",
                         month: "numeric",
@@ -1079,7 +1079,11 @@ window.addEventListener("load", function()
                         second: "numeric" 
                     }) + editTitle
                 },
-                DateUtil.getDisplayDate(dateObj) + (editTitle ? '*' : '')
+                DateUtil.getDisplayDate(dateObj) + (editTitle ? '*' : ''),
+                {
+                    'mousemove' : function(e) { showTooltip(e, this.getAttribute('tt')); },
+                    'mouseout' : dismissTooltip
+                }
             );
 
             commentCache[comment.id] = comment.content;

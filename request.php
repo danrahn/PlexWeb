@@ -51,7 +51,7 @@ function get_details($req_id)
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#3C5260" />
     <title>Plex Request</title>
-    <?php get_css("style", "nav", "overlay", "markdown", "request"); ?>
+    <?php get_css("style", "nav", "overlay", "markdown", "tooltip", "request"); ?>
 </head>
 <body
     isAdmin="<?= (isset($_SESSION['level']) && $_SESSION['level'] >= 100) ? 1 : 0 ?>"
@@ -88,6 +88,7 @@ function get_details($req_id)
                 </div>
                 <input type="button" id="newCommentButton" value="Add Comment" style="float: left; clear: both; margin-top: 5px; padding: 10px" />
             </div>
+            <div id="tooltip"></div>
         <?php } else { ?>
             <div class="formContainer" id="info">
                 <div class="formTitle">The request for <?= $details->request_name ?> was made with an older version of this website. Please choose the correct item below</div>
@@ -105,5 +106,5 @@ function get_details($req_id)
         <?php } ?>
     </div>
 </body>
-<?php build_js("request", "consolelog", "animate", "common", "queryStatus", "nav", "overlay", "DateUtil", "markdown"); ?>
+<?php build_js("request", "consolelog", "animate", "common", "queryStatus", "nav", "overlay", "DateUtil", "markdown", "tooltip"); ?>
 </html>

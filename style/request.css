@@ -406,6 +406,10 @@ a:hover {
     background: rgba(20,20,20,0.8);
 }
 
+#tooltip {
+    font-size: smaller;
+}
+
 
 @media (orientation: landscape), (min-width: 767px) {
     #innerInfoContainer {

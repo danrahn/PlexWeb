@@ -112,16 +112,6 @@
     opacity: 0;
 }
 
-#tooltip {
-    display: none;
-    background-color: rgba(50, 50, 50, .7);
-    color: #c1c1c1;
-    border-radius: 3px;
-    border: 1px solid #616161;
-    padding: 5px;
-    position: absolute;
-}
-
 .ppbutton {
     text-decoration: none;
     display: inline-block;
