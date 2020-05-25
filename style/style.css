@@ -273,24 +273,24 @@ hr {
 
 /* Track */
 ::-webkit-scrollbar-track {
-     background: transparent; 
+     background: transparent;
 }
 
 /* Handle */
 ::-webkit-scrollbar-thumb {
     width: 5px;
     border-radius: 5px;
-     background: #616161;
-     opacity: 0.5;
+    background: #616161C1;
+    opacity: 0.5;
 }
 
 /* corner */
 ::-webkit-scrollbar-corner {
-    background: #616161;
+    background: #616161C1;
     border: none;
 }
 
 /* Handle on hover */
 ::-webkit-scrollbar-thumb:hover {
-     background: #818181; 
+     background: #818181C1;
 }
