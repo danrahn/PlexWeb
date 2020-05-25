@@ -301,11 +301,11 @@ function processUpdate(sessions)
         if (item)
         {
             // The stream already exists - update the progress
-            item.querySelector(".time").innerHTML = msToHms(sesh.progress) + "/" + msToHms(sesh.duration);
-            item.querySelector('.progressHolder').setAttribute('progress', sesh.progress);
-            item.querySelector('.progressHolder').setAttribute('tcprogress', 'transcode_progress' in sesh ? sesh.transcode_progress : 0);
+            item.$$(".time").innerHTML = msToHms(sesh.progress) + "/" + msToHms(sesh.duration);
+            item.$$('.progressHolder').setAttribute('progress', sesh.progress);
+            item.$$('.progressHolder').setAttribute('tcprogress', 'transcode_progress' in sesh ? sesh.transcode_progress : 0);
 
-            let ppbutton = item.querySelector(".ppbutton");
+            let ppbutton = item.$$(".ppbutton");
 
             if (sesh.paused)
             {
@@ -448,7 +448,7 @@ function innerUpdate(sesh, addTime=true)
     }
 
     const addedTime = addTime ? 1000 : 0;
-    let progressHolder = element.querySelector('.progressHolder');
+    let progressHolder = element.$$('.progressHolder');
     let newMsProgress = parseInt(progressHolder.getAttribute("progress")) + addedTime;
     const msDuration = parseInt(progressHolder.getAttribute("duration"));
     let tcprogress = parseFloat(progressHolder.getAttribute("tcprogress"));
@@ -459,18 +459,18 @@ function innerUpdate(sesh, addTime=true)
     }
 
     const newHms = msToHms(newMsProgress);
-    let time = element.querySelector(".time");
+    let time = element.$$(".time");
     const newTimeStr = newHms + "/" + time.innerHTML.split("/")[1];
 
     const newProgress = (newMsProgress / msDuration) * 100;
-    element.querySelector(".progress").style.width = newProgress + "%";
+    element.$$(".progress").style.width = newProgress + "%";
     if (tcprogress - newProgress < 0)
     {
         tcprogress = newProgress;
     }
 
-    element.querySelector(".tcdiff").style.width = (tcprogress - newProgress) + "%";
-    element.querySelector(".remaining").style.width = (100 - tcprogress) + "%";
+    element.$$(".tcdiff").style.width = (tcprogress - newProgress) + "%";
+    element.$$(".remaining").style.width = (100 - tcprogress) + "%";
     logTmi(`${sesh} - Progress: ${newProgress}; TC: ${tcprogress}; Remaining: ${100 - tcprogress}`);
     time.innerHTML = newTimeStr;
     progressHolder.setAttribute("progress", newMsProgress);
@@ -528,8 +528,8 @@ function updateTotalBitrate()
     let totalBitrate = 0;
     currentSessions.forEach(function(session)
     {
-        let lis = session.querySelectorAll("li");
-        totalBitrate += parseInt(lis[lis.length - 1].querySelector("span").innerHTML);
+        let lis = session.$("li");
+        totalBitrate += parseInt(lis[lis.length - 1].$$("span").innerHTML);
     });
     
     $("#active").setAttribute("bitrate", totalBitrate);
@@ -551,8 +551,8 @@ function addSession(response)
     // If we have existing sessions, find its place in the list
     for (let i = 0; i < currentSessions.length; ++i)
     {
-        if ((!response.paused && currentSessions[i].querySelector(".ppbutton").classList.contains("pause")) ||
-            (response.progress / response.duration) * 100 < parseFloat(currentSessions[i].querySelector(".progress").style.width))
+        if ((!response.paused && currentSessions[i].$$(".ppbutton").classList.contains("pause")) ||
+            (response.progress / response.duration) * 100 < parseFloat(currentSessions[i].$$(".progress").style.width))
         {
             // Found our position if this item is playing and the next is paused, or this item has less
             // time to completion.
@@ -754,7 +754,7 @@ function getIPInfo(ip, id)
     {
         const locString = ` (${response.city}, ${response.state})`;
         const ispInfo = getListItem("ISP", response.isp);
-        let ipItem = document.getElementById(request.attachId);
+        let ipItem = $('#' + request.attachId);
         ipItem.innerHTML += locString;
         ipItem.parentNode.insertBefore(ispInfo, ipItem.nextSibling);
     };

@@ -510,7 +510,7 @@ window.addEventListener("load", function()
             logInfo(response);
             if (response.results.length === 0)
             {
-                document.getElementById("matchContainer").innerHTML = "No matches found. Please enter the IMDb id below";
+                $("#matchContainer").innerHTML = "No matches found. Please enter the IMDb id below";
                 return;
             }
             buildItems(response.results, "matchContainer");
@@ -518,7 +518,7 @@ window.addEventListener("load", function()
 
         let failureFunc = function(/*response*/)
         {
-            document.getElementById("matchContainer").innerHTML = "Error searching for matches";
+            $("#matchContainer").innerHTML = "Error searching for matches";
         };
 
         sendHtmlJsonRequest("media_search.php", parameters, successFunc, failureFunc);
@@ -635,7 +635,7 @@ window.addEventListener("load", function()
 
     function setVisibility(id, visible)
     {
-        let element = document.getElementById(id);
+        let element = document.getElementById('#' + id);
         if (!element)
         {
             return;
@@ -1171,7 +1171,7 @@ window.addEventListener("load", function()
         let html = mdEdit.parse(this.value);
         if (!sameEdit || !mdEdit.sameText)
         {
-            this.parentNode.querySelector('.commentContent').innerHTML = html;
+            this.parentNode.$$('.commentContent').innerHTML = html;
         }
     }
 
@@ -1185,7 +1185,7 @@ window.addEventListener("load", function()
         parent.removeChild(parent.children[1]); // textarea
         parent.removeChild(parent.children[1]); // buttons
         parent.removeChild(parent.children[1]); // hr
-        parent.querySelector('.commentContent').innerHTML = new Markdown().parse(commentCache[id]);
+        parent.$$('.commentContent').innerHTML = new Markdown().parse(commentCache[id]);
     }
 
     /// <summary>

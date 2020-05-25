@@ -4,14 +4,32 @@
 /// If the selector starts with '#' and contains no spaces, return the
 /// result of querySelector, otherwise return the result of querySelectorAll
 /// </summary>
-function $(selector)
+function $(selector, ele=document)
 {
     if (selector.indexOf("#") === 0 && selector.indexOf(" ") === -1)
     {
-        return document.querySelector(selector);
+        return $$(selector, ele);
     }
 
     return document.querySelectorAll(selector);
+}
+
+/// <summary>
+/// Like $, but forces a single element to be returned. i.e. querySelector
+/// </summary>
+function $$(selector, ele=document)
+{
+    return ele.querySelector(selector);
+}
+
+Element.prototype.$ = function(selector)
+{
+    return $(selector, this);
+}
+
+Element.prototype.$$ = function(selector)
+{
+    return $$(selector, this);
 }
 
 /// <summary>
@@ -63,7 +81,7 @@ function sendHtmlJsonRequest(url, parameters, successFunc, failFunc, additionalP
             }
 
             http[param] = additionalParams[param];
-        }   
+        }
     }
 
     // Will need to update this if we ever pass in sensitive information when dataIsString == true

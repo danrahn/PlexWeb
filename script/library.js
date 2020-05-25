@@ -6,7 +6,7 @@ window.addEventListener("load", function()
 
 function buildSections(sections)
 {
-    let outerDiv = document.querySelector("#tableEntries");
+    let outerDiv = $("#tableEntries");
     sections.forEach(function(section)
     {
         logInfo(section);

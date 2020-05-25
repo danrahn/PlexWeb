@@ -6,7 +6,7 @@ window.addEventListener("load", function()
 
 function status(message, error)
 {
-    let status = document.querySelector("#formStatus");
+    let status = $("#formStatus");
     status.className = "formContainer " + (error ? "statusFail" : "statusSuccess");
     status.innerHTML = message;
     Animation.queue({"opacity" : 1}, status, 500);
@@ -16,12 +16,12 @@ function status(message, error)
 function setupResetForm()
 {
     // Just let the backend deal with bad input. You're an admin, you should know what you're doing anyway
-    document.querySelector("#go").addEventListener("click", function()
+    $("#go").addEventListener("click", function()
     {
         let params = {
             "type" : "forgot_password_admin",
-            "username" : document.querySelector("#username").value,
-            "email" : document.querySelector("#email").value
+            "username" : $("#username").value,
+            "email" : $("#email").value
         };
 
         let successFunc = function() {

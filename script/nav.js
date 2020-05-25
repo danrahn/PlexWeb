@@ -1,7 +1,7 @@
 getNewActivities();
 
-document.getElementById("mainMenu").addEventListener("click", function() {
-    let menu = document.getElementById("leftMenu");
+$("#mainMenu").addEventListener("click", function() {
+    let menu = $("#leftMenu");
     if (!menu)
     {
         return;
@@ -10,8 +10,8 @@ document.getElementById("mainMenu").addEventListener("click", function() {
     expandContractMenu(menu, menu.style.opacity != 1);
 });
 
-document.getElementById("mainMenu").addEventListener("keyup", function(e) {
-    let menu = document.getElementById("leftMenu");
+$("#mainMenu").addEventListener("keyup", function(e) {
+    let menu = $("#leftMenu");
     if (!menu || (e.keyCode != 13 /*enter*/ && e.keyCode != 32/*space*/)) {
         return;
     }
@@ -22,7 +22,7 @@ document.getElementById("mainMenu").addEventListener("keyup", function(e) {
 setupClicks("pageName", "index.php");
 setupClicks("backToRequests", "requests.php");
 setupClicks("backToAdmin", "administration.php");
-setupClicks("currentPage", document.getElementById("navholder").getAttribute("currentPage"));
+setupClicks("currentPage", $("#navholder").getAttribute("currentPage"));
 
 setupClicks("navLogoutTop", "logout.php");
 setupClicks("navRequestsTop", "requests.php");
@@ -44,7 +44,7 @@ setupClicks("navGithub", "https://github.com/danrahn/plexweb", true);
 /// </summary>
 function getNewActivities()
 {
-    let activityBtn = document.getElementById("navActivityTop");
+    let activityBtn = $("#navActivityTop");
     if (!activityBtn)
     {
         return;
@@ -75,25 +75,25 @@ function getNewActivities()
             activityBtn.title = title;
             if (response.new > 0)
             {
-                document.querySelector("#mainMenu").title = "Menu (Shift + M) - " + title;
-                document.querySelector("#navActivity").title = `Notifications (${response.new} new, Shift + A)`;
-                document.querySelectorAll(".activityImg").forEach(function(ele)
+                $("#mainMenu").title = "Menu (Shift + M) - " + title;
+                $("#navActivity").title = `Notifications (${response.new} new, Shift + A)`;
+                $(".activityImg").forEach(function(ele)
                 {
                     ele.classList.add("hasNewActivity");
                 });
 
-                document.getElementById("activityIndicator").style.display = "block";
+                $("#activityIndicator").style.display = "block";
             }
             else
             {
-                document.querySelector("#mainMenu").title = "Menu (Shift + M)";
-                document.querySelector("#navActivity").title = `Notifications (Shift + A)`;
-                document.querySelectorAll(".activityImg").forEach(function(ele)
+                $("#mainMenu").title = "Menu (Shift + M)";
+                $("#navActivity").title = `Notifications (Shift + A)`;
+                $(".activityImg").forEach(function(ele)
                 {
                     ele.classList.remove("hasNewActivity");
                 });
 
-                document.getElementById("activityIndicator").style.display = "none";
+                $("#activityIndicator").style.display = "none";
             }
 
         }
@@ -124,7 +124,7 @@ function expandContractMenu(menu, expand, duration)
 /// </summary>
 function setupClicks(id, url, forceNewWindow)
 {
-    let element = document.getElementById(id);
+    let element = $('#' + id);
     if (!element)
     {
         return;
@@ -172,7 +172,7 @@ function setEnabled(enabled)
 
 function enableSingle(id, enabled)
 {
-    let element = document.querySelector(`#${id} button`);
+    let element = $$(`#${id} button`);
     if (element)
     {
         element.disabled = !enabled;
@@ -199,7 +199,7 @@ window.addEventListener("keydown", function(e) {
     e = e || window.event;
     const key = e.which || e.keyCode;
     if (key === 27 /*esc*/) {
-        let menu = document.getElementById("leftMenu");
+        let menu = $("#leftMenu");
         if (menu && menu.style.opacity != 0) {
             expandContractMenu(menu, false);
         }
@@ -235,7 +235,7 @@ window.addEventListener("keydown", function(e) {
                 break;
             case KEY.M:
             {
-                let menu = document.getElementById("leftMenu");
+                let menu = $("#leftMenu");
                 expandContractMenu(menu, menu.style.opacity == 0);
             }
             default:
@@ -264,7 +264,7 @@ window.addEventListener("click", function(e) {
         parent = parent.parentNode;
     }
 
-    let menu = document.getElementById("leftMenu");
+    let menu = $("#leftMenu");
     if (menu && menu.style.opacity != 0) {
         expandContractMenu(menu, false);
     }
@@ -293,7 +293,7 @@ window.addEventListener("touchstart", function(e) {
     lastMove.x = touchStart.x;
     lastMove.y = touchStart.y;
 
-    let opacity = parseFloat(document.getElementById("leftMenu").style.opacity) || 0;
+    let opacity = parseFloat($("#leftMenu").style.opacity) || 0;
     if (touchStart.x < 50 && opacity <= 0) {
         direction = 1;
     } else if (touchStart.x >= 100 && opacity > 0) {
@@ -309,7 +309,7 @@ window.addEventListener("touchmove", function(e) {
         return;
     }
 
-    let menu = document.getElementById("leftMenu");
+    let menu = $("#leftMenu");
 
     // Update our total movement
     dxTotal += Math.abs(lastMove.x - e.touches[0].clientX);
@@ -338,7 +338,7 @@ window.addEventListener("touchmove", function(e) {
 });
 
 window.addEventListener("touchend", function() {
-    let menu = document.getElementById("leftMenu");
+    let menu = $("#leftMenu");
     let dxFinal = dxTotal;
     dxTotal = 0;
     dyTotal = 0;

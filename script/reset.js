@@ -62,8 +62,8 @@ function setupResetForm()
             break;
     }
 
-    let pass = document.querySelector("input[name='password']");
-    let conf = document.querySelector("input[name='confirm']");
+    let pass = $$("input[name='password']");
+    let conf = $$("input[name='confirm']");
     if (valid() != 1)
     {
         pass.disabled = true;
@@ -73,11 +73,11 @@ function setupResetForm()
 
     pass.addEventListener("focusout", focusOutEvent);
     conf.addEventListener("focusout", focusOutEvent);
-    document.querySelector("input[type='button']").addEventListener("focusout", focusOutEvent);
+    $$("input[type='button']").addEventListener("focusout", focusOutEvent);
 
     pass.addEventListener("focus", focusInEvent);
     conf.addEventListener("focus", focusInEvent);
-    document.querySelector("input[type='button']").addEventListener("focus", focusInEvent);
+    $$("input[type='button']").addEventListener("focus", focusInEvent);
 
     pass.addEventListener("keyup", keyUpEvent);
     conf.addEventListener("keyup", keyUpEvent);
@@ -133,8 +133,8 @@ function focusInEvent()
 
 function keyUpEvent(e) {
     let key = e.which || e.keyCode;
-    var pass = document.querySelector("input[name='password']");
-    var conf = document.querySelector("input[name='confirm']");
+    var pass = $$("input[name='password']");
+    var conf = $$("input[name='confirm']");
     if (key !== 13) {
         if (conf.value && pass.value !== conf.value)
         {

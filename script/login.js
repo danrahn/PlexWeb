@@ -8,10 +8,10 @@ window.addEventListener('load', function()
 /// </summary>
 function setupLoginForm()
 {
-    document.getElementById("go").addEventListener("click", function()
+    $("#go").addEventListener("click", function()
     {
-        let user = document.querySelector("input[name='username']");
-        let pass = document.querySelector("input[name='password']");
+        let user = $$("input[name='username']");
+        let pass = $$("input[name='password']");
 
         // Infallible client-side validation
         if (!user.value)
@@ -52,7 +52,7 @@ function setupLoginForm()
 
         let failureFunc = function(response)
         {
-            let status = document.getElementById("formStatus");
+            let status = $("#formStatus");
             status.className = "formContainer statusFail";
             status.innerHTML = response["Error"];
             Animation.fireNow({"opacity" : 1}, status, 500);
@@ -63,28 +63,28 @@ function setupLoginForm()
         
     });
     
-    var inputs = document.querySelectorAll("input, select");
+    var inputs = $("input, select");
     for (var i = 0; i < inputs.length; i++)
     {
         inputs[i].addEventListener("keyup", function(e)
         {
             if (e.keyCode === 13 && !e.shiftKey && !e.ctrlKey && !e.altKey)
             {
-                document.getElementById("go").click();
+                $("#go").click();
             }
         });
     }
     
-    let user = document.querySelector("input[name='username']");
-    let pass = document.querySelector("input[name='password']");
+    let user = $$("input[name='username']");
+    let pass = $$("input[name='password']");
 
     user.addEventListener("focusout", focusOutEvent);
     pass.addEventListener("focusout", focusOutEvent);
-    document.querySelector("input[type='button']").addEventListener("focusout", focusOutEvent);
+    $$("input[type='button']").addEventListener("focusout", focusOutEvent);
     
     user.addEventListener("focus", focusInEvent);
     pass.addEventListener("focus", focusInEvent);
-    document.querySelector("input[type='button']").addEventListener("focus", focusInEvent);
+    $$("input[type='button']").addEventListener("focus", focusInEvent);
 
     user.focus();
 }

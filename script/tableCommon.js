@@ -179,12 +179,12 @@ function dismissFilterDialog()
 function setPerPageCommon(storage, newPerPage, update, updateFunc)
 {
     localStorage.setItem(storage, newPerPage);
-    document.querySelectorAll(".perPageButton").forEach((btn) =>
+    $(".perPageButton").forEach((btn) =>
     {
         btn.classList.remove("selected");
     });
 
-    document.querySelectorAll(`.perPageButton[value="${newPerPage}"]`).forEach(function(e)
+    $(`.perPageButton[value="${newPerPage}"]`).forEach(function(e)
     {
         e.classList.add("selected");
     });
@@ -203,7 +203,7 @@ function setupPerPage()
 {
     let perPage = getPerPage();
 
-    document.querySelectorAll(".perPageButton").forEach((btn) =>
+    $(".perPageButton").forEach((btn) =>
     {
         btn.addEventListener("click", function()
         {

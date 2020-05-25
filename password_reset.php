@@ -40,6 +40,6 @@ verify_loggedin();
         </div>
     </div>
 </div>
-<?php build_js("password_reset", "consolelog", "animate", "queryStatus", "nav"); ?>
+<?php build_js("password_reset", "consolelog", "animate", "common", "queryStatus", "nav"); ?>
 </body>
 </html>

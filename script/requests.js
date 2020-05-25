@@ -430,7 +430,7 @@ function filterHtml()
                     // If we clicked the filter item, but not directly on the label/checkbox, pretend we did
                     if (e.target == this)
                     {
-                        this.querySelector("input").click();
+                        this.$$("input").click();
                     }
                 }
             });

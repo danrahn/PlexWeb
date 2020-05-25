@@ -15,7 +15,7 @@ function setupFormListeners()
     setupLabelListeners();
     setupPwListeners();
 
-    let checkboxes = document.querySelectorAll("input[type=checkbox]");
+    let checkboxes = $("input[type=checkbox]");
     for (let i = 0; i < checkboxes.length; ++i) {
         checkboxes[i].addEventListener("keydown", function(e) {
             e = e || window.event;
@@ -65,36 +65,36 @@ function getCurrentValues()
     let successFunc = function(response)
     {
         // Assume all of our values are correct here
-        document.querySelector("input[name=firstname]").value = initialValues.firstname = response["firstname"];
-        document.querySelector("input[name=lastname]").value = initialValues.lastname = response["lastname"];
-        document.querySelector("input[name=email]").value = initialValues.email = response["email"];
-        document.querySelector("input[name=emailalerts]").checked = initialValues.emailalerts = response["emailalerts"] != "0";
+        $$("input[name=firstname]").value = initialValues.firstname = response["firstname"];
+        $$("input[name=lastname]").value = initialValues.lastname = response["lastname"];
+        $$("input[name=email]").value = initialValues.email = response["email"];
+        $$("input[name=emailalerts]").checked = initialValues.emailalerts = response["emailalerts"] != "0";
         if (initialValues.email.match(validEmailRegex))
         {
-            setVisible(document.querySelector("input[name=emailalerts").parentNode, true);
+            setVisible($$("input[name=emailalerts").parentNode, true);
         }
 
-        emailChangeListenerCore(document.querySelector("input[name=email]"));
+        emailChangeListenerCore($$("input[name=email]"));
         let phone = response["phone"];
         if (phone != "0") {
-            document.querySelector("input[name=phone]").value = initialValues.phone = phone;
-            phoneListenerCore(document.querySelector("input[name=phone]"));
-            phoneFocusListenerCore(document.querySelector("input[name=phone]"));
+            $$("input[name=phone]").value = initialValues.phone = phone;
+            phoneListenerCore($$("input[name=phone]"));
+            phoneFocusListenerCore($$("input[name=phone]"));
         }
 
-        document.querySelector("select[name=carrier]").value = initialValues.carrier = response["carrier"];
-        document.querySelector("input[name=phonealerts]").checked = initialValues.phonealerts = response["phonealerts"] != "0";
+        $$("select[name=carrier]").value = initialValues.carrier = response["carrier"];
+        $$("input[name=phonealerts]").checked = initialValues.phonealerts = response["phonealerts"] != "0";
         logVerbose(initialValues.phone.replace(/[^\d]/g, "").length);
         if (initialValues.phone.replace(/[^\d]/g, "").length == 10)
         {
-            setVisible(document.querySelector("input[name=phonealerts]").parentNode, true);
+            setVisible($$("input[name=phonealerts]").parentNode, true);
         }
     };
 
     let failureFunc = function(response)
     {
         logError(response["Error"]);
-        let error = document.getElementById("formError");
+        let error = $("#formError");
         error.innerHTML = response["Error"];
         error.style.display = "block";
         Animation.queue({"opacity" : 1}, error, 500);
@@ -107,8 +107,8 @@ function getCurrentValues()
 
 function setupEmailListeners()
 {
-    let email = document.querySelector("input[name=email]");
-    let alerts = document.querySelector("input[name=emailalerts]");
+    let email = $$("input[name=email]");
+    let alerts = $$("input[name=emailalerts]");
 
     email.addEventListener("input", emailChangeListener);
     alerts.addEventListener("change", function()
@@ -128,7 +128,7 @@ function emailChangeListenerCore(ele)
     {
         logTmi("valid email found");
         ele.style.backgroundColor = null;
-        setVisible(document.querySelector("input[name=emailalerts]").parentNode, true);
+        setVisible($$("input[name=emailalerts]").parentNode, true);
     }
     else
     {
@@ -142,14 +142,14 @@ function emailChangeListenerCore(ele)
             ele.style.backgroundColor = ele.value ? "rgb(100, 66, 69)" : null;
         }
 
-        setVisible(document.querySelector("input[name=emailalerts]").parentNode, false);
+        setVisible($$("input[name=emailalerts]").parentNode, false);
     }
 }
 
 function setupPhoneListeners()
 {
-    let phone = document.querySelector("input[name=phone]");
-    let alerts = document.querySelector("input[name=phonealerts]");
+    let phone = $$("input[name=phone]");
+    let alerts = $$("input[name=phonealerts]");
     let digits = phone.value.replace(/[^\d]/g, "");
 
     // Needs to be 10 digits (11-digit international numbers don't seem to work)
@@ -173,7 +173,7 @@ function phoneListener() {
 
 function phoneListenerCore(ele) {
     let digit = ele.value ? ele.value.replace(/[^\d]/g, "") : "";
-    let alerts = document.querySelector("input[name=phonealerts]");
+    let alerts = $$("input[name=phonealerts]");
     if (digit.length !== 10) {
         logTmi("Invalid phone");
         ele.style.backgroundColor = ele.value ? "rgb(100, 66, 69)" : null;
@@ -200,13 +200,13 @@ function phoneFocusListenerCore(ele) {
 function setupLabelListeners() {
     let inputs =
     [
-        document.querySelector("input[name=firstname]"),
-        document.querySelector("input[name=lastname]"),
-        document.querySelector("input[name=email]"),
-        document.querySelector("input[name=emailalerts]"),
-        document.querySelector("input[name=phone]"),
-        document.querySelector("input[name=phonealerts]"),
-        document.querySelector("select[name=carrier]")
+        $$("input[name=firstname]"),
+        $$("input[name=lastname]"),
+        $$("input[name=email]"),
+        $$("input[name=emailalerts]"),
+        $$("input[name=phone]"),
+        $$("input[name=phonealerts]"),
+        $$("select[name=carrier]")
     ];
 
     for (let i = 0; i < inputs.length; ++i)
@@ -240,13 +240,13 @@ function setupLabelListeners() {
 
 function setupSubmitButton()
 {
-    let submit = document.getElementById("go");
+    let submit = $("#go");
     submit.addEventListener("click", function()
     {
         logInfo("Submitting user info changes");
         let valid = true;
-        let phone = document.querySelector("input[name=phone]");
-        let phonealerts = document.querySelector("input[name=phonealerts]").checked;
+        let phone = $$("input[name=phone]");
+        let phonealerts = $$("input[name=phonealerts]").checked;
         let digits = phone.value.replace(/[^\d]/g, "");
         if (phonealerts)
         {
@@ -264,7 +264,7 @@ function setupSubmitButton()
         }
 
 
-        let email = document.querySelector("input[name=email]");
+        let email = $$("input[name=email]");
         if (email.value.length != 0 && !email.value.match(validEmailRegex))
         {
             valid = false;
@@ -294,13 +294,13 @@ function setupSubmitButton()
         {
             let inputs =
             [
-                document.querySelector("input[name=firstname]"),
-                document.querySelector("input[name=lastname]"),
-                document.querySelector("input[name=email]"),
-                document.querySelector("input[name=emailalerts]"),
-                document.querySelector("input[name=phone]"),
-                document.querySelector("input[name=phonealerts]"),
-                document.querySelector("select[name=carrier]")
+                $$("input[name=firstname]"),
+                $$("input[name=lastname]"),
+                $$("input[name=email]"),
+                $$("input[name=emailalerts]"),
+                $$("input[name=phone]"),
+                $$("input[name=phonealerts]"),
+                $$("select[name=carrier]")
             ];
 
             inputs.forEach(function(element)
@@ -318,7 +318,7 @@ function setupSubmitButton()
         let failureFunc = function(response)
         {
             logError(response["Error"]);
-            let error = document.getElementById("formError");
+            let error = $("#formError");
             error.innerHTML = response["Error"];
             error.style.display = "block";
             Animation.queue({"opacity" : 1}, error, 500);
@@ -332,25 +332,25 @@ function setupSubmitButton()
 
 function getField(name, field="value", type="input")
 {
-    return document.querySelector(type + "[name=" + name + "]")[field];
+    return $$(type + "[name=" + name + "]")[field];
 }
 
 function setupPwListeners()
 {
-    document.querySelectorAll("#pwForm input").forEach(function(e)
+    $("#pwForm input").forEach(function(e)
     {
         e.addEventListener("keydown", function(e)
         {
             if (e.keyCode == 13 && !e.ctrlKey && !e.shiftKey && !e.altKey)
             {
-                document.querySelector("#pwGo").click();
+                $("#pwGo").click();
             }
         });
     });
 
-    document.querySelector("#newPassConf").addEventListener("input", function()
+    $("#newPassConf").addEventListener("input", function()
     {
-        if (this.value && this.value != document.querySelector("#newPass").value)
+        if (this.value && this.value != $("#newPass").value)
         {
             this.style.backgroundColor = "rgb(100, 66, 69)";
         }
@@ -361,16 +361,16 @@ function setupPwListeners()
     });
 
     // If the field is red due to a blank entry upon submission, clear it out on the next input
-    document.querySelector("#newPass").addEventListener("input", function()
+    $("#newPass").addEventListener("input", function()
     {
         this.style.backgroundColor = "";
     });
-    document.querySelector("#oldPass").addEventListener("input", function()
+    $("#oldPass").addEventListener("input", function()
     {
         this.style.backgroundColor = "";
     });
 
-    document.querySelector("#pwGo").addEventListener("click", function()
+    $("#pwGo").addEventListener("click", function()
     {
         submitPasswordChange();
     });
@@ -378,9 +378,9 @@ function setupPwListeners()
 
 function submitPasswordChange()
 {
-    let oldPass = document.querySelector("#oldPass");
-    let newPass = document.querySelector("#newPass");
-    let conf = document.querySelector("#newPassConf");
+    let oldPass = $("#oldPass");
+    let newPass = $("#newPass");
+    let conf = $("#newPassConf");
 
     if (!verifyFields(oldPass, newPass, conf))
     {
@@ -403,7 +403,7 @@ function submitPasswordChange()
 
     let successFunc = function()
     {
-        let status = document.getElementById("formStatus");
+        let status = $("#formStatus");
         status.className = "formContainer statusSuccess";
         status.innerHTML = "Password changed!";
         Animation.queue({"opacity" : 1}, status, 500);
@@ -412,7 +412,7 @@ function submitPasswordChange()
 
     let failureFunc = function(response)
     {
-        let status = document.getElementById("formStatus");
+        let status = $("#formStatus");
         status.className = "formContainer statusFail";
         status.innerHTML = response["Error"];
         Animation.queue({"opacity" : 1}, status, 500);

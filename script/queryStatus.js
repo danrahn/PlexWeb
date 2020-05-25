@@ -24,7 +24,7 @@ function queryStatus()
                 {
                     logVerbose('No more active items, clearing status');
                     hasChanged = false;
-                    document.querySelector('title').innerHTML = baseTitle;
+                    $$('title').innerHTML = baseTitle;
                 }
                 return;
             }
@@ -51,7 +51,7 @@ function queryStatus()
                 prepend += `${response.pause}  &#10073;&#10073; - `;
             }
 
-            document.querySelector('title').innerHTML = prepend + baseTitle;
+            $$('title').innerHTML = prepend + baseTitle;
         }
         catch (ex)
         {

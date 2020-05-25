@@ -8,7 +8,7 @@ window.addEventListener('load', function()
 
 function checkUsername()
 {
-    let user = document.querySelector("input[name='username']");
+    let user = $$("input[name='username']");
     if (!user.value)
     {
         // No value, clear name
@@ -37,7 +37,7 @@ function checkUsername()
 
     let successFunc = function(response)
     {
-        let username = document.querySelector("input[name='username']");
+        let username = $$("input[name='username']");
         if (lastUsername !== username.value)
         {
             return;
@@ -82,33 +82,33 @@ function flashField(element)
 /// </summary>
 function setupRegisterForm()
 {
-    document.getElementById("go").addEventListener("click", sendRegistration);
+    $("#go").addEventListener("click", sendRegistration);
     
-    var inputs = document.querySelectorAll("input, select");
+    var inputs = $("input, select");
     for (var i = 0; i < inputs.length; i++)
     {
         inputs[i].addEventListener("keyup", function(e)
         {
             if (e.keyCode === 13 && !e.shiftKey && !e.ctrlKey && !e.altKey)
             {
-                document.getElementById("go").click();
+                $("#go").click();
             }
         });
     }
     
-    let user = document.querySelector("input[name='username']");
-    let pass = document.querySelector("input[name='password']");
-    let conf = document.querySelector("input[name='confirm']");
+    let user = $$("input[name='username']");
+    let pass = $$("input[name='password']");
+    let conf = $$("input[name='confirm']");
 
     user.addEventListener("focusout", focusOutEvent);
     pass.addEventListener("focusout", focusOutEvent);
     conf.addEventListener("focusout", focusOutEvent);
-    document.querySelector("input[type='button']").addEventListener("focusout", focusOutEvent);
+    $$("input[type='button']").addEventListener("focusout", focusOutEvent);
     
     user.addEventListener("focus", focusInEvent);
     pass.addEventListener("focus", focusInEvent);
     conf.addEventListener("focus", focusInEvent);
-    document.querySelector("input[type='button']").addEventListener("focus", focusInEvent);
+    $$("input[type='button']").addEventListener("focus", focusInEvent);
 
     user.addEventListener("keyup", userKeyup);
     pass.addEventListener("keyup", keyDownEvent);
@@ -119,9 +119,9 @@ function setupRegisterForm()
 
 function sendRegistration()
 {
-    let user = document.querySelector("input[name='username']");
-    let pass = document.querySelector("input[name='password']");
-    let conf = document.querySelector("input[name='confirm']");
+    let user = $$("input[name='username']");
+    let pass = $$("input[name='password']");
+    let conf = $$("input[name='confirm']");
     verifyField(user);
     verifyField(pass);
     verifyField(conf);
@@ -146,7 +146,7 @@ function sendRegistration()
 
     let successFunc = function()
     {
-        let status = document.getElementById("formStatus");
+        let status = $("#formStatus");
         status.className = "formContainer statusSuccess";
         status.innerHTML = "Success! Redirecting you to the <a href='login.php'>login page</a>";
         Animation.queue({"opacity" : 1}, status, 500);
@@ -157,7 +157,7 @@ function sendRegistration()
 
     let failureFunc = function(response)
     {
-        let status = document.getElementById("formStatus");
+        let status = $("#formStatus");
         status.className = "formContainer statusFail";
         status.innerHTML = response["Error"];
         Animation.queue({"opacity" : 1}, status, 500);
@@ -198,8 +198,8 @@ function userKeyup()
 function keyDownEvent(e)
 {
     let key = e.which || e.keyCode;
-    var pass = document.querySelector("input[name='password']");
-    var conf = document.querySelector("input[name='confirm']");
+    var pass = $$("input[name='password']");
+    var conf = $$("input[name='confirm']");
     if (key !== 13)
     {
         if (conf.value && pass.value !== conf.value)

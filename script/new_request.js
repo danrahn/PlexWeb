@@ -99,7 +99,7 @@ function searchItem()
         setVisibility("externalContainer", true);
         if (response.results.length === 0)
         {
-            document.getElementById("matchContainer").innerHTML = `No matches found. Please enter the ${value == "audiobook" ? "Audible" : "IMDb"} ID below`;
+            $("#matchContainer").innerHTML = `No matches found. Please enter the ${value == "audiobook" ? "Audible" : "IMDb"} ID below`;
             return;
         }
 
@@ -108,7 +108,7 @@ function searchItem()
 
     let failureFunc = function(/*response*/)
     {
-        document.getElementById("matchContainer").innerHTML = "Error searching for matches";
+        $("#matchContainer").innerHTML = "Error searching for matches";
     };
 
     sendHtmlJsonRequest("media_search.php", params, successFunc, failureFunc);
@@ -649,7 +649,7 @@ function goToRequest()
 
 function setVisibility(id, visible)
 {
-    let element = document.getElementById(id);
+    let element = $('#' + id);
     if (!element)
     {
         return;
