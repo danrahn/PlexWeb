@@ -23,7 +23,7 @@ function setupFormListeners()
             if (key === 13) {
                 this.checked = !this.checked;
                 if (initialValues[this.id] != this.checked) {
-                    this.parentNode.children[0].style.color = changedColor.toString();
+                    this.parentNode.children[0].style.color = changedColor.s();
                 } else {
                     this.parentNode.children[0].style.color = null;
                 }
@@ -220,7 +220,8 @@ function setupLabelListeners() {
                 {
                     logVerbose(this.id + " different from original");
                 }
-                this.parentNode.children[0].style.color = changedColor.toString();
+
+                this.parentNode.children[0].style.color = changedColor.s();
                 this.setAttribute("changed", 1);
             }
             else
