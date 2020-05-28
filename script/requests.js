@@ -348,7 +348,9 @@ function filterBtnClick()
             "sort" : $("#sortBy").value,
             "order" : $("#sortOrder").value,
             "user" : isAdmin() ? $("#filterTo").value : "-1"
-        }, true /*update*/);
+        }, false /*update*/);
+
+        setPerPage($('#filterPerPage').value, true /*update*/);
 
         dismissFilterDialog();
     });
@@ -472,6 +474,22 @@ function filterHtml()
         userSelect.appendChild(filterUser);
         container.appendChild(userSelect);
         container.appendChild(buildNode("hr"));
+    }
+
+    if (getComputedStyle($$('.largeShow')).display != 'inline')
+    {
+        let showHolder = buildNode('div', {'class' : 'formInput'});
+        showHolder.appendChild(buildNode('label', {'for' : 'filterPerPage'}, 'Show Per Page: '));
+        let show = buildNode('select', {'name' : 'filterPerPage', 'id' : 'filterPerPage'});
+        const showOption = (option) => buildNode('option', {'value' : option}, option);
+        show.appendChild(showOption(25));
+        show.appendChild(showOption(50));
+        show.appendChild(showOption(100));
+        show.appendChild(buildNode('option', {'value' : 0 }, "All"));
+        show.value = getPerPage();
+        showHolder.appendChild(show);
+        container.appendChild(showHolder);
+        container.appendChild(buildNode('hr'));
     }
 
     let buttonHolder = buildNode("div", {"class" : "formInput"});
