@@ -11,6 +11,7 @@ window.addEventListener("load", function()
     document.body.addEventListener("keyup", filterKeyHandler);
 
     setupFilter();
+    setupTableSearch();
 });
 
 function getActivities()

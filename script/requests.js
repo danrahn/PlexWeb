@@ -4,25 +4,52 @@ window.addEventListener("load", function()
     setPage(0);
     setupPerPage();
     setupNavigation();
+    setupTableSearch();
     setupFilter();
     getRequests();
     setupKeyboardNavigation();
+    $('#clearSearch').addEventListener('click', function()
+    {
+        $('.searchInput').forEach(function() { this.value = ''; });
+        getRequests();
+    });
 });
 
 
 /// <summary>
 /// Ask the server for user requests dependent on the current page and filter
 /// </summary>
-function getRequests()
+function getRequests(searchValue='')
 {
-    let parameters = { "type" : "requests", "num" : getPerPage(), "page" : getPage(), "filter" : JSON.stringify(getFilter()) };
+    let parameters =
+    {
+        "type" : "requests",
+        "num" : getPerPage(),
+        "page" : getPage(),
+        "search" : searchValue,
+        "filter" : JSON.stringify(getFilter())
+    };
 
     displayInfoMessage("Loading...");
+    let header = $('#requestSearch');
+    if (searchValue.length == 0)
+    {
+        header.style.display = 'none';
+    }
+    else
+    {
+        header.style.display = 'block';
+        $('#searchTerm').innerHTML = searchValue;
+    }
 
     let successFunc = function(response)
     {
         clearElement("tableEntries");
         buildRequests(response);
+        if (searchValue.length != 0)
+        {
+            $$('.searchBtn').click();
+        }
     };
 
     let failureFunc = function()
@@ -476,7 +503,7 @@ function filterHtml()
         container.appendChild(buildNode("hr"));
     }
 
-    if (getComputedStyle($$('.largeShow')).display != 'inline')
+    if (getComputedStyle($$('.nomobile')).display != 'inline')
     {
         let showHolder = buildNode('div', {'class' : 'formInput'});
         showHolder.appendChild(buildNode('label', {'for' : 'filterPerPage'}, 'Show Per Page: '));
@@ -515,6 +542,14 @@ function filterHtml()
     buttonHolder.appendChild(innerButtonHolder);
     container.appendChild(buttonHolder);
     return container;
+}
+
+/// <summary>
+/// Invoke a search for a specific request
+/// </summary>
+function tableSearch(value)
+{
+    getRequests(value);
 }
 
 /// <summary>

@@ -62,3 +62,14 @@
     vertical-align: bottom;
     margin-left: 5px;
 }
+
+#requestSearch img {
+    vertical-align: text-top;
+    height: 15px;
+    margin-left: 5px;
+    cursor: pointer;
+}
+
+#requestSearch img:hover {
+    filter: invert(20%);
+}

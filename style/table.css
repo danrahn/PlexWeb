@@ -30,7 +30,7 @@ option {
 
 .tableHolder {
     margin: auto;
-    margin-top: 70px;
+    margin-top: 20px;
     margin-bottom: 20px;
     width: 80%;
     min-width: 300px;
@@ -70,7 +70,7 @@ option {
     color: #c1c1c1;
     background-color: transparent;
     padding: 10px;
-    width: 50px;
+    width: 40px;
 }
 
 .tableHF .perPageButton {
@@ -130,8 +130,28 @@ option {
     font-size: 12pt;
 }
 
-.pageStatus {
+.pageStatus, .searchInputHolder {
     display: inline-block;
+}
+
+.searchInputHolder {
+    display: none;
+}
+
+.searchGo {
+    float: unset;
+    width: 30px;
+    padding: 4px;
+}
+
+.searchInput {
+    float: unset;
+    padding: 4px;
+    background-color: rgba(63, 66, 69, .5) !important;
+}
+
+.searchInput:hover {
+    background-color: rgba(63, 66, 69, .9) !important;
 }
 
 .previousPage {
@@ -167,7 +187,7 @@ option {
     border-bottom-right-radius: 10px
 }
 
-.filterBtn {
+.tableBtn {
     display: inline;
     border: none;
     vertical-align: middle;
@@ -175,14 +195,14 @@ option {
     padding-top: 7px !important;
 }
 
-.filterImg {
+.tableImg {
     display: inline;
     height: 20px;
     vertical-align: middle;
     padding-bottom: 3px;
 }
 
-.filterBtn:hover .filterImg {
+.tableBtn:hover .tableImg {
     filter: invert(20%);
 }
 
@@ -238,11 +258,22 @@ option {
     float: none;
 }
 
+#requestSearch {
+    color: #a1a1a1;
+}
+
+.searchInputClear {
+    width: 15px;
+    margin-left: -25px;
+    margin-right: 5px;
+    vertical-align: text-bottom;
+    cursor: pointer;
+}
 
 
 /* Desktop/landscape mode */
 @media (orientation: landscape), (min-width: 767px) {
-    .largeShow {
+    .nomobile {
         display: inline;
     }
 
@@ -265,7 +296,7 @@ option {
         margin-left: 15px;
     }
 
-    .pageStatus {
+    .pageStatus, .searchInput {
         margin-left: 10px;
     }
 
@@ -276,11 +307,19 @@ option {
     .textHolder {
         max-width: calc(100% - 100px);
     }
+
+    .searchInputHolder {
+        width: calc(100% - 410px);
+    }
+
+    .searchInput {
+        width: calc(100% - 60px);
+    }
 }
 
 /* Mobile/portrait mode */
 @media (orientation: portrait) and (max-width: 767px) {
-    .largeShow {
+    .nomobile {
         display: none;
     }
 
@@ -299,10 +338,21 @@ option {
         border: 2px solid #919191AA;
     }
 
-    .pageStatus {
+    .pageStatus, .searchInputHolder {
         text-align: center;
-        width: calc(100% - 160px);
         margin: auto;
+    }
+
+    .pageStatus {
+        width: calc(100% - 170px);
+    }
+
+    .searchInputHolder {
+        width: calc(100% - 180px);
+    }
+
+    .searchInput {
+        max-width: calc(100% - 45px);
     }
 
     #filterContainer {

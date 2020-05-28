@@ -105,7 +105,7 @@ function process_request($type)
             $message = get_next_req((int)get("id"), (int)get("dir"));
             break;
         case "requests":
-            $message = get_requests((int)get("num"), (int)get("page"), get("filter"));
+            $message = get_requests((int)get("num"), (int)get("page"), get("search"), get("filter"));
             break;
         case "activities":
             $message = get_activites((int)get("num"), (int)get("page"), get("filter"));
@@ -1621,7 +1621,7 @@ function get_next_req($cur_id, $forward)
     return '{"new_id":' . $result->fetch_row()[0] . "}";
 }
 
-function get_requests($num, $page, $filter)
+function get_requests($num, $page, $search, $filter)
 {
     global $db;
     $id = (int)$_SESSION['id'];
@@ -1698,6 +1698,12 @@ function get_requests($num, $page, $filter)
         {
             $filter_string .= "AND (user_requests.username_id=$user) ";
         }
+    }
+
+    if (strlen($search) > 0)
+    {
+        $search = $db->real_escape_string($search);
+        $filter_string .= "AND (request_name LIKE '%$search%') ";
     }
 
     $query .= $filter_string;

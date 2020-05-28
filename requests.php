@@ -18,16 +18,18 @@ verify_loggedin(TRUE /*redirect*/, "requests.php");
     <title>Plex Requests</title>
 
     <!-- Inline stylesheets to reduce network roundtrip costs -->
-    <?php get_css("style", "nav", "table", "requests"); ?>
+    <?php get_css("style", "nav", "table", "overlay", "requests"); ?>
 </head>
 
 <body isAdmin="<?= (isset($_SESSION['level']) && $_SESSION['level'] >= 100) ? 1 : 0 ?>">
     <div id="plexFrame">
         <?php include "nav.php" ?>
         <div id="container">
+            <h2 id="welcome">Requests</h2>
+            <h3 id="requestSearch">Results for "<span id="searchTerm"></span>"<img src="icon/exit.svg" id="clearSearch" alt="Clear" title="Clear Search"></h3>
             <?php include "includes/table.html" ?>
         </div>
     </div>
 </body>
-<?php build_js("requests", "consolelog", "queryStatus", "animate", "common", "nav", "DateUtil", "tableCommon") ?>
+<?php build_js("requests", "consolelog", "queryStatus", "animate", "common", "nav", "DateUtil", "tableCommon", "overlay") ?>
 </html>

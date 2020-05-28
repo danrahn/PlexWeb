@@ -99,6 +99,65 @@ function setupKeyboardNavigation()
     })
 }
 
+function setupTableSearch()
+{
+    $('.searchBtn').forEach(function(btn)
+    {
+        btn.addEventListener('click', searchBtnClick);
+    });
+
+    $('.searchGo').forEach(function(btn)
+    {
+        btn.addEventListener('click', startSearch);
+    });
+
+    $('.searchInput').forEach(function(input)
+    {
+        input.addEventListener('keydown', function(e)
+        {
+            if (e.keyCode == 13 /*enter*/)
+            {
+                this.parentNode.$$('.searchGo').click();
+            }
+        });
+    });
+}
+
+function searchBtnClick(e)
+{
+    let show = !$$('.pageStatus').style.display || $$('.pageStatus').style.display != 'none';
+    $('.pageStatus').forEach(function(ele)
+    {
+        ele.style.display = show ? 'none' : 'inline-block';
+    });
+
+    $('.searchInputHolder').forEach(function(ele)
+    {
+        ele.style.display = show ? 'inline-block' : 'none';
+    });
+
+    if (show)
+    {
+        this.parentNode.$$('.searchInput').focus();
+    }
+}
+
+/// <summary>
+/// Initiates a search. If the owner hasn't defined
+/// a search function, warn the user.
+/// </summary>
+function startSearch(e)
+{
+    try
+    {
+        tableSearch(this.parentNode.$$('.searchInput').value);
+    }
+    catch (e)
+    {
+        overlay("This table doesn't have search enabled (yet)", "OK", overlayDismiss);
+    }
+}
+
 /// <summary>
 /// Navigate to the previous page if we're not on the first page
 /// </summary>

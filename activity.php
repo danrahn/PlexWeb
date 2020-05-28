@@ -17,7 +17,7 @@ requireSSL();
     <meta name="theme-color" content="#3C5260">
     <title>Activity</title>
 
-    <?php get_css("style", "nav", "table") ?>
+    <?php get_css("style", "nav", "overlay", "table") ?>
     <style>
 .newActivity {
     background-color: rgba(63, 100, 69, 0.3);
@@ -35,9 +35,10 @@ requireSSL();
     <div id="plexFrame">
         <?php include "nav.php" ?>
         <div id="container">
+            <div style='margin-top: 50px; overflow: auto'></div>
             <?php include "includes/table.html" ?>
         </div>
     </div>
 </body>
-<?php build_js("activity", "consolelog", "animate", "common", "queryStatus", "nav", "DateUtil", "tableCommon"); ?>
+<?php build_js("activity", "consolelog", "animate", "common", "queryStatus", "nav", "DateUtil", "overlay", "tableCommon"); ?>
 </html>
