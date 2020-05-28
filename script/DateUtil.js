@@ -53,6 +53,6 @@ let DateUtil =
         }
 
         let yearDiff = now.getFullYear() - date.getFullYear();
-        return `${yearDiff == 0 ? 1 : yearDiff} year${yearDiff == 1 ? '' : 's'}`;
+        return `${yearDiff == 0 ? 1 : yearDiff} year${yearDiff == 1 ? '' : 's'} ago`;
     }
 };

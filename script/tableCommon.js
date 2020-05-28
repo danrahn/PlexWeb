@@ -121,6 +121,21 @@ function setupTableSearch()
             }
         });
     });
+
+    $('.searchInputClear').forEach(function(img)
+    {
+        img.addEventListener('click', function(e)
+        {
+            let search = this.parentNode.$$('.searchInput');
+            if (search.value.length != 0)
+            {
+                this.parentNode.$$('.searchInput').value = '';
+                this.parentNode.$$('.searchGo').click();
+            }
+            
+            this.parentNode.parentNode.$$('.searchBtn').click();
+        });
+    })
 }
 
 function searchBtnClick(e)

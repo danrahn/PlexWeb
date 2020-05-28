@@ -31,6 +31,11 @@ const overlayDismiss = () => Animation.queue({"opacity": 0}, $("#mainOverlay"), 
 /// <param name="...children">The list of nodes to append to the overaly.</param>
 function buildOverlay(dismissable, ...children)
 {
+    if ($('#mainOverlay') && $('#mainOverlay').style.opacity != '0')
+    {
+        return;
+    }
+
     let overlay = buildNode("div",
         {
             "id" : "mainOverlay",

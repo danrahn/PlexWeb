@@ -108,7 +108,7 @@ function process_request($type)
             $message = get_requests((int)get("num"), (int)get("page"), get("search"), get("filter"));
             break;
         case "activities":
-            $message = get_activites((int)get("num"), (int)get("page"), get("filter"));
+            $message = get_activites((int)get("num"), (int)get("page"), get("search"), get("filter"));
             break;
         case "new_activities":
             $message = get_new_activity_count();
@@ -1916,16 +1916,16 @@ function get_new_activity_count()
 /// Get all relevant activites for the current user. If the current user is an admin, return
 /// all activities, otherwise return activities that directly relate to the current user.
 /// </summary>
-function get_activites($num, $page, $filter)
+function get_activites($num, $page, $search, $filter)
 {
     global $db;
 
     $offset = $num == 0 ? 0 : $num * $page;
     $current_user = $_SESSION['id'];
     $filter = json_decode($filter);
-    $query = "SELECT `type`, `user_id`, `admin_id`, `request_id`, `data`, `timestamp` FROM `activities` ";
+    $query = "SELECT `type`, `user_id`, `admin_id`, `request_id`, `data`, `timestamp`, `request_name`, `poster_path` FROM `activities` ";
 
-    $filter_string = "";
+    $filter_string = "INNER JOIN `user_requests` ON `activities`.`request_id`=`user_requests`.`id` ";
 
     if ($_SESSION['level'] < 100)
     {
@@ -1964,6 +1964,12 @@ function get_activites($num, $page, $filter)
         $filter_string .= "AND `type` != 3 ";
     }
 
+    if (strlen($search) > 0)
+    {
+        $search = $db->real_escape_string($search);
+        $filter_string .= "AND `request_name` LIKE '%$search%' ";
+    }
+
     $query .= $filter_string;
 
     $query .= "ORDER BY `timestamp` " . $filter->order . " ";
@@ -1992,6 +1998,8 @@ function get_activites($num, $page, $filter)
         $last_active = new DateTime($active_result->fetch_row()[0]);
     }
 
+    // SELECT `type`, `user_id`, `admin_id`, `request_id`, `data`, `timestamp`, `request_name`, `poster_path`, `users`.`id` AS `uid`, `username` FROM `activities` INNER JOIN `user_requests` ON `activities`.`request_id`=`user_requests`.`id` INNER JOIN `users` ON `activities`.`user_id`=`users`.`id` WHERE `request_name` LIKE '%ANA%'
+
     $activities = new \stdClass();
     $activities->activities = array();
     $activities->new = 0;
@@ -2010,6 +2018,8 @@ function get_activites($num, $page, $filter)
         $activity->username = $_SESSION['username'];
         $activity->uid = $row['user_id'];
         $activity->rid = $row['request_id'];
+        $activity->value = $row['request_name'];
+        $activity->poster = $row['poster_path'];
 
         $admin_id = $row['admin_id'];
         $inner_query;
@@ -2039,22 +2049,6 @@ function get_activites($num, $page, $filter)
         $inner_result->close();
 
         $activity_rid = $row['request_id'];
-        $inner_query = "SELECT `request_name`, `poster_path` FROM `user_requests` WHERE `id`=$activity_rid";
-        $inner_result = $db->query($inner_query);
-        if ($inner_result === FALSE)
-        {
-            return db_error();
-        }
-
-        if ($inner_result->num_rows == 0)
-        {
-            return json_error("Unable to get request name from request id $activity_rid");
-        }
-
-        $request = $inner_result->fetch_assoc();
-        $activity->value = $request['request_name'];
-        $activity->poster = $request['poster_path'];
-        $inner_result->close();
 
         if ($row['type'] == 3) // Status change
         {
