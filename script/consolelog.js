@@ -1,4 +1,11 @@
 /// <summary>
+/// Console logging class. Allows easy timestamped logging with various log levels
+///
+/// Because this class is used on almost every page, some additional manual minification
+/// has been done to reduce its overall size. Nothing like unnecessary micro-optimizations!
+/// </summary>
+
+/// <summary>
 /// All possible log levels, from most to least verbose
 /// </summary>
 const LOG = {
@@ -12,45 +19,58 @@ const LOG = {
 };
 
 const g_logStr = ["TMI", "VERBOSE", "INFO", "WARN", "ERROR", "CRITICAL"];
-const _i = "inherit";
+const _inherit = "inherit";
+
+/// <summary>
+/// Console color definitions for each log level
+/// </summary>
 const g_levelColors =
 [
     ["#00CC00", "#00AA00", "#AAA", "#888"],
-    ["#c661e8", "#c661e8", _i, _i],
-    ["blue", "#88C", _i, _i],
-    ["E50", "#C40", _i, _i],
-    [_i, _i, _i, _i],
+    ["#c661e8", "#c661e8", _inherit, _inherit],
+    ["blue", "#88C", _inherit, _inherit],
+    ["E50", "#C40", _inherit, _inherit],
+    [_inherit, _inherit, _inherit, _inherit],
     ["inherit; font-size: 2em", "inherit; font-size: 2em", "#800; font-size: 2em", "#C33; font-size: 2em"],
     ["#009900", "#006600", "#AAA", "#888"]
 ];
 
+/// <summary>
+/// Trace color definitions for each log level
+/// </summary>
 const g_traceColors =
 [
-    ["#00CC00", "#00AA00", "#AAA", "#888"],
-    ["#c661e8", "#c661e8", _i, _i],
-    ["#blue", "#88C", _i, _i],
+    g_levelColors[0],
+    g_levelColors[1],
+    g_levelColors[2],
     ["#E50; background-color: #FFFBE5", "#C40; background-color: #332B00", "inherit; background-color: #FFFBE5", "#DFC185; background-color: #332B00"],
     ["red; background-color: #FEF0EF", "#D76868; background-color: #290000", "red; background-color: #FEF0EF", "#D76868; background-color: #290000"],
     ["red; font-size: 2em", "red; font-size: 2em", "#800; font-size: 2em", "#C33; font-size: 2em"],
-    ["#009900", "#009900", "#AAA", "#888"]
+    g_levelColors[6]
 ];
 
-// g_ll == g_logLevel
-l_ = () => localStorage;
-let g_ll = parseInt(l_().getItem("loglevel"));
-if (isNaN(g_ll))
+/// <summary>
+/// The current log level. Anything below this will not be logged
+/// </summary>
+let g_logLevel = parseInt(localStorage.getItem("loglevel"));
+if (isNaN(g_logLevel))
 {
-    g_ll = LOG.Info;
+    g_logLevel = LOG.Info;
 }
 
-// g_tl = g_traceLogging
-let g_tl = parseInt(l_().getItem("logtrace"));
-if (isNaN(g_tl))
+/// <summary>
+/// Determine whether we should add a trace to every log event, not just errors
+/// </summary>
+let g_traceLogging = parseInt(localStorage.getItem("logtrace"));
+if (isNaN(g_traceLogging))
 {
-    g_tl = 0;
+    g_traceLogging = 0;
 }
 
-let g_darkConsole = parseInt(l_().getItem("darkconsole"));
+/// <summary>
+/// Tweak colors a bit based on whether the user is using a dark console theme
+/// </summary>
+let g_darkConsole = parseInt(localStorage.getItem("darkconsole"));
 if (isNaN(g_darkConsole))
 {
     g_darkConsole = 0;
@@ -58,9 +78,10 @@ if (isNaN(g_darkConsole))
 
 logInfo("Welcome to the console! For debugging help, call consoleHelp()");
 
-testAll = function()
+// Don't include this in minified versions
+function testAll()
 {
-    const old = g_ll;
+    const old = g_logLevel;
     setLogLevel(-1);
     logTmi("TMI!");
     setLogLevel(0);
@@ -74,13 +95,13 @@ testAll = function()
 
 function setLogLevel(level)
 {
-    l_().setItem("loglevel", level);
-    g_ll = level;
+    localStorage.setItem("loglevel", level);
+    g_logLevel = level;
 }
 
 function setDarkConsole(dark)
 {
-    l_().setItem("darkconsole", dark);
+    localStorage.setItem("darkconsole", dark);
     g_darkConsole = dark;
 }
 
@@ -89,8 +110,8 @@ function setDarkConsole(dark)
 /// </summary>
 function setTrace(trace)
 {
-    l_().setItem("logtrace", trace);
-    g_tl = trace;
+    localStorage.setItem("logtrace", trace);
+    g_traceLogging = trace;
 }
 
 function logTmi(obj, description, freeze)
@@ -120,7 +141,7 @@ function logError(obj, description, freeze)
 
 function log(obj, description, freeze, level)
 {
-    if (level < g_ll)
+    if (level < g_logLevel)
     {
         return;
     }
@@ -133,17 +154,17 @@ function log(obj, description, freeze, level)
     }
 
     let d = getTimestring();
-    let colors = g_tl ? g_traceColors : g_levelColors;
+    let colors = g_traceLogging ? g_traceColors : g_levelColors;
     let typ = (obj) => typeof(obj) == "string" ? "%s" : "%o";
 
     let curState = (obj, str=0) => typeof(obj) == "string" ? obj : str ? JSON.stringify(obj) : freeze ? JSON.parse(JSON.stringify(obj)) : obj;
-    if (g_ll === LOG.Extreme) {
+    if (g_logLevel === LOG.Extreme) {
         print(
             console.log,
             `%c[%cEXTREME%c][%c${d}%c] Called log with '${description ? description + ': ' : ''}${typ(obj)}, ${level}'`, curState(obj), 6, colors);
     }
 
-    let output = g_tl ? console.trace : level < LOG.Info ? console.log : level < LOG.Warn ? console.info : level < LOG.Error ? console.warn : console.error;
+    let output = g_traceLogging ? console.trace : level < LOG.Info ? console.log : level < LOG.Warn ? console.info : level < LOG.Error ? console.warn : console.error;
     print(output, `%c[%c${g_logStr[level]}%c][%c${d}%c] ${description ? description + ': ' : ''}${typ(obj)}`, curState(obj), level, colors);
 
     function getTimestring() {
@@ -170,13 +191,13 @@ function log(obj, description, freeze, level)
 function consoleHelp()
 {
     // After initializing everything we need, print a message to the user to give some basic tips
-    const logLevelSav = g_ll;
-    g_ll = 2;
+    const logLevelSav = g_logLevel;
+    g_logLevel = 2;
     logInfo("Welcome to the console!");
     logInfo("If you're debugging an issue, here are some tips:");
     logInfo("  1. Set dark/light mode for the console via setDarkConsole(isDark), where isDark is 1 or 0.");
     logInfo("  2. Set the log level via setLogLevel(level), where level is a value from the LOG dictionary (e.g. setLogLevel(LOG.Verbose);)");
     logInfo("  3. To view unminified js sources, add nomin=1 to the url parameters.");
     logInfo("  4. To view the stack trace for every logged event, call setTrace(1). To revert, setTrace(0)\n");
-    g_ll = logLevelSav;
+    g_logLevel = logLevelSav;
 }
