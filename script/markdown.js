@@ -148,6 +148,7 @@ const isAlphanumeric = function(ch)
 class Markdown {
     constructor()
     {
+        this.topRun = null;
         this._reset('', false);
     }
 
@@ -191,15 +192,55 @@ class Markdown {
         return text.replace(/\t/g, '    ');
     }
 
-    _reset(text, inlineOnly)
+    _reset(text, inlineOnly, diffStart)
     {
         this.text = text;
         this.sameText = false;
         this._inlineOnly = inlineOnly;
-        this.currentRun = null;
         this._cachedParse = '';
         this._parseTime = 0;
         this._inParse = false;
+
+        if (diffStart == 0 || this.topRun == null || parseInt(localStorage.getItem('mdCache')) != 1)
+        {
+            this.topRun = new Run(State.None, 0, null);
+            this.topRun.end = this.text.length;
+            this.currentRun = this.topRun;
+            return 0;
+        }
+        else
+        {
+            let i = 0;
+            for (; i < this.topRun.innerRuns.length; ++i)
+            {
+                if (this.topRun.innerRuns[i].end >= diffStart)
+                {
+                    break;
+                }
+            }
+
+            this.topRun.cached = '';
+            if (i != this.topRun.innerRuns.length)
+            {
+                this.topRun.innerRuns.splice(i, this.topRun.innerRuns.length - i);
+            }
+
+            this.topRun.end = this.text.length;
+            this.currentRun = this.topRun;
+            return this.topRun.innerRuns.length == 0 ? 0 : this.topRun.innerRuns[this.topRun.innerRuns.length - 1].end;
+        }
+    }
+
+    /// <summary>
+    /// Only try to reparse what we need to
+    /// </summary>
+    _checkCache(text)
+    {
+        // return 0;
+        let diff = 0;
+        let max = Math.min(text.length, this.text.length);
+        while (diff != max && text[diff] == this.text[diff++]);
+        return diff;
     }
 
     parse(text, inlineOnly=false)
@@ -220,16 +261,13 @@ class Markdown {
             return this._cachedParse;
         }
 
-        this._reset(text, inlineOnly);
+        let i = this._reset(text, inlineOnly, this._checkCache(text));
         this._inParse = true;
 
         let perfStart = window.performance.now();
-        let topRun = new Run(State.None, 0, null);
-        topRun.end = this.text.length;
-        this.currentRun = topRun;
 
         this._urls = {};
-        for (let i = 0; i < this.text.length; ++i)
+        for (; i < this.text.length; ++i)
         {
             while (i == this.currentRun.end)
             {
@@ -468,9 +506,10 @@ class Markdown {
             }
         }
 
-        logTmi(topRun, 'Parsing tree');
-        this.markdownPresent = topRun.innerRuns.length != 0;
-        let html = topRun.convert(this.text, this._inlineOnly).trim();
+
+        logTmi(this.topRun, 'Parsing tree');
+        this.markdownPresent = this.topRun.innerRuns.length != 0;
+        let html = this.topRun.convert(this.text, this._inlineOnly).trim();
         this._cachedParse = html;
         this._inParse = false;
         let perfStop = window.performance.now();
@@ -481,7 +520,17 @@ class Markdown {
         }
         else
         {
-            logVerbose(`Parsed markdown in ${perfStop - perfStart}ms`);
+            let str;
+            if (parseInt(localStorage.getItem('mdCache')) == 1)
+            {
+                str = ' (Cache ON)';
+            }
+            else
+            {
+                str = ' (Cache OFF)';
+            }
+
+            logVerbose(`Parsed markdown in ${perfStop - perfStart}ms ${str}`);
         }
         return html;
     }
@@ -2186,6 +2235,7 @@ class Run
             parent.innerRuns.push(this);
         }
         this.innerRuns = [];
+        this.cached = '';
     }
 
     // Conversion process:
@@ -2195,6 +2245,11 @@ class Run
     //  create end tag
     convert(initialText, inlineOnly=false)
     {
+        if (this.cached.length != 0)
+        {
+            return this.cached;
+        }
+
         let ident = '';
         let par = this.parent;
         while (par != null)
@@ -2217,7 +2272,8 @@ class Run
         {
             newText += this.transform(initialText.substring(startWithContext, endWithContext), 0);
             logTmi(`${ident}Returning '${newText + this.tag(true)}'`);
-            return newText + this.tag(true /*end*/);
+            this.cached = newText + this.tag(true /*end*/);
+            return this.cached;
         }
 
 
@@ -2240,7 +2296,8 @@ class Run
             newText += this.transform(initialText.substring(this.innerRuns[this.innerRuns.length - 1].end, endWithContext), 1);
         }
 
-        return newText + this.tag(true /*end*/);
+        this.cached = newText + this.tag(true /*end*/);
+        return this.cached;
     }
 
     length() { return this.end - this.start; }
@@ -3031,7 +3088,7 @@ class Image extends Run
             return '';
         }
 
-        let base = `<img src="${encodeURI(this.url)}" altText="${super.transform(this.altText)}"`;
+        let base = `<img src="${encodeURI(this.url)}" alt="${super.transform(this.altText)}"`;
 
         let widthP = false;
         if (this.width.endsWith('px'))
