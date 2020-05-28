@@ -83,7 +83,7 @@ function buildRequest(request, sortOrder)
 
     let imgHolder = buildNode("div", {"class" : "imgHolder"});
     let imgA = buildNode("a", {"href" : `request.php?id=${request.rid}`});
-    let img = buildNode("img", {"src" : `poster${request.p}`});
+    let img = buildNode("img", {"src" : `poster${request.p}`, 'alt' : 'Media Poster'});
     imgA.appendChild(img);
     imgHolder.appendChild(imgA);
 
@@ -162,7 +162,7 @@ function buildRequest(request, sortOrder)
 /// </summary>
 function getStatusSelection(statusHolder, rid, selected)
 {
-    statusHolder.appendChild(buildNode("label", {"for" : `status_${rid}`}, status));
+    statusHolder.appendChild(buildNode("label", {"for" : `status_${rid}`}, "Status: "));
     let select = buildNode("select", {"name" : `status_${rid}`, "id" : `status_${rid}`, "class" : "inlineCombo"});
     let mappings = [0, 4, 3, 1, 2];
     ["Pending", "Waiting", "In Progress", "Complete", "Denied"].forEach(function(item, i)
@@ -561,8 +561,16 @@ function getFilter()
         !filter.hasOwnProperty("order") ||
         !filter.hasOwnProperty("user"))
     {
-        logError("Bad filter, resetting: ");
-        logError(filter);
+        if (filter != null)
+        {
+            logError("Bad filter, resetting: ");
+            logError(filter);
+        }
+        else
+        {
+            logInfo("No filter found, creating default filter");
+        }
+
         filter = defaultFilter();
         setFilter(filter, false);
     }
