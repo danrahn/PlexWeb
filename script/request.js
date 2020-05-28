@@ -7,7 +7,7 @@ window.addEventListener("load", function()
     }
     else
     {
-        if (document.body.getAttribute("isMediaRequest") == "1")
+        if (attr("isMediaRequest") == "1")
         {
             getMediaInfo();
         }
@@ -32,9 +32,24 @@ window.addEventListener("load", function()
         getComments();
     }
 
+    function attr(prop)
+    {
+        return document.body.getAttribute(prop);
+    }
+
+    function attrInt(prop)
+    {
+        return parseInt(attr(prop));
+    }
+
     function isAdmin()
     {
-        return parseInt(document.body.getAttribute("isAdmin")) == 1;
+        return attrInt("isAdmin");
+    }
+
+    function reqId()
+    {
+        return attrInt("reqId");
     }
 
     function setupMarkdown()
@@ -425,7 +440,7 @@ window.addEventListener("load", function()
             }
 
             logVerbose("Searching for next id");
-            let parameters = { "type" : "req_nav", "id" : parseInt(document.body.getAttribute("reqId")), "dir" : e.which === 37 ? "0" : "1" };
+            let parameters = { "type" : "req_nav", "id" : reqId(), "dir" : e.which === 37 ? "0" : "1" };
             let successFunc = function(response)
             {
                 if (response.new_id == -1)
@@ -444,7 +459,7 @@ window.addEventListener("load", function()
 
     function searchForMedia()
     {
-        let requestType = parseInt(document.body.getAttribute("requestType"));
+        let requestType = attrInt("requestType");
         switch (requestType)
         {
             case 1:
@@ -476,11 +491,11 @@ window.addEventListener("load", function()
 
         $("#imdbResult").innerHTML = "Searching...";
 
-        let parameters = { "type" : parseInt(document.body.getAttribute("requestType")), "query" : id, "imdb" : true };
+        let parameters = { "type" : attrInt("requestType"), "query" : id, "imdb" : true };
         let successFunc = function(response)
         {
             logInfo(response);
-            let type = parseInt(document.body.getAttribute("requestType"));
+            let type = attrInt("requestType");
             switch (type)
             {
                 case 1:
@@ -504,7 +519,7 @@ window.addEventListener("load", function()
 
     function searchForMediaCore()
     {
-        let parameters = { "type" : parseInt(document.body.getAttribute("requestType")), "query" : document.body.getAttribute("requestName") };
+        let parameters = { "type" : attrInt("requestType"), "query" : attr("requestName") };
         let successFunc = function(response)
         {
             logInfo(response);
@@ -541,7 +556,7 @@ window.addEventListener("load", function()
                 0,
                 { "click" : clickSuggestion });
 
-            let type = parseInt(document.body.getAttribute("requestType"));
+            let type = attrInt("requestType");
             if (type != 2) { type = 1; }
             let img = buildNode("img", {
                 "src" : (match.poster_path ? 
@@ -589,7 +604,7 @@ window.addEventListener("load", function()
 
     function goToImdb()
     {
-        let parameters = { "type" : parseInt(document.body.getAttribute("requestType")), "query" : this.parentNode.parentNode.getAttribute("tmdbid"), "by_id" : "true" };
+        let parameters = { "type" : attrInt("requestType"), "query" : this.parentNode.parentNode.getAttribute("tmdbid"), "by_id" : "true" };
         let successFunc = function(response, request)
         {
             logInfo(response);
@@ -599,7 +614,7 @@ window.addEventListener("load", function()
             }
             else
             {
-                window.open("https://www.themoviedb.org/" + document.body.getAttribute("requestTypeStr") + "/" + request.tmdbid)
+                window.open("https://www.themoviedb.org/" + attrInt("requestTypeStr") + "/" + request.tmdbid)
             }
         };
         sendHtmlJsonRequest("media_search.php", parameters, successFunc, null, {"tmdbid" : this.parentNode.parentNode.getAttribute("tmdbid")});
@@ -662,7 +677,7 @@ window.addEventListener("load", function()
             return;
         }
 
-        let params = { "type" : "set_external_id", "req_id" : parseInt(document.body.getAttribute("reqId")), "id" : selectedSuggestion.getAttribute("tmdbid") };
+        let params = { "type" : "set_external_id", "req_id" : reqId(), "id" : selectedSuggestion.getAttribute("tmdbid") };
 
         let successFunc = function(response)
         {
@@ -681,7 +696,7 @@ window.addEventListener("load", function()
 
     function getMediaInfo()
     {
-        let parameters = { "type" : parseInt(document.body.getAttribute("requestType")), "query" : document.body.getAttribute("externalId"), "by_id" : "true" };
+        let parameters = { "type" : attrInt("requestType"), "query" : attr("externalId"), "by_id" : "true" };
         let successFunc = function(response)
         {
             logInfo(response);
@@ -719,8 +734,8 @@ window.addEventListener("load", function()
         let outerContainer = buildNode("div", {"id" : "innerInfoContainer"});
         let container = buildNode("div", {"id" : "mediaDetails"});
 
-        let title = buildNode("div", { "id" : "mediaTitle" }, `Request: ${document.body.getAttribute("requestName")} - `);
-        let status = parseInt(document.body.getAttribute("requestStatus"));
+        let title = buildNode("div", { "id" : "mediaTitle" }, `Request: ${attr("requestName")} - `);
+        let status = attrInt("requestStatus");
         title.appendChild(getStatusSpan(status));
         container.appendChild(title);
 
@@ -748,7 +763,7 @@ window.addEventListener("load", function()
         let posterPath = data.poster_path;
         if (!posterPath)
         {
-            switch (parseInt(document.body.getAttribute("requestType")))
+            switch (attrInt("requestType"))
             {
                 case 1:
                     posterPath = '/moviedefault.png';
@@ -766,7 +781,7 @@ window.addEventListener("load", function()
         let details = buildNode("div", {"id" : "mediaDetails"});
 
         let title = buildNode("div", {"id" : "mediaTitle"});
-        let status = parseInt(document.body.getAttribute("requestStatus"));
+        let status = attrInt("requestStatus");
 
         title.innerHTML = (data.title || data.name) + " - ";
         title.appendChild(getStatusSpan(status));
@@ -787,7 +802,7 @@ window.addEventListener("load", function()
         {
             imdb = buildNode("div", {"id" : "mediaLink"});
             imdb.appendChild(buildNode("a", {
-                "href" : `https://www.themoviedb.org/${document.body.getAttribute("requestTypeStr")}/${data.id}`,
+                "href" : `https://www.themoviedb.org/${attr("requestTypeStr")}/${data.id}`,
                 "target" : "_blank"
             }, "TMDb"));
         }
@@ -846,7 +861,7 @@ window.addEventListener("load", function()
             {
                 let params = {
                     "type" : "req_update",
-                    "data" : [{ "id" : parseInt(document.body.getAttribute("reqId")), "kind" : "status", "content" : status}]
+                    "data" : [{ "id" : reqId(), "kind" : "status", "content" : status}]
                 }
 
                 let successFunc = function() {
@@ -869,7 +884,7 @@ window.addEventListener("load", function()
 
     function getComments()
     {
-        params = { "type" : "get_comments", "req_id" : parseInt(document.body.getAttribute("reqId")) };
+        params = { "type" : "get_comments", "req_id" : reqId() };
         let successFunc = function(response)
         {
             logInfo(response);
@@ -998,7 +1013,7 @@ window.addEventListener("load", function()
         comment.value = "";
         logInfo("Adding comment: " + text);
 
-        let params = { "type" : "add_comment", "req_id" : parseInt(document.body.getAttribute("reqId")), "content" : text };
+        let params = { "type" : "add_comment", "req_id" : reqId(), "content" : text };
 
         // For markdown content, we do a lot of extra work to style the text correctly.
         // For the best results, it's probably better to inline all the relevant CSS for
