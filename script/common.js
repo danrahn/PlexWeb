@@ -11,7 +11,7 @@ function $(selector, ele=document)
         return $$(selector, ele);
     }
 
-    return document.querySelectorAll(selector);
+    return ele.querySelectorAll(selector);
 }
 
 /// <summary>

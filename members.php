@@ -34,5 +34,5 @@ if ((int)$_SESSION['level'] < 100)
     </div>
 </div>
 </body>
-<?php build_js("members", "consolelog", "animate", "nav"); ?>
+<?php build_js("members", "common", "consolelog", "animate", "nav"); ?>
 </html>
