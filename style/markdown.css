@@ -21,7 +21,7 @@
 .md code {
     background: rgba(0, 0, 0, 0.3);
     padding: 3px 5px 3px 5px;
-    font-size: 0.8rem;
+    font-size: 90%;
 }
 
 .md h1, .md h2, .md h3, .md h4, .md h5, .md h6 {
@@ -63,6 +63,12 @@
 
 .md img {
     max-width: 100%;
+}
+
+/* Generally we want images to be within the bounds of our holder,
+   but tables can scroll so we let those grow to their full width*/
+table img {
+    max-width: unset !important;
 }
 
 .md table {
