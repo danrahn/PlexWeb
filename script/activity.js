@@ -14,13 +14,26 @@ window.addEventListener("load", function()
     setupTableSearch();
 });
 
-function getActivities()
+function getActivities(searchValue='')
 {
-    let parameters = { "type" : "activities", "num" : getPerPage(), "page" : getPage(), "filter" : JSON.stringify(getFilter()) };
+    let parameters =
+    {
+        "type" : "activities",
+        "num" : getPerPage(),
+        "page" : getPage(),
+        "search" : searchValue,
+        "filter" : JSON.stringify(getFilter())
+    };
+
     let successFunc = function(message)
     {
         clearElement("tableEntries");
         buildActivities(message);
+
+        if (searchValue.length != 0)
+        {
+            $$('.searchBtn').click();
+        }
     }
 
     let failureFunc = function()
@@ -29,6 +42,11 @@ function getActivities()
     };
 
     sendHtmlJsonRequest("process_request.php", parameters, successFunc, failureFunc);
+}
+
+function tableSearch(value)
+{
+    getActivities(value);
 }
 
 const Activity =
