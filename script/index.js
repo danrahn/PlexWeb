@@ -853,12 +853,12 @@ function msToHms(ms)
     const hours = parseInt(seconds / 3600);
     const minutes = parseInt(seconds / 60) % 60;
     seconds = parseInt(seconds) % 60;
+    let pad2 = (time) => time < 10 ? '0' + time : time;
+    let time = pad2(minutes) + ":" + pad2(seconds);
     if (hours > 0)
     {
-        return hours + ":" + (minutes < 10 ? ("0" + minutes) : minutes) + ":" + (seconds < 10 ? ("0" + seconds) : seconds);
+        time = hours + ":" + time;
     }
-    else 
-    {
-        return (minutes < 10 ? ("0" + minutes) : minutes) + ":" + (seconds < 10 ? ("0" + seconds) : seconds);
-    }
+
+    return time;
 }

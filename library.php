@@ -39,6 +39,7 @@ input[type=button] {
 <div id="plexFrame">
     <?php include "nav.php" ?>
     <div id="container">
+        <div style='margin-top: 50px; overflow: auto'></div>
         <?php include "includes/table.html" ?>
     </div>
 </div>

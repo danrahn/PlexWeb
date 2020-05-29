@@ -179,7 +179,7 @@ function process()
 /// </summary>
 function get_sesh_id($sesh)
 {
-    return (string)$sesh['sessionKey'] . '-' . preg_replace('/[^A-Za-z0-9]/', '', $sesh['title']);
+    return preg_replace('/[^A-Za-z0-9]/', '', $sesh['title']) . '_' . (string)$sesh['sessionKey'];
 }
 
 /// <summary>
@@ -190,6 +190,11 @@ function get_all_progress()
 {
     $sessions = simplexml_load_string(curl(PLEX_SERVER . '/status/sessions?' . PLEX_TOKEN));
     $progress = array();
+    if ($sessions === FALSE)
+    {
+        return json_error("Bad response");
+    }
+
     foreach ($sessions as $sesh)
     {
         $entry = new \stdClass();
