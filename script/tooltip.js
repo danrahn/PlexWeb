@@ -11,7 +11,9 @@ let hideTooltipTimer = null;
 
 window.addEventListener('load', function()
 {
-    $('#plexFrame').addEventListener('scroll', function()
+    let frame = $('#plexFrame');
+    frame.appendChild(buildNode('div', { 'id' : 'tooltip' }));
+    frame.addEventListener('scroll', function()
     {
         // On scroll, hide the tooltip (mainly for mobile devices)
         // Add a bit of delay, as it is a bit jarring to have it immediately go away

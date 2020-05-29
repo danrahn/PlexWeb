@@ -153,8 +153,12 @@ function buildActivities(response)
     
         let tooltipDateOptions = { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: 'numeric' };
         let activityTime = buildNode("span",
-            {"title" : new Date(activity.timestamp).toLocaleDateString('en-US', tooltipDateOptions)},
-            DateUtil.getDisplayDate(new Date(activity.timestamp)));
+            {"tt" : new Date(activity.timestamp).toLocaleDateString('en-US', tooltipDateOptions)},
+            DateUtil.getDisplayDate(new Date(activity.timestamp)),
+            {
+                'mousemove' : function(e) { showTooltip(e, this.getAttribute('tt')); },
+                'mouseout' : dismissTooltip
+            });
 
         textHolder.appendChild(span);
         textHolder.appendChild(activityTime);

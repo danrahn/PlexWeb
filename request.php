@@ -88,7 +88,6 @@ function get_details($req_id)
                 </div>
                 <input type="button" id="newCommentButton" value="Add Comment" style="float: left; clear: both; margin-top: 5px; padding: 10px" />
             </div>
-            <div id="tooltip"></div>
         <?php } else { ?>
             <div class="formContainer" id="info">
                 <div class="formTitle">The request for <?= $details->request_name ?> was made with an older version of this website. Please choose the correct item below</div>

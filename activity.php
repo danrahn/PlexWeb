@@ -17,7 +17,7 @@ requireSSL();
     <meta name="theme-color" content="#3C5260">
     <title>Activity</title>
 
-    <?php get_css("style", "nav", "overlay", "table") ?>
+    <?php get_css("style", "nav", "overlay", "table", "tooltip") ?>
     <style>
 .newActivity {
     background-color: rgba(63, 100, 69, 0.3);
@@ -25,6 +25,10 @@ requireSSL();
 .newActivity:hover {
     background-color: rgba(63, 100, 69, 0.6);
 }
+#tooltip {
+    font-size: smaller;
+}
+
 
     </style>
 </head>
@@ -40,5 +44,5 @@ requireSSL();
         </div>
     </div>
 </body>
-<?php build_js("activity", "consolelog", "animate", "common", "queryStatus", "nav", "DateUtil", "overlay", "tableCommon"); ?>
+<?php build_js("activity", "consolelog", "animate", "common", "queryStatus", "nav", "DateUtil", "overlay", "tableCommon", "tooltip"); ?>
 </html>

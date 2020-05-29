@@ -113,7 +113,6 @@ function plexOk()
         </div>
         <div id="formStatus" class="formContainer"></div>
     </div>
-    <div id="tooltip"></div>
 </div>
 </body>
 <?php build_js("index", "consolelog", "animate", "common", "nav", "overlay", "tooltip"); ?>

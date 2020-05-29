@@ -29,7 +29,6 @@ verify_loggedin(TRUE /*redirect*/, "requests.php");
             <h3 id="requestSearch">Results for "<span id="searchTerm"></span>"<img src="icon/exit.svg" id="clearSearch" alt="Clear" title="Clear Search"></h3>
             <?php include "includes/table.html" ?>
         </div>
-        <div id="tooltip"></div>
     </div>
 </body>
 <?php build_js("requests", "consolelog", "queryStatus", "animate", "common", "nav", "DateUtil", "tableCommon", "overlay", "tooltip") ?>
