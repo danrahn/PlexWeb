@@ -27,11 +27,31 @@ window.addEventListener('load', function()
 });
 
 
+let tooltipTimer;
+let showingTooltip = false;
+
 /// <summary>
 /// Show a tooltip with the given text at a position relative to clientX/Y in event e
 /// </summary>
-function showTooltip(e, text)
+function showTooltip(e, text, delay=250)
 {
+    if (showingTooltip)
+    {
+        showTooltipCore(e, text);
+        return;
+    }
+
+    if (tooltipTimer)
+    {
+        clearTimeout(tooltipTimer);
+    }
+
+    tooltipTimer = setTimeout(showTooltipCore, delay, e, text);
+}
+
+function showTooltipCore(e, text)
+{
+    showingTooltip = true;
     let max = $("#plexFrame").clientWidth - 180;
     const left = Math.min(e.clientX, max) + "px";
     const top = (e.clientY + 20) + "px";
@@ -49,4 +69,7 @@ function showTooltip(e, text)
 function dismissTooltip()
 {
     $("#tooltip").style.display = "none";
+    clearTimeout(tooltipTimer);
+    tooltipTimer = null;
+    showingTooltip = false;
 }
