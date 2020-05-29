@@ -130,12 +130,20 @@ function buildRequest(request, sortOrder)
     let tooltipDateOptions = { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: 'numeric' };
 
     let requestDate = buildNode("span",
-        {"title" : new Date(request.rd).toLocaleDateString('en-US', tooltipDateOptions)},
-        `Requested: ${DateUtil.getDisplayDate(new Date(request.rd))}`);
+        { "tt" : new Date(request.rd).toLocaleDateString('en-US', tooltipDateOptions) },
+        `Requested: ${DateUtil.getDisplayDate(new Date(request.rd))}`,
+        {
+            'mousemove' : function(e) { showTooltip(e, this.getAttribute('tt')); },
+            'mouseout' : dismissTooltip
+        });
 
     let updateDate = buildNode("span",
-        {"title" : new Date(request.ad).toLocaleDateString('en-US', tooltipDateOptions)},
-        `Last Update: ${DateUtil.getDisplayDate(new Date(request.ad))}`);
+        {"tt" : new Date(request.ad).toLocaleDateString('en-US', tooltipDateOptions)},
+        `Last Update: ${DateUtil.getDisplayDate(new Date(request.ad))}`,
+        {
+            'mousemove' : function(e) { showTooltip(e, this.getAttribute('tt')); },
+            'mouseout' : dismissTooltip
+        });
 
     let requester = buildNode("span", {}, `Requested By: ${request.r}`);
 
@@ -377,7 +385,10 @@ function filterBtnClick()
             "user" : isAdmin() ? $("#filterTo").value : "-1"
         }, false /*update*/);
 
-        setPerPage($('#filterPerPage').value, true /*update*/);
+        if ($('#filterPerPage'))
+        {
+            setPerPage($('#filterPerPage').value, true /*update*/);
+        }
 
         dismissFilterDialog();
     });

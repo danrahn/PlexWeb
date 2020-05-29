@@ -73,3 +73,7 @@
 #requestSearch img:hover {
     filter: invert(20%);
 }
+
+#tooltip {
+    font-size: smaller;
+}

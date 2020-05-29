@@ -18,7 +18,7 @@ verify_loggedin(TRUE /*redirect*/, "requests.php");
     <title>Plex Requests</title>
 
     <!-- Inline stylesheets to reduce network roundtrip costs -->
-    <?php get_css("style", "nav", "table", "overlay", "requests"); ?>
+    <?php get_css("style", "nav", "table", "overlay", "tooltip", "requests"); ?>
 </head>
 
 <body isAdmin="<?= (isset($_SESSION['level']) && $_SESSION['level'] >= 100) ? 1 : 0 ?>">
@@ -29,7 +29,8 @@ verify_loggedin(TRUE /*redirect*/, "requests.php");
             <h3 id="requestSearch">Results for "<span id="searchTerm"></span>"<img src="icon/exit.svg" id="clearSearch" alt="Clear" title="Clear Search"></h3>
             <?php include "includes/table.html" ?>
         </div>
+        <div id="tooltip"></div>
     </div>
 </body>
-<?php build_js("requests", "consolelog", "queryStatus", "animate", "common", "nav", "DateUtil", "tableCommon", "overlay") ?>
+<?php build_js("requests", "consolelog", "queryStatus", "animate", "common", "nav", "DateUtil", "tableCommon", "overlay", "tooltip") ?>
 </html>
