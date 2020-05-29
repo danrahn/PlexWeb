@@ -84,7 +84,7 @@ function buildActivities(response)
 
         let imgHolder = buildNode("div", {"class" : "imgHolder"});
         let imgA = buildNode("a", {"href" : `request.php?id=${activity.rid}`});
-        let img = buildNode("img", {"src" : `poster${activity.poster}`});
+        let img = buildNode("img", {"src" : `poster${activity.poster}`, "alt" : "Poster"});
 
         if (activity.value == "ViewStream")
         {

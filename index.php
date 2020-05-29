@@ -94,19 +94,19 @@ function plexOk()
         <div id="actions">
             <div class="action">
                 <a href="new_request.php" class="actionLink">
-                    <img src="icon/new_request.png" class="actionImg" style="filter: invert(80)">
+                    <img src="icon/new_request.png" class="actionImg" alt="New Request" style="filter: invert(80)">
                     <span>New Request</span>
                 </a>
             </div>
             <div class="action">
                 <a href="requests.php" class="actionLink">
-                    <img src="resource/requests_medium.png" class="actionImg" style="filter: invert(80)">
+                    <img src="resource/requests_medium.png" class="actionImg" alt="View Requests" style="filter: invert(80)">
                     <span>View Requests</span>
                 </a>
             </div>
             <div class="action">
                 <a href="user_settings.php" class="actionLink">
-                    <img src="resource/settings_medium.png" class="actionImg" style="filter: invert(80)">
+                    <img src="resource/settings_medium.png" class="actionImg" alt="Settings" style="filter: invert(80)">
                     <span>Settings</span>
                 </a>
             </div>
