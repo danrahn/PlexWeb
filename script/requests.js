@@ -364,6 +364,7 @@ function filterBtnClick()
     $("#applyFilter").addEventListener("click", function()
     {
         setPage(0); // Go back to the start after applying a filter
+        let applyPerPage = !!$('#filterPerPage');
         setFilter(
         {
             "status" :
@@ -383,9 +384,9 @@ function filterBtnClick()
             "sort" : $("#sortBy").value,
             "order" : $("#sortOrder").value,
             "user" : isAdmin() ? $("#filterTo").value : "-1"
-        }, false /*update*/);
+        }, !applyPerPage /*update*/);
 
-        if ($('#filterPerPage'))
+        if (applyPerPage)
         {
             setPerPage($('#filterPerPage').value, true /*update*/);
         }
