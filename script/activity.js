@@ -19,7 +19,7 @@ function getActivities(searchValue='')
 
     let successFunc = function(message)
     {
-        clearElement("tableEntries");
+        clearTable();
         buildActivities(message);
 
         if (searchValue.length != 0)
@@ -62,13 +62,12 @@ function buildActivities(response)
     let total = response.total;
 
     logVerbose(response);
-    let entries = $("#tableEntries");
 
     for (let i = 0; i < activities.length; ++i, --newActivities)
     {
         let activity = activities[i];
 
-        let holder = buildNode("div", {"class" : "tableEntryHolder"});
+        let holder = tableItemHolder();
         if (newActivities > 0)
         {
             holder.classList.add("newActivity");
@@ -143,21 +142,15 @@ function buildActivities(response)
         span.appendChild(buildNode("span", {}, plainText));
         span.appendChild(a);
     
-        let tooltipDateOptions = { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: 'numeric' };
-        let activityTime = buildNode("span",
-            {"tt" : new Date(activity.timestamp).toLocaleDateString('en-US', tooltipDateOptions)},
-            DateUtil.getDisplayDate(new Date(activity.timestamp)),
-            {
-                'mousemove' : function(e) { showTooltip(e, this.getAttribute('tt')); },
-                'mouseout' : dismissTooltip
-            });
+        let activityTime = buildNode("span", {}, DateUtil.getDisplayDate(activity.timestamp));
+        setTooltip(activityTime, DateUtil.getFullDate(activity.timestamp));
 
         textHolder.appendChild(span);
         textHolder.appendChild(activityTime);
 
         holder.appendChild(imgHolder);
         holder.appendChild(textHolder);
-        entries.appendChild(holder);
+        addTableItem(holder);
     }
 
     setPageInfo(total);

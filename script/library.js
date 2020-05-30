@@ -13,7 +13,7 @@ function buildSections(sections)
         section.created = new Date(section.created * 1000);
         section.updated = new Date(section.updated * 1000);
         section.last_scanned = new Date(section.last_scanned * 1000);
-        let div = buildNode("div", {"class" : "sectionInfo tableEntryHolder"});
+        let div = tableItemHolder();
         let list = buildNode("ul");
         for (let [key, value] of Object.entries(section))
         {

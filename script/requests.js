@@ -38,7 +38,7 @@ function getRequests(searchValue='')
 
     let successFunc = function(response)
     {
-        clearElement("tableEntries");
+        clearTable();
         buildRequests(response);
         if (searchValue.length != 0)
         {
@@ -77,12 +77,11 @@ function buildRequests(requests)
     }
 
     logInfo(`Building ${requests.count} requests`);
-    let entries = $("#tableEntries");
     let sortOrder = getFilter().sort;
     for (let i = 0; i < requests.count; ++i)
     {
         const request = requests.entries[i];
-        entries.appendChild(buildRequest(request, sortOrder));
+        addTableItem(buildRequest(request, sortOrder));
 
         if (isAdmin())
         {
@@ -100,7 +99,7 @@ function buildRequests(requests)
 /// </summary>
 function buildRequest(request, sortOrder)
 {
-    let holder = buildNode("div", {"class" : "tableEntryHolder"});
+    let holder = tableItemHolder();
 
     let imgHolder = buildNode("div", {"class" : "imgHolder"});
     let imgA = buildNode("a", {"href" : `request.php?id=${request.rid}`});
@@ -123,21 +122,11 @@ function buildRequest(request, sortOrder)
 
     let tooltipDateOptions = { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: 'numeric' };
 
-    let requestDate = buildNode("span",
-        { "tt" : new Date(request.rd).toLocaleDateString('en-US', tooltipDateOptions) },
-        `Requested: ${DateUtil.getDisplayDate(new Date(request.rd))}`,
-        {
-            'mousemove' : function(e) { showTooltip(e, this.getAttribute('tt')); },
-            'mouseout' : dismissTooltip
-        });
+    let requestDate = buildNode("span", {}, `Requested: ${DateUtil.getDisplayDate(request.rd)}`);
+    setTooltip(requestDate, DateUtil.getFullDate(request.rd));
 
-    let updateDate = buildNode("span",
-        {"tt" : new Date(request.ad).toLocaleDateString('en-US', tooltipDateOptions)},
-        `Last Update: ${DateUtil.getDisplayDate(new Date(request.ad))}`,
-        {
-            'mousemove' : function(e) { showTooltip(e, this.getAttribute('tt')); },
-            'mouseout' : dismissTooltip
-        });
+    let updateDate = buildNode("span", {}, `Last Update: ${DateUtil.getDisplayDate(request.ad)}`);
+    setTooltip(updateDate, DateUtil.getFullDate(request.ad));
 
     let requester = buildNode("span", {}, `Requested By: ${request.r}`);
 
@@ -281,7 +270,7 @@ function updateStatus()
 
         setTimeout(function()
         {
-            clearElement("tableEntries");
+            clearTable();
             getRequests();
         }, 2000)
     }

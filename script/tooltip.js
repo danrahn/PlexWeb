@@ -26,6 +26,24 @@ window.addEventListener('load', function()
     })
 });
 
+/// <summary>
+/// Sets up tooltip handlers for basic use cases
+/// </summary>
+function setTooltip(element, tooltip, delay=250)
+{
+    element.setAttribute('tt', tooltip);
+    element.setAttribute('ttDelay', delay);
+    element.addEventListener('mousemove', function(e)
+    {
+        showTooltip(e, this.getAttribute('tt'), this.getAttribute('ttDelay'));
+    });
+
+    element.addEventListener('mouseleave', function()
+    {
+        dismissTooltip();
+    });
+}
+
 
 let tooltipTimer;
 let showingTooltip = false;

@@ -6,6 +6,11 @@ let DateUtil =
     /// </summary>
     getDisplayDate: function(date)
     {
+        if (typeof(date) == 'string')
+        {
+            date = new Date(date);
+        }
+
         let now = new Date();
         let dateDiff = Math.abs(now - date);
         if (dateDiff < 15000)
@@ -54,5 +59,15 @@ let DateUtil =
 
         let yearDiff = now.getFullYear() - date.getFullYear();
         return `${yearDiff == 0 ? 1 : yearDiff} year${yearDiff == 1 ? '' : 's'} ago`;
+    },
+
+    getFullDate: function(date)
+    {
+        if (typeof(date) == 'string')
+        {
+            date = new Date(date);
+        }
+        let tooltipDateOptions = { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: 'numeric' };
+        return date.toLocaleDateString('en-US', tooltipDateOptions);
     }
 };

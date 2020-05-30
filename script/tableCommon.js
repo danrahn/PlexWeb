@@ -156,6 +156,11 @@ function setupTableSearch()
             {
                 this.parentNode.$$('.searchGo').click();
             }
+            else if (e.keyCode == 27 /*esc*/)
+            {
+                this.value = '';
+                this.parentNode.parentNode.$$('.searchBtn').click();
+            }
         });
     });
 
@@ -444,6 +449,22 @@ function populateUserFilter()
     };
 
     sendHtmlJsonRequest("process_request.php", params, successFunc, failureFunc);
+}
+
+let tableEntries = $('#tableEntries');
+function addTableItem(element)
+{
+    tableEntries.appendChild(element);
+}
+
+function tableItemHolder()
+{
+    return buildNode('div', { 'class' : 'tableEntryHolder' });
+}
+
+function clearTable()
+{
+    clearElement('tableEntries');
 }
 
 /// <summary>

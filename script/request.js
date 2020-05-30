@@ -997,36 +997,11 @@ window.addEventListener("load", function()
             let editTitle = '';
             if (comment.last_edit)
             {
-                editTitle = '<br>Edited ' +
-                    new Date(comment.last_edit).toLocaleDateString("en-US",
-                        options={
-                            year: "2-digit",
-                            month: "numeric",
-                            day : "numeric",
-                            hour: "numeric",
-                            minute: "numeric",
-                            second: "numeric" 
-                        });
+                editTitle = '<br>Edited ' + DateUtil.getFullDate(comment.last_edit);
             }
 
-            let date = buildNode("span",
-                {
-                    'tt' : dateObj.toLocaleDateString("en-US",
-                    options={
-                        year: "2-digit",
-                        month: "numeric",
-                        day : "numeric",
-                        hour: "numeric",
-                        minute: "numeric",
-                        second: "numeric" 
-                    }) + editTitle
-                },
-                DateUtil.getDisplayDate(dateObj) + (editTitle ? '*' : ''),
-                {
-                    'mousemove' : function(e) { showTooltip(e, this.getAttribute('tt')); },
-                    'mouseout' : dismissTooltip
-                }
-            );
+            let date = buildNode('span', {}, DateUtil.getDisplayDate(dateObj) + (editTitle ? '*' : ''));
+            setTooltip(date, DateUtil.getFullDate(dateObj) + editTitle);
 
             commentCache[comment.id] = comment.content;
 
