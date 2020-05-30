@@ -2,11 +2,10 @@
 /// Common table implementation, including interfaces for custom sorting, filtering, and searching.
 ///
 /// Users of this interface should implement the following:
-/// 1. getPage() - Forward to getPageCommon with a unique identifier
-/// 2. setPage(page, update) - Forward to setPageCommon(id, page, update (bool), updateFunc)
-/// 3. getPerPage() - Forward to getPerPageCommon with the same unique identifier
-/// 4. setPerPage(newPerPage, update) - Forward to setPerPageCommon(id, perPage, update, updateFunc)
-/// 5. setFilter(filter, update) - Forward to setFilterCommon(id, filter, update, updateFunc)
+/// 1. tableIdentifier() - Returns a string that identifies this table (required)
+/// 2. tableUpdateFunc() - Returns a function to call when updating the table (required)
+/// 3. tableSearch() - Invoked when the user initiates a search (optional)
+/// 4. launchFilter() - Displays the filter options (optional)
 /// </summary>
 
 /// <summary>
@@ -17,11 +16,12 @@ window.addEventListener("load", function()
     setupPerPage();
     setupNavigation();
     setupTableSearch();
-    setupFilterCommon();
+    setupFilter();
     setupKeyboardNavigation();
     document.body.addEventListener('keyup', tableFilterKeyHandler);
 });
 
+let tablePages = 0;
 
 /// <summary>
 /// Clear out the current contents of the request table and replace it
@@ -105,7 +105,7 @@ function setupKeyboardNavigation()
             if (key == 13 /*enter*/)
             {
                 let page = parseInt(this.value);
-                if (isNaN(page) || page <= 0 || page > pages)
+                if (isNaN(page) || page <= 0 || page > tablePages)
                 {
                     this.value = getPage() + 1;
                     this.select();
@@ -210,9 +210,9 @@ function startTableSearch(e)
     }
 }
 
-function setupFilterCommon()
+function setupFilter()
 {
-    if (typeof(setupFilter) == 'undefined')
+    if (typeof(launchFilter) == 'undefined')
     {
         $('.filterBtn').forEach(function(filter)
         {
@@ -222,7 +222,10 @@ function setupFilterCommon()
         return;
     }
 
-    setupFilter();
+    $('.filterBtn').forEach(function(filter)
+    {
+        filter.addEventListener("click", launchFilter);
+    });
 }
 
 /// <summary>
@@ -245,7 +248,7 @@ function previousPage()
 function nextPage()
 {
     let page = getPage();
-    if (page == pages - 1)
+    if (page == tablePages - 1)
     {
         return;
     }
@@ -253,9 +256,26 @@ function nextPage()
     setPage(page + 1, true);
 }
 
-function getPageCommon(storage)
+/// <summary>
+/// Returns the identifier for this table, or a 'shared' id
+/// if no id has been provided
+/// </summary>
+function tableIdCore()
 {
-    let page = parseInt(localStorage.getItem(storage));
+    if (typeof(tableIdentifier) == 'undefined')
+    {
+        return 'table_shared';
+    }
+
+    return 'table_' + tableIdentifier();
+}
+
+/// <summary>
+/// Returns the user's current page
+/// </summary>
+function getPage()
+{
+    let page = parseInt(localStorage.getItem(tableIdCore() + '_page'));
     if (page == null || isNaN(page) || page < 0)
     {
         page = 0;
@@ -265,18 +285,25 @@ function getPageCommon(storage)
     return page;
 }
 
-function setPageCommon(storage, page, update, updateFunc)
+/// <summary>
+/// Stores the current page for the user
+/// </summary>
+function setPage(page, update)
 {
-    localStorage.setItem(storage, page);
+    localStorage.setItem(tableIdCore() + '_page', page);
     if (update)
     {
         clearElement("tableEntries");
-        updateFunc();
+        tableUpdateFunc()();
     }
 }
 
-function getPerPageCommon(storage)
+/// <summary>
+/// Returns the number of items per page the user wants to see
+/// </summary>
+function getPerPage()
 {
+    let storage = tableIdCore() + '_perPage';
     let perPage = parseInt(localStorage.getItem(storage));
     if (perPage == null || isNaN(perPage) || perPage % 25 != 0 || perPage < 0)
     {
@@ -285,6 +312,29 @@ function getPerPageCommon(storage)
     }
 
     return perPage;
+}
+
+/// <summary>
+/// Set the number of items to show per page
+/// </summary>
+function setPerPage(newPerPage, update)
+{
+    localStorage.setItem(tableIdCore() + '_perPage', newPerPage);
+    $(".perPageButton").forEach((btn) =>
+    {
+        btn.classList.remove("selected");
+    });
+
+    $(`.perPageButton[value="${newPerPage}"]`).forEach(function(e)
+    {
+        e.classList.add("selected");
+    });
+
+    if (update)
+    {
+        clearElement("tableEntries");
+        tableUpdateFunc()();
+    }
 }
 
 /// <summary>
@@ -300,33 +350,20 @@ function dismissFilterDialog()
 }
 
 /// <summary>
-/// Set the number of items to show per page
-/// </summary>
-function setPerPageCommon(storage, newPerPage, update, updateFunc)
-{
-    localStorage.setItem(storage, newPerPage);
-    $(".perPageButton").forEach((btn) =>
-    {
-        btn.classList.remove("selected");
-    });
-
-    $(`.perPageButton[value="${newPerPage}"]`).forEach(function(e)
-    {
-        e.classList.add("selected");
-    });
-
-    if (update)
-    {
-        clearElement("tableEntries");
-        updateFunc();
-    }
-}
-
-/// <summary>
 /// Sets up click handlers for per-page options
 /// </summary>
 function setupPerPage()
 {
+    if (typeof(getPerPage) == 'undefined')
+    {
+        $('.perPageHolder').forEach(function(holder)
+        {
+            holder.style.display = 'none';
+        });
+
+        return;
+    }
+
     let perPage = getPerPage();
 
     $(".perPageButton").forEach((btn) =>
@@ -350,14 +387,14 @@ function setupPerPage()
 /// Sets the current filter. No validation, but some basic validation
 /// should exist when grabbing the filter from localStorage
 /// </summary>
-function setFilterCommon(storage, filter, update, updateFunc)
+function setFilter(filter, update)
 {
     logVerbose(filter, "Setting filter to");
-    localStorage.setItem(storage, JSON.stringify(filter));
+    localStorage.setItem(tableIdCore() + '_filter', JSON.stringify(filter));
     if (update)
     {
         clearElement("tableEntries");
-        updateFunc();
+        tableUpdateFunc()();
     }
 }
 
@@ -366,7 +403,7 @@ function setFilterCommon(storage, filter, update, updateFunc)
 /// </summary>
 function setPageInfo(totalRequests)
 {
-    pages = getPerPage() == 0 ? 1 : Math.ceil(totalRequests / getPerPage())
+    tablePages = getPerPage() == 0 ? 1 : Math.ceil(totalRequests / getPerPage())
     $(".pageSelect").forEach(function(e)
     {
         e.value = getPage() + 1;
@@ -374,7 +411,7 @@ function setPageInfo(totalRequests)
 
     $(".pageCount").forEach(function(e)
     {
-        e.innerHTML = pages;
+        e.innerHTML = tablePages;
     });
 }
 

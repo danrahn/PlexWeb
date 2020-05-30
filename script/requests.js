@@ -1,4 +1,3 @@
-var pages = 0;
 window.addEventListener("load", function()
 {
     setPage(0);
@@ -306,20 +305,9 @@ function updateStatus()
 }
 
 /// <summary>
-/// Sets up the filter form and associated events.
-/// </summary>
-function setupFilter()
-{
-    $(".filterBtn").forEach(function(imgElement)
-    {
-        imgElement.addEventListener("click", filterBtnClick);
-    });
-}
-
-/// <summary>
 /// Launch the filter dialog and set up applicable event handlers
 /// </summary>
-function filterBtnClick()
+function launchFilter()
 {
     let overlay = buildNode("div", {"id" : "filterOverlay"});
     overlay.id = "filterOverlay";
@@ -560,35 +548,19 @@ function tableSearch(value)
 }
 
 /// <summary>
-/// Returns the number of items per page the user wants to see
+/// Unique identifier for this table
 /// </summary>
-function getPerPage()
+function tableIdentifier()
 {
-    return getPerPageCommon("perPage");
+    return 'requests';
 }
 
 /// <summary>
-/// Set the number of requests to show per page
+/// Function to invoke when updating the table
 /// </summary>
-function setPerPage(newPerPage, update)
+function tableUpdateFunc()
 {
-    setPerPageCommon("perPage", newPerPage, update, getRequests);
-}
-
-/// <summary>
-/// Returns the user's current page
-/// </summary>
-function getPage()
-{
-    return getPageCommon("page");
-}
-
-/// <summary>
-/// Sets the current page (0-based)
-/// </summary>
-function setPage(page, update)
-{
-    setPageCommon("page", page, update, getRequests);
+    return getRequests;
 }
 
 /// <summary>
@@ -599,7 +571,7 @@ function getFilter()
     let filter = null;
     try
     {
-        filter = JSON.parse(localStorage.getItem("filter"));
+        filter = JSON.parse(localStorage.getItem(tableIdCore() + '_filter'));
     }
     catch (e)
     {
@@ -637,11 +609,6 @@ function getFilter()
 
     logVerbose(filter, "Got Filter");
     return filter;
-}
-
-function setFilter(filter, update)
-{
-    setFilterCommon("filter", filter, update, getRequests);
 }
 
 function defaultFilter()

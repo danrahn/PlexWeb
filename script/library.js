@@ -42,17 +42,27 @@ function refreshNode()
     let key = this.getAttribute('section')
     let successFunc = function()
     {
-        btn = document.getElementById('section' + key);
+        btn = $('#section' + key);
         Animation.fireNow({"backgroundColor" : new Color(63, 100, 69)}, btn, 500);
         Animation.queueDelayed({"backgroundColor" : new Color(63, 66, 69)}, btn, 2000, 500, true);
     };
 
     let failureFunc = function()
     {
-        btn = document.getElementById('section' + key);
+        btn = $('#section' + key);
         Animation.fireNow({"backgroundColor" : new Color(100, 66, 69)}, btn, 500);
         Animation.queueDelayed({"backgroundColor" : new Color(63, 66, 69)}, btn, 2000, 500, true);
     };
 
     sendHtmlJsonRequest("administration.php", { "type" : "refresh", "section" : key}, successFunc, failureFunc);
+}
+
+function tableIdentifier()
+{
+    return 'library';
+}
+
+function tableUpdateFunc()
+{
+    return () => sendHtmlJsonRequest("administration.php", { "type" : "sections" }, buildSections);
 }
