@@ -57,17 +57,70 @@ function buildMembers(members)
     members.forEach(function(member)
     {
         let holder = tableItemHolder();
-        holder.appendChild(buildNode('span', { 'class' : 'memberName' }, member.username));
-        let list = buildNode('ul');
+        let title = buildNode('div', { 'class' : 'memberTitle' });
+        title.appendChild(buildNode(
+            'span',
+            { 'id' : 'member_' + member.id, 'class' : 'memberExpand' },
+            '+',
+            {
+                'click' : expandContractMember
+            }));
+
+        let user = buildNode('span', { 'class' : 'memberName' }, member.username);
+        if (member.level >= 100)
+        {
+            user.classList.add('adminName');
+        }
+        else if (member.level == 0)
+        {
+            user.classList.add('newName');
+        }
+
+        title.appendChild(user);
+        holder.appendChild(title);
+
+        let list = buildNode('ul', { 'class' : 'memberDetails' });
+        const li = (label, value) => buildNode('li', {}, label + ': ' + value);
+        let lastSeen = li('Last Seen', DateUtil.getDisplayDate(member.last_seen));
+        setTooltip(lastSeen, DateUtil.getFullDate(member.last_seen));
+        list.appendChild(lastSeen);
+
+        if (member.name.trim().length > 0)
+        {
+            list.appendChild(li('Name', member.name));
+        }
+
+        if (member.email.length > 0)
+        {
+            list.appendChild(li('Email', member.email));
+        }
+
+        if (member.phone != 0)
+        {
+            let phone = "(" + member.phone.substring(0, 3) + ") " + member.phone.substring(3, 6) + "-" + member.phone.substring(6);
+            list.appendChild(li('Phone', phone));
+        }
+
         list.appendChild(buildNode('li', {}, `ID: ${member.id}`));
         list.appendChild(buildNode('li', {}, `Level: ${member.level}`));
 
-        let lastSeen = buildNode('li', {}, `Last Seen: ${DateUtil.getDisplayDate(member.last_seen)}`);
-        setTooltip(lastSeen, DateUtil.getFullDate(member.last_seen));
-        list.appendChild(lastSeen);
         holder.appendChild(list);
         addTableItem(holder);
     });
+}
+
+function expandContractMember()
+{
+    if (this.innerHTML == '+')
+    {
+        this.innerHTML = '-';
+        this.parentNode.parentNode.$$('.memberDetails').style.display = 'block';
+    }
+    else
+    {
+        this.innerHTML = '+';
+        this.parentNode.parentNode.$$('.memberDetails').style.display = 'none';
+    }
 }
 
 function populateFilter()
@@ -76,6 +129,7 @@ function populateFilter()
     $('#showNew').checked = filter.type.new;
     $('#showRegular').checked = filter.type.regular;
     $('#showAdmin').checked = filter.type.admin;
+    $('#hasPII').value = filter.pii;
     $('#sortBy').value = filter.sort;
     $('#sortOrder').value = filter.order == 'desc' ? 'sortDesc' : 'sortAsc';
 
@@ -92,6 +146,7 @@ function getNewFilter()
             'regular' : $('#showRegular').checked,
             'admin' : $('#showAdmin').checked
         },
+        'pii' : $('#hasPII').value,
         'sort' : $('#sortBy').value,
         'order' : $("#sortOrder").value == 'sortDesc' ? 'desc' : 'asc'
     };
@@ -133,6 +188,15 @@ function filterHtml()
         options.push(buildTableFilterCheckbox(label, name));
     }
 
+    options.push(buildNode('hr'));
+
+    options.push(buildTableFilterDropdown(
+        'Has PII',
+        {
+            'All' : 'all',
+            'Yes' : 'yes',
+            'No' : 'no'
+        }));
     options.push(buildNode('hr'));
 
     options.push(buildTableFilterDropdown(
@@ -178,6 +242,7 @@ function getFilter()
             !hasProp(filter.type, 'new') ||
             !hasProp(filter.type, 'regular') ||
             !hasProp(filter.type, 'admin') ||
+        !hasProp(filter, 'pii') ||
         !hasProp(filter, 'sort') ||
         !hasProp(filter, 'order'))
     {
@@ -203,6 +268,7 @@ function defaultFilter()
             'regular' : true,
             'admin' : true
         },
+        'pii' : 'all',
         'sort' : 'id',
         'order' : 'asc'
     };

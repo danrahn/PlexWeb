@@ -1,0 +1,43 @@
+.memberTitle {
+    font-size: 12pt;
+    padding: 10px 0 0 10px;
+}
+
+.adminName {
+    color: rgba(240, 66, 69);
+    font-weight: bold;
+}
+
+.newName {
+    color: rgba(63, 180, 69);
+}
+
+.lastSeen {
+    font-size: 10pt;
+    float: right;
+    margin-right: 10px;
+}
+
+.memberExpand {
+    cursor: pointer;
+    margin-right: 10px;
+    font-weight: bold;
+    width: 15px;
+    display: inline-block;
+}
+
+.memberDetails {
+    display: none;
+}
+
+.tableEntryHolder ul {
+    margin-top: 0;
+}
+
+.tableEntryHolder li {
+    font-size: 10pt;
+}
+
+#tooltip {
+    font-size: 10pt;
+}

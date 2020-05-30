@@ -1119,7 +1119,7 @@ function get_members($num, $page, $search, $filter)
 
     $offset = $num == 0 ? 0 : $num * $page;
     $filter = json_decode($filter);
-    $query = "SELECT id, username, level, last_login, created_at FROM users ";
+    $query = "SELECT users.id AS id, username, level, last_login, created_at, firstname, lastname, email, phone, email_alerts, phone_alerts FROM users INNER JOIN user_info ON users.id=user_info.userid ";
 
     $filter_string = "WHERE 1 ";
     if (!$filter->type->new)
@@ -1133,6 +1133,18 @@ function get_members($num, $page, $search, $filter)
     if (!$filter->type->admin)
     {
         $filter_string .= "AND level < 100 ";
+    }
+
+    if ($filter->pii != "all")
+    {
+        if ($filter->pii == 'yes')
+        {
+            $filter_string .= "AND (firstname <> '' OR lastname <> '' OR email <> '' OR phone <> 0) ";
+        }
+        else
+        {
+            $filter_string .= "AND firstname = '' AND lastname = '' AND email = '' AND phone = 0 ";
+        }
     }
 
     if (strlen($search) > 0)
@@ -1187,6 +1199,11 @@ function get_members($num, $page, $search, $filter)
         $user->level = $row[2];
         $user->last_seen = $row[3];
         $user->created = $row[4];
+        $user->name = $row[5] . ' ' . $row[6];
+        $user->email = $row[7];
+        $user->phone = $row[8];
+        $user->emailalerts = $row[9];
+        $user->phonealerts = $row[10];
         array_push($users, $user);
     }
 
@@ -1194,7 +1211,7 @@ function get_members($num, $page, $search, $filter)
 
     $result->close();
 
-    $query = "SELECT COUNT(*) FROM users " . $filter_string;
+    $query = "SELECT COUNT(*) FROM users INNER JOIN user_info ON users.id=user_info.userid " . $filter_string;
     $result = $db->query($query);
     if (!$result)
     {
