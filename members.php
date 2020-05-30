@@ -21,18 +21,17 @@ if ((int)$_SESSION['level'] < 100)
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#3C5260" />
     <title>Plex Status: Members</title>
-    <?php get_css("style", "nav", "request"); ?>
+    <?php get_css("members", "style", "nav", "table", "tooltip"); ?>
 </head>
 <body>
 
 <div id="plexFrame">
     <?php include "nav.php" ?>
     <div id="container">
-        <div id="welcome">Loading Member List...</div>
-        <div class="tableHolder">
-        </div>
+        <div style='margin-top: 50px; overflow: auto'></div>
+        <?php include "includes/table.html" ?>
     </div>
 </div>
 </body>
-<?php build_js("members", "common", "consolelog", "animate", "nav"); ?>
+<?php build_js("members", "common", "consolelog", "animate", "nav", "tableCommon", "tooltip", "DateUtil"); ?>
 </html>

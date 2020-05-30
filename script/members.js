@@ -1,85 +1,207 @@
 window.addEventListener('load', function()
 {
-    var http = new XMLHttpRequest();
-    http.open('POST', 'process_request.php', true);
-    http.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
-    http.onreadystatechange = loadMemberList;
-    http.send("&type=members");
+    getMembers();
 });
 
-function loadMemberList() {
-    if (this.readyState != 4 || this.status != 200)
+function tableIdentifier()
+{
+    return 'members';
+}
+
+function tableUpdateFunc()
+{
+    return getMembers;
+}
+
+function getMembers(searchValue='')
+{
+    let parameters =
     {
+        'type' : 'members',
+        'num' : getPerPage(),
+        'page' : getPage(),
+        'serach' : searchValue,
+        'filter' : JSON.stringify(getFilter())
+    };
+
+    displayInfoMessage('Loading...');
+    let successFunc = function(response)
+    {
+        buildMembers(response);
+
+        if (searchValue.length != 0)
+        {
+            $$('.searchBtn').click();
+        }
+    };
+
+    let failureFunc = function()
+    {
+        displayInfoMessage('Something went wrong :(');
+    };
+
+    sendHtmlJsonRequest('process_request.php', parameters, successFunc, failureFunc);
+}
+
+function buildMembers(members)
+{
+    clearElement('tableEntries');
+    if (members.length == 0)
+    {
+        displayInfoMessage('No members returned. That can\'t be right!');
         return;
     }
 
+    members.forEach(function(member)
+    {
+        let holder = tableItemHolder();
+        holder.appendChild(buildNode('span', { 'class' : 'memberName' }, member.username));
+        let list = buildNode('ul');
+        list.appendChild(buildNode('li', {}, `ID: ${member.id}`));
+        list.appendChild(buildNode('li', {}, `Level: ${member.level}`));
+
+        let lastSeen = buildNode('li', {}, `Last Seen: ${DateUtil.getDisplayDate(member.last_seen)}`);
+        setTooltip(lastSeen, DateUtil.getFullDate(member.last_seen));
+        list.appendChild(lastSeen);
+        holder.appendChild(list);
+        addTableItem(holder);
+    });
+}
+
+function populateFilter()
+{
+    let filter = getFilter();
+    $('#showNew').checked = filter.type.new;
+    $('#showRegular').checked = filter.type.regular;
+    $('#showAdmin').checked = filter.type.admin;
+    $('#sortBy').value = filter.sort;
+    $('#sortOrder').value = filter.order == 'desc' ? 'sortDesc' : 'sortAsc';
+
+    setSortOrderValues();
+    $('#sortBy').addEventListener('change', setSortOrderValues);
+}
+
+function getNewFilter()
+{
+    return {
+        'type' :
+        {
+            'new' : $('#showNew').checked,
+            'regular' : $('#showRegular').checked,
+            'admin' : $('#showAdmin').checked
+        },
+        'sort' : $('#sortBy').value,
+        'order' : $("#sortOrder").value == 'sortDesc' ? 'desc' : 'asc'
+    };
+}
+
+function setSortOrderValues()
+{
+    let sortBy = $('#sortBy').value;
+    if (sortBy == 'level')
+    {
+        $('#sortDesc').text = 'Highest to Lowest';
+        $('#sortAsc').text = 'Lowest to Highest';
+    }
+    else if (sortBy == 'name')
+    {
+        $("#sortDesc").text = "A-Z";
+        $("#sortAsc").text = "Z-A";
+    }
+    else
+    {
+        $("#sortDesc").text = "Newest First";
+        $("#sortAsc").text = "Oldest First";
+    }
+}
+
+function filterHtml()
+{
+    let options = [];
+
+    let checkboxes =
+    {
+        'New Members' : 'showNew',
+        'Regulars' : 'showRegular',
+        'Admins' : 'showAdmin'
+    };
+
+    for (let [label, name] of Object.entries(checkboxes))
+    {
+        options.push(buildTableFilterCheckbox(label, name));
+    }
+
+    options.push(buildNode('hr'));
+
+    options.push(buildTableFilterDropdown(
+        'Sort By',
+        {
+            'Account Age' : 'id',
+            'Name' : 'name',
+            'Last Seen' : 'seen',
+            'Level' : 'level',
+        }));
+
+    options.push(buildTableFilterDropdown(
+        'Sort Order',
+        {
+            'Newest First' : 'sortDesc',
+            'Oldest First' : 'sortAsc'
+        },
+        true /*addId*/));
+    options.push(buildNode('hr'))
+
+    return filterHtmlCommon(options);
+}
+
+function hasProp(item, property)
+{
+    return item.hasOwnProperty(property);
+}
+
+function getFilter()
+{
+    let filter = null;
     try
     {
-        let response = JSON.parse(this.responseText);
-        if (response['Error'])
+        filter = JSON.parse(localStorage.getItem(tableIdCore() + '_filter'));
+    }
+    catch (e)
+    {
+        logError('Unable to parse stored filter, resetting');
+    }
+
+    if (filter == null ||
+        !hasProp(filter, 'type') ||
+            !hasProp(filter.type, 'new') ||
+            !hasProp(filter.type, 'regular') ||
+            !hasProp(filter.type, 'admin') ||
+        !hasProp(filter, 'sort') ||
+        !hasProp(filter, 'order'))
+    {
+        if (filter != null)
         {
-            logError(response['Error'], `Error querying process_request.php?type=members`);
-            document.getElementById("welcome").innerHTML = "Something went wrong :(";
-            return;
+            logError(filter, 'Bad filter, resetting');
         }
 
-        document.getElementById("welcome").innerHTML = "Success!";
-        logVerbose(response, "process_request.php?type=members");
-        buildTable(response);
-    } catch (ex)
-    {
-        logError(ex, "Exception");
-        logError(this.responseText, "Exception Text");
-    }
-}
-
-function buildTable(users)
-{
-    let table = document.createElement("table");
-    table.id = "members";
-    appendHeaders(table, "ID", "Username", "Level", "Last Seen");
-    for (let i = 0; i < users.length; ++i)
-    {
-        appendData(table, users[i]);
+        filter = defaultFilter();
+        setFilter(filter, false);
     }
 
-    document.querySelector(".tableHolder").appendChild(table);
+    logVerbose(filter, 'Got Filter');
+    return filter;
 }
 
-function appendHeaders(table, ...values)
+function defaultFilter()
 {
-    appendRow("th", table, ...values);
-}
-
-function appendData(table, user)
-{
-    appendRow("td", table, user.id, user.username, user.level, user.last_seen);
-}
-
-function appendRow(type, table, ...values)
-{
-    let row = document.createElement("tr");
-    for (var i = 0; i < values.length; ++i)
-    {
-        row.appendChild(getTableCell(type, values[i]));
-    }
-
-    table.appendChild(row);
-}
-
-function getTableCell(type, value, className, id)
-{
-    let th = document.createElement(type);
-    if (className)
-    {
-        th.className = className;
-    }
-
-    if (id)
-    {
-        th.id = id;
-    }
-
-    th.innerHTML = value;
-    return th;
+    return {
+        'type' :
+        {
+            'new' : true,
+            'regular' : true,
+            'admin' : true
+        },
+        'sort' : 'id',
+        'order' : 'asc'
+    };
 }

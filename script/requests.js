@@ -410,22 +410,6 @@ function filterHtml()
         options.push(buildNode("hr"));
     }
 
-    // if (getComputedStyle($$('.nomobile')).display != 'inline')
-    // {
-    //     let showHolder = buildNode('div', {'class' : 'formInput'});
-    //     showHolder.appendChild(buildNode('label', {'for' : 'filterPerPage'}, 'Show Per Page: '));
-    //     let show = buildNode('select', {'name' : 'filterPerPage', 'id' : 'filterPerPage'});
-    //     const showOption = (option) => buildNode('option', {'value' : option}, option);
-    //     show.appendChild(showOption(25));
-    //     show.appendChild(showOption(50));
-    //     show.appendChild(showOption(100));
-    //     show.appendChild(buildNode('option', {'value' : 0 }, "All"));
-    //     show.value = getPerPage();
-    //     showHolder.appendChild(show);
-    //     options.push(showHolder);
-    //     options.push(buildNode('hr'));
-    // }
-
     return filterHtmlCommon(options);
 }
 
