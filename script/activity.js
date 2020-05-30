@@ -172,180 +172,86 @@ function isAdmin()
 }
 
 /// <summary>
-/// Launch the filter dialog and set up applicable event handlers
+/// HTML for the filter overlay/dialog. Should probably be part of the initial DOM
 /// </summary>
-function launchFilter()
+function filterHtml()
 {
-    let overlay = buildNode("div", {"id" : "filterOverlay"});
-    overlay.id = "filterOverlay";
-    overlay.appendChild(filterHtml());
-    overlay.style.opacity = "0";
-    document.body.appendChild(overlay);
+    let options = [];
 
-    overlay.addEventListener("click", function(e)
+    // Statuses + request types
+    let checkboxes =
     {
-        // A click outside the main dialog will dismiss it
-        if (e.target.id == "filterOverlay")
-        {
-            dismissFilterDialog();
-        }
-    });
+        'Show New Requests' : 'showNew',
+        'Show Comments' : 'showComment',
+        'Show Status Changes' : 'showStatus',
+        'Show My Actions' : 'showMine'
+    };
 
+    for (let [label, name] of Object.entries(checkboxes))
+    {
+        options.push(buildTableFilterCheckbox(label, name));
+    }
+
+    options.push(buildTableFilterDropdown(
+        'Sort By',
+        {
+            'Date' : 'request'
+        }));
+
+    options.push(buildTableFilterDropdown(
+        'Sort Order',
+        {
+            'Newest First' : 'sortDesc',
+            'Oldest First' : 'sortAsc'
+        },
+        true /*addId*/));
+
+    options.push(buildNode("hr"));
+
+    if (isAdmin())
+    {
+        options.push(buildTableFilterDropdown(
+            'Filter To',
+            {
+                'All' : -1
+            }));
+
+        options.push(buildNode("hr"));
+    }
+
+    return filterHtmlCommon(options);
+}
+
+function populateFilter()
+{
     let filter = getFilter();
     $("#showNew").checked = filter.type.new;
     $("#showComment").checked = filter.type.comment;
     $("#showStatus").checked = filter.type.status;
     $("#showMine").checked = filter.type.mine;
     $("#sortBy").value = filter.sort;
-    $("#sortOrder").value = filter.order;
+    $("#sortOrder").value = filter.order == 'desc' ? 'sortDesc' : 'sortAsc';
 
     if (isAdmin())
     {
         populateUserFilter();
     }
-
-    // setSortOrderValues();
-    // $("#sortBy").addEventListener("change", setSortOrderValues);
-
-    $("#applyFilter").addEventListener("click", function()
-    {
-        setPage(0); // Go back to the start after applying a filter
-        setFilter(
-        {
-            "type" :
-            {
-                "new" : $("#showNew").checked,
-                "comment" : $("#showComment").checked,
-                "status" : $("#showStatus").checked,
-                "mine" : $("#showMine").checked
-            },
-            "sort" : $("#sortBy").value,
-            "order" : $("#sortOrder").value,
-            "user" : isAdmin() ? $("#filterTo").value : "-1"
-        }, true /*update*/);
-
-        dismissFilterDialog();
-    });
-
-    $("#cancelFilter").addEventListener("click", dismissFilterDialog);
-    $("#resetFilter").addEventListener("click", function()
-    {
-        setPage(0); // Go back to the start after applying a filter
-        setFilter(defaultFilter(), true);
-        dismissFilterDialog();
-    });
-
-    Animation.queue({"opacity": 1}, overlay, 250);
-    $("#showNew").focus();
 }
 
-/// <summary>
-/// HTML for the filter overlay/dialog. Should probably be part of the initial DOM
-/// </summary>
-function filterHtml()
+function getNewFilter()
 {
-    let container = buildNode("div", {"id" : "filterContainer"});
-    container.appendChild(buildNode("h3", {}, "Filter Options"));
-    container.appendChild(buildNode("hr"));
-
-    // Statuses + request types
-    let labels = [
-        "Show New Requests",
-        "Show Comments",
-        "Show Status Changes",
-        "Show My Actions",
-        ""];
-
-    [
-        "showNew",
-        "showComment",
-        "showStatus",
-        "showMine",
-        ""
-    ].forEach(function(typ, index)
-    {
-        if (typ == "")
+    return {
+        "type" :
         {
-            container.appendChild(buildNode("hr"));
-            return;
-        }
-
-        let div = buildNode("div",
-            {"class" : "formInput"},
-            0,
-            {
-                "click" : function(e)
-                {
-                    // If we clicked the filter item, but not directly on the label/checkbox, pretend we did
-                    if (e.target == this)
-                    {
-                        this.$$("input").click();
-                    }
-                }
-            });
-        div.appendChild(buildNode("label", {"for" : typ}, labels[index] + ": "));
-        div.appendChild(buildNode("input", {
-            "type" : "checkbox",
-            "name" : typ,
-            "id" : typ
-        }));
-        container.appendChild(div);
-    });
-
-    let sortBy = buildNode("div", {"class" : "formInput"});
-    sortBy.appendChild(buildNode("label", {"for" : "sortBy"}, "Sort By: "));
-    let sortByFields = buildNode("select", {"name" : "sortBy", "id" : "sortBy"});
-    labels = ["Date"];
-    ["request"].forEach(function(category, index)
-    {
-        sortByFields.appendChild(buildNode("option", {"value": category}, labels[index]));
-    });
-    sortBy.appendChild(sortByFields);
-    container.appendChild(sortBy);
-
-    let sortOrder = buildNode("div", {"class" : "formInput"});
-    sortOrder.appendChild(buildNode("label", {"for" : "sortOrder"}, "Sort  Order: "));
-    let sortOrderFields = buildNode("select", {"name" : "sortOrder", "id" : "sortOrder"});
-    sortOrderFields.appendChild(buildNode("option", {"value" : "desc", "id" : "sortDesc"}, "Newest First"));
-    sortOrderFields.appendChild(buildNode("option", {"value" : "asc", "id" : "sortAsc"}, "Oldest First"));
-    sortOrder.appendChild(sortOrderFields);
-    container.appendChild(sortOrder);
-    container.appendChild(buildNode("hr"));
-
-    if (isAdmin())
-    {
-        let userSelect = buildNode("div", {"class" : "formInput"});
-        userSelect.appendChild(buildNode("label", {"for" : "filterTo"}, "Filter To: "));
-        let filterUser = buildNode("select", {"name" : "filterTo", "id" : "filterTo"});
-        filterUser.appendChild(buildNode("option", {"value" : "-1"}, "All"));
-        userSelect.appendChild(filterUser);
-        container.appendChild(userSelect);
-        container.appendChild(buildNode("hr"));
-    }
-
-    let buttonHolder = buildNode("div", {"class" : "formInput"});
-    let innerButtonHolder = buildNode("div", {"class" : "filterButtons"});
-    innerButtonHolder.appendChild(buildNode("input", {
-        "type" : "button",
-        "value" : "Cancel",
-        "id" : "cancelFilter",
-        "style" : "margin-right: 10px"
-    }));
-    innerButtonHolder.appendChild(buildNode("input", {
-        "type" : "button",
-        "value" : "Reset",
-        "id" : "resetFilter",
-        "style" : "margin-right: 10px"
-    }));
-    innerButtonHolder.appendChild(buildNode("input", {
-        "type" : "button",
-        "value" : "Apply",
-        "id" : "applyFilter"
-    }));
-
-    buttonHolder.appendChild(innerButtonHolder);
-    container.appendChild(buttonHolder);
-    return container;
+            "new" : $("#showNew").checked,
+            "comment" : $("#showComment").checked,
+            "status" : $("#showStatus").checked,
+            "mine" : $("#showMine").checked
+        },
+        "sort" : $("#sortBy").value,
+        "order" : $("#sortOrder").value == 'sortDesc' ? 'desc' : 'asc',
+        "user" : isAdmin() ? $("#filterTo").value : "-1"
+    };
 }
 
 function tableIdentifier()

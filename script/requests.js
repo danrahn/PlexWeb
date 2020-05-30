@@ -293,26 +293,8 @@ function updateStatus()
         true /*dataIsString*/);
 }
 
-/// <summary>
-/// Launch the filter dialog and set up applicable event handlers
-/// </summary>
-function launchFilter()
+function populateFilter()
 {
-    let overlay = buildNode("div", {"id" : "filterOverlay"});
-    overlay.id = "filterOverlay";
-    overlay.appendChild(filterHtml());
-    overlay.style.opacity = "0";
-    document.body.appendChild(overlay);
-
-    overlay.addEventListener("click", function(e)
-    {
-        // A click outside the main dialog will dismiss it
-        if (e.target.id == "filterOverlay")
-        {
-            dismissFilterDialog();
-        }
-    });
-
     let filter = getFilter();
     $("#showPending").checked = filter.status.pending;
     $("#showComplete").checked = filter.status.complete;
@@ -323,7 +305,7 @@ function launchFilter()
     $("#showTV").checked = filter.type.tv;
     $("#showOther").checked = filter.type.other;
     $("#sortBy").value = filter.sort;
-    $("#sortOrder").value = filter.order;
+    $("#sortOrder").value = filter.order == 'desc' ? 'sortDesc' : 'sortAsc';
 
     if (isAdmin())
     {
@@ -332,50 +314,29 @@ function launchFilter()
 
     setSortOrderValues();
     $("#sortBy").addEventListener("change", setSortOrderValues);
+}
 
-    $("#applyFilter").addEventListener("click", function()
-    {
-        setPage(0); // Go back to the start after applying a filter
-        let applyPerPage = !!$('#filterPerPage');
-        setFilter(
+function getNewFilter()
+{
+    return {
+        "status" :
         {
-            "status" :
-            {
-                "pending" : $("#showPending").checked,
-                "complete" : $("#showComplete").checked,
-                "declined" : $("#showDeclined").checked,
-                "inprogress" : $("#showInProgress").checked,
-                "waiting" : $("#showWaiting").checked
-            },
-            "type" :
-            {
-                "movies" : $("#showMovies").checked,
-                "tv" : $("#showTV").checked,
-                "other" : $("#showOther").checked,
-            },
-            "sort" : $("#sortBy").value,
-            "order" : $("#sortOrder").value,
-            "user" : isAdmin() ? $("#filterTo").value : "-1"
-        }, !applyPerPage /*update*/);
-
-        if (applyPerPage)
+            "pending" : $("#showPending").checked,
+            "complete" : $("#showComplete").checked,
+            "declined" : $("#showDeclined").checked,
+            "inprogress" : $("#showInProgress").checked,
+            "waiting" : $("#showWaiting").checked
+        },
+        "type" :
         {
-            setPerPage($('#filterPerPage').value, true /*update*/);
-        }
-
-        dismissFilterDialog();
-    });
-
-    $("#cancelFilter").addEventListener("click", dismissFilterDialog);
-    $("#resetFilter").addEventListener("click", function()
-    {
-        setPage(0); // Go back to the start after applying a filter
-        setFilter(defaultFilter(), true);
-        dismissFilterDialog();
-    });
-
-    Animation.queue({"opacity": 1}, overlay, 250);
-    $("#showPending").focus();
+            "movies" : $("#showMovies").checked,
+            "tv" : $("#showTV").checked,
+            "other" : $("#showOther").checked,
+        },
+        "sort" : $("#sortBy").value,
+        "order" : $("#sortOrder").value == 'sortDesc' ? 'desc' : 'asc',
+        "user" : isAdmin() ? $("#filterTo").value : "-1"
+    };
 }
 
 /// <summary>
@@ -400,132 +361,72 @@ function setSortOrderValues()
 /// </summary>
 function filterHtml()
 {
-    let container = buildNode("div", {"id" : "filterContainer"});
-    container.appendChild(buildNode("h3", {}, "Filter Options"));
-    container.appendChild(buildNode("hr"));
+    let options = [];
 
     // Statuses + request types
-    let labels = [
-        "Show Pending",
-        "Show Waiting",
-        "Show In Progress",
-        "Show Complete",
-        "Show Declined",
-        "",
-        "Show Movies",
-        "Show TV",
-        "Show Other"];
-
-    [
-        "showPending",
-        "showWaiting",
-        "showInProgress",
-        "showComplete",
-        "showDeclined",
-        "",
-        "showMovies",
-        "showTV",
-        "showOther"
-    ].forEach(function(typ, index)
+    let checkboxes =
     {
-        if (typ == "")
+        'Show Pending' : 'showPending',
+        'Show Waiting' : 'showWaiting',
+        'Show In Progress' : 'showInProgress',
+        'Show Complete' : 'showComplete',
+        'Show Declined' : 'showDeclined',
+        '' : '',
+        'Show Movies' : 'showMovies',
+        'Show TV' : 'showTV',
+        'Show Other' : 'showOther'
+    };
+
+    for (let [label, name] of Object.entries(checkboxes))
+    {
+        options.push(buildTableFilterCheckbox(label, name));
+    }
+
+    options.push(buildTableFilterDropdown(
+        'Sort By',
         {
-            container.appendChild(buildNode("hr"));
-            return;
-        }
-
-        let div = buildNode("div",
-            {"class" : "formInput"},
-            0,
-            {
-                "click" : function(e)
-                {
-                    // If we clicked the filter item, but not directly on the label/checkbox, pretend we did
-                    if (e.target == this)
-                    {
-                        this.$$("input").click();
-                    }
-                }
-            });
-        div.appendChild(buildNode("label", {"for" : typ}, labels[index] + ": "));
-        div.appendChild(buildNode("input", {
-            "type" : "checkbox",
-            "name" : typ,
-            "id" : typ
+            'Request Date' : 'request',
+            'UpdateDate' : 'update',
+            'Title' : 'title'
         }));
-        container.appendChild(div);
-    });
 
-    let sortBy = buildNode("div", {"class" : "formInput"});
-    sortBy.appendChild(buildNode("label", {"for" : "sortBy"}, "Sort By: "));
-    let sortByFields = buildNode("select", {"name" : "sortBy", "id" : "sortBy"});
-    labels = ["Request Date", "Update Date", "Title"];
-    ["request", "update", "title"].forEach(function(category, index)
-    {
-        sortByFields.appendChild(buildNode("option", {"value": category}, labels[index]));
-    });
-    sortBy.appendChild(sortByFields);
-    container.appendChild(sortBy);
+    options.push(buildTableFilterDropdown(
+        'Sort Order',
+        {
+            'Newest First' : 'sortDesc',
+            'Oldest First' : 'sortAsc'
+        },
+        true /*addId*/));
 
-    let sortOrder = buildNode("div", {"class" : "formInput"});
-    sortOrder.appendChild(buildNode("label", {"for" : "sortOrder"}, "Sort  Order: "));
-    let sortOrderFields = buildNode("select", {"name" : "sortOrder", "id" : "sortOrder"});
-    sortOrderFields.appendChild(buildNode("option", {"value" : "desc", "id" : "sortDesc"}, "Newest First"));
-    sortOrderFields.appendChild(buildNode("option", {"value" : "asc", "id" : "sortAsc"}, "Oldest First"));
-    sortOrder.appendChild(sortOrderFields);
-    container.appendChild(sortOrder);
-    container.appendChild(buildNode("hr"));
+    options.push(buildNode("hr"));
 
     if (isAdmin())
     {
-        let userSelect = buildNode("div", {"class" : "formInput"});
-        userSelect.appendChild(buildNode("label", {"for" : "filterTo"}, "Filter To: "));
-        let filterUser = buildNode("select", {"name" : "filterTo", "id" : "filterTo"});
-        filterUser.appendChild(buildNode("option", {"value" : "-1"}, "All"));
-        userSelect.appendChild(filterUser);
-        container.appendChild(userSelect);
-        container.appendChild(buildNode("hr"));
+        options.push(buildTableFilterDropdown(
+            'Filter To',
+            {
+                'All' : -1
+            }));
+        options.push(buildNode("hr"));
     }
 
-    if (getComputedStyle($$('.nomobile')).display != 'inline')
-    {
-        let showHolder = buildNode('div', {'class' : 'formInput'});
-        showHolder.appendChild(buildNode('label', {'for' : 'filterPerPage'}, 'Show Per Page: '));
-        let show = buildNode('select', {'name' : 'filterPerPage', 'id' : 'filterPerPage'});
-        const showOption = (option) => buildNode('option', {'value' : option}, option);
-        show.appendChild(showOption(25));
-        show.appendChild(showOption(50));
-        show.appendChild(showOption(100));
-        show.appendChild(buildNode('option', {'value' : 0 }, "All"));
-        show.value = getPerPage();
-        showHolder.appendChild(show);
-        container.appendChild(showHolder);
-        container.appendChild(buildNode('hr'));
-    }
+    // if (getComputedStyle($$('.nomobile')).display != 'inline')
+    // {
+    //     let showHolder = buildNode('div', {'class' : 'formInput'});
+    //     showHolder.appendChild(buildNode('label', {'for' : 'filterPerPage'}, 'Show Per Page: '));
+    //     let show = buildNode('select', {'name' : 'filterPerPage', 'id' : 'filterPerPage'});
+    //     const showOption = (option) => buildNode('option', {'value' : option}, option);
+    //     show.appendChild(showOption(25));
+    //     show.appendChild(showOption(50));
+    //     show.appendChild(showOption(100));
+    //     show.appendChild(buildNode('option', {'value' : 0 }, "All"));
+    //     show.value = getPerPage();
+    //     showHolder.appendChild(show);
+    //     options.push(showHolder);
+    //     options.push(buildNode('hr'));
+    // }
 
-    let buttonHolder = buildNode("div", {"class" : "formInput"});
-    let innerButtonHolder = buildNode("div", {"class" : "filterButtons"});
-    innerButtonHolder.appendChild(buildNode("input", {
-        "type" : "button",
-        "value" : "Cancel",
-        "id" : "cancelFilter",
-        "style" : "margin-right: 10px"
-    }));
-    innerButtonHolder.appendChild(buildNode("input", {
-        "type" : "button",
-        "value" : "Reset",
-        "id" : "resetFilter",
-        "style" : "margin-right: 10px"
-    }));
-    innerButtonHolder.appendChild(buildNode("input", {
-        "type" : "button",
-        "value" : "Apply",
-        "id" : "applyFilter"
-    }));
-
-    buttonHolder.appendChild(innerButtonHolder);
-    container.appendChild(buttonHolder);
-    return container;
+    return filterHtmlCommon(options);
 }
 
 /// <summary>

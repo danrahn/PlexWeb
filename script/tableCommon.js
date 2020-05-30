@@ -5,7 +5,10 @@
 /// 1. tableIdentifier() - Returns a string that identifies this table (required)
 /// 2. tableUpdateFunc() - Returns a function to call when updating the table (required)
 /// 3. tableSearch() - Invoked when the user initiates a search (optional)
-/// 4. launchFilter() - Displays the filter options (optional)
+/// 4. Filter - optional
+///    a. filterHtml() - The filter dialog UI
+///    b. populateFilter() - Populate the filter dialog with the current values
+///    b. getNewFilter() - Returns the new filter based on the current state of the filter dialog
 /// </summary>
 
 /// <summary>
@@ -217,7 +220,7 @@ function startTableSearch(e)
 
 function setupFilter()
 {
-    if (typeof(launchFilter) == 'undefined')
+    if (typeof(filterHtml) == 'undefined')
     {
         $('.filterBtn').forEach(function(filter)
         {
@@ -231,6 +234,184 @@ function setupFilter()
     {
         filter.addEventListener("click", launchFilter);
     });
+}
+
+/// <summary>
+/// Launch the filter dialog and set up applicable event handlers
+/// </summary>
+function launchFilter()
+{
+    let overlay = buildNode(
+        'div',
+        { 'id' : 'filterOverlay', 'style' : 'opacity: 0' },
+        filterHtml().outerHTML,
+        {
+            'click' : function(e)
+            {
+                // A click outside the main dialog will dismiss it
+                if (e.target.id == 'filterOverlay')
+                {
+                    dismissFilterDialog();
+                }
+            }
+        }
+    );
+
+    document.body.appendChild(overlay);
+
+    // Somewhat hacky to do this here, but query selection doesn't
+    // work until the item is actually added to the DOM
+    let perPage = $('#showPerPage');
+    if (perPage)
+    {
+        perPage.value = getPerPage();
+    }
+
+    populateFilter();
+    $('#applyFilter').addEventListener('click', function()
+    {
+        setPage(0);
+        let applyPerPage = !!$('#showPerPage');
+        setFilter(getNewFilter(), !applyPerPage /*update*/)
+        if (applyPerPage)
+        {
+            setPerPage($('#showPerPage').value, true /*update*/);
+        }
+        
+        dismissFilterDialog();
+    });
+    $('#cancelFilter').addEventListener('click', dismissFilterDialog);
+    $('#resetFilter').addEventListener('click', function()
+    {
+        setPage(0);
+        setFilter(defaultFilter(), true);
+        dismissFilterDialog();
+    });
+
+    Animation.queue({'opacity' : 1}, overlay, 250);
+
+    // Set focus to the first input
+    overlay.$$('input').focus();
+}
+
+/// <summary>
+/// Wraps the given options in a common filter UI container
+/// </summary>
+function filterHtmlCommon(options)
+{
+    let container = buildNode('div', { 'id' : 'filterContainer' });
+    container.appendChild(buildNode('h3', {}, 'Filter Options'));
+    container.appendChild(buildNode('hr'));
+    options.forEach(function(option)
+    {
+        container.appendChild(option);
+    });
+
+    // In mobile view we don't show 'per page' directly in the table
+    // header to save space. Move it into the filter UI
+    if (getComputedStyle($$('.nomobile')).display != 'inline')
+    {
+        container.appendChild(buildTableFilterDropdown(
+            'Show Per Page',
+            {
+                '25' : '25',
+                '50' : '50',
+                '100' : '100',
+                'All' : '0'
+            }));
+
+        container.appendChild(buildNode('hr'));
+    }
+
+    let buttonHolder = buildNode('div', {'class' : 'formInput'});
+    let innerButtonHolder = buildNode('div', {'class' : 'filterButtons'});
+    innerButtonHolder.appendChild(buildNode('input', {
+        'type' : 'button',
+        'value' : 'Cancel',
+        'id' : 'cancelFilter',
+        'style' : 'margin-right: 10px'
+    }));
+    innerButtonHolder.appendChild(buildNode('input', {
+        'type' : 'button',
+        'value' : 'Reset',
+        'id' : 'resetFilter',
+        'style' : 'margin-right: 10px'
+    }));
+    innerButtonHolder.appendChild(buildNode('input', {
+        'type' : 'button',
+        'value' : 'Apply',
+        'id' : 'applyFilter'
+    }));
+
+    buttonHolder.appendChild(innerButtonHolder);
+    container.appendChild(buttonHolder);
+
+    return container;
+}
+
+/// <summary>
+/// Returns a checkbox filter item with the given label and name
+/// If the name is empty, return an hr instead
+/// </summary>
+function buildTableFilterCheckbox(label, name)
+{
+    if (name == '')
+    {
+        return buildNode('hr');
+    }
+
+    let div = buildNode(
+        'div',
+        { 'class' : 'formInput' },
+        0,
+        {
+            'click' : function(e)
+            {
+                // If we clicked the filter itme but not directly on the label.checkbox, pretend we did
+                if (e.target == this)
+                {
+                    this.$$('input').click();
+                }
+            }
+        }
+    );
+    div.appendChild(buildNode('label', { 'for' : name }, label + ': '));
+    div.appendChild(buildNode(
+        'input',
+        {
+            'type' : 'checkbox',
+            'name' : name,
+            'id' : name
+        })
+    );
+
+    return div;
+}
+
+/// <summary>
+/// Builds a filter dropdown
+/// </summary>
+function buildTableFilterDropdown(title, options, addId=false)
+{
+    // Make the name the camelCase version of the title
+    let name = title.split(' ');
+    name = name.splice(0, 1)[0].toLowerCase() + name.join('');
+    let container = buildNode('div', { 'class' : 'formInput' });
+    container.appendChild(buildNode('label', { 'for' : name }, title + ': '));
+    let select = buildNode('select', { 'name' : name, 'id' : name });
+    for (let [label, value] of Object.entries(options))
+    {
+        let option = buildNode('option', { 'value' : value }, label);
+        if (addId)
+        {
+            option.id = value;
+        }
+
+        select.appendChild(option);
+    }
+
+    container.appendChild(select);
+    return container;
 }
 
 /// <summary>
