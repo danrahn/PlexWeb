@@ -277,7 +277,7 @@ function launchFilter()
         {
             setPerPage($('#showPerPage').value, true /*update*/);
         }
-        
+
         dismissFilterDialog();
     });
     $('#cancelFilter').addEventListener('click', dismissFilterDialog);
@@ -606,14 +606,9 @@ function setPageInfo(totalRequests)
 /// </summary>
 function populateUserFilter()
 {
-    let params = { "type" : "members" };
+    let params = { "type" :"members_all" };
     let successFunc = function(response)
     {
-        response.sort(function(a, b)
-        {
-            return a.username.toLowerCase().localeCompare(b.username.toLowerCase());
-        });
-
         let select = $("#filterTo");
         response.forEach(function(user)
         {

@@ -77,6 +77,9 @@ function process_request($type)
         case "members":
             $message = get_members((int)get("num"), (int)get("page"), get("search"), get("filter"));
             break;
+        case "members_all":
+            $message = get_members_all();
+            break;
         case "search":
             $message = search(get("query"), get("kind"));
             break;
@@ -1074,6 +1077,34 @@ function check_username($username)
     }
 }
 
+function get_members_all()
+{
+    if ($_SESSION['level'] < 100)
+    {
+        return json_error('Not authorized');
+    }
+
+    global $db;
+    $query = "SELECT id, username FROM users ORDER BY username ASC";
+    $result = $db->query($query);
+    if (!$result)
+    {
+        return db_error();
+    }
+
+    $users = array();
+    while ($row = $result->fetch_row())
+    {
+        $user = new \stdClass();
+        $user->id = $row[0];
+        $user->username = $row[1];
+        array_push($users, $user);
+    }
+
+    $result->close();
+    return json_encode($users);
+}
+
 /// <summary>
 /// Returns a json string of members, sorted by the last time they logged in
 /// </summary>
@@ -1140,7 +1171,6 @@ function get_members($num, $page, $search, $filter)
         $query .= "OFFSET $offset";
     }
 
-    // $query = "SELECT id, username, level, last_login FROM users ORDER BY id ASC";
     $result = $db->query($query);
     if (!$result)
     {
