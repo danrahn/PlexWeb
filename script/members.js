@@ -20,14 +20,16 @@ function getMembers(searchValue='')
         'type' : 'members',
         'num' : getPerPage(),
         'page' : getPage(),
-        'serach' : searchValue,
+        'search' : searchValue,
         'filter' : JSON.stringify(getFilter())
     };
 
     displayInfoMessage('Loading...');
     let successFunc = function(response)
     {
-        buildMembers(response);
+
+        buildMembers(response.data);
+        setPageInfo(response.total);
 
         if (searchValue.length != 0)
         {
@@ -204,4 +206,9 @@ function defaultFilter()
         'sort' : 'id',
         'order' : 'asc'
     };
+}
+
+function tableSearch(value)
+{
+    getMembers(value);
 }

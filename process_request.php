@@ -75,7 +75,7 @@ function process_request($type)
             $message = check_username(get("username"));
             break;
         case "members":
-            $message = get_members();
+            $message = get_members((int)get("num"), (int)get("page"), get("search"), get("filter"));
             break;
         case "search":
             $message = search(get("query"), get("kind"));
@@ -108,7 +108,7 @@ function process_request($type)
             $message = get_requests((int)get("num"), (int)get("page"), get("search"), get("filter"));
             break;
         case "activities":
-            $message = get_activites((int)get("num"), (int)get("page"), get("search"), get("filter"));
+            $message = get_activities((int)get("num"), (int)get("page"), get("search"), get("filter"));
             break;
         case "new_activities":
             $message = get_new_activity_count();
@@ -1077,7 +1077,7 @@ function check_username($username)
 /// <summary>
 /// Returns a json string of members, sorted by the last time they logged in
 /// </summary>
-function get_members()
+function get_members($num, $page, $search, $filter)
 {
     if ((int)$_SESSION['level'] < 100)
     {
@@ -1085,13 +1085,69 @@ function get_members()
     }
 
     global $db;
-    $query = "SELECT id, username, level, last_login FROM users ORDER BY id ASC";
+
+    $offset = $num == 0 ? 0 : $num * $page;
+    $filter = json_decode($filter);
+    $query = "SELECT id, username, level, last_login, created_at FROM users ";
+
+    $filter_string = "WHERE 1 ";
+    if (!$filter->type->new)
+    {
+        $filter_string .= "AND level <> 0 ";
+    }
+    if (!$filter->type->regular)
+    {
+        $filter_string .= "AND (level = 0 OR level >= 100) ";
+    }
+    if (!$filter->type->admin)
+    {
+        $filter_string .= "AND level < 100 ";
+    }
+
+    if (strlen($search) > 0)
+    {
+        $search = $db->real_escape_string($search);
+        $filter_string .= "AND username LIKE '%$search%' ";
+    }
+
+    $query .= $filter_string . "ORDER BY ";
+    switch ($filter->sort)
+    {
+        case "id":
+            $query .= "id ";
+            break;
+        case "name":
+            $query .= "username ";
+            break;
+        case "seen":
+            $query .= "last_login ";
+            break;
+        case "level":
+            $query .= "level ";
+            break;
+        default:
+            return json_error('Invalid filter sort field');
+    }
+
+    $query .= $filter->order . " ";
+    if ($num != 0)
+    {
+        $query .= "LIMIT $num ";
+    }
+
+    if ($offset != 0)
+    {
+        $query .= "OFFSET $offset";
+    }
+
+    // $query = "SELECT id, username, level, last_login FROM users ORDER BY id ASC";
     $result = $db->query($query);
     if (!$result)
     {
         return db_error();
     }
 
+    $members = new \stdClass();
     $users = array();
     while ($row = $result->fetch_row())
     {
@@ -1100,12 +1156,24 @@ function get_members()
         $user->username = $row[1];
         $user->level = $row[2];
         $user->last_seen = $row[3];
+        $user->created = $row[4];
         array_push($users, $user);
     }
 
+    $members->data = $users;
+
     $result->close();
 
-    return json_encode($users);
+    $query = "SELECT COUNT(*) FROM users " . $filter_string;
+    $result = $db->query($query);
+    if (!$result)
+    {
+        return db_error();
+    }
+
+    $members->total = (int)$result->fetch_row()[0];
+
+    return json_encode($members);
 }
 
 /// <summary>
@@ -1916,7 +1984,7 @@ function get_new_activity_count()
 /// Get all relevant activites for the current user. If the current user is an admin, return
 /// all activities, otherwise return activities that directly relate to the current user.
 /// </summary>
-function get_activites($num, $page, $search, $filter)
+function get_activities($num, $page, $search, $filter)
 {
     global $db;
 
