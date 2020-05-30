@@ -3,15 +3,7 @@ window.addEventListener("load", function()
 {
     // For activities, reset the filter on page load
     setFilter(defaultFilter(), false /*update*/);
-
-    setupPerPage();
-    setupNavigation();
     getActivities();
-    setupKeyboardNavigation();
-    document.body.addEventListener("keyup", filterKeyHandler);
-
-    setupFilter();
-    setupTableSearch();
 });
 
 function getActivities(searchValue='')
@@ -191,9 +183,9 @@ function isAdmin()
 /// </summary>
 function setupFilter()
 {
-    $(".filterBtn").forEach(function(imgElement)
+    $(".filterBtn").forEach(function(filter)
     {
-        imgElement.addEventListener("click", filterBtnClick);
+        filter.addEventListener("click", filterBtnClick);
     });
 }
 

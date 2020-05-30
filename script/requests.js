@@ -2,12 +2,7 @@ var pages = 0;
 window.addEventListener("load", function()
 {
     setPage(0);
-    setupPerPage();
-    setupNavigation();
-    setupTableSearch();
-    setupFilter();
     getRequests();
-    setupKeyboardNavigation();
     $('#clearSearch').addEventListener('click', function()
     {
         $('.searchInput').forEach(function() { this.value = ''; });

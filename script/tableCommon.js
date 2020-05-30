@@ -1,4 +1,29 @@
 /// <summary>
+/// Common table implementation, including interfaces for custom sorting, filtering, and searching.
+///
+/// Users of this interface should implement the following:
+/// 1. getPage() - Forward to getPageCommon with a unique identifier
+/// 2. setPage(page, update) - Forward to setPageCommon(id, page, update (bool), updateFunc)
+/// 3. getPerPage() - Forward to getPerPageCommon with the same unique identifier
+/// 4. setPerPage(newPerPage, update) - Forward to setPerPageCommon(id, perPage, update, updateFunc)
+/// 5. setFilter(filter, update) - Forward to setFilterCommon(id, filter, update, updateFunc)
+/// </summary>
+
+/// <summary>
+/// On load set up all the handlers we need
+/// </summary>
+window.addEventListener("load", function()
+{
+    setupPerPage();
+    setupNavigation();
+    setupTableSearch();
+    setupFilterCommon();
+    setupKeyboardNavigation();
+    document.body.addEventListener('keyup', tableFilterKeyHandler);
+});
+
+
+/// <summary>
 /// Clear out the current contents of the request table and replace it
 /// with a single informational message
 /// </summary>
@@ -9,9 +34,9 @@ function displayInfoMessage(message)
 }
 
 /// <summary>
-/// Handle keystrokes 
+/// Handle keystrokes
 /// </summary>
-function filterKeyHandler(e)
+function tableFilterKeyHandler(e)
 {
     let key = e.keyCode ? e.keyCode : e.which;
     if (key == 27 /*esc*/)
@@ -101,6 +126,18 @@ function setupKeyboardNavigation()
 
 function setupTableSearch()
 {
+    // If the table does not have a search function,
+    // don't show anything. Might mess up CSS
+    if (typeof(tableSearch) == 'undefined')
+    {
+        $('.searchBtn').forEach(function(btn)
+        {
+            btn.style.display = 'none';
+        });
+
+        return;
+    }
+
     $('.searchBtn').forEach(function(btn)
     {
         btn.addEventListener('click', searchBtnClick);
@@ -108,7 +145,7 @@ function setupTableSearch()
 
     $('.searchGo').forEach(function(btn)
     {
-        btn.addEventListener('click', startSearch);
+        btn.addEventListener('click', startTableSearch);
     });
 
     $('.searchInput').forEach(function(input)
@@ -161,7 +198,7 @@ function searchBtnClick(e)
 /// Initiates a search. If the owner hasn't defined
 /// a search function, warn the user.
 /// </summary>
-function startSearch(e)
+function startTableSearch(e)
 {
     try
     {
@@ -171,6 +208,21 @@ function startSearch(e)
     {
         overlay("This table doesn't have search enabled (yet)", "OK", overlayDismiss);
     }
+}
+
+function setupFilterCommon()
+{
+    if (typeof(setupFilter) == 'undefined')
+    {
+        $('.filterBtn').forEach(function(filter)
+        {
+            filter.style.display = 'none';
+        });
+
+        return;
+    }
+
+    setupFilter();
 }
 
 /// <summary>
