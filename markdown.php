@@ -1,5 +1,6 @@
 <?php
 require_once "includes/common.php";
+session_start();
 ?>
 
 <!-- Page to allow easy testing of markdown -->
@@ -53,6 +54,7 @@ require_once "includes/common.php";
             <textarea id="query" rows=20></textarea>
             <br>
             <input type="button" value="Test" id="markdownSubmit" />
+            <div id="info" style="text-align: center; margin: auto"><div class="formInput" style="color: #c1c1c1; text-align: center; width: 150px; margin: auto"><label for="liveupdate">Live updates: </label><input type="checkbox" name="liveupdate" id="liveupdate" checked="checked"></div></form>
         </div>
     </div>
     <div id="mdHolder">
@@ -64,13 +66,24 @@ require_once "includes/common.php";
 <script src="script/consolelog.js"></script>
 <script src="script/common.js"></script>
 <script src="script/markdown.js"></script>
+<?php if (isset($_SESSION["level"]) && $_SESSION['level'] >= 100) { ?>
+<script src="script/markdownSamples.js"></script>
+<?php } ?>
+<script src="script/markdownTest.js"></script>
+<script src="script/markdownEditor.js"></script>
 <script>
 
 let md = new Markdown();
 
-function forceParseMarkdown() { parseMarkdown(true); }
-function parseMarkdown(force=false)
+function forceParseMarkdown() { parseMarkdownCore(true); }
+function parseMarkdown() { parseMarkdownCore(false); }
+function parseMarkdownCore(force)
 {
+    if (!force && !document.querySelector('#liveupdate').checked)
+    {
+        return;
+    }
+
     const text = $('#query').value;
     logTmi(`Parsing "${text}"`);
     let html;
@@ -88,9 +101,25 @@ function parseMarkdown(force=false)
         $('.md')[0].innerHTML = html;
     }
 }
+
+function parseShortcuts(e)
+{
+    if (e.keyCode == 13 /*enter*/ && e.ctrlKey)
+    {
+        forceParseMarkdown();
+        return;
+    }
+
+    return;
+}
+
 $('#markdownSubmit').addEventListener('click', forceParseMarkdown);
 $('#query').addEventListener('change', parseMarkdown);
 $('#query').addEventListener('keyup', parseMarkdown);
+
+$('#query').addEventListener('keydown', parseShortcuts);
+MarkdownEditor.addTabHandler($('#query'));
+
 
 markdownHelp();
 $('#query').value = _helpMarkdown.text;
