@@ -14,12 +14,31 @@ let MarkdownEditor = new function()
             return;
         }
 
+        event.preventDefault();
         let comment = this;
         let start = comment.selectionStart;
         let startSav = start;
         let currentSelection = comment.value.substring(start, comment.selectionEnd);
         let hasSelection = currentSelection.length != 0;
         let lastNewline = comment.value.lastIndexOf('\n', start - 1);
+
+        if (!hasSelection && !event.shiftKey)
+        {
+            // In the case of no selection and a regular tab, indent from the cursor position
+            let add = 4 - ((start - lastNewline) % 4);
+            if (document.queryCommandSupported('insertText'))
+            {
+                document.execCommand('insertText', false, ' '.repeat(add));
+            }
+            else
+            {
+                comment.value = comment.value.substring(0, start) + ' '.repeat(add) + comment.value.substring(comment.selectionEnd);
+            }
+
+            comment.selectionStart = start + add;
+            comment.selectionEnd = start + add;
+            return;
+        }
 
         let prefixedSpaces = 0;
         for (let i = lastNewline + 1; i < comment.selectionEnd; ++i, ++prefixedSpaces)
@@ -70,7 +89,6 @@ let MarkdownEditor = new function()
         let spaceLen = event.shiftKey ? -spaces.length : spaces.length;
         comment.selectionStart = hasSelection ? start : startSav + spaceLen;
         comment.selectionEnd = hasSelection ? start + newText.length : comment.selectionStart;
-        event.preventDefault();
     };
 
     this.addTabHandler = function(element)
