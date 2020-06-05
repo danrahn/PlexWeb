@@ -693,13 +693,13 @@ window.addEventListener("load", function()
             switch (attrInt("requestType"))
             {
                 case 1:
-                    posterPath = '/moviedefault.png';
+                    posterPath = '/moviedefault.svg';
                     break;
                 case 2:
-                    posterPath = '/tvdefault.png';
+                    posterPath = '/tvdefault.svg';
                     break;
                 default:
-                    posterPath = '/viewstream.png';
+                    posterPath = '/viewstream.svg';
                     break;
             }
         }

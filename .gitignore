@@ -1,5 +1,9 @@
 .well-known/*
-includes/cache/*
+includes/cache/background/*
+includes/cache/poster/*
+!includes/cache/poster/*.svg
+includes/cache/poster/342/*
+includes/cache/thumb/*
 includes/phpMail/*
 
 # config_dummy is a copy of this, with sensitive info removed
@@ -11,6 +15,9 @@ icon/*.svg
 # Old icons that are no longer part of the project
 icon/png/*
 icon/raw/*
+
+# Generated
+script/iconMap.js
 
 # Generated JS
 min/*

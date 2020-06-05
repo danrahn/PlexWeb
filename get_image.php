@@ -29,6 +29,12 @@ else
     $filename = "includes/cache/" . $root_folder . $filename_parts[count($filename_parts) - 2] . "/" . $filename_parts[count($filename_parts) - 3] . "_" . $filename_parts[count($filename_parts) - 1] . ".jpg";
 }
 
+$contenttype = 'jpeg';
+if (strpos($filename, '.svg') == strlen($filename) - 4)
+{
+    $contenttype = 'svg+xml';
+}
+
 if (file_exists($filename))
 {
     // Plex explicitly doesn't cache anything, so this pretty much does nothing.
@@ -64,7 +70,7 @@ if (file_exists($filename))
         {
             header('HTTP/1.1 200 OK');
             header('Content-Length: '. filesize($filename));
-            header('Content-type: image/jpeg');
+            header('Content-type: image/' . $contenttype);
 
             readfile($filename);
         }

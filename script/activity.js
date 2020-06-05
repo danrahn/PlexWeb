@@ -79,11 +79,11 @@ function buildActivities(response)
 
         if (activity.value == "ViewStream")
         {
-            img.src = "poster/viewstream.png";
+            img.src = "poster/viewstream.svg";
         }
         else if (!activity.poster)
         {
-            img.src = "poster/moviedefault.png";
+            img.src = "poster/moviedefault.svg";
         }
 
         img.style.height = "80px";

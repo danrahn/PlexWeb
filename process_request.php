@@ -1941,7 +1941,7 @@ function get_poster_path($request)
 
     if ($continue)
     {
-        return "/viewstream.png";
+        return "/viewstream.svg";
     }
 
     // Our search didn't return anything. Revert to defaults
@@ -1950,11 +1950,11 @@ function get_poster_path($request)
         switch ($type)
         {
             case RequestType::Movie:
-                return "/moviedefault.png";
+                return "/moviedefault.svg";
             case RequestType::TVShow:
-                return "/tvdefault.png";
+                return "/tvdefault.svg";
             default:
-                return "/viewstream.png";
+                return "/viewstream.svg";
         }
     }
 
@@ -1971,13 +1971,13 @@ function get_poster_path($request)
         switch ($type)
         {
             case RequestType::Movie:
-                $poster_path = "/moviedefault.png";
+                $poster_path = "/moviedefault.svg";
                 break;
             case RequestType::TVShow:
-                $poster_path = "/tvdefault.png";
+                $poster_path = "/tvdefault.svg";
                 break;
             default:
-                $poster_path = "/viewstream.png";
+                $poster_path = "/viewstream.svg";
                 break;
         }
     }
