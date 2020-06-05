@@ -115,7 +115,7 @@ function buildRequest(request, sortOrder)
     {
         a.appendChild(buildNode("img", {
             "class" : "inlineIcon",
-            "src" : `icon/${request.t == 1 ? "movie" : "tv"}icon.png`,
+            "src" : icons[`${request.t == 1 ? "movie" : "tv"}icon`.toUpperCase()],
             "alt" : request.t == 1 ? "Movie" : "TV Show"
         }));
     }
@@ -382,11 +382,13 @@ function filterHtml()
         options.push(buildTableFilterCheckbox(label, name));
     }
 
+    options.push(buildNode('hr'));
+
     options.push(buildTableFilterDropdown(
         'Sort By',
         {
             'Request Date' : 'request',
-            'UpdateDate' : 'update',
+            'Update Date' : 'update',
             'Title' : 'title'
         }));
 

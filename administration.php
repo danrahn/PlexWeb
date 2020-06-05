@@ -195,13 +195,13 @@ else
         <div id="actions">
             <div class="action actionLeft">
                 <a href="library.php" class="actionLink">
-                    <img src="resource/settings_medium.png" class="actionImg" style="filter: invert(80)">
+                    <img src="<?php icon('settings') ?>" class="actionImg">
                     <span>Manage Library</span>
                 </a>
             </div>
             <div class="action actionRight">
                 <a href="password_reset.php" class="actionLink">
-                    <img src="resource/lock_medium.png" class="actionImg" style="filter: invert(80)">
+                    <img src="<?php icon('lock') ?>" class="actionImg">
                     <span>Password Reset</span>
                 </a>
             </div>

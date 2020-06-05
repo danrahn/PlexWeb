@@ -70,8 +70,16 @@ option {
 .tableHF button {
     color: #c1c1c1;
     background-color: transparent;
-    padding: 10px;
+    padding: 10px 8px 10px 8px;
     width: 40px;
+}
+
+.tableHF button.disabled {
+    background-color: #00000022;
+}
+
+.tableHF button.disabled img {
+    filter: invert(30%);
 }
 
 .tableHF .perPageButton {
@@ -129,6 +137,10 @@ option {
 .textHolder .tableEntryTitle span {
     display: inline;
     font-size: 12pt;
+}
+
+.textHolder .tableEntryTitle:hover img {
+    filter: brightness(0.8);
 }
 
 .pageStatus, .searchInputHolder {
@@ -193,12 +205,12 @@ option {
     border: none;
     vertical-align: middle;
     height: 35px;
-    padding-top: 7px !important;
+    padding-top: 5px !important;
 }
 
 .tableImg {
     display: inline;
-    height: 20px;
+    height: 24px;
     vertical-align: middle;
     padding-bottom: 3px;
 }

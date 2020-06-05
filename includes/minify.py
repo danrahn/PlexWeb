@@ -40,6 +40,9 @@ def process():
     else:
         files = glob.glob("*.php")
 
+    # First, check for changes to svg icons
+    process_svg_icons(force, quiet)
+
     comparisons = {}
     if ultra and compare:
         for file in files:
@@ -76,6 +79,46 @@ def process():
 
     clean_tmp()
 
+
+def process_svg_icons(force, quiet):
+    print('Looking for updated icons...')
+    old_icons = glob.glob('icon/*.svg')
+    new_icons = []
+    icons = glob.glob('icon/base/*.svg')
+    js_icon_map = 'const icons = { '
+    changed = 0
+    for icon in icons:
+        with open(icon, 'rb') as filebytes:
+            core = icon[icon.rfind(os.sep) + 1:]
+            core = core[:core.find('.')]
+            hashed = hashlib.md5(filebytes.read()).hexdigest()[:10]
+            newpath = 'icon' + os.sep + core + '.' + hashed + '.svg'
+            if force or not os.path.exists(newpath):
+                print('  Copying', "'" + icon + "' to", "'" + newpath + "'")
+                shutil.copyfile(icon, newpath)
+                changed += 1
+            elif not quiet:
+                print(' ', icon, 'up to date')
+            new_icons.append(newpath)
+            js_icon_map += core.upper() + ' : "' + newpath + '", '
+
+    for icon in old_icons:
+        if not icon in new_icons:
+            os.remove(icon)
+            changed = -1
+
+    if changed == 0:
+        print('Icons up to date!\n')
+    else:
+        if changed != -1:
+            print('Modified', changed, 'icons')
+
+        print('  Writing icon map...')
+        js_icon_map += '};\n';
+        js_icon_map = js_icon_map.replace('\\', '/')
+        with open('script/iconMap.js', 'w+') as js_icon_file:
+            js_icon_file.write(js_icon_map)
+        print('Done processing icons\n')
 
 def cmp_sizes(comp):
     for file in comp:

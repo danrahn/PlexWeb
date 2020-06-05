@@ -1212,7 +1212,7 @@ window.addEventListener("load", function()
         let actionString = action + ' Comment';
 
         // Thanks to css.gg for the 'pen' and 'trash' svg icons
-        let img = buildNode('img', {'src' : action + '.svg', 'title' : actionString, 'alt' : actionString});
+        let img = buildNode('img', {'src' : icons[action.toUpperCase()], 'title' : actionString, 'alt' : actionString});
         let text = buildNode('span', {}, action);
         holder.appendChild(img);
         holder.appendChild(text);

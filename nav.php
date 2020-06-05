@@ -8,16 +8,16 @@
     </div>
     <div id="navShort">
         <div class="navButton rightbutton" id="navLogoutTop" title="Logout">
-            <div class=btnimg><image src='icon/logout.png' alt='Logout' style='filter: invert(80%);margin-top:8px'/></div>
+            <div class=btnimg><image src='<?php icon('logout') ?>' alt='Logout' style='margin-top:8px'/></div>
         </div>
         <div class="navButton rightbutton" id="navSettingsTop" title="Settings (Shift + S)">
-            <div class=btnimg><image src='icon/settings.png' alt='Settings' style='filter: invert(80%);margin-top:8px'/></div>
+            <div class=btnimg><image src='<?php icon('settings') ?>' alt='Settings' style='margin-top:8px'/></div>
         </div>
         <div class="navButton rightbutton" id="navRequestsTop" title="Requests (Ctrl + R)">
-            <div class=btnimg><image src='icon/requests.png' alt='Requests' style='filter: invert(80%);margin-top:8px'/></div>
+            <div class=btnimg><image src='<?php icon('requests') ?>' alt='Requests' style='margin-top:8px'/></div>
         </div>
         <div class="navButton rightbutton" id="navActivityTop">
-            <div class=btnImg><image src='icon/bell.png' alt='Activity' class="activityImg" style='margin-top:8px;height:24px'/></div>
+            <div class=btnImg><image src='<?php icon('bell') ?>' alt='Activity' class="activityImg" style='margin-top:8px;height:24px'/></div>
         </div>
     </div>
     <button id="pageName" class="navPageInfo" title="Home (Shift + H)">Plex Web</button>
@@ -46,42 +46,42 @@
 <div id="leftMenu">
     <div class="navButton" id="navHome" title="Home (Shift + H)">
         <button class=btntxt disabled=true>Home</button>
-        <div class=btnimg><image src='icon/home.png' alt='Home' style='filter: invert(80%);'/></div>
+        <div class=btnimg><image src='<?php icon('home') ?>' alt='Home'/></div>
     </div>
     <div class="navButton rightbutton" id="navNewRequest" title="New Request (Shift + N)">
         <button class=btntxt disabled=true>New Request</button>
-        <div class=btnimg><image src='icon/new_request.png' alt='NewRequest' style='filter: invert(80%);'/></div>
+        <div class=btnimg><image src='<?php icon('new_request') ?>' alt='NewRequest'/></div>
     </div>
     <div class="navButton" id="navRequests" title="Requests (Shift + R)">
         <button class=btntxt disabled=true>Requests</button>
-        <div class=btnimg><image src='icon/requests.png' alt='Requests' style='filter: invert(80%);'/></div>
+        <div class=btnimg><image src='<?php icon('requests') ?>' alt='Requests'/></div>
     </div>
     <div class="navButton" id="navActivity" title="Notifications (Shift + A)">
         <button class=btntxt disabled=true>Notifications</button>
-        <div class=btnimg><image class='activityImg' src='icon/bell.png' alt='Notifications'/></div>
+        <div class=btnimg><image class='activityImg' src='<?php icon('bell') ?>' alt='Notifications'/></div>
     </div>
 <?php if (isset($_SESSION['level']) && (int)$_SESSION['level'] >= 100) { ?>
-    <div class="navButton" id="navMembers">
+    <div class="navButton" id="navMembers" title="Members">
         <button class=btntxt disabled=true>Members</button>
-        <div class=btnimg><image src='icon/members.png' alt='Home' style='filter: invert(80%);'/></div>
+        <div class=btnimg><image src='<?php icon('members') ?>' alt='Members'/></div>
     </div>
 <?php } ?>
     <div class="navButton rightbutton" id="navUserSettings" title="Settings (Shift + S)">
         <button class=btntxt disabled=true>Settings</button>
-        <div class=btnimg><image src='icon/settings.png' alt='Settings' style='filter: invert(80%);'/></div>
+        <div class=btnimg><image src='<?php icon('settings') ?>' alt='Settings'/></div>
     </div>
 <?php if (isset($_SESSION['level']) && (int)$_SESSION['level'] >= 100) { ?>
     <div class="navButton rightbutton" id="navAdmin" title="Admin">
         <button class=btntxt disabled=true>Admin</button>
-        <div class=btnimg><image src='icon/admin.png' alt='Admin' style='filter: invert(80%);'/></div>
+        <div class=btnimg><image src='<?php icon('admin') ?>' alt='Admin' /></div>
     </div>
 <?php } ?>
     <div class="navButton" id="navLogout">
         <button class=btntxt disabled=true>Logout</button>
-        <div class=btnimg><image src='icon/logout.png' alt='Logout' style='filter: invert(80%);'/></div>
+        <div class=btnimg><image src='<?php icon('logout') ?>' alt='Logout'/></div>
     </div>
     <div class="navButton" id="navGithub">
         <button class=btntxt disabled=true>Source Code</button>
-        <div class=btnimg><image src='icon/github.png' alt='Github' style='filter: invert(80%);'/></div>
+        <div class=btnimg><image src='<?php icon('Github') ?>' alt='Github'/></div>
     </div>
 </div>

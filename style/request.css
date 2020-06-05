@@ -341,7 +341,6 @@ a:hover {
 #mdHelper button img {
     vertical-align: middle;
     line-height: 26px;
-    filter: invert(90%);
 }
 
 #mdInsertOverlay div {

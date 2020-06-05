@@ -1,6 +1,16 @@
 .well-known/*
 includes/cache/*
 includes/phpMail/*
+
+# config_dummy is a copy of this, with sensitive info removed
 includes/config.php
+
+# SVGs in top-level icon folder are generated
+icon/*.svg
+
+# Old icons that are no longer part of the project
+icon/png/*
+icon/raw/*
+
+# Generated JS
 min/*
-vendor/*

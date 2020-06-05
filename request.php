@@ -76,8 +76,8 @@ function get_details($req_id)
                     <input type="button" class="mdButton" id="addUnderline" value="U" title="Underline" />
                     <input type="button" class="mdButton" id="addItalic" value="I" title="Italic" />
                     <input type="button" class="mdButton" id="addStrikethrough" value="S" title="Strikethrough" />
-                    <button class="mdButton" id="addLink" title="Insert Link"><img src="icon/mdLink.png" altText="Insert Link" /></button>
-                    <button class="mdButton" id="addImage" title="Insert Image"><img src="icon/mdImage.png" altText="Insert Image" /></button>
+                    <button class="mdButton" id="addLink" title="Insert Link"><img src="<?php icon('mdLink') ?>" altText="Insert Link" /></button>
+                    <button class="mdButton" id="addImage" title="Insert Image"><img src="<?php icon('mdImage') ?>" altText="Insert Image" /></button>
                     <input type="button" class="mdButton" id="showMdHelp" value="?" title="Help" />
                 </div>
                 <textarea id="newComment" placeholder="Add comment..."></textarea>
@@ -105,5 +105,5 @@ function get_details($req_id)
         <?php } ?>
     </div>
 </body>
-<?php build_js("request", "consolelog", "animate", "common", "queryStatus", "nav", "overlay", "DateUtil", "markdown", "markdownEditor", "tooltip"); ?>
+<?php build_js("request", "consolelog", "animate", "common", "queryStatus", "nav", "overlay", "DateUtil", "markdown", "markdownEditor", "tooltip", "iconMap"); ?>
 </html>

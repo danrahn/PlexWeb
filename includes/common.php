@@ -231,6 +231,21 @@ function get_css(...$files)
 }
 
 /// <summary>
+/// Gets the stamped icon svg with the given name
+/// </summary>
+function icon($name)
+{
+    $gl = glob("icon/$name.*.svg");
+    if (sizeof($gl) == 0)
+    {
+        echo 'blank.svg';
+        return;
+    }
+
+    echo $gl[0];
+}
+
+/// <summary>
 /// Sets the error status and loads our error handler.
 ///
 /// http_response_code appears to bypass ErrorDocument, so if we want our error to be displayed

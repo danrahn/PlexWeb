@@ -26,10 +26,10 @@ verify_loggedin(TRUE /*redirect*/, "requests.php");
         <?php include "nav.php" ?>
         <div id="container">
             <h2 id="welcome">Requests</h2>
-            <h3 id="requestSearch">Results for "<span id="searchTerm"></span>"<img src="icon/exit.svg" id="clearSearch" alt="Clear" title="Clear Search"></h3>
+            <h3 id="requestSearch">Results for "<span id="searchTerm"></span>"<img src="<?php icon('exit') ?>" id="clearSearch" alt="Clear" title="Clear Search"></h3>
             <?php include "includes/table.html" ?>
         </div>
     </div>
 </body>
-<?php build_js("requests", "consolelog", "queryStatus", "animate", "common", "nav", "DateUtil", "tableCommon", "overlay", "tooltip") ?>
+<?php build_js("requests", "consolelog", "queryStatus", "animate", "common", "nav", "DateUtil", "tableCommon", "overlay", "tooltip", "iconMap") ?>
 </html>
