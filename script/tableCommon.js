@@ -482,6 +482,36 @@ function setPage(page, update)
         clearElement("tableEntries");
         tableUpdateFunc()();
     }
+
+    if (page == 0)
+    {
+        $('.previousPage').forEach(function(button)
+        {
+            button.classList.add('disabled');
+        });
+    }
+    else
+    {
+        $('.previousPage').forEach(function(button)
+        {
+            button.classList.remove('disabled');
+        });
+    }
+
+    if (page == tablePages - 1)
+    {
+        $('.nextPage').forEach(function(button)
+        {
+            button.classList.add('disabled');
+        });
+    }
+    else
+    {
+        $('.nextPage').forEach(function(button)
+        {
+            button.classList.remove('disabled');
+        });
+    }
 }
 
 /// <summary>
@@ -599,6 +629,8 @@ function setPageInfo(totalRequests)
     {
         e.innerHTML = tablePages;
     });
+
+    setPage(getPage(), false);
 }
 
 /// <summary>
