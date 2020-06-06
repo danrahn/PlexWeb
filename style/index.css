@@ -50,6 +50,7 @@
 
 .mediainfo ul {
     color: #CCC;
+    margin-bottom: 0;
 }
 
 .mediainfo:hover .progress, .mediainfo:hover .tcdiff, .mediainfo:hover .remaining {
@@ -116,6 +117,17 @@
     text-decoration: none;
     display: inline-block;
     margin-right: 4px;
+}
+
+.inlineIcon {
+    height: 18px;
+    vertical-align: bottom;
+    margin-left: 5px;
+    filter: invert(50%) sepia(96%) saturate(310%) hue-rotate(71deg) brightness(100%) contrast(82%);
+}
+
+a:hover .inlineIcon {
+    filter: invert(49%) sepia(94%) saturate(342%) hue-rotate(71deg) brightness(89%) contrast(87%);
 }
 
 /* Desktop/Landscape */

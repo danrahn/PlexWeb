@@ -659,9 +659,38 @@ function buildMediaInfo(sesh)
 
     link.appendChild(buildNode("span", {}, `${sesh.title}`));
 
+    let inlineIconSrc = '';
+    switch (sesh.media_type)
+    {
+        case "TV Show":
+            inlineIconSrc = icons.TVICON;
+            break;
+        case "Movie":
+            inlineIconSrc = icons.MOVIEICON;
+            break;
+        case "Music":
+            inlineIconSrc = icons.MUSICICON;
+            break;
+        default:
+            break;
+    }
+
+    if (inlineIconSrc)
+    {
+        link.appendChild(buildNode("img", {
+            "class" : "inlineIcon",
+            "src" : inlineIconSrc,
+            "alt" : sesh.media_type
+        }));
+    }
+
     // Bulleted list
     let list = buildNode("ul");
-    list.appendChild(getListItem("Media type", sesh.media_type));
+    if (!inlineIconSrc)
+    {
+        list.appendChild(getListItem("Media type", sesh.media_type));
+    }
+
     if (sesh.album) // special handling for music
     {
         list.appendChild(getListItem("Album", sesh.album));

@@ -115,5 +115,5 @@ function plexOk()
     </div>
 </div>
 </body>
-<?php build_js("index", "consolelog", "animate", "common", "nav", "overlay", "tooltip"); ?>
+<?php build_js("index", "consolelog", "animate", "common", "nav", "overlay", "tooltip", "iconMap"); ?>
 </html>
