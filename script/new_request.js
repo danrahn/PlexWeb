@@ -125,7 +125,7 @@ function searchInternal()
     let name = $("#name").value;
     let parameters =
     {
-        "type" : "search",
+        "type" : ProcessRequest.SearchPlex,
         "kind" : type,
         "query" : name
     };
@@ -325,7 +325,7 @@ function buildItems(matches, holder)
                         this.innerHTML = 'Loading...';
                         let parameters =
                         {
-                            "type" : "season_details",
+                            "type" : ProcessRequest.GetSeasonDetails,
                             "path" : this.getAttribute("seasonPath")
                         };
                         let successFunc = buildSeasonDetails;
@@ -564,7 +564,7 @@ function submitSelected()
 
     let parameters =
     {
-        "type" : "request_new",
+        "type" : ProcessRequest.NewRequest,
         "name" : title,
         "mediatype" : $("#type").value,
         "external_id" : tmdbid,

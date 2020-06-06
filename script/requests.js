@@ -17,7 +17,7 @@ function getRequests(searchValue='')
 {
     let parameters =
     {
-        "type" : "requests",
+        "type" : ProcessRequest.GetRequests,
         "num" : getPerPage(),
         "page" : getPage(),
         "search" : searchValue,
@@ -103,7 +103,23 @@ function buildRequest(request, sortOrder)
 
     let imgHolder = buildNode("div", {"class" : "imgHolder"});
     let imgA = buildNode("a", {"href" : `request.php?id=${request.rid}`});
-    let img = buildNode("img", {"src" : `poster${request.p}`, 'alt' : 'Media Poster'});
+
+    // Sometimes a poster fails to load. If it does, let the server know
+    // that it needs to be updated. This should really only happen when
+    // manually clearing out the poster cache server-side.
+
+    let img = buildNode(
+        "img",
+        {
+            'id' : `poster${request.rid}`,
+            "src" : `poster${request.p}`,
+            'alt' : 'Media Poster',
+            'rid' : request.rid
+        },
+        0,
+        {
+            'error' : onFailedPoster
+        });
     imgA.appendChild(img);
     imgHolder.appendChild(imgA);
 
@@ -173,6 +189,52 @@ function buildRequest(request, sortOrder)
     holder.appendChild(textHolder);
     logTmi(holder, "Built Item", false);
     return holder;
+}
+
+/// <summary>
+/// On the off chance a poster fails to load, try resetting it
+/// server-side. This can happen if our poster cache was wiped
+/// out and the poster has changed on TMDb
+/// </summary>
+function onFailedPoster(e)
+{
+    if (this.getAttribute('retried') == 1)
+    {
+        // We can get into a nasty loop if we continue
+        // attempting to reload an image that truly doesn't exist
+        logWarn('We already failed, not trying again');
+        return;
+    }
+
+    this.alt = 'Refreshing Poster...';
+
+    let parameters =
+    {
+        'type' : ProcessRequest.UpdatePoster,
+        'rid' : this.getAttribute('rid')
+    };
+
+    let successFunc = function(response)
+    {
+        let img = $(`#poster${response.rid}`);
+        if (img)
+        {
+            img.setAttribute('retried', 1);
+            img.src = 'poster' + response.poster;
+            img.alt = 'Media Poster';
+        }
+    }
+
+    let failureFunc = function(response)
+    {
+        let img = $(`#poster${response.rid}`);
+        if (img)
+        {
+            $(`#poster${response.rid}`).setAttribute('retried', 1);
+        }
+    }
+
+    sendHtmlJsonRequest('process_request.php', parameters, successFunc);
 }
 
 /// <symmary>

@@ -32,7 +32,7 @@ function setupLoginForm()
 
         let params =
         {
-            "type" : "login",
+            "type" : ProcessRequest.Login,
             "username" : user.value,
             "password" : pass.value
         };

@@ -184,7 +184,9 @@ function log(obj, description, freeze, level)
         http.open("POST", "process_request.php", true);
         http.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
         let encode = encodeURIComponent;
-        http.send(`&type=log_err&error=${encode(curState(obj, 1))}&stack=${encode(Error().stack)}`);
+
+        // Note: Keep type in sync with ProcessRequest enum in common.js. It's not accessible here
+        http.send(`&type=29&error=${encode(curState(obj, 1))}&stack=${encode(Error().stack)}`);
     }
 }
 

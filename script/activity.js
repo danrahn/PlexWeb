@@ -10,7 +10,7 @@ function getActivities(searchValue='')
 {
     let parameters =
     {
-        "type" : "activities",
+        "type" : ProcessRequest.GetActivities,
         "num" : getPerPage(),
         "page" : getPage(),
         "search" : searchValue,

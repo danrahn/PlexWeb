@@ -367,7 +367,7 @@ window.addEventListener("load", function()
             }
 
             logVerbose("Searching for next id");
-            let parameters = { "type" : "req_nav", "id" : reqId(), "dir" : e.which === 37 ? "0" : "1" };
+            let parameters = { "type" : ProcessRequest.NextRequest, "id" : reqId(), "dir" : e.which === 37 ? "0" : "1" };
             let successFunc = function(response)
             {
                 if (response.new_id == -1)
@@ -501,6 +501,10 @@ window.addEventListener("load", function()
             if (release === null || release === undefined)
             {
                 release = match.first_air_date;
+                if (!release)
+                {
+                    release = '';
+                }
             }
 
             let titleText = (match.title ? match.title : match.name) + ' ';
@@ -604,7 +608,7 @@ window.addEventListener("load", function()
             return;
         }
 
-        let params = { "type" : "set_external_id", "req_id" : reqId(), "id" : selectedSuggestion.getAttribute("tmdbid") };
+        let params = { "type" : ProcessRequest.SetExternalId, "req_id" : reqId(), "id" : selectedSuggestion.getAttribute("tmdbid") };
 
         let successFunc = function(response)
         {
@@ -811,7 +815,7 @@ window.addEventListener("load", function()
 
     function getComments()
     {
-        params = { "type" : "get_comments", "req_id" : reqId() };
+        params = { "type" : ProcessRequest.GetComments, "req_id" : reqId() };
         let successFunc = function(response)
         {
             logInfo(response);
@@ -940,7 +944,7 @@ window.addEventListener("load", function()
         comment.value = "";
         logInfo("Adding comment: " + text);
 
-        let params = { "type" : "add_comment", "req_id" : reqId(), "content" : text };
+        let params = { "type" : ProcessRequest.AddComment, "req_id" : reqId(), "content" : text };
 
         // For markdown content, we do a lot of extra work to style the text correctly.
         // For the best results, it's probably better to inline all the relevant CSS for
@@ -1119,7 +1123,7 @@ window.addEventListener("load", function()
             return;
         }
 
-        let params = { 'type' : 'edit_comment', 'id' : commentId, 'content' : content };
+        let params = { 'type' : ProcessRequest.EditComment, 'id' : commentId, 'content' : content };
         let successFunc = function(response, request)
         {
             commentCache[request.commentId] = $(`#editor${request.commentId}`).value;
@@ -1185,7 +1189,7 @@ window.addEventListener("load", function()
         const commentId = this.getAttribute('commentId');
         logVerbose('Deleting comment ' + commentId);
 
-        let params = { 'type' : 'delete_comment', 'comment_id' : commentId };
+        let params = { 'type' : ProcessRequest.DeleteComment, 'comment_id' : commentId };
         let successFunc = function(response, request)
         {
             let ele = $(`#confirmDelete${request.commentId}`);

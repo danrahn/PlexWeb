@@ -105,7 +105,7 @@ function getNewActivities()
         }
     };
 
-    http.send("&type=new_activities");
+    http.send(`&type=${ProcessRequest.NewActivities}`);
 }
 
 /// <summary>

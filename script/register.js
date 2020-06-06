@@ -31,7 +31,7 @@ function checkUsername()
 
     let params =
     {
-        "type" : "check_username",
+        "type" : ProcessRequest.CheckUsername,
         "username" : user.value
     };
 
@@ -138,7 +138,7 @@ function sendRegistration()
 
     let params =
     {
-        "type" : "register",
+        "type" : ProcessRequest.Register,
         "username" : user.value,
         "password" : pass.value,
         "confirm" : conf.value

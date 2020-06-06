@@ -28,6 +28,7 @@ def process():
     babel = '-babel' in args_lower or '-b' in args_lower
     ultra = '-ultra' in args_lower or '-u' in args_lower
     quiet = '-quiet' in args_lower or '-q' in args_lower
+    noicon = '-noicon' in args_lower
     compare = '-cmp' in args_lower
     rem_log = 1 if '-notmi' in args_lower else 0
     if '-nolog' in args_lower:
@@ -41,7 +42,8 @@ def process():
         files = glob.glob("*.php")
 
     # First, check for changes to svg icons
-    process_svg_icons(force, quiet)
+    if not noicon:
+        process_svg_icons(force, quiet)
 
     comparisons = {}
     if ultra and compare:
@@ -264,6 +266,7 @@ def create_temp(includes, rem_log, ultra):
         combined = re.sub(r'\.appendChild\(', '.a(', combined)
         combined = re.sub(r'\.addEventListener\(', '.l(', combined)
         combined = re.sub(r'\bparseInt\(', 'p_(', combined)
+        combined = minify_process_request(combined)
     if len(consolelog) > 0:
         # prepend this outside of our scope
         if ultra:
@@ -278,6 +281,22 @@ def create_temp(includes, rem_log, ultra):
         combined = consolelog + combined
 
     return combined
+
+# Minify the ProcessRequest enum via direct substitution
+def minify_process_request(combined):
+    start = combined.find('\nconst ProcessRequest =')
+    if start == -1:
+        return combined
+    new_pr = '\nconst ProcessRequest =\n{\n    '
+
+    end = combined.find('}', start)
+    defn = combined[start:end]
+    combined = combined[:start] + combined[end + 2:]
+    results = re.findall(r'(\w+) : (\d+)', defn)
+    for result in results:
+        combined = combined.replace('ProcessRequest.' + result[0], str(result[1]))
+    return combined
+
 
 
 def write_temp(file, combined):

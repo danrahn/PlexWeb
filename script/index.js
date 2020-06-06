@@ -19,6 +19,18 @@ NodeList.prototype.remove = HTMLCollection.prototype.remove = function()
 };
 
 /// <summary>
+/// Types of queries to get_status. Keep in sync with get_status.php's QueryType
+/// </summary.
+const QueryType =
+{
+    AllSessions : 1,
+    SingleSession : 2,
+    ActiveSessions : 3,
+    Progress : 4,
+    Status : 5
+}
+
+/// <summary>
 /// On load, request the active streams (if it's running) and set up the suggestion form handlers
 /// </summary>
 window.addEventListener('load', function()
@@ -26,7 +38,7 @@ window.addEventListener('load', function()
     // Don't attempt to grab session information if we can't even connect to plex
     if (plexOk())
     {
-        let parameters = { "type" : "1" };
+        let parameters = { "type" : QueryType.AllSessions };
         let successFunc = function(response)
         {
             writeSessions(response);
@@ -67,7 +79,7 @@ function getStreamAccessString()
 {
     let parameters =
     {
-        "type" : "pr",
+        "type" : ProcessRequest.PermissionRequest,
         "req_type" : 10,
         "which" : "get"
     };
@@ -142,7 +154,7 @@ function requestStreamAccess()
 {
     let parameters =
     {
-        "type" : "pr",
+        "type" : ProcessRequest.PermissionRequest,
         "req_type" : 10,
         "which" : "req",
         "msg" : $("#overlayContainer textarea")[0].value
@@ -231,7 +243,7 @@ function startUpdates()
 {
     contentUpdater = setInterval(function()
     {
-        let parameters = { "type" : "4" };
+        let parameters = { "type" : QueryType.Progress };
         let successFunc = function(response) { processUpdate(response); };
         let failureFunc = function(response)
         {
@@ -492,7 +504,7 @@ function addNewSessions(newIds)
         logInfo("Attempting to add session " + id);
         let parameters =
         {
-            "type" : 2,
+            "type" : QueryType.SingleSession,
             "id" : id
         }
         sendHtmlJsonRequest("get_status.php", parameters, addSession);
@@ -746,7 +758,7 @@ function getIPInfo(ip, id)
 {
     let parameters =
     {
-        "type" : "geoip",
+        "type" : ProcessRequest.GeoIP,
         "ip" : ip
     };
 

@@ -24,7 +24,7 @@ function setupForgotForm()
             return;
         }
 
-        const parameters = { "type" : "forgot_password", "username" : username };
+        const parameters = { "type" : ProcessRequest.RequestPasswordReset, "username" : username };
         let successFunc = function(response)
         {
             const fadeOut = () => Animation.queue({"opacity": 0}, $("#mainOverlay"), 250, true /*deleteAfterTransition*/);

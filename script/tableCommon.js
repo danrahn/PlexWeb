@@ -638,7 +638,7 @@ function setPageInfo(totalRequests)
 /// </summary>
 function populateUserFilter()
 {
-    let params = { "type" :"members_all" };
+    let params = { "type" : ProcessRequest.GetAllMembers };
     let successFunc = function(response)
     {
         let select = $("#filterTo");

@@ -17,7 +17,7 @@ function getMembers(searchValue='')
 {
     let parameters =
     {
-        'type' : 'members',
+        'type' : ProcessRequest.GetMembers,
         'num' : getPerPage(),
         'page' : getPage(),
         'search' : searchValue,

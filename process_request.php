@@ -13,16 +13,49 @@ require_once "includes/common.php";
 require_once "includes/config.php";
 require_once "includes/tvdb.php";
 
-$type = get('type');
+$type = (int)get('type');
+
+abstract class ProcessRequest {
+    const Login = 1;
+    const Register = 2;
+    const UpdatePassword = 3;
+    const ResetPassword = 4;
+    const RequestPasswordReset = 5;
+    const PasswordResetAdmin = 6;
+    const CheckUsername = 7;
+    const Request = 8;
+    const NewRequest = 9;
+    const UpdateRequest = 10;
+    const GetRequests = 11;
+    const NextRequest = 12;
+    const PermissionRequest = 13;
+    const SetUserInfo = 14;
+    const GetUserInfo = 15;
+    const GetMembers = 16;
+    const GetAllMembers = 17;
+    const SearchPlex = 18;
+    const SearchExternal = 19;
+    const SetExternalId = 20;
+    const GetSeasonDetails = 21;
+    const GeoIP = 22;
+    const AddComment = 23;
+    const DeleteComment = 24;
+    const EditComment = 25;
+    const GetComments = 26;
+    const GetActivities = 27;
+    const NewActivities = 28;
+    const LogError = 29;
+    const UpdatePoster = 30;
+}
 
 // For requests that are only made when not logged in, don't session_start or verify login state
 switch ($type)
 {
-    case "check_username":
-    case "login":
-    case "register":
-    case "forgot_password":
-    case "reset_password":
+    case ProcessRequest::CheckUsername:
+    case ProcessRequest::Login:
+    case ProcessRequest::Register:
+    case ProcessRequest::RequestPasswordReset:
+    case ProcessRequest::ResetPassword:
         break;
     default:
         session_start();
@@ -40,25 +73,25 @@ function process_request($type)
     $message = "";
     switch ($type)
     {
-        case "login":
+        case ProcessRequest::Login:
             $message = login(get("username"), get("password"));
             break;
-        case "register":
+        case ProcessRequest::Register:
             $message = register(get("username"), get("password"), get("confirm"));
             break;
-        case "request":
+        case ProcessRequest::Request: // Unused?
             $message = process_suggestion(get("name"), get("mediatype"), get("comment"));
             break;
-        case "request_new":
+        case ProcessRequest::NewRequest:
             $message = process_suggestion_new(get("name"), get("mediatype"), get("external_id"), get("poster"));
             break;
-        case "pr": // pr === permission_request
+        case ProcessRequest::PermissionRequest: // pr === permission_request
             $message = process_permission_request();
             break;
-        case "req_update":
+        case ProcessRequest::UpdateRequest: // Unused? Use update_request.php instead, as it takes JSON input
             $message = process_request_update(get("kind"), get("content"), get("id"));
             break;
-        case "set_usr_info":
+        case ProcessRequest::SetUserInfo:
             $message = update_user_settings(
                 get('fn'),
                 get('ln'),
@@ -68,70 +101,70 @@ function process_request($type)
                 get('pa'),
                 get('c'));
             break;
-        case "get_usr_info":
+        case ProcessRequest::GetUserInfo:
             $message = get_user_settings();
             break;
-        case "check_username":
+        case ProcessRequest::CheckUsername:
             $message = check_username(get("username"));
             break;
-        case "members":
+        case ProcessRequest::GetMembers:
             $message = get_members((int)get("num"), (int)get("page"), get("search"), get("filter"));
             break;
-        case "members_all":
+        case ProcessRequest::GetAllMembers:
             $message = get_members_all();
             break;
-        case "search":
+        case ProcessRequest::SearchPlex:
             $message = search(get("query"), get("kind"));
             break;
-        case "season_details":
+        case ProcessRequest::GetSeasonDetails:
             $message = get_season_details(get("path"));
             break;
-        case "search_external":
+        case ProcessRequest::SearchExternal: // Unused? media_search.php
             $message = search_external(get("query"), get("kind"));
             break;
-        case "update_pass":
+        case ProcessRequest::UpdatePassword:
             $message = update_password(get("old_pass"), get("new_pass"), get("conf_pass"));
             break;
-        case "geoip":
+        case ProcessRequest::GeoIP:
             $message = get_geo_ip(get("ip"));
             break;
-        case "set_external_id":
+        case ProcessRequest::SetExternalId:
             $message = set_external_id((int)get("req_id"), (int)get("id"));
             break;
-        case "add_comment":
+        case ProcessRequest::AddComment:
             $message = add_request_comment((int)get("req_id"), get("content"));
             break;
-        case "get_comments":
+        case ProcessRequest::GetComments:
             $message = get_request_comments((int)get("req_id"));
             break;
-        case "req_nav":
+        case ProcessRequest::NextRequest:
             $message = get_next_req((int)get("id"), (int)get("dir"));
             break;
-        case "requests":
+        case ProcessRequest::GetRequests:
             $message = get_requests((int)get("num"), (int)get("page"), get("search"), get("filter"));
             break;
-        case "activities":
+        case ProcessRequest::GetActivities:
             $message = get_activities((int)get("num"), (int)get("page"), get("search"), get("filter"));
             break;
-        case "new_activities":
+        case ProcessRequest::NewActivities: // Unused? Bundled with activities above?
             $message = get_new_activity_count();
             break;
-        case "log_err":
+        case ProcessRequest::LogError:
             $message = log_error(get("error"), get("stack"));
             break;
-        case "forgot_password":
+        case ProcessRequest::RequestPasswordReset:
             $message = forgot_password(get("username"));
             break;
-        case "reset_password":
+        case ProcessRequest::ResetPassword:
             $message = reset_password(get("token"), get("password"), get("confirm"));
             break;
-        case "forgot_password_admin":
+        case ProcessRequest::PasswordResetAdmin:
             $message = forgot_password_admin(get("username"), get("email"));
             break;
-        case "delete_comment":
+        case ProcessRequest::DeleteComment:
             $message = delete_comment((int)get("comment_id"));
             break;
-        case "edit_comment":
+        case ProcessRequest::EditComment:
             $message = edit_comment((int)get("id"), get("content"));
             break;
         default:

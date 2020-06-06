@@ -95,7 +95,7 @@ function resetPassword()
         return;
     }
 
-    const parameters = { "type" : "reset_password", "token" : token(), "password" : pass, "confirm" : conf };
+    const parameters = { "type" : ProcessRequest.ResetPassword, "token" : token(), "password" : pass, "confirm" : conf };
     let failureFunc = function(response)
     {
         statusError(response.Error);

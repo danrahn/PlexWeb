@@ -59,7 +59,7 @@ function getCurrentValues()
 
     let params =
     {
-        "type" : "get_usr_info"
+        "type" : ProcessRequest.GetUserInfo
     };
 
     let successFunc = function(response)
@@ -280,7 +280,7 @@ function setupSubmitButton()
         // Basic client-side validation is okay, now send it to the server
         let params =
         {
-            "type" : "set_usr_info",
+            "type" : ProcessRequest.SetUserInfo,
             "fn"   : getField("firstname"),
             "ln"   : getField("lastname"),
             "e"    : getField("email"),
@@ -395,7 +395,7 @@ function submitPasswordChange()
 
     let params =
     {
-        "type" : "update_pass",
+        "type" : ProcessRequest.UpdatePassword,
         "old_pass" : oldPass.value,
         "new_pass" : newPass.value,
         "conf_pass" : conf.value

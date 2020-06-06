@@ -142,7 +142,7 @@ function buildQuery(parameters)
 }
 
 /// <summary>
-/// Returns a sanitized version of the given parameters
+/// Returns a sanitized version of the given parameters for logging
 /// </summary>
 function sanitize(parameters)
 {
@@ -161,3 +161,41 @@ function sanitize(parameters)
 
     return buildQuery(sanitized);
 }
+
+/// <summary>
+/// List of all request types for process_request.php
+/// Keep in sync with ProcessRequest process_request.php
+/// </summary>
+const ProcessRequest =
+{
+    Login : 1,
+    Register : 2,
+    UpdatePassword : 3,
+    ResetPassword : 4,
+    RequestPasswordReset : 5,
+    PasswordResetAdmin : 6,
+    CheckUsername : 7,
+    Request : 8,
+    NewRequest : 9,
+    UpdateRequest : 10,
+    GetRequests : 11,
+    NextRequest : 12,
+    PermissionRequest : 13,
+    SetUserInfo : 14,
+    GetUserInfo : 15,
+    GetMembers : 16,
+    GetAllMembers : 17,
+    SearchPlex : 18,
+    SearchExternal : 19,
+    SetExternalId : 20,
+    GetSeasonDetails : 21,
+    GeoIP : 22,
+    AddComment : 23,
+    DeleteComment : 24,
+    EditComment : 25,
+    GetComments : 26,
+    GetActivities : 27,
+    NewActivities : 28,
+    LogError : 29,
+    UpdatePoster : 30,
+};

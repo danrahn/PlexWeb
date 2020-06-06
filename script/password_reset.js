@@ -19,7 +19,7 @@ function setupResetForm()
     $("#go").addEventListener("click", function()
     {
         let params = {
-            "type" : "forgot_password_admin",
+            "type" : ProcessRequest.PasswordResetAdmin,
             "username" : $("#username").value,
             "email" : $("#email").value
         };
