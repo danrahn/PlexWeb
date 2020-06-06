@@ -13,6 +13,8 @@ require_once "includes/common.php";
 require_once "includes/config.php";
 require_once "includes/tvdb.php";
 
+try {
+
 $type = (int)get('type');
 
 abstract class ProcessRequest {
@@ -29,7 +31,7 @@ abstract class ProcessRequest {
     const PermissionRequest = 11;
     const SetUserInfo = 12;
     const GetUserInfo = 13;
-    const GetMembers = 14
+    const GetMembers = 14;
     const GetAllMembers = 15;
     const SearchPlex = 16;
     const SearchExternal = 17;
@@ -62,6 +64,20 @@ switch ($type)
 }
 
 json_message_and_exit(process_request($type));
+
+} catch (Throwable $e)
+{
+    if (isset($_SESSION) && $_SESSION['level'] >= 100)
+    {
+        $err = new \stdClass();
+        $err->Error = $e;
+        json_message_and_exit(json_encode($err));
+    }
+    else
+    {
+        json_error_and_exit("Sorry, something went wrong.");
+    }
+}
 
 /// <summary>
 /// Our main entrypoint. Returns a json message (on success or failure)

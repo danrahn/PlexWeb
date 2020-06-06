@@ -47,17 +47,28 @@ function processQueryStatus(response)
     $$('title').innerHTML = prepend + baseTitle;
 }
 
-function queryStatus()
+function queryStatusError(response)
 {
-    sendHtmlJsonRequest('get_status.php', { 'type' : 5 }, processQueryStatus);
+    if (response.Error && response.Error == "Not Authorized")
+    {
+        logVerbose('Stopping queryStatus, user is not authorized');
+        clearInterval(queryStatusTimer);
+        return;
+    }
 }
 
+function queryStatus()
+{
+    sendHtmlJsonRequest('get_status.php', { 'type' : 5 }, processQueryStatus, queryStatusError);
+}
+
+let queryStatusTimer;
 function startQuery()
 {
     baseTitle = window.document.title;
 
     queryStatus();
-    setInterval(queryStatus, 20000);
+    queryStatusTimer = setInterval(queryStatus, 20000);
 }
 
 window.addEventListener("load", startQuery);
