@@ -626,12 +626,13 @@ function buildMediaInfo(sesh)
         "alt" : "thumbnail"
     });
 
-    if (sesh.plex_key)
+    // Clicking on the image will go to an external site (imdb/tmdb/audible)
+    if (sesh.hyperlink)
     {
-        let plexLink = buildNode(
+        let externalLink = buildNode(
             "a",
             {
-                "href" : `https://app.plex.tv/desktop#!/server/${sesh.machine_id}/details?key=${encodeURIComponent(sesh.plex_key)}`,
+                "href" : sesh.hyperlink,
                 "target" : "_blank"
             },
             0,
@@ -639,8 +640,8 @@ function buildMediaInfo(sesh)
                 'mouseenter' :  () => {},
                 'mouseleave' :  () => {}
             });
-        plexLink.appendChild(poster);
-        thumbholder.appendChild(plexLink);
+        externalLink.appendChild(poster);
+        thumbholder.appendChild(externalLink);
     }
     else
     {
@@ -651,8 +652,18 @@ function buildMediaInfo(sesh)
     // Details
     let details = buildNode("div", {"class" : "details"});
 
-    // link to imdb/audible
-    let link = buildNode("a", {"href" : sesh.hyperlink, "target" : "_blank"});
+    // link to plex. If no link is available, try linking to the external source
+    let plexLink;
+    if (sesh.plex_key)
+    {
+        plexLink = `https://app.plex.tv/desktop#!/server/${sesh.machine_id}/details?key=${encodeURIComponent(sesh.plex_key)}`;
+    }
+    else
+    {
+        plexLink = sesh.hyperlink;
+    }
+
+    let link = buildNode("a", {"href" : plexLink, "target" : "_blank"});
     link.appendChild(buildNode("span",
         { "class" : `ppbutton  ${sesh.paused ? "pause" : "play"}` },
         sesh.paused ? "&#10073;&#10073;  " : "&#x25ba;  "));
