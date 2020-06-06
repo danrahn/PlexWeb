@@ -619,11 +619,33 @@ function buildMediaInfo(sesh)
 
     // Album/poster thumb
     let thumbholder = buildNode("div", {"class" : "thumbholder"});
-    thumbholder.appendChild(buildNode("img", {
+
+    let poster = buildNode("img", {
         "src" : sesh.thumb_path,
         "style" : "width: 100px",
         "alt" : "thumbnail"
-    }));
+    });
+
+    if (sesh.plex_key)
+    {
+        let plexLink = buildNode(
+            "a",
+            {
+                "href" : `https://app.plex.tv/desktop#!/server/${sesh.machine_id}/details?key=${encodeURIComponent(sesh.plex_key)}`,
+                "target" : "_blank"
+            },
+            0,
+            {
+                'mouseenter' :  () => {},
+                'mouseleave' :  () => {}
+            });
+        plexLink.appendChild(poster);
+        thumbholder.appendChild(plexLink);
+    }
+    else
+    {
+        thumbholder.appendChild(poster);
+    }
 
 
     // Details

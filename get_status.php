@@ -248,7 +248,9 @@ function get_single_session($sid)
     {
         if (strcmp(get_sesh_id($sesh), $sid) === 0)
         {
-            return json_encode(build_sesh($sesh, get_library_names()));
+            $slim = build_sesh($sesh, get_library_names());
+            $slim->machine_id = get_machine_identifier();
+            return json_encode($slim);
         }
     }
 
@@ -273,16 +275,26 @@ function get_library_names()
 /// </summary>
 function get_all_sessions()
 {
+    $plex_server_id = get_machine_identifier();
     $sessions = simplexml_load_string(curl(PLEX_SERVER . '/status/sessions?' . PLEX_TOKEN));
     $library_names = get_library_names();
     $slim_sessions = array();
     foreach ($sessions as $sesh)
     {
-        array_push($slim_sessions, build_sesh($sesh, $library_names));
+        $slim = build_sesh($sesh, $library_names);
+        $slim->machine_id = $plex_server_id;
+        array_push($slim_sessions, $slim);
     }
 
     usort($slim_sessions, "session_sort");
     return json_encode($slim_sessions);
+}
+
+function get_machine_identifier()
+{
+    $server_info = simplexml_load_string(curl(PLEX_SERVER . '?' . PLEX_TOKEN));
+    return (string)$server_info['machineIdentifier'];
+
 }
 
 /// <summary>
@@ -307,6 +319,10 @@ function build_sesh($sesh, $library_names)
 
     $slim_sesh = new \stdClass();
     $slim_sesh->media_type = MediaType::to_string($sesh_type);
+    if ($sesh['key'])
+    {
+        $slim_sesh->plex_key = (string)$sesh['key'];
+    }
 
     $parent = NULL;
     if (MediaType::is_audio($sesh_type))
