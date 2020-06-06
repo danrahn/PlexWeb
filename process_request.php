@@ -167,6 +167,9 @@ function process_request($type)
         case ProcessRequest::EditComment:
             $message = edit_comment((int)get("id"), get("content"));
             break;
+        case ProcessRequest::UpdatePoster:
+            $message = update_poster((int)get('rid'));
+            break;
         default:
             return json_error("Unknown request type: " . $type);
     }
@@ -2519,6 +2522,37 @@ function edit_comment($comment_id, $content)
     }
 
     return json_success();
+}
+
+/// <summary>
+/// Refresh the cached poster path for a given request
+/// </summary>
+function update_poster($rid)
+{
+    global $db;
+    if (!$db->query("UPDATE `user_requests` SET `poster_path`='' WHERE id=$rid"))
+    {
+        return db_error();
+    }
+
+    $result = $db->query("SELECT `request_type`, `external_id` FROM `user_requests` WHERE id=$rid");
+    if (!$result)
+    {
+        return db_error();
+    }
+
+    $result = $result->fetch_assoc();
+
+    $request = new \stdClass();
+    $request->t = $result["request_type"];
+    $request->eid = $result["external_id"];
+    $request->rid = $rid;
+    $poster = get_poster_path($request);
+
+    $return = new \stdClass();
+    $return->rid = $rid;
+    $return->poster = $poster;
+    return json_encode($return);
 }
 
 /// <summary>

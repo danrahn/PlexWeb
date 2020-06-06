@@ -58,9 +58,12 @@ if (file_exists($filename))
     }
     else
     {
-        $headers = apache_request_headers(); 
-        header('Cache-Control: private');
-        header('Last-Modified: '.gmdate('D, d M Y H:i:s', $file_time) . ' GMT');
+        $headers = apache_request_headers();
+
+        // Cache of one week. Could probably be longer, how often are posters going to change?
+        header('Cache-Control: max-age=604800, public');
+        header('Expires: ' . gmdate('D, d M Y H:i:s \G\M\T', time() + (60 * 60 * 24 * 7)));
+        header('Last-Modified: '.gmdate('D, d M Y H:i:s \G\M\T', $file_time));
         if (isset($headers['If-Modified-Since']) && (strtotime($headers['If-Modified-Since']) >= $file_time))
         {
             header('HTTP/1.1 304 Not Modified');
@@ -71,6 +74,7 @@ if (file_exists($filename))
             header('HTTP/1.1 200 OK');
             header('Content-Length: '. filesize($filename));
             header('Content-type: image/' . $contenttype);
+            header('Etag: ' . md5_file($filename));
 
             readfile($filename);
         }
@@ -96,13 +100,21 @@ function serve_new_image($img_path, $filename, $type, $large)
 {
     $img = new Imagick();
 
-    if ($type == ImgType::Poster)
+    try
     {
-        $img->readImageBlob(curl("https://image.tmdb.org/t/p/" . ($large ? "w342" : "w185") . $img_path));
+        if ($type == ImgType::Poster)
+        {
+            $img->readImageBlob(curl("https://image.tmdb.org/t/p/" . ($large ? "w342" : "w185") . $img_path));
+        }
+        else
+        {
+            $img->readImageBlob(curl(PLEX_SERVER . $img_path . '?' . PLEX_TOKEN));
+        }
     }
-    else
+    catch (Exception $e)
     {
-        $img->readImageBlob(curl(PLEX_SERVER . $img_path . '?' . PLEX_TOKEN));
+        header("HTTP/1.0 404 Not Found");
+        die();
     }
 
     switch($type)
@@ -118,12 +130,14 @@ function serve_new_image($img_path, $filename, $type, $large)
             break;
     }
 
-    header('Cache-Control: private');
-    header('Last-Modified: ' . gmdate('D, d M Y H:i:s', time()) . ' GMT');
+    header('Cache-Control: max-age=604800, public');
+    header('Expires: ' . gmdate('D, d M Y H:i:s \G\M\T', time() + (60 * 60 * 24 * 7)));
+    header('Last-Modified: ' . gmdate('D, d M Y H:i:s \G\M\T', time()));
     header('HTTP/1.1 200 OK');
     file_put_contents($filename, $img->getImageBlob());
     header('Content-Length: '. filesize($filename));
     header("Content-Type: image/jpeg");
+    header('Etag: ' . md5_file($filename));
     echo $img->getImageBlob();
 }
 
