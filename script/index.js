@@ -671,6 +671,8 @@ function buildMediaInfo(sesh)
         case "Music":
             inlineIconSrc = icons.MUSICICON;
             break;
+        case "Audiobook":
+            inlineIconSrc = icons.AUDIOBOOKICON;
         default:
             break;
     }

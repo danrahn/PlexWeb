@@ -319,20 +319,67 @@ function build_sesh($sesh, $library_names)
 
     $slim_sesh = new \stdClass();
     $slim_sesh->media_type = MediaType::to_string($sesh_type);
-    if ($sesh['key'])
-    {
-        $slim_sesh->plex_key = (string)$sesh['key'];
-    }
 
     $parent = NULL;
     if (MediaType::is_audio($sesh_type))
     {
-        // For audiobooks/music grab the parent thumb, which correlates to the book cover/album art
-        $parent = simplexml_load_string(curl(PLEX_SERVER . $sesh['parentKey'] . '?' . PLEX_TOKEN))[0]->xpath("Directory")[0];
-        $slim_sesh->art_path = 'art' . $parent['thumb'];
+        // For audio, we don't always have a good art path. We also need to set the
+        // plex key to its parent (the album) for navigation
+        if ($sesh['parentKey'])
+        {
+            $parent = simplexml_load_string(curl(PLEX_SERVER . $sesh['parentKey'] . '?' . PLEX_TOKEN))[0]->xpath("Directory")[0];
+        }
+        else if ($sesh['parentRatingKey'])
+        {
+            $parent = simplexml_load_string(curl(PLEX_SERVER . '/library/metadata/' . $sesh['parentRatingKey'] . '?' . PLEX_TOKEN))[0]->xpath("Directory")[0];
+        }
+        else if ($sesh['grandparentRatingKey'])
+        {
+            $parent = simplexml_load_string(curl(PLEX_SERVER . '/library/metadata/' . $sesh['grandparentRatingKey'] . '?' . PLEX_TOKEN))[0]->xpath("Directory")[0];
+        }
+
+        if ($sesh['art'])
+        {
+            $slim_sesh->art_path = 'art' . $sesh['art'];
+        }
+        else if ($sesh['grandparentArt'])
+        {
+            $slim_sesh->art_path = 'art' . $sesh['grandparentArt'];
+        }
+        else
+        {
+            $slim_sesh->art_path = 'art' . $parent['thumb'];
+        }
+
+        if ($sesh['parentKey'])
+        {
+            $slim_sesh->plex_key = (string)$sesh['parentKey'];
+        }
+        else if ($parent['key'])
+        {
+            $slim_sesh->plex_key = substr($parent['key'], 0, strlen($parent['key']) - strlen('/children'));
+        }
+        else if ($parent['ratingKey'])
+        {
+            $slim_sesh->plex_key = '/library/metadata/' . (int)$parent['ratingKey'];
+        }
+        else if ($parent['parentKey'])
+        {
+            $slim_sesh->plex_key = (string)$parent['parentKey'];
+        }
+        else if ($_SESSION['level'] >= 100)
+        {
+            $slim_sesh->query = PLEX_SERVER . '/library/metadata/' . $sesh['parentRatingKey'] . '?' . PLEX_TOKEN;
+            $slim_sesh->parent = curl(PLEX_SERVER . '/library/metadata/' . $sesh['parentRatingKey'] . '?' . PLEX_TOKEN);
+        }
     }
     else
     {
+        if ($sesh['key'])
+        {
+            $slim_sesh->plex_key = (string)$sesh['key'];
+        }
+
         $slim_sesh->art_path = 'art' . $sesh['art'];
     }
 
