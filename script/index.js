@@ -541,7 +541,7 @@ function updateTotalBitrate()
     currentSessions.forEach(function(session)
     {
         let lis = session.$("li");
-        totalBitrate += parseInt(lis[lis.length - 1].$$("span").innerHTML);
+        totalBitrate += parseInt(lis[lis.length - 1].$$("span").innerHTML.match(/(\d+) kbps/)[0]);
     });
     
     $("#active").setAttribute("bitrate", totalBitrate);
