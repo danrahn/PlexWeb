@@ -23,29 +23,27 @@ abstract class ProcessRequest {
     const RequestPasswordReset = 5;
     const PasswordResetAdmin = 6;
     const CheckUsername = 7;
-    const Request = 8;
-    const NewRequest = 9;
-    const UpdateRequest = 10;
-    const GetRequests = 11;
-    const NextRequest = 12;
-    const PermissionRequest = 13;
-    const SetUserInfo = 14;
-    const GetUserInfo = 15;
-    const GetMembers = 16;
-    const GetAllMembers = 17;
-    const SearchPlex = 18;
-    const SearchExternal = 19;
-    const SetExternalId = 20;
-    const GetSeasonDetails = 21;
-    const GeoIP = 22;
-    const AddComment = 23;
-    const DeleteComment = 24;
-    const EditComment = 25;
-    const GetComments = 26;
-    const GetActivities = 27;
-    const NewActivities = 28;
-    const LogError = 29;
-    const UpdatePoster = 30;
+    const NewRequest = 8;
+    const GetRequests = 9;
+    const NextRequest = 10;
+    const PermissionRequest = 11;
+    const SetUserInfo = 12;
+    const GetUserInfo = 13;
+    const GetMembers = 14
+    const GetAllMembers = 15;
+    const SearchPlex = 16;
+    const SearchExternal = 17;
+    const SetExternalId = 18;
+    const GetSeasonDetails = 19;
+    const GeoIP = 20;
+    const AddComment = 21;
+    const DeleteComment = 22;
+    const EditComment = 23;
+    const GetComments = 24;
+    const GetActivities = 25;
+    const NewActivities = 26;
+    const LogError = 27;
+    const UpdatePoster = 28;
 }
 
 // For requests that are only made when not logged in, don't session_start or verify login state
@@ -79,17 +77,11 @@ function process_request($type)
         case ProcessRequest::Register:
             $message = register(get("username"), get("password"), get("confirm"));
             break;
-        case ProcessRequest::Request: // Unused?
-            $message = process_suggestion(get("name"), get("mediatype"), get("comment"));
-            break;
         case ProcessRequest::NewRequest:
             $message = process_suggestion_new(get("name"), get("mediatype"), get("external_id"), get("poster"));
             break;
-        case ProcessRequest::PermissionRequest: // pr === permission_request
+        case ProcessRequest::PermissionRequest:
             $message = process_permission_request();
-            break;
-        case ProcessRequest::UpdateRequest: // Unused? Use update_request.php instead, as it takes JSON input
-            $message = process_request_update(get("kind"), get("content"), get("id"));
             break;
         case ProcessRequest::SetUserInfo:
             $message = update_user_settings(
@@ -146,7 +138,7 @@ function process_request($type)
         case ProcessRequest::GetActivities:
             $message = get_activities((int)get("num"), (int)get("page"), get("search"), get("filter"));
             break;
-        case ProcessRequest::NewActivities: // Unused? Bundled with activities above?
+        case ProcessRequest::NewActivities:
             $message = get_new_activity_count();
             break;
         case ProcessRequest::LogError:
@@ -314,62 +306,6 @@ function register($username, $password, $confirm)
 
     $text_msg = "New user registered on plexweb!\r\n\r\nUsername: " . $username . "\r\nIP: " . $_SERVER["REMOTE_ADDR"];
     send_email_forget(ADMIN_PHONE, $text_msg, "" /*subject*/);
-    return json_success();
-}
-
-/// <summary>
-/// Processes the given suggestion and alerts admins as necessary
-/// </summary>
-function process_suggestion($suggestion, $type, $comment)
-{
-    $type = RequestType::get_type_from_str($type);
-    if (strlen($suggestion) > 64)
-    {
-        return json_error("Suggestion must be less than 64 characters");
-    }
-
-    if (strlen($comment) > 1024)
-    {
-        return json_error("Comment must be less than 1024 characters");
-    }
-
-    if ($type === RequestType::None)
-    {
-        return json_error("Unknown media type: " . $_POST['mediatype']);
-    }
-
-    global $db;
-    $suggestion = $db->real_escape_string($suggestion);
-    $comment = $db->real_escape_string($comment);
-    $userid = (int)$_SESSION['id'];
-    $query = "INSERT INTO user_requests (username_id, request_type, request_name, comment) VALUES ($userid, $type, '$suggestion', '$comment')";
-    if (!$db->query($query))
-    {
-        return json_error($db->error);
-    }
-
-    // If there was no user comment we can return now. Otherwise, find the request id of the item we just
-    // created and add a comment
-    if (strlen($comment) == 0)
-    {
-        return json_success();
-    }
-
-    $query = "SELECT id FROM user_requests WHERE username_id=$userid AND request_type=$type AND request_name='$suggestion' ORDER BY id DESC LIMIT 1";
-    $result = $db->query($query);
-    if (!$result || $result->num_rows == 0)
-    {
-        return db_error();
-    }
-
-    $req_id = (int)$result->fetch_row()[0];
-
-    $query = "INSERT INTO request_comments (req_id, user_id, content) VALUES ($req_id, $userid, $comment)";
-    if (!$db->query($query))
-    {
-        return db_error();
-    }
-
     return json_success();
 }
 
@@ -560,57 +496,6 @@ function process_stream_access_request($which)
     }
 }
 
-/// <summary>
-/// Processes a request to update a user request. 'kind', id' and 'content' must be set
-/// </summary>
-function process_request_update($kind, $content, $id)
-{
-    $req_id = (int)$id;
-    $level = (int)$_SESSION['level'];
-    $sesh_id = (int)$_SESSION['id'];
-    $requester = get_user_from_request($req_id);
-    if ($requester->id === -1)
-    {
-        // Bad request id passed in
-        return json_error("Bad request");
-    }
-
-    if ($level < 100 && $requester->id != $sesh_id)
-    {
-        // Only superadmins can edit all requests
-        return json_error("Not authorized");
-    }
-
-    switch ($kind)
-    {
-        case "adm_cm":
-            if ($level < 100)
-            {
-                return json_error("Not authorized");
-            }
-
-            return update_admin_comment($req_id, $content, $requester);
-        case "usr_cm":
-            if ($requester->id != $sesh_id)
-            {
-                // Only the requester can update the user comment
-                return json_error("Not authorized");
-            }
-
-            return update_user_comment($req_id, $content);
-        case "status":
-            if ($level < 100)
-            {
-                // Only admins can change status
-                return json_error("Not authorized");
-            }
-
-            return update_req_status($req_id, (int)$content, $requester);
-        default:
-            return json_error("Unknown request update type: " . $kind);
-    }
-}
-
 function add_request_comment($req_id, $content)
 {
     global $db;
@@ -763,112 +648,6 @@ function update_user_settings($firstname, $lastname, $email, $emailalerts, $phon
     {
         return json_error("Unexpected error occurred. Please try again later");
     }
-}
-
-/// <summary>
-/// Updates the admin comment for the given request
-/// </summary>
-function update_admin_comment($req_id, $content, $requester)
-{
-    global $db;
-    $content = $db->real_escape_string($content);
-    $query = "SELECT admin_comment, request_name FROM user_requests WHERE id=$req_id";
-    $result = $db->query($query);
-    if (!$result || $result->num_rows === 0)
-    {
-        return db_error();
-    }
-
-    $row = $result->fetch_row();
-    $old_comment = $row[0];
-    $req_name = $row[1];
-    $result->close();
-    if (strcmp($old_comment, $content) === 0)
-    {
-        // Comments are the same, do nothing
-        return json_success();
-    }
-
-    $query = "UPDATE user_requests SET admin_comment = '$content' WHERE id=$req_id";
-    if (!$db->query($query))
-    {
-        return db_error();
-    }
-
-    // Failure to send notificactions won't be considered a failure
-    send_notifications_if_needed("comment", $requester, $req_name, $content, $req_id, FALSE /*is_markdown*/);
-    return json_success();
-}
-
-/// <summary>
-/// Updates the user comment of the given request
-/// </summary>
-/// <todo>Send notifications to admins on update</todo>
-function update_user_comment($req_id, $content)
-{
-    global $db;
-    $content = $db->real_escape_string($content);
-    $query = "UPDATE user_requests SET comment = '$content' WHERE id=$req_id";
-    if (!$db->query($query))
-    {
-        return db_error();
-    }
-
-    return json_success();
-}
-
-/// <summary>
-/// Updates the status of the given request
-/// </summary>
-function update_req_status($req_id, $status, $requester)
-{
-    global $db;
-    $request_query = "SELECT * FROM user_requests WHERE id=$req_id";
-    $result = $db->query($request_query);
-    if (!$result)
-    {
-        return db_error();
-    }
-
-    $row = $result->fetch_row();
-    $result->close();
-    $request_type = RequestType::get_type($row[2]);
-    $req_name = RequestType::get_str($request_type) . " " . $row[3];
-    if ($request_type == RequestType::StreamAccess)
-    {
-        // Need to adjust permissions
-        $update_level = "";
-        if ($status == 1 && $requester->level < 20)
-        {
-            $update_level = "UPDATE users SET level=20 WHERE id=$requester->id";
-            if (!$db->query($update_level))
-            {
-                return db_error();
-            }
-        }
-        else if ($status == 2 && $requester->level >= 20)
-        {
-            // Access revoked. Bring them down a peg
-            $update_level = "UPDATE users SET level=10 WHERE id=$requester->id";
-        }
-
-        if (!empty($update_level) && !$db->query($update_level))
-        {
-            return db_error();
-        }
-    }
-
-    // Update the actual request
-    $query = "UPDATE user_requests SET satisfied=$status WHERE id=$req_id";
-    if (!$db->query($query))
-    {
-        return db_error();
-    }
-
-    $status_str = array("Pending", "Approved", "Denied", "In Progress", "Waiting")[$status];
-
-    send_notifications_if_needed("status", $requester, $req_name, $status_str, $req_id, FALSE /*is_markdown*/);
-    return json_success();
 }
 
 
