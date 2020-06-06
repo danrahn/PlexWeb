@@ -201,7 +201,7 @@ class Markdown {
         this._parseTime = 0;
         this._inParse = false;
 
-        if (diffStart == 0 || this.topRun == null || parseInt(localStorage.getItem('mdCache')) != 1)
+        if (diffStart == 0 || this.topRun == null || parseInt(localStorage.getItem('mdCache')) == 0)
         {
             this.topRun = new Run(State.None, 0, null);
             this.topRun.end = this.text.length;
@@ -521,13 +521,13 @@ class Markdown {
         else
         {
             let str;
-            if (parseInt(localStorage.getItem('mdCache')) == 1)
+            if (parseInt(localStorage.getItem('mdCache')) == 0)
             {
-                str = ' (Cache ON)';
+                str = ' (Cache OFF)';
             }
             else
             {
-                str = ' (Cache OFF)';
+                str = ' (Cache ON)';
             }
 
             logVerbose(`Parsed markdown in ${perfStop - perfStart}ms ${str}`);
