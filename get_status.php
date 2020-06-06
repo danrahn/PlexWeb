@@ -346,9 +346,13 @@ function build_sesh($sesh, $library_names)
         {
             $slim_sesh->art_path = 'art' . $sesh['grandparentArt'];
         }
-        else
+        else if ($parent['thumb'])
         {
             $slim_sesh->art_path = 'art' . $parent['thumb'];
+        }
+        else
+        {
+            $slim_sesh->art_path = 'poster/audiodefault.svg';
         }
 
         if ($sesh['parentKey'])
@@ -367,11 +371,6 @@ function build_sesh($sesh, $library_names)
         {
             $slim_sesh->plex_key = (string)$parent['parentKey'];
         }
-        else if ($_SESSION['level'] >= 100)
-        {
-            $slim_sesh->query = PLEX_SERVER . '/library/metadata/' . $sesh['parentRatingKey'] . '?' . PLEX_TOKEN;
-            $slim_sesh->parent = curl(PLEX_SERVER . '/library/metadata/' . $sesh['parentRatingKey'] . '?' . PLEX_TOKEN);
-        }
     }
     else
     {
@@ -380,13 +379,42 @@ function build_sesh($sesh, $library_names)
             $slim_sesh->plex_key = (string)$sesh['key'];
         }
 
-        $slim_sesh->art_path = 'art' . $sesh['art'];
+        if ($sesh['art'])
+        {
+            $slim_sesh->art_path = 'art' . $sesh['art'];
+        }
+        else
+        {
+            $slim_sesh->art_path = 'poster/' . ($sesh_type == MediaType::TVShow ? 'tv' : 'movie') . 'default.svg';
+        }
     }
 
     $slim_sesh->art_colors = get_img_average($slim_sesh->art_path);
 
     $slim_sesh->thumb_path = 'thumb' . ($sesh_type == MediaType::TVShow ? ($sesh['parentThumb'] ? $sesh['parentThumb'] : $sesh['grandparentThumb']) : $sesh['thumb']);
-    if ($slim_sesh->thumb_path)
+    if ($slim_sesh->thumb_path == 'thumb')
+    {
+        $thumb_path = 'poster/';
+        switch ($sesh_type)
+        {
+            case MediaType::TVShow:
+                $thumb_path .= 'tvdefault.svg';
+                break;
+            case MediaType::Movie:
+                $thumb_path .= 'moviedefault.svg';
+                break;
+            case MediaType::Audiobook:
+            case MediaType::Music:
+                $thumb_path .= 'audiodefault.svg';
+                break;
+            default:
+                $thumb_path .= 'moviedefault.svg';
+                break;
+        }
+
+        $slim_sesh->thumb_path = $thumb_path;
+    }
+
     $slim_sesh->duration = get_duration($sesh);
     $slim_sesh->progress = (int)$sesh['viewOffset'];
     $slim_sesh->release_date = MediaType::is_audio($sesh_type) ? (string)$parent['originallyAvailableAt'] : (string)$sesh['originallyAvailableAt'];
