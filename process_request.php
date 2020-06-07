@@ -46,6 +46,8 @@ abstract class ProcessRequest {
     const NewActivities = 26;
     const LogError = 27;
     const UpdatePoster = 28;
+    const CheckNotificationAlert = 29;
+    const DisableNotificationAlert = 30;
 }
 
 // For requests that are only made when not logged in, don't session_start or verify login state
@@ -177,6 +179,12 @@ function process_request($type)
             break;
         case ProcessRequest::UpdatePoster:
             $message = update_poster((int)get('rid'));
+            break;
+        case ProcessRequest::CheckNotificationAlert:
+            $message = check_notification_alert();
+            break;
+        case ProcessRequest::DisableNotificationAlert:
+            $message = disable_notification_alert();
             break;
         default:
             return json_error("Unknown request type: " . $type);
@@ -2358,6 +2366,46 @@ function update_poster($rid)
     $return->rid = $rid;
     $return->poster = $poster;
     return json_encode($return);
+}
+
+/// <summary>
+/// Checks whether we should show the notification alert
+/// after a new request has been made
+/// </summary>
+function check_notification_alert()
+{
+    global $db;
+    $rid = $_SESSION['id'];
+    $query = "SELECT `email`, `email_alerts`, `phone`, `phone_alerts`, `alert_prompt` FROM `user_info` WHERE `userid`=$rid";
+    $result = $db->query($query);
+    if (!$result || $result->num_rows != 1)
+    {
+        return db_error();
+    }
+
+    $info = $result->fetch_assoc();
+    $check = $info['alert_prompt'] != 0 &&
+    ($info['email_alerts'] == 0 || strlen($info['email']) == 0) &&
+    ($info['phone_alerts'] == 0 || $info['phone'] == 0);
+
+    $check = $check ? '1' : '0';
+    return "{ \"should_check\" : $check }";
+}
+
+/// <summary>
+/// Ensures we won't prompt the user to enable notifications after
+/// choosing "Don't ask again" from the notification prompt
+/// </summary>
+function disable_notification_alert()
+{
+    global $db;
+    $rid = (int)$_SESSION['id'];
+    if (!$db->query("UPDATE `user_info` SET `alert_prompt`=0 WHERE userid=$rid"))
+    {
+        return db_error();
+    }
+
+    return json_success();
 }
 
 /// <summary>

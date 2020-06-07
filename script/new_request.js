@@ -575,7 +575,7 @@ function submitSelected()
     {
         if (!response.exists)
         {
-            window.location.href = "https://danrahn.com/plex/request.php?id=" + response.req_id;
+            window.location.href = `https://danrahn.com/plex/request.php?id=${response.req_id}&new=1`;
             return;
         }
 

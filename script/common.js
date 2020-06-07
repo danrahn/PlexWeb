@@ -196,4 +196,6 @@ const ProcessRequest =
     NewActivities : 26,
     LogError : 27,
     UpdatePoster : 28,
+    CheckNotificationAlert : 29,
+    DisableNotificationAlert : 30,
 };

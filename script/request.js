@@ -30,6 +30,8 @@ window.addEventListener("load", function()
         $("#newCommentButton").addEventListener("click", addComment);
         addNavListener();
         getComments();
+
+        checkForNotifications();
     }
 
     function attr(prop)
@@ -826,6 +828,130 @@ window.addEventListener("load", function()
             $("#comments").innerHTML = response.Error;
         };
         sendHtmlJsonRequest("process_request.php", params, successFunc, failureFunc);
+    }
+
+    /// <summary>
+    /// If the user doesn't have notifications enabled, ask them if they want
+    /// to get updates. Popups are annoying though, so add a persistent "Don't
+    /// show this again" option.
+    /// </summary>
+    function checkForNotifications()
+    {
+        if (attrInt("newrequest") != 1)
+        {
+            return;
+        }
+
+        let parameters = { "type" : ProcessRequest.CheckNotificationAlert };
+        let successFunc = function(response)
+        {
+            if (response.should_check)
+            {
+                promptForNotifications();
+            }
+        }
+
+        sendHtmlJsonRequest("process_request.php", parameters, successFunc);
+    }
+
+    /// <summary>
+    /// Prompts the user to enable notifications
+    /// </summary>
+    function promptForNotifications()
+    {
+        let title = buildNode("h4", {}, "Enable Notifications");
+        let prompt = buildNode("div", {}, "Thanks for your request! Do you want to get notifications when the status of your requests are changed?");
+        let checkHolder = buildNode("div", {"class" : "formInput"});
+        let check = buildNode("input",
+            {
+                "type" : "checkbox",
+                "name" : "noalerts",
+                "id" : "noalerts",
+                "style" : "float: none; display: inline-block; margin-right: 10px;"
+            });
+        let checkLabel = buildNode("label",
+            {
+                "for" : "noalerts",
+                "id" : "noalertsLabel",
+                "style" : "float: none"
+            }, "Don't ask again");
+        checkHolder.appendChild(check);
+        checkHolder.appendChild(checkLabel);
+
+        let yesButton = buildNode(
+            "input",
+            {
+                "type" : "button",
+                "value" : "Yes",
+                "style" : "width: 100px; margin-right: 10px; display: inline"
+            },
+            0,
+            {
+                "click" : function()
+                {
+                    checkDontAskAgain(true /*redirect*/);
+                }
+            });
+
+        let noButton = buildNode(
+            "input",
+            {
+                "type" : "button",
+                "value" : "No",
+                "style" : "width: 100px; margin-right: 10px; display: inline"
+            },
+            0,
+            {
+                "click" : function()
+                {
+                    checkDontAskAgain(false /*redirect*/);
+                }
+            });
+
+        let outerButtonContainer = buildNode("div", { "class" : "formInput", "style" : "text-align: center" });
+        let buttonContainer = buildNode("div", { "style" : "float: right; overflow: auto; width: 100%; margin: auto" });
+        buttonContainer.appendChild(yesButton);
+        buttonContainer.appendChild(noButton);
+        outerButtonContainer.appendChild(buttonContainer);
+
+        buildOverlay(true, title, prompt, checkHolder, outerButtonContainer);
+    }
+
+    /// <summary>
+    /// Checks whether the user has asked to not see the notification prompt again
+    /// Will redirect to user_settings if 'redirect' is true, otherwise dismisses the overlay
+    /// </summary>
+    function checkDontAskAgain(redirect)
+    {
+        if (!$('#noalerts').checked)
+        {
+            if (redirect)
+            {
+                window.location = "user_settings.php?fornotify=1";
+            }
+            else
+            {
+                overlayDismiss();
+            }
+
+            return;
+        }
+
+        let parameters = { "type" : ProcessRequest.DisableNotificationAlert };
+        let attached = { "redirectToSettings" : redirect };
+        let responseFunc = function(response, request)
+        {
+            if (request.redirectToSettings)
+            {
+                window.location = "user_settings.php?fornotify=1";
+            }
+            else
+            {
+                overlayDismiss();
+            }
+        };
+
+        sendHtmlJsonRequest("process_request.php", parameters, responseFunc, responseFunc, attached);
     }
 
     /// <summary>

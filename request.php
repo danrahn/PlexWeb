@@ -61,7 +61,8 @@ function get_details($req_id)
     requestTypeStr="<?php echo ($details->request_type == 1 ? "movie" : "tv") ?>"
     requestName="<?= $details->request_name ?>"
     requestStatus="<?= $details->status ?>"
-    externalId="<?= $details->external_id?>">
+    externalId="<?= $details->external_id?>"
+    newrequest="<?php echo try_get('new') ?>">
     <div id="plexFrame">
         <?php include "nav.php" ?>
         <?php if (!$details->is_media_request || $details->external_id) { ?>

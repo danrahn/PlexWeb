@@ -47,9 +47,22 @@ input[type=checkbox]:focus {
     outline: none;
     border: 1px solid rgb(255, 127, 0);
 }
+
+input[type=button] {
+    padding: 10px;
+}
+
+.forNotify {
+    background: rgba(63, 100, 69, 0.5);
+}
+
+.forNotify:hover {
+    background: rgba(63, 100, 69, 0.8);
+}
+
     </style>
 </head>
-<body>
+<body fornotify="<?php echo try_get('fornotify') ?>">
 <div id="plexFrame">
     <?php include "nav.php" ?>
     <div id="container">
@@ -74,7 +87,7 @@ input[type=checkbox]:focus {
                 </div>
                 <div class="formInput hiddenInput"><label for="phonealerts" id="phonealertslabel">Receive text alerts: </label><input type="checkbox" name="phonealerts" id="phonealerts"></div>
                 <hr />
-                <div class="formInput"><input type="button" value="update" id="go"></input></div>
+                <div class="formInput"><input type="button" value="Update" id="go"></input></div>
             </form>
         </div>
         <div id="formError" class="formContainer">...</div>
@@ -86,7 +99,7 @@ input[type=checkbox]:focus {
                 <hr />
                 <div class="formInput"><label for="newPass" id="newPassLabel">New Password: </label><input type="password" name="newPass" id="newPass"></div>
                 <div class="formInput"><label for="newPassConf" id="newPassConfLabel">Confirm Password: </label><input type="password" name="newPassConf" id="newPassConf"></div>
-                <div class="formInput"><input type="button" value="update" id="pwGo"></input></div>
+                <div class="formInput"><input type="button" value="Change" id="pwGo"></input></div>
             </form>
         </div>
         <div id="formStatus" class="formContainer">...</div>

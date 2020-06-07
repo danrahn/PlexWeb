@@ -39,10 +39,11 @@ CREATE TABLE `user_info` (
  `phone` bigint(12) NOT NULL DEFAULT '0',
  `phone_alerts` tinyint(1) NOT NULL DEFAULT '0',
  `carrier` varchar(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'verizon',
+ `alert_prompt` tinyint(1) NOT NULL DEFAULT '1',
  PRIMARY KEY (`id`),
  UNIQUE KEY `userid` (`userid`),
  CONSTRAINT `user_info_ibfk_1` FOREIGN KEY (`userid`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci
+) ENGINE=InnoDB AUTO_INCREMENT=34 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_c
 
 CREATE TABLE `request_comments` (
  `id` int(11) NOT NULL AUTO_INCREMENT,

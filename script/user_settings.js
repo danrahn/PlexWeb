@@ -8,6 +8,8 @@ const validEmailRegex = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(
 const changedColor = new Color(200, 150, 80);
 const successColor = new Color(100, 200, 80);
 const defaultForegroundColor = new Color(192, 189, 186);
+
+const g_forNotify = parseInt(document.body.getAttribute("fornotify")) == 1;
 function setupFormListeners()
 {
     setupEmailListeners();
@@ -67,27 +69,43 @@ function getCurrentValues()
         // Assume all of our values are correct here
         $$("input[name=firstname]").value = initialValues.firstname = response["firstname"];
         $$("input[name=lastname]").value = initialValues.lastname = response["lastname"];
-        $$("input[name=email]").value = initialValues.email = response["email"];
-        $$("input[name=emailalerts]").checked = initialValues.emailalerts = response["emailalerts"] != "0";
+
+        let email = $$("input[name=email]");
+        let emailAlerts = $$("input[name=emailalerts]");
+        email.value = initialValues.email = response["email"];
+        emailAlerts.checked = initialValues.emailalerts = response["emailalerts"] != "0";
         if (initialValues.email.match(validEmailRegex))
         {
-            setVisible($$("input[name=emailalerts").parentNode, true);
+            setVisible(emailAlerts.parentNode, true);
+            if (g_forNotify)
+            {
+                email.parentNode.classList.remove("forNotify");
+                emailAlerts.parentNode.classList.add("forNotify");
+            }
         }
 
         emailChangeListenerCore($$("input[name=email]"));
         let phone = response["phone"];
+        let phoneInput = $$("input[name=phone]");
         if (phone != "0") {
-            $$("input[name=phone]").value = initialValues.phone = phone;
-            phoneListenerCore($$("input[name=phone]"));
-            phoneFocusListenerCore($$("input[name=phone]"));
+            phoneInput.value = initialValues.phone = phone;
+            phoneListenerCore(phoneInput);
+            phoneFocusListenerCore(phoneInput);
         }
 
         $$("select[name=carrier]").value = initialValues.carrier = response["carrier"];
-        $$("input[name=phonealerts]").checked = initialValues.phonealerts = response["phonealerts"] != "0";
+
+        let phoneAlerts = $$("input[name=phonealerts]");
+        phoneAlerts.checked = initialValues.phonealerts = response["phonealerts"] != "0";
         logVerbose(initialValues.phone.replace(/[^\d]/g, "").length);
         if (initialValues.phone.replace(/[^\d]/g, "").length == 10)
         {
-            setVisible($$("input[name=phonealerts]").parentNode, true);
+            setVisible(phoneAlerts.parentNode, true);
+            if (g_forNotify)
+            {
+                phoneInput.parentNode.classList.remove("forNotify");
+                phoneAlerts.parentNode.classList.add("forNotify");
+            }
         }
     };
 
@@ -114,7 +132,12 @@ function setupEmailListeners()
     alerts.addEventListener("change", function()
     {
         logVerbose("Email alerts changed to " + this.checked);
-    })
+    });
+
+    if (g_forNotify)
+    {
+        email.parentNode.classList.add("forNotify");
+    }
 }
 
 function emailChangeListener()
@@ -124,11 +147,18 @@ function emailChangeListener()
 
 function emailChangeListenerCore(ele)
 {
+    let email = $$("input[name=email");
+    let emailAlerts = $$("input[name=emailalerts");
     if (ele.value.match(validEmailRegex))
     {
         logTmi("valid email found");
         ele.style.backgroundColor = null;
         setVisible($$("input[name=emailalerts]").parentNode, true);
+        if (g_forNotify)
+        {
+            email.parentNode.classList.remove("forNotify");
+            emailAlerts.parentNode.classList.add("forNotify");
+        }
     }
     else
     {
@@ -142,7 +172,13 @@ function emailChangeListenerCore(ele)
             ele.style.backgroundColor = ele.value ? "rgb(100, 66, 69)" : null;
         }
 
-        setVisible($$("input[name=emailalerts]").parentNode, false);
+        setVisible(emailAlerts.parentNode, false);
+
+        if (g_forNotify)
+        {
+            email.parentNode.classList.add("forNotify");
+            emailAlerts.parentNode.classList.remove("forNotify");
+        }
     }
 }
 
@@ -162,9 +198,15 @@ function setupPhoneListeners()
 
     phone.addEventListener("focusout", phoneFocusListener);
 
-    alerts.addEventListener("change", function() {
+    alerts.addEventListener("change", function()
+    {
         logVerbose("Phone alerts changed to " + this.checked);
     });
+
+    if (g_forNotify)
+    {
+        phone.parentNode.classList.add("forNotify");
+    }
 }
 
 function phoneListener() {
@@ -174,14 +216,27 @@ function phoneListener() {
 function phoneListenerCore(ele) {
     let digit = ele.value ? ele.value.replace(/[^\d]/g, "") : "";
     let alerts = $$("input[name=phonealerts]");
-    if (digit.length !== 10) {
+    let phone = $$("input[name=phone]");
+    if (digit.length !== 10)
+    {
         logTmi("Invalid phone");
         ele.style.backgroundColor = ele.value ? "rgb(100, 66, 69)" : null;
         setVisible(alerts.parentNode, false);
-    } else {
+        if (g_forNotify)
+        {
+            phone.parentNode.classList.add("forNotify");
+        }
+    }
+    else
+    {
         logTmi("Valid phone");
         ele.style.backgroundColor = null;
         setVisible(alerts.parentNode, true);
+        if (g_forNotify)
+        {
+            phone.parentNode.classList.remove("forNotify");
+            alerts.parentNode.classList.add("forNotify");
+        }
     }
 }
 
@@ -213,6 +268,7 @@ function setupLabelListeners() {
     {
         inputs[i].addEventListener("input", function()
         {
+            let isCheckbox = this.type.toLowerCase() == "checkbox";
             let val = this.id == "phone" ? this.value.replace(/[^\d]+/g, "") : this.type.toLowerCase() == "checkbox" ? this.checked : this.value;
             if (initialValues[this.id] != val)
             {
@@ -233,6 +289,60 @@ function setupLabelListeners() {
 
                 this.parentNode.children[0].style.color = null;
                 this.setAttribute("changed", 0);
+            }
+
+            let clearNotify = () => { $(".forNotify").forEach(function(ele)
+            {
+                ele.classList.remove("forNotify");
+            })};
+
+            if (g_forNotify && isCheckbox)
+            {
+                if (val)
+                {
+                    clearNotify();
+                    $("#go").classList.add("forNotify");
+                    return;
+                }
+
+                anyCheck = false;
+                $("input[type=checkbox]").forEach(function(element)
+                {
+                    if (element.checked)
+                    {
+                        anyCheck = true;
+                    }
+                });
+
+                if (anyCheck)
+                {
+                    clearNotify();
+                    $("#go").classList.add("forNotify");
+                    return;
+                }
+
+                clearNotify();
+                let email = $$("input[name=email]").parentNode;
+                let emailAlerts = $$("input[name=emailalerts]").parentNode;
+                let phone = $$("input[name=phone]").parentNode;
+                let phoneAlerts = $$("input[name=phonealerts]").parentNode;
+                if (emailAlerts.classList.contains("hiddenInput"))
+                {
+                    email.classList.add("forNotify");
+                }
+                else
+                {
+                    emailAlerts.classList.add("forNotify");
+                }
+
+                if (phoneAlerts.classList.contains("hiddenInput"))
+                {
+                    phone.classList.add("forNotify");
+                }
+                else
+                {
+                    phoneAlerts.classList.add("forNotify");
+                }
             }
         });
     }
