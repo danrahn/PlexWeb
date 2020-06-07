@@ -21,8 +21,6 @@ def process():
 
     clean_tmp()
 
-    modified_dates = script_modified_dates()
-
     args_lower = [arg.lower() for arg in sys.argv]
     force = "-force" in args_lower or '-f' in args_lower
     babel = '-babel' in args_lower or '-b' in args_lower
@@ -44,6 +42,8 @@ def process():
     # First, check for changes to svg icons
     if not noicon:
         process_svg_icons(force, quiet)
+
+    modified_dates = script_modified_dates()
 
     comparisons = {}
     if ultra and compare:
@@ -113,7 +113,7 @@ def process_svg_icons(force, quiet):
         print('Icons up to date!\n')
     else:
         if changed != -1:
-            print('Modified', changed, 'icons')
+            print('  Modified', changed, 'icon' + ('' if changed == 1 else 's'))
 
         print('  Writing icon map...')
         js_icon_map += '};\n';
