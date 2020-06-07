@@ -679,16 +679,20 @@ function send_notifications_if_needed($type, $requester, $req_name, $content, $r
 
     $text = "";
     $email = "<html><body style='background-color:#313131;color=#c1c1c1'><div>";
+    $max_text = 160;
     switch ($type)
     {
         case "comment":
-            if ($is_markdown)
+            $text = "A comment has been added your your request for " . $req_name . ". See it here: https://plex.danrahn.com/r/" . $req_id;
+            if ($text > $max_text)
             {
-                $text = "A comment has been added to your request for " . $req_name . ". See it here: https://plex.danrahn.com/request.php?id=" . $req_id;
+                $text = "A comment has been added to one of your requests. See it here: https://plex.danrahn.com/r/" . $req_id;
             }
-            else
+
+            // Don't bother with the expensive email creation if we won't even be sending an email
+            if (!$requester->info->email_alerts || empty($requester->info->email))
             {
-                $text = "A comment has been added to your request for " . $req_name . ":\n\t" . $content . "\n\nhttps://plex.danrahn.com/request.php?id=" . $req_id;
+                break;
             }
 
             // Emails have more formatting and also displays markdown correctly
@@ -717,6 +721,8 @@ function send_notifications_if_needed($type, $requester, $req_name, $content, $r
             $email .= '</div></body></html>';
             break;
         case "status":
+            // This has moved to update_request.php. We should really consolidate the update request
+            // logic, since there's a good chunk of dead code between the two implementations
             $text = "The status of your request has changed:\nRequest: " . $req_name . "\nStatus: " . $content . "\n\nhttps://plex.danrahn.com/request.php?id=" . $req_id;
             $email = "<div>The status of your request for " . $req_name . " has changed: " . $content . "</div><br />";
             $email .= "<br />View your request here: https://plex.danrahn.com/request.php?id=" . $req_id;
@@ -753,13 +759,13 @@ function get_phone_email($phone, $carrier, &$error)
     switch ($carrier)
     {
         case "verizon":
-            return $phone . "@vzwpix.com";
+            return $phone . "@vtext.com";
         case "tmobile":
             return $phone . "@tmomail.net";
         case "att":
-            return $phone . "@mms.att.net";
+            return $phone . "@txt.att.net";
         case "sprint":
-            return $phone . "@pm.sprint.com";
+            return $phone . "@messaging.sprintpcs.com";
         default:
             $error = TRUE;
             return "";

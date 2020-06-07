@@ -24,9 +24,11 @@ $mail->Encoding = "base64";
 $mail->Username = MAIL_USER;
 $mail->Password = MAIL_PASS;
 
-$mail->ConfirmReadingTo = MAIL_USER;
+if (MAIL_ALIAS != MAIL_USER)
+{
+    $mail->setFrom(MAIL_ALIAS, "Plex Requests");
+}
 
-$mail->setFrom("donotreply@danrahn.com", "Plex Alert");
 $mail->Subject = html_entity_decode($subject);
 $mail->msgHTML(html_entity_decode($content));
 

@@ -136,28 +136,26 @@ function process_request_update($requests)
 
     foreach ($alerts as $contact => $data)
     {
-        // Simplier messages for phones
+        // Very simple messages for phones, as they must be less than 160 characters. Also, no subject
         if ($data->is_phone)
         {
             $text = "";
             if (count($data->messages) != 1)
             {
-                $text = "Your Plex request has been updated:\n\n";
+                $text = "Multiple requests have been updated. See them here: https://danrahn.com/plex/requests.php";
             }
-
-            $index = 0;
-            foreach ($alerts[$contact]->messages as $message)
+            else
             {
-                $index += 1;
-                $end = "\n\n";
-                if ($index == count($alerts[$contact]->messages))
-                {
-                    $end = "";
-                }
+                $message = $data->messages[0];
+                $max = 160;
                 switch ($message->kind)
                 {
                     case "adm_cm":
-                        $text .= "A comment has been added to your request for " . $message->request . ":\n\t" . $message->content . $end;
+                        $text = "A comment has been added your your request for " . $message->request . ". See it here: https://plex.danrahn.com/r/" . $message->request_id;
+                        if (strlen($text) > $max)
+                        {
+                            $text = "A comment has been added to one of your requests. See it here: https://plex.danrahn.com/r/" . $message->request_id;
+                        }
                         break;
                     case "status":
                         $status;
@@ -181,9 +179,13 @@ function process_request_update($requests)
                             default:
                                 $status = "Unknown";
                                 break;
-
                         }
-                        $text .= "The status of your request for " . $message->request . " has changed: " . $status . " - https://plex.danrahn.com/request.php?id=" . $message->request_id . $end;
+
+                        $text = "The status of your request for " . $message->request . " has changed to " . $status . ". See it here: https://plex.danrahn.com/r/" . $message->request_id;
+                        if (strlen($text) > $max)
+                        {
+                            $text = "The status of one of your requests has changed to " . $status . ". See it here: https://plex.danrahn.com/r/" . $message->request_id;
+                        }
                         break;
                     default:
                         return json_error("Error sending notifications");
@@ -191,7 +193,7 @@ function process_request_update($requests)
             }
 
             $subject = "";
-            send_email_forget($contact, $text, $subject);
+            send_email_forget($contact, $text, '');
         }
         else
         {
@@ -387,16 +389,16 @@ function get_contact_info($requester, &$contact_info)
         switch ($requester->info->carrier)
         {
             case "verizon":
-                $to = $phone . "@vzwpix.com"; # Send as MMS to avoid text length limits of SMS
+                $to = $phone . "@vtext.com";
                 break;
             case "tmobile":
                 $to = $phone . "@tmomail.net";
                 break;
             case "att":
-                $to = $phone . "@mms.att.net";
+                $to = $phone . "@txt.att.net";
                 break;
             case "sprint":
-                $to = $phone . "@pm.sprint.com";
+                $to = $phone . "@messaging.sprintpcs.com";
                 break;
             default:
                 break;

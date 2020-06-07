@@ -9,8 +9,13 @@ define('DB_PASSWORD', 'password');
 define('DB_NAME', 'dbname');
 define('TVDB_TOKEN', 'TVDatabaseToken');
 define('MAIL_USER', 'emailusername');
+
+// If MAIL_ALIAS is not the same as MAIL_USER, emails will be sent from MAIL_ALIAS. If being sent from
+// an alias, MAIL_PASS must be the password for the alias account, not the owning MAIL_USER password
+define('MAIL_ALIAS', 'alias@mydomain.com');
 define('MAIL_PASS', 'emailpassword');
 define('MAIL_HOST', 'emailhost');
+
 define('ADMIN_PHONE', 'adminphone@carrier');
 define("PLEX_TOKEN", 'plexApiToken');
 define('PLEX_HOST', 'plexHost');
