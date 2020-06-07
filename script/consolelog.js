@@ -195,11 +195,12 @@ function consoleHelp()
     // After initializing everything we need, print a message to the user to give some basic tips
     const logLevelSav = g_logLevel;
     g_logLevel = 2;
-    logInfo("Welcome to the console!");
-    logInfo("If you're debugging an issue, here are some tips:");
-    logInfo("  1. Set dark/light mode for the console via setDarkConsole(isDark), where isDark is 1 or 0.");
-    logInfo("  2. Set the log level via setLogLevel(level), where level is a value from the LOG dictionary (e.g. setLogLevel(LOG.Verbose);)");
-    logInfo("  3. To view unminified js sources, add nomin=1 to the url parameters.");
-    logInfo("  4. To view the stack trace for every logged event, call setTrace(1). To revert, setTrace(0)\n");
+    logInfo(' ');
+    console.log("Welcome to the console!\n" +
+    "If you're debugging an issue, here are some tips:\n" +
+    "  1. Set dark/light mode for the console via setDarkConsole(isDark), where isDark is 1 or 0.\n" +
+    "  2. Set the log level via setLogLevel(level), where level is a value from the LOG dictionary (e.g. setLogLevel(LOG.Verbose);)\n" +
+    "  3. To view unminified js sources, add nomin=1 to the url parameters.\n" +
+    "  4. To view the stack trace for every logged event, call setTrace(1). To revert, setTrace(0)\n\n");
     g_logLevel = logLevelSav;
 }

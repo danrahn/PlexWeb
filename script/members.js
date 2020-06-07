@@ -165,6 +165,11 @@ function setSortOrderValues()
         $("#sortDesc").text = "A-Z";
         $("#sortAsc").text = "Z-A";
     }
+    else if (sortBy == 'seen')
+    {
+        $("#sortDesc").text = "Descending";
+        $("#sortAsc").text = "Ascending";
+    }
     else
     {
         $("#sortDesc").text = "Newest First";
@@ -204,7 +209,7 @@ function filterHtml()
         {
             'Account Age' : 'id',
             'Name' : 'name',
-            'Last Seen' : 'seen',
+            'Last Login' : 'seen',
             'Level' : 'level',
         }));
 

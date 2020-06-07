@@ -69,6 +69,7 @@ function setupForgotForm()
     {
         if (e.keyCode == 13 /*enter*/ && !e.ctrlKey && !e.shiftKey && !e.altKey)
         {
+            e.preventDefault();
             $('#go').click();
         }
     });

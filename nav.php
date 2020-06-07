@@ -76,11 +76,11 @@
         <div class=btnimg><image src='<?php icon('admin') ?>' alt='Admin' /></div>
     </div>
 <?php } ?>
-    <div class="navButton" id="navLogout">
+    <div class="navButton" id="navLogout" title='Logout'>
         <button class=btntxt disabled=true>Logout</button>
         <div class=btnimg><image src='<?php icon('logout') ?>' alt='Logout'/></div>
     </div>
-    <div class="navButton" id="navGithub">
+    <div class="navButton" id="navGithub" title='GitHub'>
         <button class=btntxt disabled=true>Source Code</button>
         <div class=btnimg><image src='<?php icon('Github') ?>' alt='Github'/></div>
     </div>

@@ -729,7 +729,11 @@ function send_notifications_if_needed($type, $requester, $req_name, $content, $r
             $email .= "</div></body></html>";
             break;
         case "create":
-            $text = $requester->username . " created a request for " . $req_name . ". See it here: https://plex.danrahn.com/request.php?id=" . $req_id;
+            $text = $requester->username . " created a request for " . $req_name . ". See it here: https://plex.danrahn.com/r/" . $req_id;
+            if ($text > $max_text)
+            {
+                $text = "Someone created a new request. See it here: https://plex.danrahn.com/r/" . $req_id;
+            }
             $email = $text;
             break;
         default:
