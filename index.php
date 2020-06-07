@@ -98,16 +98,18 @@ function plexOk()
                     <span>New Request</span>
                 </a>
             </div>
+            <div class="actionSpacer"></div>
             <div class="action">
                 <a href="requests.php" class="actionLink">
                     <img src="<?php icon('requests') ?>" class="actionImg" alt="View Requests">
                     <span>View Requests</span>
                 </a>
             </div>
+            <div class="actionSpacer"></div>
             <div class="action">
-                <a href="user_settings.php" class="actionLink">
-                    <img src="<?php icon('settings') ?>" class="actionImg" alt="Settings">
-                    <span>Settings</span>
+                <a href="https://app.plex.tv/desktop" target="_blank" class="actionLink">
+                    <img src="<?php icon('plex') ?>" class="actionImg" alt="Plex">
+                    <span>Go to Plex</span>
                 </a>
             </div>
         </div>

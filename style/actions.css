@@ -48,10 +48,18 @@
     color: #608020;
 }
 
+.actionSpacer {
+    float: left;
+}
+
 /* Desktop/Landscape */
 @media (orientation: landscape), (min-width: 767px) {
     #actions {
         min-width: 630px;
+    }
+
+    .actionSpacer {
+        width: 10px;
     }
 }
 
@@ -60,5 +68,9 @@
     #actions {
         min-width: 80%;
         text-align: center;
+    }
+
+    .actionSpacer {
+        width: 0;
     }
 }
