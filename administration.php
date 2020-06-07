@@ -122,12 +122,12 @@ function parse_section($section)
     global $types;
     $json = new \stdClass();
     $json->title = (string)$section['title'];
-    $json->key = (int)$section['key'];
-    $json->type = (string)$section['type'];
-    $json->num_items = get_num_items($json->key, $types[$json->type]);
+    get_num_items((int)$section['key'], $types[(string)$section['type']], $json);
     $json->created = (int)$section['createdAt'];
     $json->updated = (int)$section['updatedAt'];
     $json->last_scanned = (int)$section['scannedAt'];
+    $json->type = (string)$section['type'];
+    $json->key = (int)$section['key'];
 
     return $json;
 
@@ -139,27 +139,31 @@ function parse_section($section)
     // http://localhost:32400/library/sections/3/all?type=4&X-Plex-Container-Start=0&X-Plex-Container-Size=0&X-Plex-Token=***
 }
 
-function get_num_items($key, $type)
+function get_num_items($key, $type, &$section)
 {
     $type_start = $type;
     $type_end = $type;
+    $labels = array("Movies");
     if ($type > 1 && $type < 5)
     {
         // TV shows, 4 indicates number of episodes - get shows, seasons, and episodes
         $type_start = 2;
         $type_end = 4;
+        $labels = array("Shows", "Seasons", "Episodes");
     }
     else if ($type > 7 && $type < 11)
     {
         // Music, get artists, albums, and tracks
         $type_start = 8;
         $type_end = 10;
+        $labels = array("Artists", "Albums", "Tracks");
     }
 
     $items = array();
     for ($iType = $type_start; $iType <= $type_end; ++$iType)
     {
         $xml = simplexml_load_string(curl(PLEX_SERVER . '/library/sections/' . $key . '/all?type=' . $iType . '&X-Plex-Container-Start=0&X-Plex-Container-Size=0&' . PLEX_TOKEN));
+        $section->{$labels[$iType - $type_start]} = (int)$xml['totalSize'];
         array_push($items, (int)$xml['totalSize']);
     }
 

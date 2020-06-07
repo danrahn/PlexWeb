@@ -17,7 +17,7 @@ function buildSections(sections)
         let list = buildNode("ul");
         for (let [key, value] of Object.entries(section))
         {
-            list.appendChild(buildNode("li", {}, `${key}: ${value}`));
+            list.appendChild(listItem(key, value, value instanceof Date));
         }
 
         list.appendChild(getRefreshNode(section['key']));
@@ -25,6 +25,36 @@ function buildSections(sections)
         div.appendChild(list);
         outerDiv.appendChild(div);
     });
+}
+
+function listItem(key, value, dateTooltip=false)
+{
+    let li = buildNode("li");
+    li.appendChild(buildNode("strong", {}, `${titleCase(key)}: `));
+    if (dateTooltip)
+    {
+        let liDate = buildNode("span", {}, DateUtil.getDisplayDate(value));
+        setTooltip(liDate, DateUtil.getFullDate(value));
+        li.appendChild(liDate);
+    }
+    else
+    {
+        li.appendChild(buildNode("span", {}, value));
+    }
+
+    return li;
+}
+
+function titleCase(value)
+{
+    words = value.split('_');
+    title = '';
+    words.forEach(function(word)
+    {
+        title += word[0].toUpperCase() + word.substring(1).toLowerCase() + " ";
+    });
+
+    return title;
 }
 
 function getRefreshNode(key)

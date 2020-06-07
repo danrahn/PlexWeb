@@ -22,7 +22,7 @@ if ($_SESSION['level'] < 100)
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#3C5260" />
     <title>Library Management</title>
-    <?php get_css("style", "nav", "table") ?>
+    <?php get_css("style", "nav", "table", "tooltip") ?>
     <style>
 #sections {
     margin-top: 50px;
@@ -31,6 +31,10 @@ if ($_SESSION['level'] < 100)
 
 input[type=button] {
     float: none;
+}
+
+#tooltip {
+    font-size: smaller;
 }
     </style>
 </head>
@@ -43,6 +47,6 @@ input[type=button] {
         <?php include "includes/table.html" ?>
     </div>
 </div>
-<?php build_js("library", "consolelog", "animate", "common", "queryStatus", "nav", "tableCommon"); ?>
+<?php build_js("library", "consolelog", "animate", "common", "queryStatus", "nav", "tableCommon", "DateUtil", "tooltip"); ?>
 </body>
 </html>
