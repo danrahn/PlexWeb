@@ -33,6 +33,7 @@ setupClicks("navHome", "index.php");
 setupClicks("navNewRequest", "new_request.php");
 setupClicks("navRequests", "requests.php");
 setupClicks("navActivity", "activity.php");
+setupClicks("navPlex", "https://app.plex.tv/desktop", true);
 setupClicks("navMembers", "members.php");
 setupClicks("navUserSettings", "user_settings.php");
 setupClicks("navAdmin", "administration.php");
@@ -163,6 +164,7 @@ function setEnabled(enabled)
     "navNewRequest",
     "navRequests",
     "navActivity",
+    "navPlex",
     "navMembers",
     "navUserSettings",
     "navAdmin",
@@ -186,8 +188,8 @@ const KEY =  {
     // ZERO  : 48, ONE   : 49, TWO   : 50, THREE : 51, FOUR : 52,
     // FIVE  : 53, SIX   : 54, SEVEN : 55, EIGHT : 56, NINE : 57,
     A : 65, /*B : 66, C : 67, D : 68, E : 69, F : 70, G : 71,*/ H : 72,
-    /*I : 73, J : 74, K : 75, L : 76,*/ M : 77, N : 78, /*O : 79, P : 80,
-    Q : 81,*/ R : 82, S : 83, /*T : 84, U : 85, V : 86, W : 87, X : 88,
+    /*I : 73, J : 74, K : 75, L : 76,*/ M : 77, N : 78, /*O : 79,*/ P : 80,
+    /*Q : 81,*/ R : 82, S : 83, /*T : 84, U : 85, V : 86, W : 87, X : 88,
     Y : 89, Z : 90, OPEN_BRACKET : 219, CLOSE_BRACKET : 221*/
 };
 
@@ -228,7 +230,7 @@ window.addEventListener("keydown", function(e) {
                 target = "new_request.php";
                 break;
             case KEY.S:
-                target = "settings.php";
+                target = "user_settings.php";
                 break;
             case KEY.A:
                 target = "activity.php";
@@ -237,14 +239,26 @@ window.addEventListener("keydown", function(e) {
             {
                 let menu = $("#leftMenu");
                 expandContractMenu(menu, menu.style.opacity == 0);
+                break;
             }
+            case KEY.P:
+                target = "https://app.plex.tv/desktop";
+                break;
             default:
                 break;
         }
 
         if (target.length > 0)
         {
-            window.location = target;
+            if (target.startsWith("http"))
+            {
+                // Open external links in a new tab
+                window.open(target, "_blank");
+            }
+            else
+            {
+                window.location = target;
+            }
         }
     }
 });

@@ -20,7 +20,7 @@
             <div class=btnImg><image src='<?php icon('bell') ?>' alt='Activity' class="activityImg" style='margin-top:8px;height:24px'/></div>
         </div>
     </div>
-    <button id="pageName" class="navPageInfo" title="Home (Shift + H)">Plex Web</button>
+    <button id="pageName" class="navPageInfo" title="Home (Shift + H)">Home</button>
     <?php
         if ($_SERVER['REQUEST_URI'] != '/plex/index.php' &&
             $_SERVER['REQUEST_URI'] != '/plex/')
@@ -59,6 +59,10 @@
     <div class="navButton" id="navActivity" title="Notifications (Shift + A)">
         <button class=btntxt disabled=true>Notifications</button>
         <div class=btnimg><image class='activityImg' src='<?php icon('bell') ?>' alt='Notifications'/></div>
+    </div>
+    <div class="navButton" id="navPlex" title="Plex Desktop (Shift + P)">
+        <button class=btntxt disabled=true>Go to Plex</button>
+        <div class=btnimg><image class='activityImg' src='<?php icon('plex') ?>' alt='Plex'/></div>
     </div>
 <?php if (isset($_SESSION['level']) && (int)$_SESSION['level'] >= 100) { ?>
     <div class="navButton" id="navMembers" title="Members">

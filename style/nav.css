@@ -55,12 +55,17 @@
     background-color: rgb(46, 94, 62);
     color: #C1C1C1;
     width: 169px;
-    height: calc(100vh - 40px);
+    height: calc(100% - 40px);
     position: fixed;
     top: 40px;
     left: -170px;
     border-right: 1px solid #808080;
     z-index: 1;
+    overflow: auto;
+}
+
+#leftMenu::-webkit-scrollbar {
+    width: 0;
 }
 
 #leftMenu .navButton {
