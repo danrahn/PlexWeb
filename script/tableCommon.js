@@ -83,6 +83,14 @@ function setupKeyboardNavigation()
 {
     document.addEventListener('keyup', function(e)
     {
+        // Don't do anything if we're in an input field
+        let active = document.activeElement;
+        let tag = active.tagName.toLowerCase();
+        if (tag == "textarea" || (tag == "input" && active.type.toLowerCase() == "text"))
+        {
+            return;
+        }
+
         let key = e.keyCode ? e.keyCode : e.which;
         if (e.shiftKey && !e.altKey && !e.ctrlKey)
         {
@@ -95,6 +103,12 @@ function setupKeyboardNavigation()
                     break;
                 case 39: // RIGHT
                     nextPage();
+                    break;
+                case  70: // F
+                    if ($$(".filterBtn"))
+                    {
+                        $$(".filterBtn").click();
+                    }
                     break;
             }
         }
@@ -488,6 +502,7 @@ function setPage(page, update)
         $('.previousPage').forEach(function(button)
         {
             button.classList.add('disabled');
+            button.disabled = true;
         });
     }
     else
@@ -495,6 +510,7 @@ function setPage(page, update)
         $('.previousPage').forEach(function(button)
         {
             button.classList.remove('disabled');
+            button.disabled = false;
         });
     }
 
@@ -503,6 +519,7 @@ function setPage(page, update)
         $('.nextPage').forEach(function(button)
         {
             button.classList.add('disabled');
+            button.disabled = true;
         });
     }
     else
@@ -510,6 +527,7 @@ function setPage(page, update)
         $('.nextPage').forEach(function(button)
         {
             button.classList.remove('disabled');
+            button.disabled = false;
         });
     }
 }
