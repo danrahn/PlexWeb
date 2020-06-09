@@ -13,6 +13,11 @@ verify_loggedin();
 $img_path = param_or_die("path");
 $type = get_type();
 
+if (!validate_path($img_path))
+{
+    error_and_exit(400);
+}
+
 $isThumb = $type == ImgType::Thumb;
 $root_folder = $isThumb ? "" : param_or_die("type") . "/";
 
@@ -139,6 +144,34 @@ function serve_new_image($img_path, $filename, $type, $large)
     header("Content-Type: image/jpeg");
     header('Etag: ' . md5_file($filename));
     echo $img->getImageBlob();
+}
+
+/// <summary>
+/// Ensures we don't try to serve something unexpected
+/// </summary>
+function validate_path($path)
+{
+    // Can't be going up directories, keep them where they are
+    if (strpos($path, '..') !== FALSE)
+    {
+        return FALSE;
+    }
+
+    // Only allow png, jpg, svg
+    $ext_start = strrpos($path, '.');
+    if ($ext_start === FALSE)
+    {
+        // No extension?
+        return FALSE;
+    }
+
+    $ext = strtolower(substr($path, $ext_start, strlen($path) - $ext_start));
+    if (strcmp($ext, '.png') && strcmp($ext, '.jpg') && strcmp($ext, '.svg'))
+    {
+        return FALSE;
+    }
+
+    return TRUE;
 }
 
 /// <summary>
