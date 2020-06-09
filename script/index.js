@@ -106,9 +106,16 @@ function getStreamAccessString()
         }
     };
 
-    let failureFunc = function(/*response*/)
+    let failureFunc = function(response)
     {
-        $("#streamAccess").innerHTML = "Error getting stream permissions";
+        if (response.Error == "Not Authorized" && !$("#goToLogin"))
+        {
+            showRestartSessionOverlay();
+        }
+        else
+        {
+            $("#streamAccess").innerHTML = "Error getting stream permissions";
+        }
     };
 
     sendHtmlJsonRequest("process_request.php", parameters, successFunc, failureFunc);
