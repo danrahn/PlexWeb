@@ -198,4 +198,5 @@ const ProcessRequest =
     UpdatePoster : 28,
     CheckNotificationAlert : 29,
     DisableNotificationAlert : 30,
+    MarkdownText : 31,
 };

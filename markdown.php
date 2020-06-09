@@ -1,6 +1,7 @@
 <?php
 require_once "includes/common.php";
 session_start();
+verify_loggedin(true, "markdown.php");
 ?>
 
 <!-- Page to allow easy testing of markdown -->
@@ -63,14 +64,14 @@ session_start();
     </div>
 </div>
 </body>
-<script src="script/consolelog.js"></script>
-<script src="script/common.js"></script>
-<script src="script/markdown.js"></script>
+<script><?php echo file_get_contents("script/consolelog.js"); ?></script>
+<script><?php echo file_get_contents("script/common.js"); ?></script>
+<script><?php echo file_get_contents("script/markdown.js"); ?></script>
+<script><?php echo file_get_contents("script/markdownTest.js"); ?></script>
+<script><?php echo file_get_contents("script/markdownEditor.js"); ?></script>
 <?php if (isset($_SESSION["level"]) && $_SESSION['level'] >= 100) { ?>
-<script src="script/markdownSamples.js"></script>
+<script><?php echo file_get_contents("script/markdownSamples.js"); ?></script>
 <?php } ?>
-<script src="script/markdownTest.js"></script>
-<script src="script/markdownEditor.js"></script>
 <script>
 
 let md = new Markdown();
@@ -120,9 +121,11 @@ $('#query').addEventListener('keyup', parseMarkdown);
 $('#query').addEventListener('keydown', parseShortcuts);
 MarkdownEditor.addTabHandler($('#query'));
 
+markdownHelp(function(response)
+{
+    $('#query').value = response.data;
+    parseMarkdown();
+}, true /*raw*/);
 
-markdownHelp();
-$('#query').value = _helpMarkdown.text;
-parseMarkdown();
 </script>
 </html>

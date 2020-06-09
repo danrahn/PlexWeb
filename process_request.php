@@ -48,6 +48,7 @@ abstract class ProcessRequest {
     const UpdatePoster = 28;
     const CheckNotificationAlert = 29;
     const DisableNotificationAlert = 30;
+    const MarkdownText = 31;
 }
 
 // For requests that are only made when not logged in, don't session_start or verify login state
@@ -185,6 +186,9 @@ function process_request($type)
             break;
         case ProcessRequest::DisableNotificationAlert:
             $message = disable_notification_alert();
+            break;
+        case ProcessRequest::MarkdownText:
+            $message = get_markdown_text(try_get('mdType'));
             break;
         default:
             return json_error("Unknown request type: " . $type);
@@ -2406,6 +2410,21 @@ function disable_notification_alert()
     }
 
     return json_success();
+}
+
+function get_markdown_text($type)
+{
+    if (!$type)
+    {
+        $textholder = new \stdClass();
+        $textholder->data = file_get_contents("includes/mdHelp.md");
+        return json_encode($textholder);
+    }
+    else
+    {
+        // No other types defined yet
+        return json_error("Invalid markdown text type");
+    }
 }
 
 /// <summary>

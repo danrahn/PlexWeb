@@ -349,7 +349,11 @@ window.addEventListener("load", function()
 
     function showMarkdownHelp()
     {
-        overlay('<div class="mdHelp">' + markdownHelp() + '</div>', 'Got It', overlayDismiss, true /*dismissable*/);
+        markdownHelp(function(response)
+        {
+            overlay('<div class="mdHelp">' + response.data + '</div>', 'Got It', overlayDismiss, true /*dismissable*/);
+        });
+        
     }
 
     let selectedSuggestion;
