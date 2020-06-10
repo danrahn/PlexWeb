@@ -13,8 +13,9 @@ verify_loggedin();
 $img_path = param_or_die("path");
 $type = get_type();
 
-if (!validate_path($img_path))
+if (!validate_path($img_path, $type))
 {
+    header('HTTP/1.1 400 Bad Request', true, 400);
     error_and_exit(400);
 }
 
@@ -149,7 +150,7 @@ function serve_new_image($img_path, $filename, $type, $large)
 /// <summary>
 /// Ensures we don't try to serve something unexpected
 /// </summary>
-function validate_path($path)
+function validate_path($path, $type)
 {
     // Can't be going up directories, keep them where they are
     if (strpos($path, '..') !== FALSE)
@@ -157,14 +158,14 @@ function validate_path($path)
         return FALSE;
     }
 
-    // Only allow png, jpg, svg
     $ext_start = strrpos($path, '.');
     if ($ext_start === FALSE)
     {
-        // No extension?
-        return FALSE;
+        // No extension. This is only valid for non-poster requests
+        return $type != ImgType::Poster;
     }
 
+    // Only allow png, jpg, svg
     $ext = strtolower(substr($path, $ext_start, strlen($path) - $ext_start));
     if (strcmp($ext, '.png') && strcmp($ext, '.jpg') && strcmp($ext, '.svg'))
     {
