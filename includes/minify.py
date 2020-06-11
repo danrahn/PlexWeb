@@ -435,9 +435,6 @@ const State =
     # currentRun is used quite a bit
     lines = re.sub(r'\bthis\.currentRun\b', 'this.X', lines)
 
-    # this.text is also _very_ heavily used
-    lines = re.sub(r'\bthis\.text\b', 'this.Z', lines)
-
     # State of a run
     lines = re.sub(r'\.state\b', '.s', lines)
 
@@ -448,6 +445,9 @@ const State =
     lines = re.sub(r'\bstartContextLength\b', '_S', lines)
     lines = re.sub(r'\bendContextLength\b', '_E', lines)
     lines = re.sub(r'\btransform\b', '_T', lines)
+
+    # TODO: this.text is _very_ heavily used, but multiple classes
+    # use this, so it breaks things.
 
     # Now getting real hacky. Modify String's prototype to save a hundred bytes or so
     # Some should already be done if 'ultra' is set, so don't do anything in that case
