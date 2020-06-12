@@ -398,7 +398,7 @@ abstract class UserLevel
 
     static function is_admin()
     {
-        return current() == UserLevel::Admin;
+        return UserLevel::current() == UserLevel::Admin;
     }
 
     static function current()
@@ -426,7 +426,7 @@ abstract class UserLevel
 
         if ($level < 100)
         {
-            return $UserLevel::Regular;
+            return UserLevel::Regular;
         }
 
         return UserLevel::Admin;
