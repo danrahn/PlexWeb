@@ -352,7 +352,7 @@ function update_admin_comment($req_id, $content, $requester, &$contact_info, &$r
         return FALSE;
     }
 
-    // Failure to send notificactions won't be considered a failure
+    // Failure to send notifications won't be considered a failure
     get_contact_info($requester, $contact_info);
     return TRUE;
 }

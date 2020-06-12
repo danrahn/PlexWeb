@@ -3,9 +3,9 @@
 /// <summary>
 /// Creates a full-screen overlay with the given message, button text, and button function.
 /// </summary>
-function overlay(message, buttonText, buttonFunc, dismissable=true)
+function overlay(message, buttonText, buttonFunc, dismissible=true)
 {
-    buildOverlay(dismissable,
+    buildOverlay(dismissible,
         buildNode("div", {}, message),
         buildNode(
             "input",
@@ -28,9 +28,9 @@ const overlayDismiss = () => Animation.queue({ opacity : 0 }, $("#mainOverlay"),
 /// <summary>
 /// Generic overlay builder
 /// </summary>
-/// <param name="dismissable">Determines whether the overlay can be dismissed</param>
-/// <param name="...children">The list of nodes to append to the overaly.</param>
-function buildOverlay(dismissable, ...children)
+/// <param name="dismissible">Determines whether the overlay can be dismissed</param>
+/// <param name="...children">The list of nodes to append to the overlay.</param>
+function buildOverlay(dismissible, ...children)
 {
     if ($("#mainOverlay") && $("#mainOverlay").style.opacity != "0")
     {
@@ -41,7 +41,7 @@ function buildOverlay(dismissable, ...children)
         {
             id : "mainOverlay",
             style : "opacity: 0",
-            dismissable : dismissable
+            dismissible : dismissible
         },
         0,
         {
@@ -49,7 +49,7 @@ function buildOverlay(dismissable, ...children)
             {
                 let overlayElement = $("#mainOverlay");
                 if (overlayElement &&
-                    !!overlayElement.getAttribute("dismissable") &&
+                    !!overlayElement.getAttribute("dismissible") &&
                     e.target.id == "mainOverlay" &&
                     e.target.style.opacity == 1)
                 {
@@ -81,7 +81,7 @@ function _overlayKeyListener(e)
     if (e.keyCode == 27 /*esc*/)
     {
         let overlayNode = $("#mainOverlay");
-        if (overlayNode && !!overlayNode.getAttribute("dismissable") && overlayNode.style.opacity == "1")
+        if (overlayNode && !!overlayNode.getAttribute("dismissible") && overlayNode.style.opacity == "1")
         {
             window.removeEventListener("keydown", _overlayKeyListener, false);
             overlayDismiss();

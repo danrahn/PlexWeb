@@ -428,7 +428,7 @@ function buildTableFilterCheckbox(label, name)
         {
             click : function(e)
             {
-                // If we clicked the filter itme but not directly on the label.checkbox, pretend we did
+                // If we clicked the filter item but not directly on the label.checkbox, pretend we did
                 if (e.target == this)
                 {
                     this.$$("input").click();

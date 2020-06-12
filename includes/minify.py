@@ -27,6 +27,7 @@ def process():
     ultra = '-ultra' in args_lower or '-u' in args_lower
     quiet = '-quiet' in args_lower or '-q' in args_lower
     noicon = '-noicon' in args_lower
+    onlyicon = '-icononly' in args_lower
     compare = '-cmp' in args_lower
     rem_log = 1 if '-notmi' in args_lower else 0
     if '-nolog' in args_lower:
@@ -42,6 +43,8 @@ def process():
     # First, check for changes to svg icons
     if not noicon:
         process_svg_icons(force, quiet)
+    if onlyicon:
+        return
 
     modified_dates = script_modified_dates()
 
@@ -87,7 +90,7 @@ def process_svg_icons(force, quiet):
     old_icons = glob.glob('icon/*.svg')
     new_icons = []
     icons = glob.glob('icon/base/*.svg')
-    js_icon_map = '/* exported icons */\nconst icons = { '
+    js_icon_map = '/* exported icons */\nconst icons =\n{'
     changed = 0
     for icon in icons:
         with open(icon, 'rb') as filebytes:
@@ -102,7 +105,7 @@ def process_svg_icons(force, quiet):
             elif not quiet:
                 print(' ', icon, 'up to date')
             new_icons.append(newpath)
-            js_icon_map += core.upper() + ' : "' + newpath + '", '
+            js_icon_map += '\n' + '    ' + core.upper() + ' : "' + newpath + '",'
 
     for icon in old_icons:
         if not icon in new_icons:
@@ -116,7 +119,7 @@ def process_svg_icons(force, quiet):
             print('  Modified', changed, 'icon' + ('' if changed == 1 else 's'))
 
         print('  Writing icon map...')
-        js_icon_map += '};\n'
+        js_icon_map += '\n};\n'
         js_icon_map = js_icon_map.replace('\\', '/')
         with open('script/iconMap.js', 'w+') as js_icon_file:
             js_icon_file.write(js_icon_map)
@@ -289,9 +292,9 @@ def minify_process_request(combined):
         return combined
 
     end = combined.find('}', start)
-    defn = combined[start:end]
+    definition = combined[start:end]
     combined = combined[:start] + combined[end + 2:]
-    results = re.findall(r'(\w+) : (\d+)', defn)
+    results = re.findall(r'(\w+) : (\d+)', definition)
     for result in results:
         combined = combined.replace('ProcessRequest.' + result[0], str(result[1]))
     return combined
@@ -397,7 +400,7 @@ const State =
     for key in rep:
         lines = lines.replace('State.' + key, 'State.' + rep[key])
 
-    # stateToStr takes up a lot of space when it probabaly doesn't have to for the minified version
+    # stateToStr takes up a lot of space when it probably doesn't have to for the minified version
     # Save several hundred bytes by removing it
     start = lines.find('const stateToStr')
     if start != -1:
@@ -535,7 +538,7 @@ def remove_existing(base):
 
 def get_hash(file):
     with open(file, 'rb') as filebytes:
-        # Just return the last 10 digits. Liklihood of overlap is still miniscule
+        # Just return the last 10 digits. Likelihood of overlap is still miniscule
         return hashlib.md5(filebytes.read()).hexdigest()[:10]
 
 

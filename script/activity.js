@@ -31,7 +31,7 @@ function getActivities(searchValue="")
 
     let failureFunc = function()
     {
-        displayInfoMessage("Error loading activities. Pleases trya again later. If this problem persists, contact the site administrator");
+        displayInfoMessage("Error loading activities. Pleases try again later. If this problem persists, contact the site administrator");
     };
 
     sendHtmlJsonRequest("process_request.php", parameters, successFunc, failureFunc);
@@ -173,7 +173,7 @@ function attrib(attribute)
 }
 
 /// <summary>
-/// Returns whether the current session user is an admin. Easily bypassable
+/// Returns whether the current session user is an admin. Easily bypassed
 /// by modifying the DOM, but the backend is the source of truth and will block
 /// any unauthorized actions.
 /// </summary>

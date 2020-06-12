@@ -4,7 +4,7 @@ require_once "includes/config.php";
 
 /// <summary>
 /// A class containing relevant Episode information. imdbId is currently
-/// the only fied that's actually used
+/// the only field that's actually used
 /// </summary>
 class Episode
 {

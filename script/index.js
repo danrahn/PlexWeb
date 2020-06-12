@@ -153,7 +153,7 @@ function showStreamAccessOverlay()
             click : requestStreamAccess
         });
 
-    buildOverlay(true /*dismissable*/, message, textbox, button);
+    buildOverlay(true /*dismissible*/, message, textbox, button);
 }
 
 /// <summary>
@@ -269,7 +269,7 @@ function startUpdates()
 
 /// <summary>
 /// If we've detected that our session has expired ('Not Authorized' from get_status),
-/// surface a non-dismissable overlay asking the user to log in again
+/// surface a non-dismissible overlay asking the user to log in again
 /// </summary>
 function showRestartSessionOverlay()
 {
@@ -286,7 +286,7 @@ function showRestartSessionOverlay()
         {
             click : () => { window.location = "login.php"; }
         });
-    buildOverlay(false /*dismissable*/, message, button);
+    buildOverlay(false /*dismissible*/, message, button);
     $("#goToLogin").focus();
 }
 
@@ -301,7 +301,7 @@ function updateSessionProgress(item, sesh, id)
 
     if (sesh.paused)
     {
-        // Transocde progress may still be updated, so do a one-off here
+        // Transcode progress may still be updated, so do a one-off here
         innerUpdate(id);
         ppbutton.classList.remove("play");
         ppbutton.classList.add("pause");
@@ -406,7 +406,7 @@ function trimSessions(newSessions, existingSessions)
             }
 
             $("#" + session.id).remove();
-            existingSessions.splice(i /*index*/, 1 /*howmany*/);
+            existingSessions.splice(i /*index*/, 1 /*howMany*/);
             --i;
         }
     }

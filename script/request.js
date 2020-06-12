@@ -364,7 +364,7 @@ function showMarkdownHelp()
 {
     markdownHelp(function(response)
     {
-        overlay('<div class="mdHelp">' + response.data + "</div>", "Got It", overlayDismiss, true /*dismissable*/);
+        overlay('<div class="mdHelp">' + response.data + "</div>", "Got It", overlayDismiss, true /*dismissible*/);
     });
 
 }
@@ -1409,7 +1409,7 @@ function deleteComment()
 
     let failureFunc = function(response)
     {
-        overlay(response.Error, "Okay", overlayDismiss, true /*dismissable*/);
+        overlay(response.Error, "Okay", overlayDismiss, true /*dismissible*/);
     };
 
     sendHtmlJsonRequest("process_request.php", params, successFunc, failureFunc, { commentId : commentId });

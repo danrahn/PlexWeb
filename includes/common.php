@@ -154,7 +154,7 @@ function try_get($param)
 }
 
 /// <summary>
-/// If $param exists, sets $value to the given paramter and returns true, otherwise returns false
+/// If $param exists, sets $value to the given parameter and returns true, otherwise returns false
 /// </summary>
 function param($param, &$value)
 {

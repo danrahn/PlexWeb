@@ -20,7 +20,7 @@ function setInputVisibility(id, vis)
 
 /// <summary>
 /// Update UI when request options change
-/// </summar>
+/// </summary>
 function selectChanged()
 {
     let value = $("#type").value;
@@ -76,7 +76,7 @@ function setExternalType(type)
 
 /// <summary>
 /// Search for the user's current request
-/// </summar>
+/// </summary>
 function searchItem()
 {
     let value = $("#type").value;
@@ -218,7 +218,7 @@ function externalSearchSuccess(response)
 
 /// <summary>
 /// Search for an item based on a specific IMDb/Audible id
-/// </summar>
+/// </summary>
 function searchSpecificExternal()
 {
     let id = $("#external_id").value;
@@ -355,7 +355,7 @@ function buildItem(match, external)
 
 /// <summary>
 /// Build the list of search results
-/// </summar>
+/// </summary>
 function buildItems(matches, holder)
 {
     const external = holder == "existingMatchContainer";
@@ -495,7 +495,7 @@ function buildSeasonDetails(response, request)
 
 /// <summary>
 /// Go to IMDb (or TMDb) when the user clicks on a suggestion
-/// </summar>
+/// </summary>
 function goToExternal()
 {
     let value = $("#type").value;
@@ -535,7 +535,7 @@ function goToExternal()
 
 /// <summary>
 /// Handler for clicking on a specific search result
-/// </summar>
+/// </summary>
 function clickSuggestion(e)
 {
     if (e.target.tagName.toLowerCase() == "a")
@@ -611,7 +611,7 @@ function showAlreadyExistsAlert(response)
     buttonContainer.appendChild(button2);
     outerButtonContainer.appendChild(buttonContainer);
 
-    buildOverlay(true /*dismissable*/, message, outerButtonContainer);
+    buildOverlay(true /*dismissible*/, message, outerButtonContainer);
 }
 
 /// <summary>
@@ -632,7 +632,7 @@ function onSubmitRequestSucceeded(response)
 
 /// <summary>
 /// Submit the selected suggestion
-/// </summar>
+/// </summary>
 function submitSelected()
 {
     if ($("#type").value == "audiobook")

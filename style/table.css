@@ -118,7 +118,6 @@ option {
 }
 
 .textHolder .tableEntryTitle {
-    vertical-align: top;
     display: block;
     margin-bottom: 5px;
     margin-top: 5px;

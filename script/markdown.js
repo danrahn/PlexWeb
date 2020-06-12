@@ -677,7 +677,7 @@ class Markdown
 
         // Need to find a match for our separator.
         // Rules:
-        //  An opening separator run must be preceeded by whitespace and end with non-whitespace
+        //  An opening separator run must be preceded by whitespace and end with non-whitespace
         // A closing separator run must be preceded by non-whitespace and end with whitespace
         let inline = false;
         let newline = false;
@@ -748,7 +748,7 @@ class Markdown
                 else
                 {
                     // Assume that separators surrounded by
-                    // punctiation is closing. It's ambiguous
+                    // punctuation is closing. It's ambiguous
                     // and some choice has to be made
                     potentialSeparators = 1;
                 }
@@ -817,7 +817,7 @@ class Markdown
     _checkStrikeAndUnderline(start)
     {
         // Depending on what online visualizer I use, this does a multitude of things.
-        // Usuall two strikes through (~~A~~), but sometimes it only takes one (~A~).
+        // Usually two strikes through (~~A~~), but sometimes it only takes one (~A~).
         // For others, one creates a subscript, and three creates a code block. Gah.
         //
         // For this parser, keep things simple for now. Two indicates a strikethrough.
@@ -942,7 +942,7 @@ class Markdown
                 else
                 {
                     // Assume that separators surrounded by punctuation is
-                    // closing. It's ambiguous and some choise has to be made
+                    // closing. It's ambiguous and some choice has to be made
                     potentialSeparators = 1;
                 }
             }
@@ -1325,7 +1325,7 @@ class Markdown
             definition = definition.replace(quoteRegex, '');
         }
 
-        // First and last can be empty, but everyting else has to match
+        // First and last can be empty, but everything else has to match
         const splitAndTrim = function(line, self)
         {
             if (line.indexOf('|') == -1)
@@ -1354,7 +1354,7 @@ class Markdown
             }
 
             // Don't trim away everything in the list if it's empty,
-            // we need some indication that we found some semblence
+            // we need some indication that we found some semblance
             // of a table row.
             if (arr.length > 1 && arr[arr.length - 1].length == 0)
             {
@@ -1493,7 +1493,7 @@ class Markdown
 
         if (start + (findStr.length * 2) - 1 >= this.text.length)
         {
-            // Impossible for us to find a match. Need at least (2 * findstr) -1 beyond start
+            // Impossible for us to find a match. Need at least (2 * findStr) -1 beyond start
             return -1;
         }
 
@@ -1715,7 +1715,7 @@ class Markdown
 
     _liEndBlockQuote(start, nestLevel)
     {
-        // Special handling for lists within blockquotes. Cand probably be
+        // Special handling for lists within blockquotes. Can probably be
         // combined, but this makes it easier
         let blockRegexPrefix = `^.*( *> *){${this.currentRun.parent.nestLevel - 1}} *>`;
         let blockRegexNewline = new RegExp(blockRegexPrefix + ' *\\n');
@@ -1868,7 +1868,7 @@ class Markdown
 
     _listEndBlockQuote(start, nestLevel, ordered)
     {
-        // Special handling for lists within blockquotes. Cand probably be
+        // Special handling for lists within blockquotes. Can probably be
         // combined, but this makes it easier
         let blockRegexPrefix = `^.*( *> *){${this.currentRun.nestLevel - 1}} *>`;
         let blockRegexNewline = new RegExp(blockRegexPrefix + ' *\\n');
@@ -1924,7 +1924,7 @@ class Markdown
             }
             else if (RegExp(blockRegexPrefix + '  *(?:\\*|\\d+\\.) ').test(nextline))
             {
-                // Also can't swap between ordered/unoredred with the same nesting level
+                // Also can't swap between ordered/unordered with the same nesting level
                 let minspaces = nestLevel * 2;
                 if (!RegExp(blockRegexPrefix + `  {${minspaces},}`).test(nextline) ||
                     RegExp(blockRegexPrefix + `  {${minspaces},${minspaces + 1}}${ordered ? '\\*' : '\\d+\\.'} `).test(nextline))
@@ -2016,7 +2016,7 @@ class Markdown
                 // at least (nestLevel * 2) spaces. Otherwise, any level of indentation is fine
                 if (/^ *(?:\*|\d+\.) /.test(nextline))
                 {
-                    // Also can't swap between ordered/unoredred with the same nesting level
+                    // Also can't swap between ordered/unordered with the same nesting level
                     let minspaces = nestLevel * 2;
                     if (!RegExp(`^ {${minspaces},}`).test(nextline) ||
                         RegExp(`^ {${minspaces},${minspaces + 1}}${ordered ? '\\*' : '\\d+\\.'} `).test(nextline))
@@ -2326,7 +2326,7 @@ class Run
             }
             else
             {
-                // Lonesome backslack. Treat it as a normal backslash character
+                // Lonesome backslash. Treat it as a normal backslash character
                 newText += '\\';
             }
         }

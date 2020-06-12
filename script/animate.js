@@ -23,7 +23,7 @@ let A = function()
     };
 
     /// <summary>
-    /// Queue an animation that once queued for exexcution will fire after the specified delay
+    /// Queue an animation that once queued for execution will fire after the specified delay
     /// </summary>
     this.queueDelayed = function(func, element, delay, ...args)
     {
@@ -322,7 +322,7 @@ function Color(r, g, b, a)
     {
         if (g === undefined)
         {
-            // Hacky to keep the trailing parenthsis, but parseInt/Float figures it out
+            // Hacky to keep the trailing parenthesis, but parseInt/Float figures it out
             [r, g, b, a] = r.substr(r.indexOf("(") + 1).split(",");
         }
 

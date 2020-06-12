@@ -332,7 +332,7 @@ function register($username, $password, $confirm)
         return json_error("Error entering name into database. Please try again");
     }
 
-    $text_msg = "New user registered on plexweb!\r\n\r\nUsername: " . $username . "\r\nIP: " . $_SERVER["REMOTE_ADDR"];
+    $text_msg = "New user registered on Plex Requests!\r\n\r\nUsername: " . $username . "\r\nIP: " . $_SERVER["REMOTE_ADDR"];
     send_email_forget(ADMIN_PHONE, $text_msg, "" /*subject*/);
     return json_success();
 }
@@ -517,7 +517,7 @@ function process_stream_access_request($which)
             case 3:
                 return '{ "value" : "Request In Progress" }';
             case 4:
-                return '{ "valie" : "Request Waiting" }';
+                return '{ "value" : "Request Waiting" }';
             default:
                 return json_error("Unknown request status");
         }
@@ -1253,7 +1253,7 @@ function get_imdb_link_from_guid($guid, $type)
 }
 
 /// <summary>
-/// Returns informaton about what seasons are available on plex versus total seasons
+/// Returns information about what seasons are available on plex versus total seasons
 /// </summary>
 function get_season_details($path)
 {
@@ -1881,7 +1881,7 @@ function get_new_activity_count()
 }
 
 /// <summary>
-/// Get all relevant activites for the current user. If the current user is an admin, return
+/// Get all relevant activities for the current user. If the current user is an admin, return
 /// all activities, otherwise return activities that directly relate to the current user.
 /// </summary>
 function get_activities($num, $page, $search, $filter)

@@ -130,7 +130,7 @@ function getCurrentValues()
         error.innerHTML = response.Error;
         error.style.display = "block";
         Animation.queue({ opacity : 1 }, error, 500);
-        Animation.queuDelayedAnimation({ opacity : 0 }, error, 3000, 1000);
+        Animation.queueDelayedAnimation({ opacity : 0 }, error, 3000, 1000);
         Animation.queue({ display : "none" }, error);
     };
 
@@ -283,7 +283,7 @@ function clearNotify()
 /// Highlights portions of the user settings fields to indicate
 /// what needs to be done to enable notifications
 /// </summary>
-function rehighlightForNotify(notificationsEnabled)
+function highlightForNotify(notificationsEnabled)
 {
     if (notificationsEnabled)
     {
@@ -361,7 +361,7 @@ function setupLabelListener(label)
 
         if (g_forNotify && isCheckbox)
         {
-            rehighlightForNotify(val);
+            highlightForNotify(val);
         }
     });
 }

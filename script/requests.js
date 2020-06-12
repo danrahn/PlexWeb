@@ -57,7 +57,7 @@ function getRequests(searchValue="")
 }
 
 /// <summary>
-/// Returns whether the current session user is an admin. Easily bypassable
+/// Returns whether the current session user is an admin. Easily bypassed
 /// by modifying the DOM, but the backend is the source of truth and will block
 /// any unauthorized actions.
 /// </summary>
@@ -266,7 +266,7 @@ function onFailedPoster()
     sendHtmlJsonRequest("process_request.php", parameters, successFunc, failureFunc);
 }
 
-/// <symmary>
+/// <summary>
 /// Returns the HTML for a status combobox for request administration
 /// </summary>
 function getStatusSelection(statusHolder, rid, selected)
@@ -346,7 +346,7 @@ function updateStatusSuccess(response, request)
 
 /// <summary>
 /// Update the status(es) of requests that have changed
-/// </sumary>
+/// </summary>
 function updateStatus()
 {
     let changed = $(".statusVisible");

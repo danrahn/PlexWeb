@@ -672,7 +672,7 @@ function set_imdb_link($show, $season, $episode, $link)
     if ($cached && strcmp($cached, $link) !== 0)
     {
         // the entry exists but our value is different. Update it
-        $query = "UPDATE imdcb_tv_cache SET imdb_link='$link' WHERE show_id=$show AND season=$season AND episode=$episode";
+        $query = "UPDATE imdb_tv_cache SET imdb_link='$link' WHERE show_id=$show AND season=$season AND episode=$episode";
     }
     else if (!$cached)
     {
