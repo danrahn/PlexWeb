@@ -21,7 +21,7 @@ verify_loggedin(TRUE /*redirect*/, "requests.php");
     <?php get_css("style", "nav", "table", "overlay", "tooltip", "requests"); ?>
 </head>
 
-<body isAdmin="<?= (isset($_SESSION['level']) && $_SESSION['level'] >= 100) ? 1 : 0 ?>">
+<body isAdmin="<?= (UserLevel::is_admin()) ? 1 : 0 ?>">
     <div id="plexFrame">
         <?php include "nav.php" ?>
         <div id="container">

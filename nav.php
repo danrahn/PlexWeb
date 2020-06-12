@@ -64,7 +64,7 @@
         <button class=btntxt disabled=true>Go to Plex</button>
         <div class=btnimg><image src='<?php icon('plex') ?>' alt='Plex'/></div>
     </div>
-<?php if (isset($_SESSION['level']) && (int)$_SESSION['level'] >= 100) { ?>
+<?php if (UserLevel::is_admin()) { ?>
     <div class="navButton" id="navMembers" title="Members">
         <button class=btntxt disabled=true>Members</button>
         <div class=btnimg><image src='<?php icon('members') ?>' alt='Members'/></div>
@@ -74,7 +74,7 @@
         <button class=btntxt disabled=true>Settings</button>
         <div class=btnimg><image src='<?php icon('settings') ?>' alt='Settings'/></div>
     </div>
-<?php if (isset($_SESSION['level']) && (int)$_SESSION['level'] >= 100) { ?>
+<?php if (UserLevel::is_admin()) { ?>
     <div class="navButton rightbutton" id="navAdmin" title="Admin">
         <button class=btntxt disabled=true>Admin</button>
         <div class=btnimg><image src='<?php icon('admin') ?>' alt='Admin' /></div>

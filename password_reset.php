@@ -5,7 +5,7 @@ session_start();
 require_once "includes/common.php";
 require_once "includes/config.php";
 
-if (!isset($_SESSION['level']) || $_SESSION['level'] < 100)
+if (!UserLevel::is_admin())
 {
     error_and_exit(403);
 }

@@ -9,7 +9,7 @@ verify_loggedin(TRUE /*redirect*/, "request.php?id=" . $req_id);
 
 $details = get_details($req_id);
 
-if ($_SESSION['level'] != 100 && !$details->is_author)
+if (!UserLevel::is_admin() && !$details->is_author)
 {
     error_and_exit(403, "You don't have access to this request!<br><br><a href='requests.php'>Take me back!</a>");
 }
@@ -54,7 +54,7 @@ function get_details($req_id)
     <?php get_css("style", "nav", "overlay", "markdown", "tooltip", "request"); ?>
 </head>
 <body
-    isAdmin="<?= (isset($_SESSION['level']) && $_SESSION['level'] >= 100) ? 1 : 0 ?>"
+    isAdmin="<?= (UserLevel::is_admin()) ? 1 : 0 ?>"
     isMediaRequest="<?php echo ($details->is_media_request ? 1 : 0)?>"
     reqId="<?= $req_id ?>"
     requestType="<?= $details->request_type ?>"

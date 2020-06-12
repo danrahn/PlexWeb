@@ -35,7 +35,7 @@ requireSSL();
 <body
     uid="<?= $_SESSION['id']; ?>"
     username="<?= $_SESSION['username']; ?>"
-    admin="<?php echo ($_SESSION['level'] >= 100 ? 1 : 0); ?>">
+    admin="<?php echo (UserLevel::is_admin() ? 1 : 0); ?>">
     <div id="plexFrame">
         <?php include "nav.php" ?>
         <div id="container">

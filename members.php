@@ -6,7 +6,7 @@ require_once "includes/common.php";
 verify_loggedin(true);
 requireSSL();
 
-if ((int)$_SESSION['level'] < 100)
+if (!UserLevel::is_admin())
 {
     error_and_exit(401);
 }

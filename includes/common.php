@@ -78,7 +78,8 @@ function json_error($message)
 function db_error()
 {
     global $db;
-    return json_error("Error querying database: " . ((isset($_SESSION["level"]) && $_SESSION["level"] >= 100) ? (  $db->error) : "Please contact the administrator with the details of how you encountered this error"));
+    $err = UserLevel::is_admin() ? $db->error : "Please contact the administrator with the details of how you encountered this error";
+    return json_error("Error querying database: " . $err);
 }
 
 /// <summary>
@@ -285,8 +286,7 @@ abstract class RequestType
 
     // 14-99 reserved for future user permissions
 
-    // Give me everything
-    const SuperAdmin = 100;
+    const Max = 100;
 
     static function get_type($intval)
     {
@@ -309,8 +309,6 @@ abstract class RequestType
                 return RequestType::ViewAllRequests;
             case RequestType::FulfillRequests:
                 return RequestType::FulfillRequests;
-            case RequestType::SuperAdmin:
-                return RequestType::SuperAdmin;
             default:
                 return RequestType::None;
         }
@@ -336,8 +334,6 @@ abstract class RequestType
                 return "View All Requests";
             case RequestType::FulfillRequests:
                 return "Fulfill Requests";
-            case RequestType::SuperAdmin:
-                return "Super Admin";
             default:
                 return "Unknown";
         }
@@ -385,6 +381,55 @@ abstract class RequestType
             default:
                 return FALSE;
         }
+    }
+}
+
+/// <summary>
+/// Helpers for working with user levels
+/// </summary>
+abstract class UserLevel
+{
+    const Invalid = -1;
+    const Noob = 0;
+    const Regular = 20;
+    const Moderator = 60; // Unused
+    const SuperModerator = 80; // Unused
+    const Admin = 100;
+
+    static function is_admin()
+    {
+        return current() == UserLevel::Admin;
+    }
+
+    static function current()
+    {
+        if (!isset($_SESSION['level']))
+        {
+            return UserLevel::Invalid;
+        }
+
+        return UserLevel::get_type($_SESSION['level']);
+    }
+
+    static function set_current($level)
+    {
+        $_SESSION['level'] = (int)$level;
+    }
+
+    static function get_type($level)
+    {
+        $level = (int)$level;
+        if ($level == 0)
+        {
+            return UserLevel::Noob;
+        }
+
+        if ($level < 100)
+        {
+            return $UserLevel::Regular;
+        }
+
+        return UserLevel::Admin;
     }
 }
 

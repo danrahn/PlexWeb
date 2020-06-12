@@ -70,7 +70,7 @@ json_message_and_exit(process_request($type));
 
 } catch (Throwable $e)
 {
-    if (isset($_SESSION) && $_SESSION['level'] >= 100)
+    if (UserLevel::is_admin())
     {
         $err = new \stdClass();
         $err->Error = $e;
@@ -260,7 +260,7 @@ function login($username, $password)
     $_SESSION['loggedin'] = TRUE;
     $_SESSION['id'] = $id;
     $_SESSION['username'] = $user;
-    $_SESSION['level'] = $level;
+    UserLevel::set_current($level);
 
     return json_success();
 }
@@ -537,7 +537,7 @@ function add_request_comment($req_id, $content)
     $row = $result->fetch_row();
     $req_userid = (int)$row[0];
     $req_name = $row[1];
-    if ($_SESSION['level'] < 100 && $_SESSION['id'] != $req_userid)
+    if (!UserLevel::is_admin() && $_SESSION['id'] != $req_userid)
     {
         return json_error("Not Authorized");
     }
@@ -596,7 +596,7 @@ function get_request_comments($req_id)
 
     $uid = $_SESSION['id'];
     $req_userid = (int)$result->fetch_row()[0];
-    if ($_SESSION['level'] < 100 && $uid != $req_userid)
+    if (!UserLevel::is_admin() && $uid != $req_userid)
     {
         return json_error("Not Authorized");
     }
@@ -684,7 +684,7 @@ function update_user_settings($firstname, $lastname, $email, $emailalerts, $phon
 /// </summary>
 function send_notifications_if_needed($type, $requester, $req_name, $content, $req_id, $is_markdown)
 {
-    if ($type != "create" && $requester->id == $_SESSION['id'] && $_SESSION['level'] != 100)
+    if ($type != "create" && $requester->id == $_SESSION['id'] && !UserLevel::is_admin())
     {
         return;
     }
@@ -853,10 +853,11 @@ function get_admins()
 {
     global $db;
     $admins = array();
+    $admin_level = UserLevel::Admin;
     $query = "SELECT u.id, u.username, u.level, i.firstname, i.lastname, i.email, i.email_alerts, i.phone, i.phone_alerts, i.carrier
               FROM users u
                 INNER JOIN user_info i on u.id=i.userid
-              WHERE u.level >= 100";
+              WHERE u.level >= $admin_level";
     $result = $db->query($query);
 
     while ($row = $result->fetch_row())
@@ -932,7 +933,7 @@ function check_username($username)
 
 function get_members_all()
 {
-    if ($_SESSION['level'] < 100)
+    if (!UserLevel::is_admin())
     {
         return json_error('Not authorized');
     }
@@ -963,7 +964,7 @@ function get_members_all()
 /// </summary>
 function get_members($num, $page, $search, $filter)
 {
-    if ((int)$_SESSION['level'] < 100)
+    if (!UserLevel::is_admin())
     {
         return json_error("Not authorized");
     }
@@ -975,17 +976,18 @@ function get_members($num, $page, $search, $filter)
     $query = "SELECT users.id AS id, username, level, last_login, created_at, firstname, lastname, email, phone, email_alerts, phone_alerts FROM users INNER JOIN user_info ON users.id=user_info.userid ";
 
     $filter_string = "WHERE 1 ";
+    $admin_level = UserLevel::Admin;
     if (!$filter->type->new)
     {
         $filter_string .= "AND level <> 0 ";
     }
     if (!$filter->type->regular)
     {
-        $filter_string .= "AND (level = 0 OR level >= 100) ";
+        $filter_string .= "AND (level = 0 OR level >= $admin_level) ";
     }
     if (!$filter->type->admin)
     {
-        $filter_string .= "AND level < 100 ";
+        $filter_string .= "AND level < $admin_level ";
     }
 
     if ($filter->pii != "all")
@@ -1081,7 +1083,7 @@ function get_members($num, $page, $search, $filter)
 /// </summary>
 function search($query, $kind)
 {
-    if ((int)$_SESSION['level'] < 20)
+    if (UserLevel::current() < UserLevel::Regular)
     {
         return json_error("Not authorized");
     }
@@ -1571,7 +1573,7 @@ function get_next_req($cur_id, $forward)
     $query = "";
     $sort = $forward == 0 ? "DESC" : "ASC";
     $cmp = $forward == 0 ? "<" : ">";
-    if ($_SESSION["level"] >= 100)
+    if (UserLevel::is_admin())
     {
         $query = "SELECT id FROM user_requests WHERE id " . $cmp . $cur_id . " ORDER BY id " . $sort . " LIMIT 1";
     }
@@ -1593,7 +1595,6 @@ function get_requests($num, $page, $search, $filter)
 {
     global $db;
     $id = (int)$_SESSION['id'];
-    $level = (int)$_SESSION['level'];
     $offset = $num == 0 ? 0 : $num * $page;
     $filter = json_decode($filter);
 
@@ -1648,7 +1649,7 @@ function get_requests($num, $page, $search, $filter)
     $filter_status_string = join(" OR ", $filter_status);
     $filter_type_string = join(" OR ", $filter_type);
     $filter_string = "";
-    if ($level != 100)
+    if (!UserLevel::is_admin())
     {
         $filter_string =
         "WHERE user_requests.username_id=$id AND ("
@@ -1864,7 +1865,7 @@ function get_new_activity_count()
     $active_string = $last_active->format('Y-m-d H:i:s');
     $query = "SELECT `type`, `user_id`, `admin_id`, `request_id`, `data`, `timestamp` FROM `activities` WHERE `timestamp` > '$active_string' ";
 
-    if ($_SESSION['level'] < 100)
+    if (!UserLevel::is_admin())
     {
         $query .= "AND `user_id`=$current_user ";
     }
@@ -1895,7 +1896,7 @@ function get_activities($num, $page, $search, $filter)
 
     $filter_string = "INNER JOIN `user_requests` ON `activities`.`request_id`=`user_requests`.`id` ";
 
-    if ($_SESSION['level'] < 100)
+    if (!UserLevel::is_admin())
     {
         $filter_string .= "WHERE `user_id`=$current_user ";
         if (!$filter->type->mine)
@@ -2255,7 +2256,7 @@ function reset_password($token, $password, $confirm)
 /// </summary>
 function forgot_password_admin($username, $email)
 {
-    if ($_SESSION['level'] < 100)
+    if (!UserLevel::is_admin())
     {
         return json_error("You can't do that!");
     }

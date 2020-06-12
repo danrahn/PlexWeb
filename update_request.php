@@ -46,7 +46,7 @@ switch ($type)
 /// </summary>
 function process_request_update($requests)
 {
-    $level = (int)$_SESSION['level'];
+    $level = UserLevel::current();
     $sesh_id = (int)$_SESSION["id"];
 
     // An associative array, mapping contacts (email or phone number)
@@ -61,7 +61,7 @@ function process_request_update($requests)
             return json_error("Bad request");
         }
 
-        if ($level < 100 && $requester->id != $sesh_id)
+        if ($level < UserLevel::Admin && $requester->id != $sesh_id)
         {
             return json_error("Not authorized");
         }
@@ -73,7 +73,7 @@ function process_request_update($requests)
         switch ($kind)
         {
             case "adm_cm":
-                if ($level < 100)
+                if ($level < UserLevel::Admin)
                 {
                     return json_error("Not authorized");
                 }
@@ -98,7 +98,7 @@ function process_request_update($requests)
                 break;
 
             case "status":
-                if ($level < 100)
+                if ($level < UserLevel::Admin)
                 {
                     // Only admins can change status
                     return json_error("Not authorized");
@@ -281,7 +281,8 @@ function update_req_status($req_id, $status, $requester, $admin_id, &$contact_in
     {
         // Need to adjust permissions
         $update_level = "";
-        if ($status == 1 && $requester->level < 20)
+        $level = UserLevel::get_type($requester->level);
+        if ($status == 1 && $level < UserLevel::Regular)
         {
             $update_level = "UPDATE users SET level=20 WHERE id=$requester->id";
             if (!$db->query($update_level))
@@ -289,7 +290,7 @@ function update_req_status($req_id, $status, $requester, $admin_id, &$contact_in
                 return FALSE;
             }
         }
-        else if ($status == 2 && $requester->level >= 20)
+        else if ($status == 2 && $level >= UserLevel::Regular)
         {
             // Access revoked. Bring them down a peg
             $update_level = "UPDATE users SET level=10 WHERE id=$requester->id";

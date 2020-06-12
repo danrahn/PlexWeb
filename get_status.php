@@ -130,7 +130,7 @@ function update_level()
     $result = $db->query("SELECT level FROM users WHERE id=$id");
     if ($result)
     {
-        $_SESSION['level'] = $result->fetch_row()[0];
+        UserLevel::set_current($result->fetch_row()[0]);
         $result->close();
     }
 }
@@ -143,7 +143,7 @@ function update_level()
 function process()
 {
     update_level();
-    if (!isset($_SESSION['level']) || (int)$_SESSION['level'] < 20)
+    if (UserLevel::current() < UserLevel::Regular)
     {
         json_error_and_exit("Not Authorized");
     }
@@ -428,7 +428,8 @@ function build_sesh($sesh, $library_names)
 
     $slim_sesh->session_id = get_sesh_id($sesh);
 
-    if ($_SESSION['level'] >= 80)
+    $level = UserLevel::current();
+    if ($level >= UserLevel::SuperModerator)
     {
         $user = $sesh->xpath("User")[0];
         $slim_sesh->user = (string)$user['title'];
@@ -438,7 +439,7 @@ function build_sesh($sesh, $library_names)
     $slim_sesh->paused = strcmp($player['state'], 'paused') == 0;
     $slim_sesh->playback_device = get_playback_device($player);
 
-    if ($_SESSION['level'] >= 100)
+    if ($level == UserLevel::Admin)
     {
         $slim_sesh->ip = (string)$player['remotePublicAddress'];
     }
@@ -700,7 +701,7 @@ function get_playback_device($player)
     {
         $device = ucwords($player["vendor"]) . " " . $player["title"];
     }
-    else if (isset($_SESSION['level']) && $_SESSION['level'] >= 100 && $player["title"] && strlen($player["title"]) > 0)
+    else if (UserLevel::is_admin() && $player["title"] && strlen($player["title"]) > 0)
     {
         $device .= " (" . $player["title"] . ")";
     }

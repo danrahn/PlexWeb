@@ -8,7 +8,7 @@ require_once "includes/config.php";
 
 verify_loggedin();
 $admin_page = TRUE;
-if ($_SESSION['level'] < 100)
+if (!UserLevel::is_admin())
 {
     error_and_exit(403);
 }

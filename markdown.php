@@ -69,7 +69,7 @@ verify_loggedin(true, "markdown.php");
 <script><?php echo file_get_contents("script/markdown.js"); ?></script>
 <script><?php echo file_get_contents("script/markdownTest.js"); ?></script>
 <script><?php echo file_get_contents("script/markdownEditor.js"); ?></script>
-<?php if (isset($_SESSION["level"]) && $_SESSION['level'] >= 100) { ?>
+<?php if (UserLevel::is_admin()) { ?>
 <script><?php echo file_get_contents("script/markdownSamples.js"); ?></script>
 <?php } ?>
 <script>
