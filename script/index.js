@@ -134,7 +134,7 @@ function showStreamAccessOverlay()
         {
             keydown : function(e)
             {
-                if (e.keyCode == 13 && e.ctrlKey)
+                if (e.keyCode == KEY.ENTER && e.ctrlKey)
                 {
                     $("#requestButton").click();
                 }

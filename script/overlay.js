@@ -78,7 +78,7 @@ function buildOverlay(dismissible, ...children)
 
 function _overlayKeyListener(e)
 {
-    if (e.keyCode == 27 /*esc*/)
+    if (e.keyCode == KEY.ESC)
     {
         let overlayNode = $("#mainOverlay");
         if (overlayNode && !!overlayNode.getAttribute("dismissible") && overlayNode.style.opacity == "1")

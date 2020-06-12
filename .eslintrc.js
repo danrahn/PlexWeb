@@ -77,7 +77,7 @@ module.exports = {
         "guard-for-in" : "error",
         "handle-callback-err" : "error",
         "id-blacklist" : "error",
-        "id-length" : ["error", { "exceptions" : ["$", "$$", "i", "j", "e"] }],
+        "id-length" : ["error", { "exceptions" : ["$", "$$", "i", "j", "e", "x", "y"] }],
         "id-match" : "error",
         "implicit-arrow-linebreak" : [
             "error",
@@ -326,6 +326,7 @@ module.exports = {
         "sendHtmlJsonRequest" : "readonly",
         "buildNode" : "readonly",
         "ProcessRequest" : "readonly",
+        "KEY" : "readonly",
         "$" : "readonly",
         "$$" : "readonly",
         // consolelog.js

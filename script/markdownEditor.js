@@ -14,7 +14,7 @@ let MarkdownEditor = new function()
     let captureTab = function(event)
     {
         // It will probably just cause more confusion for people, but we can break out of the textarea if caps lock is on.
-        if (event.keyCode != 9 /*tab*/ || event.ctrlKey || event.altKey || event.getModifierState('CapsLock'))
+        if (event.keyCode != KEY.TAB || event.ctrlKey || event.altKey || event.getModifierState('CapsLock'))
         {
             return;
         }

@@ -61,11 +61,11 @@ function displayInfoMessage(message)
 function tableFilterKeyHandler(e)
 {
     let key = e.keyCode ? e.keyCode : e.which;
-    if (key == 27 /*esc*/)
+    if (key == KEY.ESC)
     {
         dismissFilterDialog();
     }
-    else if (key == 13 /*enter*/ && e.ctrlKey)
+    else if (key == KEY.ENTER && e.ctrlKey)
     {
         let overlay = $("#filterOverlay");
         if (overlay && overlay.style.opacity == "1")
@@ -117,13 +117,13 @@ function setupKeyboardNavigation()
             {
                 default:
                     break;
-                case 37: // LEFT
+                case KEY.LEFT:
                     previousPage();
                     break;
-                case 39: // RIGHT
+                case KEY.RIGHT:
                     nextPage();
                     break;
-                case 70: // F
+                case KEY.F:
                     if ($$(".filterBtn"))
                     {
                         $$(".filterBtn").click();
@@ -144,7 +144,7 @@ function setupDirectPageNavigation()
         input.addEventListener("keyup", function(e)
         {
             let key = e.keyCode ? e.keyCode : e.which;
-            if (key == 13 /*enter*/)
+            if (key == KEY.ENTER)
             {
                 let page = parseInt(this.value);
                 if (isNaN(page) || page <= 0 || page > tablePages)
@@ -203,11 +203,11 @@ function _setupSearchListeners()
     {
         input.addEventListener("keydown", function(e)
         {
-            if (e.keyCode == 13 /*enter*/)
+            if (e.keyCode == KEY.ENTER)
             {
                 this.parentNode.$$(".searchGo").click();
             }
-            else if (e.keyCode == 27 /*esc*/)
+            else if (e.keyCode == KEY.ESC)
             {
                 this.value = "";
                 this.parentNode.parentNode.$$(".searchBtn").click();

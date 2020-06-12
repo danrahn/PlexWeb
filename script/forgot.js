@@ -67,7 +67,7 @@ function setupForgotForm()
 
     $("#username").addEventListener("keydown", function(e)
     {
-        if (e.keyCode == 13 /*enter*/ && !e.ctrlKey && !e.shiftKey && !e.altKey)
+        if (e.keyCode == KEY.ENTER && !e.ctrlKey && !e.shiftKey && !e.altKey)
         {
             e.preventDefault();
             $("#go").click();

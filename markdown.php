@@ -105,7 +105,7 @@ function parseMarkdownCore(force)
 
 function parseShortcuts(e)
 {
-    if (e.keyCode == 13 /*enter*/ && e.ctrlKey)
+    if (e.keyCode == KEY.ENTER && e.ctrlKey)
     {
         forceParseMarkdown();
         return;

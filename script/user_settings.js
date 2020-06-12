@@ -33,7 +33,7 @@ function checkboxKeydownListener(e)
 {
     e = e || window.event;
     const key = e.which || e.keyCode;
-    if (key === 13 /*enter*/)
+    if (key === KEY.ENTER)
     {
         this.checked = !this.checked;
         if (initialValues[this.id] == this.checked)
@@ -482,6 +482,7 @@ function setupSubmitButton()
             p    : getField("phone").replace(/[^\d]/g, ""),
             pa   : getField("phonealerts", "checked"),
             c    : getField("carrier", "value", "select")
+            /* eslint-enable key-spacing, id-length */
         };
 
         sendHtmlJsonRequest("process_request.php", params, onUserSettingsChanged, onFailedUserSettingsChanged);
@@ -499,7 +500,7 @@ function setupPwListeners()
     {
         ele.addEventListener("keydown", function(e)
         {
-            if (e.keyCode == 13 && !e.ctrlKey && !e.shiftKey && !e.altKey)
+            if (e.keyCode == KEY.ENTER && !e.ctrlKey && !e.shiftKey && !e.altKey)
             {
                 $("#pwGo").click();
             }

@@ -85,7 +85,7 @@ function setupRegisterForm()
     {
         inputs[i].addEventListener("keyup", function(e)
         {
-            if (e.keyCode === 13 && !e.shiftKey && !e.ctrlKey && !e.altKey)
+            if (e.keyCode === KEY.ENTER && !e.shiftKey && !e.ctrlKey && !e.altKey)
             {
                 $("#go").click();
             }
@@ -196,7 +196,7 @@ function keyDownEvent(e)
     let key = e.which || e.keyCode;
     let pass = $$("input[name='password']");
     let conf = $$("input[name='confirm']");
-    if (key !== 13)
+    if (key !== KEY.ENTER)
     {
         if (conf.value && pass.value !== conf.value)
         {

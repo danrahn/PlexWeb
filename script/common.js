@@ -1,4 +1,4 @@
-/* exported $, $$, buildNode, sendHtmlJsonRequest, ProcessRequest */
+/* exported $, $$, buildNode, sendHtmlJsonRequest, ProcessRequest, KEY */
 
 /// <summary>
 /// Custom jQuery-like selector method.
@@ -171,6 +171,24 @@ function sanitize(parameters)
 
     return buildQuery(sanitized);
 }
+
+/// <summary>
+/// Table of keyboard keys and their associated IDs
+/// </summary>
+const KEY =
+{
+    /* eslint-disable key-spacing, no-multi-spaces, id-length */
+    TAB   : 9,  SPACE : 32,
+    ENTER : 13, SHIFT : 16, CTRL  : 17, ALT   : 18, ESC  : 27,
+    LEFT  : 37, UP    : 38, RIGHT : 39, DOWN  : 40,
+    ZERO  : 48, ONE   : 49, TWO   : 50, THREE : 51, FOUR : 52,
+    FIVE  : 53, SIX   : 54, SEVEN : 55, EIGHT : 56, NINE : 57,
+    A : 65, B : 66, C : 67, D : 68, E : 69, F : 70, G : 71, H : 72,
+    I : 73, J : 74, K : 75, L : 76, M : 77, N : 78, O : 79, P : 80,
+    Q : 81, R : 82, S : 83, T : 84, U : 85, V : 86, W : 87, X : 88,
+    Y : 89, Z : 90, OPEN_BRACKET : 219, CLOSE_BRACKET : 221
+    /* eslint-enable key-spacing, no-multi-spaces, id-length */
+};
 
 /// <summary>
 /// List of all request types for process_request.php

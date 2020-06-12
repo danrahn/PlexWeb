@@ -270,6 +270,7 @@ def create_temp(includes, rem_log, ultra):
         combined = re.sub(r'\.addEventListener\(', '.l(', combined)
         combined = re.sub(r'\bparseInt\(', 'p_(', combined)
         combined = minify_process_request(combined)
+        combined = minify_keycodes(combined)
     if len(consolelog) > 0:
         # prepend this outside of our scope
         if ultra:
@@ -299,6 +300,19 @@ def minify_process_request(combined):
         combined = combined.replace('ProcessRequest.' + result[0], str(result[1]))
     return combined
 
+# Minify the KEY enum via direct substitution
+def minify_keycodes(combined):
+    start = combined.find('\nconst KEY =')
+    if start == -1:
+        return
+
+    end = combined.find('}', start)
+    definition = combined[start:end]
+    combined = combined[:start] + combined[end + 2:]
+    results = re.findall(r'([A-Z_]+) +: (\d+)', definition)
+    for result in results:
+        combined = combined.replace('KEY.' + result[0], str(result[1]))
+    return combined
 
 
 def write_temp(file, combined):

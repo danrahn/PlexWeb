@@ -143,7 +143,7 @@ function keyUpEvent(e)
     let key = e.which || e.keyCode;
     let pass = $$("input[name='password']");
     let conf = $$("input[name='confirm']");
-    if (key !== 13 /*enter*/)
+    if (key !== KEY.ENTER)
     {
         if (conf.value && pass.value !== conf.value)
         {

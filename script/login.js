@@ -75,7 +75,7 @@ function setupLoginForm()
     {
         inputs[i].addEventListener("keyup", function(e)
         {
-            if (e.keyCode === 13 && !e.shiftKey && !e.ctrlKey && !e.altKey)
+            if (e.keyCode === KEY.ENTER && !e.shiftKey && !e.ctrlKey && !e.altKey)
             {
                 $("#go").click();
             }

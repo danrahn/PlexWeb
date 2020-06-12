@@ -249,7 +249,7 @@ function buildMarkdownImageDimensionsInput()
 /// </summary>
 function mdInsertKeyupHandler(e)
 {
-    if (e.keyCode == 13 && !e.ctrlKey && !e.shiftKey && !e.altKey)
+    if (e.keyCode == KEY.ENTER && !e.ctrlKey && !e.shiftKey && !e.altKey)
     {
         e.stopPropagation();
         $("#addLinkOk").click();
