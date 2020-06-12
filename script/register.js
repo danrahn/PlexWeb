@@ -1,10 +1,32 @@
-let usernameCheckTimer;
 let hasUserChanged = true;
-window.addEventListener('load', function()
+window.addEventListener("load", function()
 {
     setupRegisterForm();
-    usernameCheckTimer = setInterval(checkUsername, 1000);
+    setInterval(checkUsername, 1000);
 });
+
+function onCheckUsernameResponse(response, request)
+{
+    let username = $$("input[name='username']");
+    if (request.lastUsername !== username.value)
+    {
+        return;
+    }
+
+    // Username hasn't changed
+    if (response.value == "1")
+    {
+        // It's available!
+        username.style.backgroundColor = "rgb(63, 100, 69)";
+        username.title = "Username available";
+    }
+    else
+    {
+        // It exists!
+        username.style.backgroundColor = "rgb(100, 66, 69)";
+        username.title = "Username already exists";
+    }
+}
 
 function checkUsername()
 {
@@ -26,39 +48,13 @@ function checkUsername()
         return;
     }
 
-    // New username to check
-    lastUsername = user.value;
-
     let params =
     {
-        "type" : ProcessRequest.CheckUsername,
-        "username" : user.value
+        type : ProcessRequest.CheckUsername,
+        username : user.value
     };
 
-    let successFunc = function(response)
-    {
-        let username = $$("input[name='username']");
-        if (lastUsername !== username.value)
-        {
-            return;
-        }
-
-        // Username hasn't changed
-        if (response.value == '1')
-        {
-            // It's available!
-            username.style.backgroundColor = "rgb(63, 100, 69)";
-            username.title = "Username available";
-        }
-        else
-        {
-            // It exists!
-            username.style.backgroundColor = "rgb(100, 66, 69)";
-            username.title = "Username already exists";
-        }
-    };
-
-    sendHtmlJsonRequest("process_request", params, successFunc);
+    sendHtmlJsonRequest("process_request", params, onCheckUsernameResponse, undefined /*failureFunc*/, { lastUsername : user.value });
 
     hasUserChanged = false;
 }
@@ -73,8 +69,8 @@ function verifyField(element)
 
 function flashField(element)
 {
-    Animation.queue({"backgroundColor" : new Color(140, 66, 69)}, element, 500);
-    Animation.queueDelayed({"backgroundColor" : new Color(100, 66, 69)}, element, 500, 500);
+    Animation.queue({ backgroundColor : new Color(140, 66, 69) }, element, 500);
+    Animation.queueDelayed({ backgroundColor : new Color(100, 66, 69) }, element, 500, 500);
 }
 
 /// <summary>
@@ -83,9 +79,9 @@ function flashField(element)
 function setupRegisterForm()
 {
     $("#go").addEventListener("click", sendRegistration);
-    
-    var inputs = $("input, select");
-    for (var i = 0; i < inputs.length; i++)
+
+    let inputs = $("input, select");
+    for (let i = 0; i < inputs.length; i++)
     {
         inputs[i].addEventListener("keyup", function(e)
         {
@@ -95,7 +91,7 @@ function setupRegisterForm()
             }
         });
     }
-    
+
     let user = $$("input[name='username']");
     let pass = $$("input[name='password']");
     let conf = $$("input[name='confirm']");
@@ -104,7 +100,7 @@ function setupRegisterForm()
     pass.addEventListener("focusout", focusOutEvent);
     conf.addEventListener("focusout", focusOutEvent);
     $$("input[type='button']").addEventListener("focusout", focusOutEvent);
-    
+
     user.addEventListener("focus", focusInEvent);
     pass.addEventListener("focus", focusInEvent);
     conf.addEventListener("focus", focusInEvent);
@@ -138,10 +134,10 @@ function sendRegistration()
 
     let params =
     {
-        "type" : ProcessRequest.Register,
-        "username" : user.value,
-        "password" : pass.value,
-        "confirm" : conf.value
+        type : ProcessRequest.Register,
+        username : user.value,
+        password : pass.value,
+        confirm : conf.value
     };
 
     let successFunc = function()
@@ -149,8 +145,9 @@ function sendRegistration()
         let status = $("#formStatus");
         status.className = "formContainer statusSuccess";
         status.innerHTML = "Success! Redirecting you to the <a href='login.php'>login page</a>";
-        Animation.queue({"opacity" : 1}, status, 500);
-        setTimeout(function() {
+        Animation.queue({ opacity : 1 }, status, 500);
+        setTimeout(function()
+        {
             window.location = "login.php";
         }, 2000);
     };
@@ -159,10 +156,10 @@ function sendRegistration()
     {
         let status = $("#formStatus");
         status.className = "formContainer statusFail";
-        status.innerHTML = response["Error"];
-        Animation.queue({"opacity" : 1}, status, 500);
-        Animation.queueDelayed({"opacity" : 0}, status, 5000, 1000);
-    }
+        status.innerHTML = response.Error;
+        Animation.queue({ opacity : 1 }, status, 500);
+        Animation.queueDelayed({ opacity : 0 }, status, 5000, 1000);
+    };
 
     sendHtmlJsonRequest("process_request.php", params, successFunc, failureFunc);
 }
@@ -176,7 +173,6 @@ function focusOutEvent()
     if (!this.value)
     {
         this.style.backgroundColor = "rgb(100, 66, 69)";
-        return;
     }
 }
 
@@ -198,8 +194,8 @@ function userKeyup()
 function keyDownEvent(e)
 {
     let key = e.which || e.keyCode;
-    var pass = $$("input[name='password']");
-    var conf = $$("input[name='confirm']");
+    let pass = $$("input[name='password']");
+    let conf = $$("input[name='confirm']");
     if (key !== 13)
     {
         if (conf.value && pass.value !== conf.value)

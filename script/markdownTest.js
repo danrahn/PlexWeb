@@ -1,16 +1,18 @@
+/* exported testMarkdown, testSuite */
 
+// Markdown files are the only ones that prefer single-quotes over double.
+/* eslint quotes: ["error", "single", { "avoidEscape" : true, "allowTemplateLiterals" : true }] */
 
 const testMarkdown = function(testStr='')
 {
-    // let testStr = "Hello, world\n## [## `Header`2`](https://google.com)\n#Bad header\n# Header 1";
     if (testStr.length == 0)
     {
-        testStr = "Hello, __There, how__ __are_ you_?";
+        testStr = 'Hello, __There, how__ __are_ you_?';
     }
 
     logInfo(`testing: '${testStr}'`);
     return new Markdown().parse(testStr);
-}
+};
 
 const testSuite = function()
 {
@@ -26,7 +28,7 @@ const testSuite = function()
     testBr();
 
     testMixed();
-}
+};
 
 const buildTests = function(...tests)
 {
@@ -37,12 +39,12 @@ const buildTests = function(...tests)
     }
 
     return testStrings;
-}
+};
 
 const divWrap = function(str)
 {
     return `<div class="mdDiv">${str}</div>`;
-}
+};
 
 const testHeaders = function()
 {
@@ -63,7 +65,7 @@ const testHeaders = function()
     );
 
     testCore(testStrings);
-}
+};
 
 const testUrl = function()
 {
@@ -92,7 +94,7 @@ const testUrl = function()
     );
 
     testCore(testStrings);
-}
+};
 
 const testInline = function()
 {
@@ -107,7 +109,7 @@ const testInline = function()
     );
 
     testCore(testStrings);
-}
+};
 
 const testBold = function()
 {
@@ -133,11 +135,11 @@ const testBold = function()
         ['__**Bold?__**', divWrap('<strong>**Bold?</strong>**')],
         ['**Multiline\nSupport**', divWrap('<strong>Multiline<br>Support</strong>')],
         ['**More\nThan\nTwo**', divWrap('<strong>More<br>Than<br>Two</strong>')],
-        ['**Double\n\nNewline**', divWrap('**Double') + divWrap("Newline**")]
+        ['**Double\n\nNewline**', divWrap('**Double') + divWrap('Newline**')]
     );
 
     testCore(testStrings);
-}
+};
 
 const testItalic = function()
 {
@@ -161,11 +163,11 @@ const testItalic = function()
         ['_*italic?_*', divWrap('<em>*italic?</em>*')],
         ['_Multiline\nSupport_', divWrap('<em>Multiline<br>Support</em>')],
         ['_More\nThan\nTwo_', divWrap('<em>More<br>Than<br>Two</em>')],
-        ['_Double\n\nNewline_', divWrap('_Double') + divWrap("Newline_")]
+        ['_Double\n\nNewline_', divWrap('_Double') + divWrap('Newline_')]
     );
 
     testCore(testStrings);
-}
+};
 
 const testStrikethrough = function()
 {
@@ -181,11 +183,11 @@ const testStrikethrough = function()
         ],
         ['~~Multiline\nSupport~~', divWrap('<s>Multiline<br>Support</s>')],
         ['~~More\nThan\nTwo~~', divWrap('<s>More<br>Than<br>Two</s>')],
-        ['~~Double\n\nNewline~~', divWrap('~~Double') + divWrap("Newline~~")]
+        ['~~Double\n\nNewline~~', divWrap('~~Double') + divWrap('Newline~~')]
     );
 
     testCore(testStrings);
-}
+};
 
 
 const testUnderline = function()
@@ -202,11 +204,11 @@ const testUnderline = function()
         ],
         ['++Multiline\nSupport++', divWrap('<ins>Multiline<br>Support</ins>')],
         ['++More\nThan\nTwo++', divWrap('<ins>More<br>Than<br>Two</ins>')],
-        ['++Double\n\nNewline++', divWrap('++Double') + divWrap("Newline++")]
+        ['++Double\n\nNewline++', divWrap('++Double') + divWrap('Newline++')]
     );
 
     testCore(testStrings);
-}
+};
 
 const testHr = function()
 {
@@ -221,7 +223,7 @@ const testHr = function()
     );
 
     testCore(testStrings);
-}
+};
 
 const testBr = function()
 {
@@ -233,7 +235,7 @@ const testBr = function()
     );
 
     testCore(testStrings);
-}
+};
 
 const testMixed = function()
 {
@@ -258,7 +260,7 @@ const testMixed = function()
     );
 
     testCore(testStrings);
-}
+};
 
 const testCore = function(testStrings)
 {
@@ -277,4 +279,4 @@ const testCore = function(testStrings)
         }
     });
     g_logLevel = logSav;
-}
+};

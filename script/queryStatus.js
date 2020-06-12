@@ -5,7 +5,7 @@
 
 let baseTitle = "";
 let hasChanged = false;
-let previous = { 'p' : 0, 's' : 0 };
+let previous = { pl : 0, pa : 0 };
 
 function processQueryStatus(response)
 {
@@ -14,22 +14,22 @@ function processQueryStatus(response)
         // Only reset the title if we've previously changed it to avoid constant title updates
         if (hasChanged)
         {
-            logVerbose('No more active items, clearing status');
+            logVerbose("No more active items, clearing status");
             hasChanged = false;
-            $$('title').innerHTML = baseTitle;
+            $$("title").innerHTML = baseTitle;
         }
 
         return;
     }
 
-    if (response.play == previous.p && response.pause == previous.s)
+    if (response.play == previous.pl && response.pause == previous.pa)
     {
         return;
     }
 
-    logVerbose(response, 'Status changed');
-    previous.p = response.play;
-    previous.s = response.pause;
+    logVerbose(response, "Status changed");
+    previous.pl = response.play;
+    previous.pa = response.pause;
 
     hasChanged = true;
     let prepend = "";
@@ -44,22 +44,21 @@ function processQueryStatus(response)
         prepend += `${response.pause}  &#10073;&#10073; - `;
     }
 
-    $$('title').innerHTML = prepend + baseTitle;
+    $$("title").innerHTML = prepend + baseTitle;
 }
 
 function queryStatusError(response)
 {
     if (response.Error && response.Error == "Not Authorized")
     {
-        logVerbose('Stopping queryStatus, user is not authorized');
+        logVerbose("Stopping queryStatus, user is not authorized");
         clearInterval(queryStatusTimer);
-        return;
     }
 }
 
 function queryStatus()
 {
-    sendHtmlJsonRequest('get_status.php', { 'type' : 5 }, processQueryStatus, queryStatusError);
+    sendHtmlJsonRequest("get_status.php", { type : 5 }, processQueryStatus, queryStatusError);
 }
 
 let queryStatusTimer;

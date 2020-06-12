@@ -14,7 +14,7 @@ function setInputVisibility(id, vis)
     let ele = $(`#${id}`);
     ele.style.display = null;
     ele.classList.remove("hiddenInputStart");
-    ele.classList.add(!vis ? "hiddenInput" : "visibleInput");
+    ele.classList.add(vis ? "visibleInput" : "hiddenInput");
     ele.classList.remove(vis ? "hiddenInput" : "visibleInput");
 }
 
@@ -40,7 +40,7 @@ function selectChanged()
 
 /// <summary>
 /// Set/reset timers when the user updates the suggestion
-/// </summar>
+/// </summary>
 function suggestionChanged()
 {
     let suggestion = $("#name").value;
@@ -84,7 +84,7 @@ function searchItem()
     {
         // Only movies and tv shows supported for now
         setVisibility("externalContainer", false);
-        $("#matchContainer").innerHTML = "Sorry, music requests are currently unavailable"
+        $("#matchContainer").innerHTML = "Sorry, music requests are currently unavailable";
         return;
     }
 
@@ -92,7 +92,7 @@ function searchItem()
 
     setExternalType(value);
 
-    let params = { "type" : type, "query" : $("#name").value };
+    let params = { type : type, query : $("#name").value };
     let successFunc = function(response)
     {
         logInfo(response, "Search Results");
@@ -104,7 +104,7 @@ function searchItem()
         }
 
         buildItems(response.results, "matchContainer");
-    }
+    };
 
     let failureFunc = function(/*response*/)
     {
@@ -125,9 +125,9 @@ function searchInternal()
     let name = $("#name").value;
     let parameters =
     {
-        "type" : ProcessRequest.SearchPlex,
-        "kind" : type,
-        "query" : name
+        type : ProcessRequest.SearchPlex,
+        kind : type,
+        query : name
     };
 
     clearElement("existingMatchContainer");
@@ -171,13 +171,49 @@ function validateId(id, isAudiobook)
 
     if (id.length != 9 ||
         id.substring(0, 2) != "tt" ||
-        parseInt(id.substring(2)) == NaN)
+        isNaN(parseInt(id.substring(2))))
     {
         $("#externalResult").innerHTML = id.length == 0 ? "" : "Incomplete IMDb Id";
         return false;
     }
 
     return true;
+}
+
+function externalSearchSuccess(response)
+{
+    logInfo(response);
+    let type = $("#type").value;
+    switch (type)
+    {
+        case "movie":
+            if (response.movie_results.length === 0)
+            {
+                $("#externalResult").innerHTML = "Movie not found";
+                return;
+            }
+            buildItems(response.movie_results, "externalResult");
+            break;
+        case "tv":
+            if (response.tv_results.length === 0)
+            {
+                $("#externalResult").innerHTML = "TV Show not found";
+                return;
+            }
+            buildItems(response.tv_results, "externalResult");
+            break;
+        case "audiobook":
+            if (!response.valid)
+            {
+                $("#externalResult").innerHTML = "Audiobook not found";
+                return;
+            }
+            buildItems([response], "externalResult");
+            break;
+        default:
+            $("#externalResult").innerHTML = "Sorry, something went wrong";
+            break;
+    }
 }
 
 /// <summary>
@@ -196,49 +232,125 @@ function searchSpecificExternal()
 
     let value = $("#type").value;
     let type = value == "movie" ? 1 : (value == "tv" ? 2 : 3);
-    let parameters = { "type" : type, "query" : id, "imdb" : type != 3, "audible" : type == 3 };
-    let successFunc = function(response)
-    {
-        logInfo(response);
-        let type = $("#type").value;
-        switch (type)
-        {
-            case "movie":
-                if (response.movie_results.length === 0)
-                {
-                    $("#externalResult").innerHTML = "Movie not found";
-                    return;
-                }
-                buildItems(response.movie_results, "externalResult");
-                break;
-            case "tv":
-                if (response.tv_results.length === 0)
-                {
-                    $("#externalResult").innerHTML = "TV Show not found";
-                    return;
-                }
-                buildItems(response.tv_results, "externalResult");
-                break;
-            case "audiobook":
-                if (!response.valid)
-                {
-                    $("#externalResult").innerHTML = "Audiobook not found";
-                    return;
-                }
-                buildItems([response], "externalResult");
-                break;
-            default:
-                $("#externalResult").innerHTML = "Sorry, something went wrong";
-                break;
-        }
-    };
+    let parameters = { type : type, query : id, imdb : type != 3, audible : type == 3 };
 
     let failureFunc = function()
     {
         $("#externalResult").innerHTML = "Failed to retrieve media";
     };
 
-    sendHtmlJsonRequest("media_search.php", parameters, successFunc, failureFunc);
+    sendHtmlJsonRequest("media_search.php", parameters, externalSearchSuccess, failureFunc);
+}
+
+function buildSeasonDetailsHandler(match)
+{
+    let seasonHolder = buildNode("div", { class : "seasonDetailsHolder" });
+    seasonHolder.appendChild(buildNode("a",
+        { seasonpath : match.tvChildPath },
+        "Click to load season details",
+        {
+            click : function()
+            {
+                this.innerHTML = "Loading...";
+                let parameters =
+                {
+                    type : ProcessRequest.GetSeasonDetails,
+                    path : this.getAttribute("seasonPath")
+                };
+                let successFunc = buildSeasonDetails;
+                let failureFunc = function(response, request)
+                {
+                    let text = $(`a[seasonpath="${request.path}"]`)[0];
+                    text.parentElement.appendChild(buildNode("span", {}, "Error getting season details"));
+                    text.parentElement.removeChild(text);
+                };
+
+                sendHtmlJsonRequest("process_request.php", parameters, successFunc, failureFunc, parameters);
+            }
+        }
+    ));
+
+    return seasonHolder;
+}
+
+/// <summary>
+/// Builds the request suggestion body, including the name
+/// of the match, and an external link to the suggestion
+function buildSuggestionBody(match)
+{
+    let div = buildNode("div", { class : "matchText" });
+    let titleText = (match.title ? match.title : match.name) + " ";
+    if (match.resolution)
+    {
+        titleText += `(${match.resolution}) - `;
+    }
+
+    div.appendChild(buildNode("span", {}, titleText));
+    let release = match.release_date;
+    if (!release)
+    {
+        release = match.year || match.first_air_date;
+    }
+
+    // match.ref is a hacky way to tell that we have an audiobook request
+    const linkString = `(${match.ref ? "Audible" : (release ? release.substring(0, 4) : "IMDb")})`;
+
+    div.appendChild(buildNode("a",
+        { href : "#" },
+        linkString,
+        {
+            click : goToExternal
+        }));
+
+    // For TV shows, give the option to get information about what seasons are available
+    if (match.tvChildPath)
+    {
+        div.appendChild(buildNode("hr"));
+        div.appendChild(buildSeasonDetailsHandler(match));
+    }
+
+    return div;
+}
+
+/// <summary>
+/// Builds a single item for the request suggestion list
+/// </summary>
+function buildItem(match, external)
+{
+    let item = buildNode("div",
+        {
+            class : "searchResult",
+            title : match.title ? match.title : match.name,
+            poster : match.poster_path ? match.poster_path : match.thumb ? match.thumb : `/${$("#type").value}default.png`
+        },
+        0,
+        external ? {} : {
+            click : clickSuggestion
+        });
+
+    if (match.ref)
+    {
+        item.setAttribute("ref", match.ref);
+    }
+    else
+    {
+        item.setAttribute(match.id ? "tmdbid" : "imdbid", match.id ? match.id : match.imdbid);
+    }
+
+    let img = buildNode("img", {
+        style : "height : 70px",
+        src : (match.poster_path ?
+            `https://image.tmdb.org/t/p/w92${match.poster_path}` :
+            (match.thumb ?
+                match.thumb :
+                `poster/${$("#type").value}default.png`
+            )
+        )
+    });
+
+    item.appendChild(img);
+    item.appendChild(buildSuggestionBody(match));
+    return item;
 }
 
 /// <summary>
@@ -252,118 +364,96 @@ function buildItems(matches, holder)
     container.innerHTML = "";
     container.appendChild(buildNode("hr"));
 
-    container.appendChild(buildNode("p", {"style" : "margin-bottom: 5px"}, external ? "Existing Items:" : "Results:"));
+    container.appendChild(buildNode("p", { style : "margin-bottom: 5px" }, external ? "Existing Items:" : "Results:"));
 
     let max = Math.min(matches.length, 10);
     for (let i = 0; i < max; ++i)
     {
-        let match = matches[i];
-
-        let item = buildNode("div", {
-            "class" : "searchResult",
-            "title" : match.title ? match.title : match.name,
-            "poster" : match.poster_path ? match.poster_path : match.thumb ? match.thumb : `/${$("#type").value}default.png`
-        },
-        0,
-        external ? {} : {
-            "click" : clickSuggestion
-        });
-
-        if (match.ref)
-        {
-            item.setAttribute("ref", match.ref);
-        }
-        else
-        {
-            item.setAttribute(match.id ? "tmdbid" : "imdbid", match.id ? match.id : match.imdbid);
-        }
-
-        let img = buildNode("img", {
-            "style" : "height : 70px",
-            "src" : (match.poster_path ?
-                `https://image.tmdb.org/t/p/w92${match.poster_path}` :
-                (match.thumb ?
-                    match.thumb :
-                    `poster/${$("#type").value}default.png`
-                )
-            )
-        });
-
-        let div = buildNode("div", { "class" : "matchText" });
-        let titleText = (match.title ? match.title : match.name) + ' ';
-        if (match.resolution)
-        {
-            titleText += `(${match.resolution}) - `;
-        }
-
-        div.appendChild(buildNode("span", {}, titleText));
-        let release = match.release_date;
-        if (!release)
-        {
-            release = match.year || match.first_air_date;
-        }
-
-        // match.ref is a hacky way to tell that we have an audiobook request
-        const linkString = `(${match.ref ? "Audible" : (release ? release.substring(0, 4) : "IMDb")})`;
-
-        div.appendChild(buildNode("a",
-            {"href" : "#"},
-            linkString,
-            {
-                "click" : goToExternal
-            }));
-
-        // For TV shows, give the option to get information about what seasons are available
-        if (match.tvChildPath)
-        {
-            div.appendChild(buildNode('hr'));
-            let seasonHolder = buildNode('div', { 'class' : "seasonDetailsHolder" });
-            seasonHolder.appendChild(buildNode('a', { "seasonpath" : match.tvChildPath}, "Click to load season details",
-                {
-                    "click" : function()
-                    {
-                        this.innerHTML = 'Loading...';
-                        let parameters =
-                        {
-                            "type" : ProcessRequest.GetSeasonDetails,
-                            "path" : this.getAttribute("seasonPath")
-                        };
-                        let successFunc = buildSeasonDetails;
-                        let failureFunc = function(response, request)
-                        {
-                            let text = $(`a[seasonpath="${request.path}"]`)[0];
-                            text.parentElement.appendChild(buildNode("span", {}, "Error getting season details"));
-                            text.parentElement.removeChild(text);
-                        };
-
-                        sendHtmlJsonRequest("process_request.php", parameters, successFunc, failureFunc, parameters);
-                    }
-                }
-            ));
-
-            div.appendChild(seasonHolder);
-        }
-
-        item.appendChild(img);
-        item.appendChild(div);
-
-        container.appendChild(item);
+        container.appendChild(buildItem(matches[i], external));
     }
 
-    let button = buildNode("input", {
-        "type" : "button",
-        "id" : `matchContinue_${holder}`,
-        "class" : "matchContinue hidden",
-        "value" : "Submit Request"
-    },
-    0,
-    {
-        "click" : submitSelected
-    });
+    let button = buildNode("input",
+        {
+            type : "button",
+            id : `matchContinue_${holder}`,
+            class : "matchContinue hidden",
+            value : "Submit Request"
+        },
+        0,
+        {
+            click : submitSelected
+        });
 
     container.appendChild(button);
 }
 
+function buildSeasons(seasons)
+{
+    if (seasons.length == 0)
+    {
+        return "";
+    }
+
+    const getSequence = (start, end) => start + (start == end ? "" : "-" + end) + ", ";
+    let seasonStr = "";
+    let first = parseInt(seasons[0]);
+    let prev = first;
+    for (let iSeason = 1; iSeason < seasons.length; ++iSeason)
+    {
+        const season = seasons[iSeason];
+        if (season != prev + 1)
+        {
+            seasonStr += getSequence(first, prev);
+            first = season;
+            prev = first;
+            continue;
+        }
+
+        prev = season;
+    }
+
+    seasonStr += getSequence(first, prev);
+    return seasonStr.substring(0, seasonStr.length - 2);
+}
+
+/// <summary>
+/// Buckets the given seasons from currentSeason to seasonIndex into complete, incomplete, and missing buckets
+/// </summary>
+function processSeason(seasons, currentSeason, seasonIndex, missing, complete, incomplete)
+{
+    if (currentSeason > seasons[seasons.length - 1].season)
+    {
+        logTmi(`Adding season ${currentSeason} to missing array`);
+        missing.push(currentSeason);
+        return seasonIndex;
+    }
+
+    while (currentSeason < seasons[seasonIndex].season)
+    {
+        logTmi(`Adding season ${currentSeason} to missing array`);
+        missing.push(currentSeason);
+        ++currentSeason;
+    }
+
+    if (seasons[seasonIndex].complete)
+    {
+        logTmi(`Adding season ${currentSeason} to complete array`);
+        complete.push(currentSeason);
+        ++seasonIndex;
+    }
+    else
+    {
+        logTmi(`Adding season ${currentSeason} to incomplete array`);
+        incomplete.push(currentSeason);
+        ++seasonIndex;
+    }
+
+    return seasonIndex;
+}
+
+/// <summary>
+/// Shows what seasons for a given show are complete, incomplete, or missing on Plex
+/// </summary>
 function buildSeasonDetails(response, request)
 {
     logTmi("Building season details");
@@ -375,86 +465,32 @@ function buildSeasonDetails(response, request)
     let seasonIndex = 0;
     for (let i = 1; i <= totalSeasons; ++i)
     {
-        if (i > response.seasons[response.seasons.length - 1].season)
-        {
-            logTmi(`Adding season ${i} to missing array`);
-            missing.push(i);
-            continue;
-        }
-
-        while (i < response.seasons[seasonIndex].season)
-        {
-            logTmi(`Adding season ${i} to missing array`);
-            missing.push(i);
-            ++i;
-        }
-
-        if (response.seasons[seasonIndex].complete)
-        {
-            logTmi(`Adding season ${i} to complete array`);
-            complete.push(i);
-            ++seasonIndex;
-        }
-        else
-        {
-            logTmi(`Adding season ${i} to incomplete array`);
-            incomplete.push(i);
-            ++seasonIndex;
-        }
+        seasonIndex = processSeason(response.seasons, i, seasonIndex, missing, complete, incomplete);
     }
 
-    logTmi(complete, 'Complete');
-    logTmi(incomplete, 'Incomplete');
-    logTmi(missing, 'Missing');
+    logTmi(complete, "Complete");
+    logTmi(incomplete, "Incomplete");
+    logTmi(missing, "Missing");
 
-    const buildSeasons = function(seasons)
-    {
-        if (seasons.length == 0)
-        {
-            return '';
-        }
-
-        const getSequence = (start, end) => start + (start == end ? '' : '-' + end) + ', ';
-        let seasonStr = '';
-        let first = parseInt(seasons[0]);
-        let prev = first;
-        for (let iSeason = 1; iSeason < seasons.length; ++iSeason)
-        {
-            const season = seasons[iSeason];
-            if (season != prev + 1)
-            {
-                seasonStr += getSequence(first, prev);
-                first = season;
-                prev = first;
-                continue;
-            }
-
-            prev = season;
-        }
-
-        seasonStr += getSequence(first, prev);
-        return seasonStr.substring(0, seasonStr.length - 2);
-    };
-
-    let seasonString = '';
+    let seasonString = "";
     if (complete.length != 0)
     {
-        seasonString += 'Complete: ' + buildSeasons(complete) + ' &mdash; ';
+        seasonString += "Complete: " + buildSeasons(complete) + " &mdash; ";
     }
     if (incomplete.length != 0)
     {
-        seasonString += 'Incomplete: ' + buildSeasons(incomplete) + ' &mdash; ';
+        seasonString += "Incomplete: " + buildSeasons(incomplete) + " &mdash; ";
     }
     if (missing.length != 0)
     {
-        seasonString += 'Missing: ' + buildSeasons(missing) + ' &mdash; ';
+        seasonString += "Missing: " + buildSeasons(missing) + " &mdash; ";
     }
 
     seasonString = seasonString.substring(0, seasonString.length - 9);
     let oldText = $(`a[seasonpath="${request.path}"]`)[0];
     let attachTo = oldText.parentNode;
     attachTo.removeChild(oldText);
-    attachTo.appendChild(buildNode('span', {}, seasonString));
+    attachTo.appendChild(buildNode("span", {}, seasonString));
 }
 
 /// <summary>
@@ -480,7 +516,7 @@ function goToExternal()
     }
 
     const tmdbid = grandparent.getAttribute("tmdbid");
-    let parameters = { "type" : value == "movie" ? 1 : 2, "query" : tmdbid, "by_id" : "true" };
+    let parameters = { type : value == "movie" ? 1 : 2, query : tmdbid, by_id : "true" };
     let successFunc = function(response, request)
     {
         logInfo(response);
@@ -490,12 +526,11 @@ function goToExternal()
         }
         else
         {
-            window.open("https://www.themoviedb.org/" + ($("#type").value == "movie" ? "movie" : "tv") + "/" + request.linkElement.parentNode.parentNode.getAttribute("tmdbid"));
-            // request.linkElement.classList.add("badLink");
-            // request.linkElement.innerHTML += " (no IMDb link)";
+            let extId = request.linkElement.parentNode.parentNode.getAttribute("tmdbid");
+            window.open("https://www.themoviedb.org/" + ($("#type").value == "movie" ? "movie" : "tv") + "/" + extId);
         }
     };
-    sendHtmlJsonRequest("media_search.php", parameters, successFunc, null, { "linkElement" : this });
+    sendHtmlJsonRequest("media_search.php", parameters, successFunc, null, { linkElement : this });
 }
 
 /// <summary>
@@ -509,7 +544,7 @@ function clickSuggestion(e)
     }
 
     let enableButton = "matchContinue_" + this.parentNode.id;
-    let disableButton = "matchContinue_" + (enableButton.charAt(14) == 'm' ? "externalResult" : "matchContainer");
+    let disableButton = "matchContinue_" + (enableButton.charAt(14) == "m" ? "externalResult" : "matchContainer");
     logTmi("EnableButton: " + enableButton);
     logTmi("DisableButton: " + disableButton);
     if (selectedSuggestion && selectedSuggestion != this)
@@ -529,8 +564,70 @@ function clickSuggestion(e)
     this.className += " selectedSuggestion";
     setVisibility(enableButton, true);
     setVisibility(disableButton, false);
-    Animation.fireNow({ "backgroundColor" : new Color(63, 80, 69) }, $("#" + enableButton), 500);
-    Animation.queue({ "backgroundColor" : new Color(63, 66, 69) }, $("#" + enableButton), 500, 500, true);
+    Animation.fireNow({ backgroundColor : new Color(63, 80, 69) }, $("#" + enableButton), 500);
+    Animation.queue({ backgroundColor : new Color(63, 66, 69) }, $("#" + enableButton), 500, 500, true);
+}
+
+function showAlreadyExistsAlert(response)
+{
+    // The user has already made a request for this item. Ask them to add
+    // a comment to the existing request instead
+    let status = ["Pending", "Complete", "Denied", "In Progress", "Waiting"][response.status];
+    let secondaryText = "Would you like to add a comment to the existing request?";
+    let message = buildNode(
+        "div",
+        {},
+        `You have already made a request for '${response.name}', and its status is '${status}'.<br><br>${secondaryText}`);
+    let button1 = buildNode(
+        "input",
+        {
+            type : "button",
+            id : "overlayOK",
+            value : "Go to Request",
+            style : "width: 120px; margin-right: 10px; display: inline",
+            rid : response.rid
+        },
+        0,
+        {
+            click : goToRequest
+        });
+
+    let button2 = buildNode(
+        "input",
+        {
+            type : "button",
+            id : "overlayCancel",
+            value : "Cancel",
+            style : "width: 120px; display: inline",
+        },
+        0,
+        {
+            click : overlayDismiss
+        });
+
+    let outerButtonContainer = buildNode("div", { class : "formInput", style : "text-align: center" });
+    let buttonContainer = buildNode("div", { style : "float: right; overflow: auto; width: 100%; margin: auto" });
+    buttonContainer.appendChild(button1);
+    buttonContainer.appendChild(button2);
+    outerButtonContainer.appendChild(buttonContainer);
+
+    buildOverlay(true /*dismissable*/, message, outerButtonContainer);
+}
+
+/// <summary>
+/// Callback when we successfully submit a new request. Either the new request was created,
+/// or it already exists and we show the user an alert telling them they can't submit multiple
+/// requests for the same item.
+/// </summary>
+function onSubmitRequestSucceeded(response)
+{
+    if (!response.exists)
+    {
+        window.location.href = `https://danrahn.com/plex/request.php?id=${response.req_id}&new=1`;
+        return;
+    }
+
+    showAlreadyExistsAlert(response);
 }
 
 /// <summary>
@@ -543,13 +640,13 @@ function submitSelected()
         alert("Sorry, audiobook requests aren't quite hooked up yet");
         return;
     }
-    
+
     if (!selectedSuggestion)
     {
         let button = $("#matchContinue");
         let color = new Color(button.getComputedStyle.backgroundColor, 500);
-        Animation.fireNow({"backgroundColor" : new Color(100, 66, 69)}, button);
-        Animation.queue({"backgroundColor" : color}, button, 500, 500, true);
+        Animation.fireNow({ backgroundColor : new Color(100, 66, 69) }, button);
+        Animation.queue({ backgroundColor : color }, button, 500, 500, true);
         return;
     }
 
@@ -564,63 +661,11 @@ function submitSelected()
 
     let parameters =
     {
-        "type" : ProcessRequest.NewRequest,
-        "name" : title,
-        "mediatype" : $("#type").value,
-        "external_id" : tmdbid,
-        "poster" : poster
-    }
-
-    let successFunc = function(response)
-    {
-        if (!response.exists)
-        {
-            window.location.href = `https://danrahn.com/plex/request.php?id=${response.req_id}&new=1`;
-            return;
-        }
-
-        // The user has already made a request for this item. Ask them to add
-        // a comment to the existing request instead
-        let status = [ "Pending", "Complete", "Denied", "In Progress", "Waiting" ][response.status]
-        let secondaryText = 'Would you like to add a comment to the existing request?';
-        let message = buildNode(
-            'div',
-            {},
-            `You have already made a request for '${response.name}', and its status is '${status}'.<br><br>${secondaryText}`)
-        let button1 = buildNode(
-            "input",
-            {
-                "type" : "button",
-                "id" : "overlayOK",
-                "value" : "Go to Request",
-                "style" : "width: 120px; margin-right: 10px; display: inline",
-                "rid" : response.rid
-            },
-            0,
-            {
-                "click" : goToRequest
-            });
-
-        let button2 = buildNode(
-            "input",
-            {
-                "type" : "button",
-                "id" : "overlayCancel",
-                "value" : "Cancel",
-                "style" : "width: 120px; display: inline",
-            },
-            0,
-            {
-                "click" : overlayDismiss
-            });
-
-        let outerButtonContainer = buildNode('div', { 'class' : 'formInput', 'style' : 'text-align: center' });
-        let buttonContainer = buildNode('div', { "style" : "float: right; overflow: auto; width: 100%; margin: auto" } );
-        buttonContainer.appendChild(button1);
-        buttonContainer.appendChild(button2);
-        outerButtonContainer.appendChild(buttonContainer);
-
-        buildOverlay(true /*dismissable*/, message, outerButtonContainer);
+        type : ProcessRequest.NewRequest,
+        name : title,
+        mediatype : $("#type").value,
+        external_id : tmdbid,
+        poster : poster
     };
 
     let failureFunc = function()
@@ -629,12 +674,13 @@ function submitSelected()
         for (let i = 0; i < buttons.length; ++i)
         {
             buttons[i].value = "Something went wrong, please try again later";
-            Animation.fireNow({"backgroundColor" : new Color(100, 66, 69)}, buttons[i], 500);
-            Animation.queueDelayed({"backgroundColor" : new Color(63, 66, 69)}, buttons[i], 1000, 500, true);
+            Animation.fireNow({ backgroundColor : new Color(100, 66, 69) }, buttons[i], 500);
+            Animation.queueDelayed({ backgroundColor : new Color(63, 66, 69) }, buttons[i], 1000, 500, true);
             setTimeout(function(btn) { btn.value = "Submit Request"; }, 2500, buttons[i]);
         }
-    }
-    sendHtmlJsonRequest("process_request.php", parameters, successFunc, failureFunc);
+    };
+
+    sendHtmlJsonRequest("process_request.php", parameters, onSubmitRequestSucceeded, failureFunc);
 }
 
 /// <summary>
@@ -649,7 +695,7 @@ function goToRequest()
 
 function setVisibility(id, visible)
 {
-    let element = $('#' + id);
+    let element = $("#" + id);
     if (!element)
     {
         return;

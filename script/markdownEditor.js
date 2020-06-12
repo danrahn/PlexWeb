@@ -1,4 +1,9 @@
+/* exported MarkdownEditor */
 
+/* eslint-disable max-lines-per-function */
+
+// Markdown files are the only ones that prefer single-quotes over double.
+/* eslint quotes: ["error", "single", { "avoidEscape" : true, "allowTemplateLiterals" : true }] */
 let MarkdownEditor = new function()
 {
     /// <summary>
@@ -75,7 +80,7 @@ let MarkdownEditor = new function()
             newText = spaces + currentSelection.replace(/\n/g, '\n' + spaces);
         }
 
-        // insertText gives us undo support. If it's not available, we can still
+        // We get undo support with insertText. If it's not available, we can still
         // insert the spaces, but undo will break.
         if (document.queryCommandSupported('insertText'))
         {

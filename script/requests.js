@@ -1,10 +1,12 @@
+/* exported populateFilter, getNewFilter, filterHtml, tableSearch, tableIdentifier, tableUpdateFunc  */
+
 window.addEventListener("load", function()
 {
     setPage(0);
     getRequests();
-    $('#clearSearch').addEventListener('click', function()
+    $("#clearSearch").addEventListener("click", function()
     {
-        $('.searchInput').forEach(function() { this.value = ''; });
+        $(".searchInput").forEach(function() { this.value = ""; });
         getRequests();
     });
 });
@@ -13,27 +15,27 @@ window.addEventListener("load", function()
 /// <summary>
 /// Ask the server for user requests dependent on the current page and filter
 /// </summary>
-function getRequests(searchValue='')
+function getRequests(searchValue="")
 {
     let parameters =
     {
-        "type" : ProcessRequest.GetRequests,
-        "num" : getPerPage(),
-        "page" : getPage(),
-        "search" : searchValue,
-        "filter" : JSON.stringify(getFilter())
+        type : ProcessRequest.GetRequests,
+        num : getPerPage(),
+        page : getPage(),
+        search : searchValue,
+        filter : JSON.stringify(getFilter())
     };
 
     displayInfoMessage("Loading...");
-    let header = $('#requestSearch');
+    let header = $("#requestSearch");
     if (searchValue.length == 0)
     {
-        header.style.display = 'none';
+        header.style.display = "none";
     }
     else
     {
-        header.style.display = 'block';
-        $('#searchTerm').innerHTML = searchValue;
+        header.style.display = "block";
+        $("#searchTerm").innerHTML = searchValue;
     }
 
     let successFunc = function(response)
@@ -42,7 +44,7 @@ function getRequests(searchValue='')
         buildRequests(response);
         if (searchValue.length != 0)
         {
-            $$('.searchBtn').click();
+            $$(".searchBtn").click();
         }
     };
 
@@ -61,7 +63,7 @@ function getRequests(searchValue='')
 /// </summary>
 function isAdmin()
 {
-    return parseInt(document.body.getAttribute("isAdmin")) === 1 ;
+    return parseInt(document.body.getAttribute("isAdmin")) === 1;
 }
 
 /// <summary>
@@ -93,16 +95,10 @@ function buildRequests(requests)
     setPageInfo(requests.total);
 }
 
-/// <summary>
-/// Build a single request node, which consists of the request poster, a link to the request,
-/// and a few useful bits of information
-/// </summary>
-function buildRequest(request, sortOrder)
+function buildRequestPoster(request)
 {
-    let holder = tableItemHolder();
-
-    let imgHolder = buildNode("div", {"class" : "imgHolder"});
-    let imgA = buildNode("a", {"href" : `request.php?id=${request.rid}`});
+    let imgHolder = buildNode("div", { class : "imgHolder" });
+    let imgA = buildNode("a", { href : `request.php?id=${request.rid}` });
 
     // Sometimes a poster fails to load. If it does, let the server know
     // that it needs to be updated. This should really only happen when
@@ -111,41 +107,42 @@ function buildRequest(request, sortOrder)
     let img = buildNode(
         "img",
         {
-            'id' : `poster${request.rid}`,
-            "src" : `poster${request.p}`,
-            'alt' : 'Media Poster',
-            'rid' : request.rid
+            id : `poster${request.rid}`,
+            src : `poster${request.p}`,
+            alt : "Media Poster",
+            rid : request.rid
         },
         0,
         {
-            'error' : onFailedPoster
+            error : onFailedPoster
         });
     imgA.appendChild(img);
     imgHolder.appendChild(imgA);
+    return imgHolder;
+}
 
-    let textHolder = buildNode("div", {"class" : "textHolder"/*, "style" : "max-width: calc(100% - 100px)"*/});
-
-    let a = buildNode("a", {"class" : "tableEntryTitle", "href" : `request.php?id=${request.rid}`});
-    a.appendChild(buildNode("span", {}, request.n));
+function buildRequestTitle(request)
+{
+    let requestTitle = buildNode("a", { class : "tableEntryTitle", href : `request.php?id=${request.rid}` });
+    requestTitle.appendChild(buildNode("span", {}, request.n));
     if (request.t == 1 || request.t == 2)
     {
-        a.appendChild(buildNode("img", {
-            "class" : "inlineIcon",
-            "src" : icons[`${request.t == 1 ? "movie" : "tv"}icon`.toUpperCase()],
-            "alt" : request.t == 1 ? "Movie" : "TV Show"
+        requestTitle.appendChild(buildNode("img", {
+            class : "inlineIcon",
+            src : icons[`${request.t == 1 ? "movie" : "tv"}icon`.toUpperCase()],
+            alt : request.t == 1 ? "Movie" : "TV Show"
         }));
     }
 
-    let tooltipDateOptions = { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: 'numeric' };
+    return requestTitle;
+}
 
-    let requestDate = buildNode("span", {}, `Requested: ${DateUtil.getDisplayDate(request.rd)}`);
-    setTooltip(requestDate, DateUtil.getFullDate(request.rd));
-
-    let updateDate = buildNode("span", {}, `Last Update: ${DateUtil.getDisplayDate(request.ad)}`);
-    setTooltip(updateDate, DateUtil.getFullDate(request.ad));
-
-    let requester = buildNode("span", {}, `Requested By: ${request.r}`);
-
+/// <summary>
+/// Determines and displays the request status. If the current user
+/// is an administrator, make the status a dropdown
+/// </summary>
+function buildRequestStatus(request, requestHolder)
+{
     let status = buildNode("span");
     let statusVal = parseInt(request.a);
     let statusText = ["Pending", "Complete", "Denied", "In Progress", "Waiting"][statusVal];
@@ -161,15 +158,34 @@ function buildRequest(request, sortOrder)
 
     if (statusVal != 0)
     {
-        holder.classList.add(["", "requestComplete", "requestDenied", "requestInProgress", "requestWaiting"][statusVal]);
+        requestHolder.classList.add(["", "requestComplete", "requestDenied", "requestInProgress", "requestWaiting"][statusVal]);
     }
 
-    let comments = buildNode("span");
-    comments.appendChild(buildNode("a",
-        {"href" : `request.php?id=${request.rid}`},
-        `${request.c} comment${request.c != 1 ? 's' : ''}`));
+    return status;
+}
 
-    textHolder.appendChild(a);
+/// <summary>
+/// Builds and returns the main body of an individual request
+/// </summary>
+function buildRequestBody(request, sortOrder, requestHolder)
+{
+    let textHolder = buildNode("div", { class : "textHolder"/*, "style" : "max-width: calc(100% - 100px)"*/ });
+    let requestTitle = buildRequestTitle(request);
+
+    let requestDate = buildNode("span", {}, `Requested: ${DateUtil.getDisplayDate(request.rd)}`);
+    setTooltip(requestDate, DateUtil.getFullDate(request.rd));
+
+    let updateDate = buildNode("span", {}, `Last Update: ${DateUtil.getDisplayDate(request.ad)}`);
+    setTooltip(updateDate, DateUtil.getFullDate(request.ad));
+
+    let requester = buildNode("span", {}, `Requested By: ${request.r}`);
+
+    let status = buildRequestStatus(request, requestHolder);
+
+    let comments = buildNode("span");
+    comments.appendChild(buildNode("a", { href : `request.php?id=${request.rid}` }, `${request.c} comment${request.c == 1 ? "" : "s"}`));
+
+    textHolder.appendChild(requestTitle);
     if (sortOrder == "ud" || sortOrder == "ua")
     {
         textHolder.appendChild(updateDate);
@@ -184,6 +200,19 @@ function buildRequest(request, sortOrder)
     textHolder.appendChild(requester);
     textHolder.appendChild(status);
     textHolder.appendChild(comments);
+    return textHolder;
+}
+
+/// <summary>
+/// Build a single request node, which consists of the request poster, a link to the request,
+/// and a few useful bits of information
+/// </summary>
+function buildRequest(request, sortOrder)
+{
+    let holder = tableItemHolder();
+
+    let imgHolder = buildRequestPoster(request);
+    let textHolder = buildRequestBody(request, sortOrder, holder);
 
     holder.appendChild(imgHolder);
     holder.appendChild(textHolder);
@@ -196,22 +225,22 @@ function buildRequest(request, sortOrder)
 /// server-side. This can happen if our poster cache was wiped
 /// out and the poster has changed on TMDb
 /// </summary>
-function onFailedPoster(e)
+function onFailedPoster()
 {
-    if (this.getAttribute('retried') == 1)
+    if (this.getAttribute("retried") == 1)
     {
         // We can get into a nasty loop if we continue
         // attempting to reload an image that truly doesn't exist
-        logWarn('We already failed, not trying again');
+        logWarn("We already failed, not trying again");
         return;
     }
 
-    this.alt = 'Refreshing Poster...';
+    this.alt = "Refreshing Poster...";
 
     let parameters =
     {
-        'type' : ProcessRequest.UpdatePoster,
-        'rid' : this.getAttribute('rid')
+        type : ProcessRequest.UpdatePoster,
+        rid : this.getAttribute("rid")
     };
 
     let successFunc = function(response)
@@ -219,22 +248,22 @@ function onFailedPoster(e)
         let img = $(`#poster${response.rid}`);
         if (img)
         {
-            img.setAttribute('retried', 1);
-            img.src = 'poster' + response.poster;
-            img.alt = 'Media Poster';
+            img.setAttribute("retried", 1);
+            img.src = "poster" + response.poster;
+            img.alt = "Media Poster";
         }
-    }
+    };
 
     let failureFunc = function(response)
     {
         let img = $(`#poster${response.rid}`);
         if (img)
         {
-            $(`#poster${response.rid}`).setAttribute('retried', 1);
+            $(`#poster${response.rid}`).setAttribute("retried", 1);
         }
-    }
+    };
 
-    sendHtmlJsonRequest('process_request.php', parameters, successFunc);
+    sendHtmlJsonRequest("process_request.php", parameters, successFunc, failureFunc);
 }
 
 /// <symmary>
@@ -242,22 +271,22 @@ function onFailedPoster(e)
 /// </summary>
 function getStatusSelection(statusHolder, rid, selected)
 {
-    statusHolder.appendChild(buildNode("label", {"for" : `status_${rid}`}, "Status: "));
-    let select = buildNode("select", {"name" : `status_${rid}`, "id" : `status_${rid}`, "class" : "inlineCombo"});
+    statusHolder.appendChild(buildNode("label", { for : `status_${rid}` }, "Status: "));
+    let select = buildNode("select", { name : `status_${rid}`, id : `status_${rid}`, class : "inlineCombo" });
     let mappings = [0, 4, 3, 1, 2];
     ["Pending", "Waiting", "In Progress", "Complete", "Denied"].forEach(function(item, i)
     {
-        select.appendChild(buildNode("option", {"value" : mappings[i]}, item));
+        select.appendChild(buildNode("option", { value : mappings[i] }, item));
     });
 
     statusHolder.appendChild(select);
     statusHolder.appendChild(buildNode("a",
         {
-            "href" : "#",
-            "id" : `statusChange_${rid}`,
-            "class" : "statusChange statusHidden",
-            "orig" : selected,
-            "rid" : rid
+            href : "#",
+            id : `statusChange_${rid}`,
+            class : "statusChange statusHidden",
+            orig : selected,
+            rid : rid
         },
         "Update"));
 }
@@ -298,6 +327,24 @@ function setStatusChangeHandlers(request)
 }
 
 /// <summary>
+/// Callback for when we successfully submitted a request status change event
+/// </summary>
+function updateStatusSuccess(response, request)
+{
+    request.ridList.forEach(function(rid)
+    {
+        Animation.queue({ backgroundColor : "rgb(63, 100, 69)" }, $(`#status_${rid}`), 500);
+        Animation.queueDelayed({ backgroundColor : "transparent" }, $(`#status_${rid}`), 500, 500, true);
+    });
+
+    setTimeout(function()
+    {
+        clearTable();
+        getRequests();
+    }, 2000);
+}
+
+/// <summary>
 /// Update the status(es) of requests that have changed
 /// </sumary>
 function updateStatus()
@@ -309,49 +356,34 @@ function updateStatus()
     {
         let rid = e.getAttribute("rid");
         data.push({
-            "id" : rid,
-            "kind" : "status",
-            "content" : $(`#status_${rid}`).value
+            id : rid,
+            kind : "status",
+            content : $(`#status_${rid}`).value
         });
 
         ridList.push(rid);
     });
 
     let params = {
-        "type" : "req_update",
-        "data" : data
-    }
-
-    let successFunc = function(response, request)
-    {
-        request.ridList.forEach(function(rid)
-        {
-            Animation.queue({"backgroundColor": "rgb(63, 100, 69)"}, $(`#status_${rid}`), 500);
-            Animation.queueDelayed({"backgroundColor": "transparent"}, $(`#status_${rid}`), 500, 500, true);
-        });
-
-        setTimeout(function()
-        {
-            clearTable();
-            getRequests();
-        }, 2000)
-    }
+        type : "req_update",
+        data : data
+    };
 
     let failureFunc = function(response, request)
     {
         request.ridList.forEach(function(rid)
         {
-            Animation.queue({"backgroundColor": "rgb(100, 66, 69)"}, $(`#status_${rid}`), 500);
-            Animation.queueDelayed({"backgroundColor": "transparent"}, $(`#status_${rid}`), 1000, 500, true);
+            Animation.queue({ backgroundColor : "rgb(100, 66, 69)" }, $(`#status_${rid}`), 500);
+            Animation.queueDelayed({ backgroundColor : "transparent" }, $(`#status_${rid}`), 1000, 500, true);
         });
-    }
+    };
 
     sendHtmlJsonRequest(
         "update_request.php",
         JSON.stringify(params),
-        successFunc,
+        updateStatusSuccess,
         failureFunc,
-        {"ridList" : ridList},
+        { ridList : ridList },
         true /*dataIsString*/);
 }
 
@@ -367,7 +399,7 @@ function populateFilter()
     $("#showTV").checked = filter.type.tv;
     $("#showOther").checked = filter.type.other;
     $("#sortBy").value = filter.sort;
-    $("#sortOrder").value = filter.order == 'desc' ? 'sortDesc' : 'sortAsc';
+    $("#sortOrder").value = filter.order == "desc" ? "sortDesc" : "sortAsc";
 
     if (isAdmin())
     {
@@ -381,23 +413,23 @@ function populateFilter()
 function getNewFilter()
 {
     return {
-        "status" :
+        status :
         {
-            "pending" : $("#showPending").checked,
-            "complete" : $("#showComplete").checked,
-            "declined" : $("#showDeclined").checked,
-            "inprogress" : $("#showInProgress").checked,
-            "waiting" : $("#showWaiting").checked
+            pending : $("#showPending").checked,
+            complete : $("#showComplete").checked,
+            declined : $("#showDeclined").checked,
+            inprogress : $("#showInProgress").checked,
+            waiting : $("#showWaiting").checked
         },
-        "type" :
+        type :
         {
-            "movies" : $("#showMovies").checked,
-            "tv" : $("#showTV").checked,
-            "other" : $("#showOther").checked,
+            movies : $("#showMovies").checked,
+            tv : $("#showTV").checked,
+            other : $("#showOther").checked,
         },
-        "sort" : $("#sortBy").value,
-        "order" : $("#sortOrder").value == 'sortDesc' ? 'desc' : 'asc',
-        "user" : isAdmin() ? $("#filterTo").value : "-1"
+        sort : $("#sortBy").value,
+        order : $("#sortOrder").value == "sortDesc" ? "desc" : "asc",
+        user : isAdmin() ? $("#filterTo").value : "-1"
     };
 }
 
@@ -419,6 +451,30 @@ function setSortOrderValues()
 }
 
 /// <summary>
+/// Adds checkbox options to the requests table filter
+/// </summary>
+function addFilterCheckboxes(options)
+{
+    let checkboxes =
+    {
+        "Show Pending" : "showPending",
+        "Show Waiting" : "showWaiting",
+        "Show In Progress" : "showInProgress",
+        "Show Complete" : "showComplete",
+        "Show Declined" : "showDeclined",
+        "" : "",
+        "Show Movies" : "showMovies",
+        "Show TV" : "showTV",
+        "Show Other" : "showOther"
+    };
+
+    for (let [label, name] of Object.entries(checkboxes))
+    {
+        options.push(buildTableFilterCheckbox(label, name));
+    }
+}
+
+/// <summary>
 /// HTML for the filter overlay/dialog. Should probably be part of the initial DOM
 /// </summary>
 function filterHtml()
@@ -426,39 +482,23 @@ function filterHtml()
     let options = [];
 
     // Statuses + request types
-    let checkboxes =
-    {
-        'Show Pending' : 'showPending',
-        'Show Waiting' : 'showWaiting',
-        'Show In Progress' : 'showInProgress',
-        'Show Complete' : 'showComplete',
-        'Show Declined' : 'showDeclined',
-        '' : '',
-        'Show Movies' : 'showMovies',
-        'Show TV' : 'showTV',
-        'Show Other' : 'showOther'
-    };
+    addFilterCheckboxes(options);
 
-    for (let [label, name] of Object.entries(checkboxes))
-    {
-        options.push(buildTableFilterCheckbox(label, name));
-    }
-
-    options.push(buildNode('hr'));
+    options.push(buildNode("hr"));
 
     options.push(buildTableFilterDropdown(
-        'Sort By',
+        "Sort By",
         {
-            'Request Date' : 'request',
-            'Update Date' : 'update',
-            'Title' : 'title'
+            "Request Date" : "request",
+            "Update Date" : "update",
+            Title : "title"
         }));
 
     options.push(buildTableFilterDropdown(
-        'Sort Order',
+        "Sort Order",
         {
-            'Newest First' : 'sortDesc',
-            'Oldest First' : 'sortAsc'
+            "Newest First" : "sortDesc",
+            "Oldest First" : "sortAsc"
         },
         true /*addId*/));
 
@@ -467,9 +507,9 @@ function filterHtml()
     if (isAdmin())
     {
         options.push(buildTableFilterDropdown(
-            'Filter To',
+            "Filter To",
             {
-                'All' : -1
+                All : -1
             }));
         options.push(buildNode("hr"));
     }
@@ -490,7 +530,7 @@ function tableSearch(value)
 /// </summary>
 function tableIdentifier()
 {
-    return 'requests';
+    return "requests";
 }
 
 /// <summary>
@@ -509,36 +549,36 @@ function getFilter()
     let filter = null;
     try
     {
-        filter = JSON.parse(localStorage.getItem(tableIdCore() + '_filter'));
+        filter = JSON.parse(localStorage.getItem(tableIdCore() + "_filter"));
     }
     catch (e)
     {
         logError("Unable to parse stored filter");
     }
 
-    if (filter == null ||
-        !filter.hasOwnProperty("status") ||
-            !filter.status.hasOwnProperty("pending") ||
-            !filter.status.hasOwnProperty("complete") ||
-            !filter.status.hasOwnProperty("declined") ||
-            !filter.status.hasOwnProperty("inprogress") ||
-            !filter.status.hasOwnProperty("waiting") ||
-        !filter.hasOwnProperty("type") ||
-            !filter.type.hasOwnProperty("movies") ||
-            !filter.type.hasOwnProperty("tv") ||
-            !filter.type.hasOwnProperty("other") ||
-        !filter.hasOwnProperty("sort") ||
-        !filter.hasOwnProperty("order") ||
-        !filter.hasOwnProperty("user"))
+    if (filter === null ||
+        !Object.prototype.hasOwnProperty.call(filter, "status") ||
+            !Object.prototype.hasOwnProperty.call(filter.status, "pending") ||
+            !Object.prototype.hasOwnProperty.call(filter.status, "complete") ||
+            !Object.prototype.hasOwnProperty.call(filter.status, "declined") ||
+            !Object.prototype.hasOwnProperty.call(filter.status, "inprogress") ||
+            !Object.prototype.hasOwnProperty.call(filter.status, "waiting") ||
+        !Object.prototype.hasOwnProperty.call(filter, "type") ||
+            !Object.prototype.hasOwnProperty.call(filter.type, "movies") ||
+            !Object.prototype.hasOwnProperty.call(filter.type, "tv") ||
+            !Object.prototype.hasOwnProperty.call(filter.type, "other") ||
+        !Object.prototype.hasOwnProperty.call(filter, "sort") ||
+        !Object.prototype.hasOwnProperty.call(filter, "order") ||
+        !Object.prototype.hasOwnProperty.call(filter, "user"))
     {
-        if (filter != null)
+        if (filter === null)
         {
-            logError("Bad filter, resetting: ");
-            logError(filter);
+            logInfo("No filter found, creating default filter");
         }
         else
         {
-            logInfo("No filter found, creating default filter");
+            logError("Bad filter, resetting: ");
+            logError(filter);
         }
 
         filter = defaultFilter();
@@ -553,23 +593,23 @@ function defaultFilter()
 {
     let filter =
     {
-        "status" :
+        status :
         {
-            "pending" : true,
-            "complete" : true,
-            "declined" : true,
-            "inprogress" : true,
-            "waiting" : true
+            pending : true,
+            complete : true,
+            declined : true,
+            inprogress : true,
+            waiting : true
         },
-        "type" :
+        type :
         {
-            "movies" : true,
-            "tv" : true,
-            "other" : true
+            movies : true,
+            tv : true,
+            other : true
         },
-        "sort" : "request",
-        "order" : "desc",
-        "user" : -1
+        sort : "request",
+        order : "desc",
+        user : -1
     };
 
     return filter;

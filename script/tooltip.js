@@ -3,17 +3,18 @@
 /// than setting 'title' because it also works on touch/mobile browsers
 /// </summary>
 
+/* exported setTooltip, showTooltip, dismissTooltip */
 
 /// <summary>
 /// Contains the setTimeout id of a scroll event, which will hide the tooltip when expired
 /// </summary>
 let hideTooltipTimer = null;
 
-window.addEventListener('load', function()
+window.addEventListener("load", function()
 {
-    let frame = $('#plexFrame');
-    frame.appendChild(buildNode('div', { 'id' : 'tooltip' }));
-    frame.addEventListener('scroll', function()
+    let frame = $("#plexFrame");
+    frame.appendChild(buildNode("div", { id : "tooltip" }));
+    frame.addEventListener("scroll", function()
     {
         // On scroll, hide the tooltip (mainly for mobile devices)
         // Add a bit of delay, as it is a bit jarring to have it immediately go away
@@ -22,8 +23,8 @@ window.addEventListener('load', function()
             clearTimeout(hideTooltipTimer);
         }
 
-        hideTooltipTimer = setTimeout(() => { $('#tooltip').style.display = 'none' }, 100);
-    })
+        hideTooltipTimer = setTimeout(() => { $("#tooltip").style.display = "none"; }, 100);
+    });
 });
 
 /// <summary>
@@ -31,14 +32,14 @@ window.addEventListener('load', function()
 /// </summary>
 function setTooltip(element, tooltip, delay=250)
 {
-    element.setAttribute('tt', tooltip);
-    element.setAttribute('ttDelay', delay);
-    element.addEventListener('mousemove', function(e)
+    element.setAttribute("tt", tooltip);
+    element.setAttribute("ttDelay", delay);
+    element.addEventListener("mousemove", function(e)
     {
-        showTooltip(e, this.getAttribute('tt'), this.getAttribute('ttDelay'));
+        showTooltip(e, this.getAttribute("tt"), this.getAttribute("ttDelay"));
     });
 
-    element.addEventListener('mouseleave', function()
+    element.addEventListener("mouseleave", function()
     {
         dismissTooltip();
     });

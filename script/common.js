@@ -1,3 +1,4 @@
+/* exported $, $$, buildNode, sendHtmlJsonRequest, ProcessRequest */
 
 /// <summary>
 /// Custom jQuery-like selector method.
@@ -25,12 +26,12 @@ function $$(selector, ele=document)
 Element.prototype.$ = function(selector)
 {
     return $(selector, this);
-}
+};
 
 Element.prototype.$$ = function(selector)
 {
     return $$(selector, this);
-}
+};
 
 /// <summary>
 /// Helper method to create DOM elements.
@@ -71,18 +72,7 @@ function sendHtmlJsonRequest(url, parameters, successFunc, failFunc, additionalP
     http.open("POST", url, true /*async*/);
     http.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
     const queryString = dataIsString ? parameters : buildQuery(parameters);
-    if (additionalParams)
-    {
-        for (let param in additionalParams)
-        {
-            if (!additionalParams.hasOwnProperty(param))
-            {
-                continue;
-            }
-
-            http[param] = additionalParams[param];
-        }
-    }
+    attachExtraParams(additionalParams, http);
 
     // Will need to update this if we ever pass in sensitive information when dataIsString == true
     let sanitized = dataIsString ? queryString : sanitize(parameters);
@@ -123,6 +113,26 @@ function sendHtmlJsonRequest(url, parameters, successFunc, failFunc, additionalP
 }
 
 /// <summary>
+/// Attaches additional parameters to our http request to be used
+/// by success/failure callbacks.
+/// </summary>
+function attachExtraParams(extra, http)
+{
+    if (extra)
+    {
+        for (let param in extra)
+        {
+            if (!Object.prototype.hasOwnProperty.call(extra, param))
+            {
+                continue;
+            }
+
+            http[param] = extra[param];
+        }
+    }
+}
+
+/// <summary>
 /// Builds up a query string, ensuring the components are encoded properly
 /// </summary>
 function buildQuery(parameters)
@@ -130,7 +140,7 @@ function buildQuery(parameters)
     let queryString = "";
     for (let parameter in parameters)
     {
-        if (!parameters.hasOwnProperty(parameter))
+        if (!Object.prototype.hasOwnProperty.call(parameters, parameter))
         {
             continue;
         }

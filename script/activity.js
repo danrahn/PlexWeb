@@ -1,3 +1,4 @@
+/* exported populateFilter, getNewFilter, filterHtml, tableSearch, tableIdentifier, tableUpdateFunc  */
 
 window.addEventListener("load", function()
 {
@@ -6,15 +7,15 @@ window.addEventListener("load", function()
     getActivities();
 });
 
-function getActivities(searchValue='')
+function getActivities(searchValue="")
 {
     let parameters =
     {
-        "type" : ProcessRequest.GetActivities,
-        "num" : getPerPage(),
-        "page" : getPage(),
-        "search" : searchValue,
-        "filter" : JSON.stringify(getFilter())
+        type : ProcessRequest.GetActivities,
+        num : getPerPage(),
+        page : getPage(),
+        search : searchValue,
+        filter : JSON.stringify(getFilter())
     };
 
     let successFunc = function(message)
@@ -24,9 +25,9 @@ function getActivities(searchValue='')
 
         if (searchValue.length != 0)
         {
-            $$('.searchBtn').click();
+            $$(".searchBtn").click();
         }
-    }
+    };
 
     let failureFunc = function()
     {
@@ -46,6 +47,101 @@ const Activity =
     AddRequest : 1,
     AddComment : 2,
     StatusChange : 3
+};
+
+function getTitleText(activity)
+{
+
+    let name = activity.username == attrib("username") ? "You" : activity.username;
+    let plainText;
+    let linkText;
+
+    switch (parseInt(activity.type))
+    {
+        case Activity.AddRequest:
+            if (activity.value == "ViewStream")
+            {
+                plainText = `${name} requested permission to `;
+                linkText = "view active streams";
+            }
+            else
+            {
+                plainText = `${name} added a request for `;
+                linkText = activity.value;
+            }
+
+            break;
+        case Activity.AddComment:
+            plainText = `${name} added a comment to the request for `;
+            linkText = activity.value;
+            break;
+        case Activity.StatusChange:
+            if (activity.username == attrib("username"))
+            {
+                plainText = `You changed the status of the request for ${activity.value} to `;
+                linkText = activity.status;
+            }
+            else
+            {
+                plainText = `The status of the request for ${activity.value} changed to `;
+                linkText = activity.status;
+            }
+
+            break;
+        default:
+            plainText = "Error getting activity details. ";
+            linkText = "Click here to view the request.";
+            logError(activity.type, "Unknown activity type");
+            break;
+    }
+
+    return { plain : plainText, link : linkText };
+}
+
+function buildActivity(activity, newActivity)
+{
+    let holder = tableItemHolder();
+    if (newActivity)
+    {
+        holder.classList.add("newActivity");
+    }
+
+    let imgHolder = buildNode("div", { class : "imgHolder" });
+    let imgA = buildNode("a", { href : `request.php?id=${activity.rid}` });
+    let img = buildNode("img", { src : `poster${activity.poster}`, alt : "Poster" });
+
+    if (activity.value == "ViewStream")
+    {
+        img.src = "poster/viewstream.svg";
+    }
+    else if (!activity.poster)
+    {
+        img.src = "poster/moviedefault.svg";
+    }
+
+    img.style.height = "80px";
+    imgA.appendChild(img);
+    imgHolder.appendChild(imgA);
+
+    let textHolder = buildNode("div", { class : "textHolder"/*, "style": "max-width: calc(100% - 70px"*/ });
+    let span = buildNode("span", { class : "tableEntryTitle" });
+
+    let requestLink = buildNode("a", { href : `request.php?id=${activity.rid}` });
+    let titleText = getTitleText(activity);
+
+    requestLink.appendChild(buildNode("span", {}, titleText.link));
+    span.appendChild(buildNode("span", {}, titleText.plain));
+    span.appendChild(requestLink);
+
+    let activityTime = buildNode("span", {}, DateUtil.getDisplayDate(activity.timestamp));
+    setTooltip(activityTime, DateUtil.getFullDate(activity.timestamp));
+
+    textHolder.appendChild(span);
+    textHolder.appendChild(activityTime);
+
+    holder.appendChild(imgHolder);
+    holder.appendChild(textHolder);
+    return holder;
 }
 
 function buildActivities(response)
@@ -63,94 +159,9 @@ function buildActivities(response)
 
     logVerbose(response);
 
-    for (let i = 0; i < activities.length; ++i, --newActivities)
+    for (let i = 0; i < activities.length; ++i)
     {
-        let activity = activities[i];
-
-        let holder = tableItemHolder();
-        if (newActivities > 0)
-        {
-            holder.classList.add("newActivity");
-        }
-
-        let imgHolder = buildNode("div", {"class" : "imgHolder"});
-        let imgA = buildNode("a", {"href" : `request.php?id=${activity.rid}`});
-        let img = buildNode("img", {"src" : `poster${activity.poster}`, "alt" : "Poster"});
-
-        if (activity.value == "ViewStream")
-        {
-            img.src = "poster/viewstream.svg";
-        }
-        else if (!activity.poster)
-        {
-            img.src = "poster/moviedefault.svg";
-        }
-
-        img.style.height = "80px";
-        imgA.appendChild(img);
-        imgHolder.appendChild(imgA);
-
-        let textHolder = buildNode("div", {"class" : "textHolder"/*, "style": "max-width: calc(100% - 70px"*/});
-        let span = buildNode("span", {"class" : "tableEntryTitle"});
-
-        let a = buildNode("a", {"href" : `request.php?id=${activity.rid}`});
-
-        let name = activity.username == attrib("username") ? "You" : activity.username;
-        let plainText;
-        let linkText;
-
-        switch (parseInt(activity.type))
-        {
-            case Activity.AddRequest:
-                if (activity.value == "ViewStream")
-                {
-                    plainText = `${name} requested permission to `;
-                    linkText = "view active streams";
-                }
-                else
-                {
-                    plainText = `${name} added a request for `;
-                    linkText = activity.value;
-                }
-
-                break;
-            case Activity.AddComment:
-                plainText = `${name} added a comment to the request for `;
-                linkText = activity.value;
-                break;
-            case Activity.StatusChange:
-                if (activity.username == attrib("username"))
-                {
-                    plainText = `You changed the status of the request for ${activity.value} to `;
-                    linkText = activity.status;
-                }
-                else
-                {
-                    plainText = `The status of the request for ${activity.value} changed to `
-                    linkText = activity.status;
-                }
-
-                break;
-            default:
-                plainText = "Error getting activity details. ";
-                linkText = "Click here to view the request.";
-                logError(activity.type, "Unknown activity type");
-                break;
-        }
-
-        a.appendChild(buildNode("span", {}, linkText));
-        span.appendChild(buildNode("span", {}, plainText));
-        span.appendChild(a);
-    
-        let activityTime = buildNode("span", {}, DateUtil.getDisplayDate(activity.timestamp));
-        setTooltip(activityTime, DateUtil.getFullDate(activity.timestamp));
-
-        textHolder.appendChild(span);
-        textHolder.appendChild(activityTime);
-
-        holder.appendChild(imgHolder);
-        holder.appendChild(textHolder);
-        addTableItem(holder);
+        addTableItem(buildActivity(activities[i], i < newActivities));
     }
 
     setPageInfo(total);
@@ -168,7 +179,7 @@ function attrib(attribute)
 /// </summary>
 function isAdmin()
 {
-    return parseInt(attrib("admin")) === 1 ;
+    return parseInt(attrib("admin")) === 1;
 }
 
 /// <summary>
@@ -181,10 +192,10 @@ function filterHtml()
     // Statuses + request types
     let checkboxes =
     {
-        'Show New Requests' : 'showNew',
-        'Show Comments' : 'showComment',
-        'Show Status Changes' : 'showStatus',
-        'Show My Actions' : 'showMine'
+        "Show New Requests" : "showNew",
+        "Show Comments" : "showComment",
+        "Show Status Changes" : "showStatus",
+        "Show My Actions" : "showMine"
     };
 
     for (let [label, name] of Object.entries(checkboxes))
@@ -193,16 +204,16 @@ function filterHtml()
     }
 
     options.push(buildTableFilterDropdown(
-        'Sort By',
+        "Sort By",
         {
-            'Date' : 'request'
+            Date : "request"
         }));
 
     options.push(buildTableFilterDropdown(
-        'Sort Order',
+        "Sort Order",
         {
-            'Newest First' : 'sortDesc',
-            'Oldest First' : 'sortAsc'
+            "Newest First" : "sortDesc",
+            "Oldest First" : "sortAsc"
         },
         true /*addId*/));
 
@@ -211,9 +222,9 @@ function filterHtml()
     if (isAdmin())
     {
         options.push(buildTableFilterDropdown(
-            'Filter To',
+            "Filter To",
             {
-                'All' : -1
+                All : -1
             }));
 
         options.push(buildNode("hr"));
@@ -230,7 +241,7 @@ function populateFilter()
     $("#showStatus").checked = filter.type.status;
     $("#showMine").checked = filter.type.mine;
     $("#sortBy").value = filter.sort;
-    $("#sortOrder").value = filter.order == 'desc' ? 'sortDesc' : 'sortAsc';
+    $("#sortOrder").value = filter.order == "desc" ? "sortDesc" : "sortAsc";
 
     if (isAdmin())
     {
@@ -241,22 +252,22 @@ function populateFilter()
 function getNewFilter()
 {
     return {
-        "type" :
+        type :
         {
-            "new" : $("#showNew").checked,
-            "comment" : $("#showComment").checked,
-            "status" : $("#showStatus").checked,
-            "mine" : $("#showMine").checked
+            new : $("#showNew").checked,
+            comment : $("#showComment").checked,
+            status : $("#showStatus").checked,
+            mine : $("#showMine").checked
         },
-        "sort" : $("#sortBy").value,
-        "order" : $("#sortOrder").value == 'sortDesc' ? 'desc' : 'asc',
-        "user" : isAdmin() ? $("#filterTo").value : "-1"
+        sort : $("#sortBy").value,
+        order : $("#sortOrder").value == "sortDesc" ? "desc" : "asc",
+        user : isAdmin() ? $("#filterTo").value : "-1"
     };
 }
 
 function tableIdentifier()
 {
-    return 'activity';
+    return "activity";
 }
 
 function tableUpdateFunc()
@@ -272,22 +283,22 @@ function getFilter()
     let filter = null;
     try
     {
-        filter = JSON.parse(localStorage.getItem(tableIdCore() + '_filter'));
+        filter = JSON.parse(localStorage.getItem(tableIdCore() + "_filter"));
     }
-    catch (e)
+    catch (exception)
     {
         logError("Unable to parse stored filter");
     }
 
-    if (filter == null ||
-        !filter.hasOwnProperty("type") ||
-            !filter.type.hasOwnProperty("new") ||
-            !filter.type.hasOwnProperty("comment") ||
-            !filter.type.hasOwnProperty("status") ||
-            !filter.type.hasOwnProperty("mine") ||
-        !filter.hasOwnProperty("sort") ||
-        !filter.hasOwnProperty("order") ||
-        !filter.hasOwnProperty("user"))
+    if (filter === null ||
+        !Object.prototype.hasOwnProperty.call(filter, "type") ||
+            !Object.prototype.hasOwnProperty.call(filter.type, "new") ||
+            !Object.prototype.hasOwnProperty.call(filter.type, "comment") ||
+            !Object.prototype.hasOwnProperty.call(filter.type, "status") ||
+            !Object.prototype.hasOwnProperty.call(filter.type, "mine") ||
+        !Object.prototype.hasOwnProperty.call(filter, "sort") ||
+        !Object.prototype.hasOwnProperty.call(filter, "order") ||
+        !Object.prototype.hasOwnProperty.call(filter, "user"))
     {
         logError("Bad filter, resetting: ");
         logError(filter);
@@ -303,16 +314,16 @@ function defaultFilter()
 {
     let filter =
     {
-        "type" :
+        type :
         {
-            "new" : true,
-            "comment" : true,
-            "status" : true,
-            "mine" : true
+            new : true,
+            comment : true,
+            status : true,
+            mine : true
         },
-        "sort" : "request",
-        "order" : "desc",
-        "user" : -1
+        sort : "request",
+        order : "desc",
+        user : -1
     };
 
     return filter;

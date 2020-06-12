@@ -87,7 +87,7 @@ def process_svg_icons(force, quiet):
     old_icons = glob.glob('icon/*.svg')
     new_icons = []
     icons = glob.glob('icon/base/*.svg')
-    js_icon_map = 'const icons = { '
+    js_icon_map = '/* exported icons */\nconst icons = { '
     changed = 0
     for icon in icons:
         with open(icon, 'rb') as filebytes:
@@ -116,7 +116,7 @@ def process_svg_icons(force, quiet):
             print('  Modified', changed, 'icon' + ('' if changed == 1 else 's'))
 
         print('  Writing icon map...')
-        js_icon_map += '};\n';
+        js_icon_map += '};\n'
         js_icon_map = js_icon_map.replace('\\', '/')
         with open('script/iconMap.js', 'w+') as js_icon_file:
             js_icon_file.write(js_icon_map)
@@ -272,12 +272,12 @@ def create_temp(includes, rem_log, ultra):
         if ultra:
             test_all = consolelog.find('function testAll()')
             consolelog = consolelog.replace(consolelog[test_all:consolelog.find('}', test_all) + 1], '')
-            consolelog = consolelog.replace('g_levelColors', 'g_c');
-            consolelog = consolelog.replace('g_traceColors', 'g_t');
-            consolelog = consolelog.replace('g_traceLogging', 'g_tl');
-            consolelog = consolelog.replace('g_darkConsole', 'g_dc');
-            consolelog = consolelog.replace('_inherit', '_i');
-            consolelog = 'let l_ = localStorage; ' + consolelog.replace('localStorage', 'l_');
+            consolelog = consolelog.replace('g_levelColors', 'g_c')
+            consolelog = consolelog.replace('g_traceColors', 'g_t')
+            consolelog = consolelog.replace('g_traceLogging', 'g_tl')
+            consolelog = consolelog.replace('g_darkConsole', 'g_dc')
+            consolelog = consolelog.replace('_inherit', '_i')
+            consolelog = 'let l_ = localStorage; ' + consolelog.replace('localStorage', 'l_')
         combined = consolelog + combined
 
     return combined
@@ -287,7 +287,6 @@ def minify_process_request(combined):
     start = combined.find('\nconst ProcessRequest =')
     if start == -1:
         return combined
-    new_pr = '\nconst ProcessRequest =\n{\n    '
 
     end = combined.find('}', start)
     defn = combined[start:end]
@@ -343,7 +342,7 @@ def preminify_markdown(lines, rem_tmi):
     Italic : 16,
     Strikethrough : 17,
     HtmlComment : 18
-}''';
+}'''
     newStates = '''
 const State =
 {
@@ -505,11 +504,11 @@ def minify(babel, quiet):
 
 def run_cmd(file, options, babel, quiet):
     base_file = file[file.find(os.sep) + 1:file.find('.')]
-    remove_existing(base_file);
-    file_hash = get_hash(file);
+    remove_existing(base_file)
+    file_hash = get_hash(file)
     clean_file = base_file + '.' + file_hash + '.min.js'
     print('Minifying', clean_file)
-    system = platform.system();
+    system = platform.system()
     if system == 'Windows':
         if babel:
             cmd_params = ' --' + ' --'.join(options)
@@ -531,7 +530,7 @@ def run_cmd(file, options, babel, quiet):
 
 def remove_existing(base):
     for file in glob.glob('min' + os.sep + base + '.*.min.js'):
-        os.remove(file);
+        os.remove(file)
 
 
 def get_hash(file):

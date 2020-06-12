@@ -1,4 +1,7 @@
 .well-known/*
+.vscode/*
+
+# Don't include generated cached items or imported libraries (phpMail)
 includes/cache/background/*
 includes/cache/poster/*
 !includes/cache/poster/*.svg
@@ -21,3 +24,5 @@ script/iconMap.js
 
 # Generated JS
 min/*
+
+package.json

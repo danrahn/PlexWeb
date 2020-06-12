@@ -75,12 +75,8 @@ function get_username()
     <title>Plex Status</title>
     <?php get_css("style", "nav", "overlay", "actions", "tooltip", "index") ?>
 </head>
-<body>
+<body plexok="<?php echo does_plex_exist() ? "1" : "0" ?>">
 <script>
-function plexOk()
-{
-    return <?= does_plex_exist() ? 'true' : 'false'; ?>;
-}
 </script>
 
 <div id="plexFrame">

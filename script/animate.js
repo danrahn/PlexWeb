@@ -1,8 +1,13 @@
 /// </summary>
-/// A lightweight class to animate varioius element properties. Performance is questionable at best,
+/// A lightweight class to animate various element properties. Performance is questionable at best,
 /// but the minified version is ~10x times smaller than jQuery.min.js
 /// </summary>
 
+/* exported Animation */
+
+/* eslint-disable no-shadow */ // Admittedly not great, but current shadowing is semantically correct
+/* eslint-disable max-lines-per-function */ // We wrap our entire "class" in a single function
+/* eslint-disable id-length */ // r/g/b/a is fine
 
 /// <summary>
 /// The main animation class, responsible for synchronous execution
@@ -64,7 +69,8 @@ let A = function()
         animationQueue[element.id][0].timers = [];
         for (let i = 0; i < animations.length; ++i)
         {
-            animationQueue[element.id][0].timers.push(setTimeout(function(func, element, prop, ...args) {
+            animationQueue[element.id][0].timers.push(setTimeout(function(func, element, prop, ...args)
+            {
                 func(element, prop, ...args);
             }, delay, animations[i].func, element, animations[i].prop, ...animations[i].args));
         }
@@ -91,7 +97,7 @@ let A = function()
         }
 
         this.queue(func, element, ...args);
-    }
+    };
 
     // Our animation queue allows us to keep track of the current animations that are pending execution
     let animationQueue = {};
@@ -113,7 +119,7 @@ let A = function()
     /// </summary>
     let fireNext = function(element)
     {
-    	let queue = animationQueue[element.id];
+        let queue = animationQueue[element.id];
         queue[0].shift();
         if (queue[0].length == 0)
         {
@@ -140,7 +146,8 @@ let A = function()
             nextAnimations.timers = [];
             for (let i = 0; i < nextAnimations.length; ++i)
             {
-                nextAnimations.timers[i] = setTimeout((element, nextAnimation) => {
+                nextAnimations.timers[i] = setTimeout((element, nextAnimation) =>
+                {
                     nextAnimation.func(element, nextAnimation.prop, ...nextAnimation.args);
                 }, nextAnimations[i].delay, element, nextAnimations[i]);
             }
@@ -187,7 +194,7 @@ let A = function()
                         }
                     }
 
-                    /*@__PURE__*/logTmi("Animating " + prop + " of " + element.id + " from " + oldColor.s() + " to " + newColor.s() + " in " + duration + "ms");
+                    /*@__PURE__*/logTmi(`Animating ${prop} of ${element.id} from ${oldColor.s()} to ${newColor.s()} in ${duration}ms`);
 
                     let animationFunc = (func, element, oldColor, newColor, i, steps, prop, deleteAfterTransition) =>
                     {
@@ -226,16 +233,16 @@ let A = function()
             case "left":
                 return (element, prop, newValue, duration, deleteAfterTransition = false) =>
                 {
-                    var steps = (duration / (50 / 3) + 0.5) | 0 || 1;
+                    let steps = (duration / (50 / 3) + 0.5) | 0 || 1;
                     let lastChar = newValue[newValue.length - 1];
-                    const percent = lastChar == '%';
-                    let px = lastChar == 'x';
+                    const percent = lastChar == "%";
+                    let px = lastChar == "x";
                     const newVal = parseFloat(newValue);
 
                     let oldVal = parseFloat(getStyle(element)[prop]);
                     if (percent)
                     {
-                        oldVal = oldVal / parseInt(getStyle(document.body).width);
+                        oldVal /= parseInt(getStyle(document.body).width);
                     }
 
                     /*@__PURE__*/logTmi("Animating " + prop + " of " + element.id + " from " + oldVal + " to " + newVal + " in " + duration + "ms");
@@ -274,7 +281,7 @@ let A = function()
                 };
             default:
                 logError("Bad:" + func);
-                return;
+                return () => {};
         }
     };
 
@@ -292,7 +299,7 @@ let Animation = new A();
 function Color(r, g, b, a)
 {
     let parse = (a, b) => parseInt(a, b);
-    // if g is undefined, r better be a string
+    // If g is undefined, r better be a string
     if (g === undefined && r[0] == "#")
     {
         // Better be a hex string!

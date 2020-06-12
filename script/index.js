@@ -11,10 +11,10 @@ NodeList.prototype.remove = HTMLCollection.prototype.remove = function()
 {
     for (let i = this.length - 1; i >= 0; i--)
     {
-         if (this[i] && this[i].parentElement)
-         {
+        if (this[i] && this[i].parentElement)
+        {
             this[i].parentElement.removeChild(this[i]);
-         }
+        }
     }
 };
 
@@ -28,17 +28,17 @@ const QueryType =
     ActiveSessions : 3,
     Progress : 4,
     Status : 5
-}
+};
 
 /// <summary>
 /// On load, request the active streams (if it's running) and set up the suggestion form handlers
 /// </summary>
-window.addEventListener('load', function()
+window.addEventListener("load", function()
 {
     // Don't attempt to grab session information if we can't even connect to plex
-    if (plexOk())
+    if (document.body.getAttribute("plexok") == 1)
     {
-        let parameters = { "type" : QueryType.AllSessions };
+        let parameters = { type : QueryType.AllSessions };
         let successFunc = function(response)
         {
             writeSessions(response);
@@ -60,7 +60,7 @@ window.addEventListener('load', function()
 function getStatusFailure()
 {
     // User doesn't have access to active streams
-    let requestLink = buildNode("a", {"href" : "#", "id" : "streamAccess"}, "No Access");
+    let requestLink = buildNode("a", { href : "#", id : "streamAccess" }, "No Access");
     getStreamAccessString();
 
     let active = $("#activeNum");
@@ -79,9 +79,9 @@ function getStreamAccessString()
 {
     let parameters =
     {
-        "type" : ProcessRequest.PermissionRequest,
-        "req_type" : 10,
-        "which" : "get"
+        type : ProcessRequest.PermissionRequest,
+        req_type : 10,
+        which : "get"
     };
 
     let successFunc = function(response)
@@ -93,7 +93,7 @@ function getStreamAccessString()
         {
             streamAccess.href = "request.php?id=" + response.id;
         }
-        
+
         if (canRequest)
         {
             // Need to request access
@@ -128,27 +128,29 @@ function getStreamAccessString()
 function showStreamAccessOverlay()
 {
     let message = buildNode("div", {}, "Add a message for the admins to let them know who you are (optional)");
-    let textbox = buildNode("textarea", {"maxlength" : "1024"}, 0,
-    {
-        "keydown" : function(e)
+    let textbox = buildNode("textarea",
+        { maxlength : "1024" },
+        0,
         {
-            if (e.keyCode == 13 && e.ctrlKey)
+            keydown : function(e)
             {
-                $("#requestButton").click();
+                if (e.keyCode == 13 && e.ctrlKey)
+                {
+                    $("#requestButton").click();
+                }
             }
-        }
-    });
+        });
 
     let button = buildNode(
         "input",
         {
-            "type" : "button",
-            "id" : "requestButton",
-            "value" : "Request"
+            type : "button",
+            id : "requestButton",
+            value : "Request"
         },
         0,
         {
-            "click" : requestStreamAccess
+            click : requestStreamAccess
         });
 
     buildOverlay(true /*dismissable*/, message, textbox, button);
@@ -161,10 +163,10 @@ function requestStreamAccess()
 {
     let parameters =
     {
-        "type" : ProcessRequest.PermissionRequest,
-        "req_type" : 10,
-        "which" : "req",
-        "msg" : $("#overlayContainer textarea")[0].value
+        type : ProcessRequest.PermissionRequest,
+        req_type : 10,
+        which : "req",
+        msg : $("#overlayContainer textarea")[0].value
     };
 
     let successFunc = function(response)
@@ -172,11 +174,11 @@ function requestStreamAccess()
         let overlay = $("#mainOverlay");
         if (overlay)
         {
-            Animation.queue({"backgroundColor": "rgba(0,25,0,0.5)"}, overlay, 500);
-            Animation.queueDelayed({"backgroundColor": "rgba(0,0,0,0.5)", "opacity": "0"}, overlay, 500, 500, true);
+            Animation.queue({ backgroundColor : "rgba(0,25,0,0.5)" }, overlay, 500);
+            Animation.queueDelayed({ backgroundColor : "rgba(0,0,0,0.5)", opacity : "0" }, overlay, 500, 500, true);
         }
 
-        const alreadyPending = (response.value == '0');
+        const alreadyPending = (response.value == "0");
         $("#streamAccess").innerHTML = alreadyPending ? "Request Already Pending" : "Access Requested!";
     };
 
@@ -240,7 +242,7 @@ function writeTitle(streams)
         prepend += `${paused} &#10073;&#10073; - `;
     }
 
-    $('title')[0].innerHTML = prepend + "Plex Status";
+    $("title")[0].innerHTML = prepend + "Plex Status";
 }
 
 /// <summary>
@@ -250,12 +252,13 @@ function startUpdates()
 {
     contentUpdater = setInterval(function()
     {
-        let parameters = { "type" : QueryType.Progress };
+        let parameters = { type : QueryType.Progress };
         let successFunc = function(response) { processUpdate(response); };
         let failureFunc = function(response)
         {
             if (response.Error == "Not Authorized" && !$("#goToLogin"))
             {
+                clearInterval(contentUpdater);
                 showRestartSessionOverlay();
             }
         };
@@ -274,17 +277,53 @@ function showRestartSessionOverlay()
     let button = buildNode(
         "input",
         {
-            "type" : "button",
-            "id" : "goToLogin",
-            "value" : "OK",
-            "style" : "width: 100px"
+            type : "button",
+            id : "goToLogin",
+            value : "OK",
+            style : "width: 100px"
         },
         0,
         {
-            "click" : () => window.location = "login.php"
+            click : () => { window.location = "login.php"; }
         });
     buildOverlay(false /*dismissable*/, message, button);
     $("#goToLogin").focus();
+}
+
+function updateSessionProgress(item, sesh, id)
+{
+    // The stream already exists - update the progress
+    item.$$(".time").innerHTML = msToHms(sesh.progress) + "/" + msToHms(sesh.duration);
+    item.$$(".progressHolder").setAttribute("progress", sesh.progress);
+    item.$$(".progressHolder").setAttribute("tcprogress", "transcode_progress" in sesh ? sesh.transcode_progress : 0);
+
+    let ppbutton = item.$$(".ppbutton");
+
+    if (sesh.paused)
+    {
+        // Transocde progress may still be updated, so do a one-off here
+        innerUpdate(id);
+        ppbutton.classList.remove("play");
+        ppbutton.classList.add("pause");
+        ppbutton.innerHTML = "&#10073;&#10073;  ";
+    }
+    else
+    {
+        ppbutton.classList.remove("pause");
+        ppbutton.classList.add("play");
+        ppbutton.innerHTML = "&#x25ba;  ";
+    }
+
+    if (sesh.paused && innerProgressTimers[id])
+    {
+        clearInterval(innerProgressTimers[id]);
+        delete innerProgressTimers[id];
+    }
+    else if (!sesh.paused && !innerProgressTimers[id])
+    {
+        // Create a new timer to simulate progress while we wait for an actual update
+        innerProgressTimers[id] = setInterval(innerUpdate, 1000, id);
+    }
 }
 
 /// <summary>
@@ -294,7 +333,7 @@ function processUpdate(sessions)
 {
     $("#activeNum").innerHTML = sessions.length;
 
-    // moving existingSessions to an actual array makes it easier to .splice() below
+    // Moving existingSessions to an actual array makes it easier to .splice() below
     let existingSessions = $(".mediainfo");
     let existingArray = [];
     for (let i = 0; i < existingSessions.length; ++i)
@@ -319,39 +358,7 @@ function processUpdate(sessions)
         let item = $("#id" + id);
         if (item)
         {
-            // The stream already exists - update the progress
-            item.$$(".time").innerHTML = msToHms(sesh.progress) + "/" + msToHms(sesh.duration);
-            item.$$('.progressHolder').setAttribute('progress', sesh.progress);
-            item.$$('.progressHolder').setAttribute('tcprogress', 'transcode_progress' in sesh ? sesh.transcode_progress : 0);
-
-            let ppbutton = item.$$(".ppbutton");
-
-            if (sesh.paused)
-            {
-                // Transocde progress may still be updated, so do a one-off here
-                innerUpdate(id);
-                ppbutton.classList.remove("play");
-                ppbutton.classList.add("pause");
-                ppbutton.innerHTML = "&#10073;&#10073;  ";
-            }
-            else
-            {
-                ppbutton.classList.remove("pause");
-                ppbutton.classList.add("play");
-                ppbutton.innerHTML = "&#x25ba;  ";
-            }
-
-            if (sesh.paused && innerProgressTimers[id])
-            {
-                clearInterval(innerProgressTimers[id]);
-                delete innerProgressTimers[id];
-            }
-            else if (!sesh.paused && !innerProgressTimers[id])
-            {
-                // Create a new timer to simulate progress while we wait for an actual update
-                innerProgressTimers[id] = setInterval(innerUpdate, 1000, id);
-            }
-
+            updateSessionProgress(item, sesh, id);
             newOrder.push(item);
         }
         else
@@ -379,7 +386,7 @@ function trimSessions(newSessions, existingSessions)
         let found = false;
         for (let j = 0; j < newSessions.length; ++j)
         {
-            if (newSessions[j].id === session.id.substring(2)) // substring to remove the 'id' that we add
+            if (newSessions[j].id === session.id.substring(2)) // Substring to remove the 'id' that we add
             {
                 found = true;
                 break;
@@ -413,12 +420,9 @@ function trimSessions(newSessions, existingSessions)
 function reorderSessions(newOrder, existingSessions)
 {
     let needsReorder = false;
-    if (newOrder.length != existingSessions.length)
+    if (newOrder.length == existingSessions.length)
     {
-        needsReorder = true;
-    }
-    else
-    {
+        // Same number of requests, but we still have to match up each one
         for (let i = 0; i < existingSessions.length; ++i)
         {
             if (existingSessions[i] != newOrder[i])
@@ -427,6 +431,10 @@ function reorderSessions(newOrder, existingSessions)
                 break;
             }
         }
+    }
+    else
+    {
+        needsReorder = true;
     }
 
     if (needsReorder)
@@ -441,14 +449,14 @@ function reorderSessions(newOrder, existingSessions)
 /// <summary>
 /// Sort function for sessions. Playing items are always before paused ones. Order by time remaining from there
 /// </summary>
-function sessionSort(a, b)
+function sessionSort(sessionA, sessionB)
 {
-    if (a.paused != b.paused)
+    if (sessionA.paused != sessionB.paused)
     {
-        return a.paused ? 1 : -1;
+        return sessionA.paused ? 1 : -1;
     }
 
-    return (a.duration - a.progress) - (b.duration - b.progress);
+    return (sessionA.duration - sessionA.progress) - (sessionB.duration - sessionB.progress);
 }
 
 /// <summary>
@@ -467,7 +475,7 @@ function innerUpdate(sesh, addTime=true)
     }
 
     const addedTime = addTime ? 1000 : 0;
-    let progressHolder = element.$$('.progressHolder');
+    let progressHolder = element.$$(".progressHolder");
     let newMsProgress = parseInt(progressHolder.getAttribute("progress")) + addedTime;
     const msDuration = parseInt(progressHolder.getAttribute("duration"));
     let tcprogress = parseFloat(progressHolder.getAttribute("tcprogress"));
@@ -494,7 +502,7 @@ function innerUpdate(sesh, addTime=true)
     time.innerHTML = newTimeStr;
     progressHolder.setAttribute("progress", newMsProgress);
 
-    if (progressHolder.hasAttribute('hovered'))
+    if (progressHolder.hasAttribute("hovered"))
     {
         $("#tooltip").innerHTML = getHoverText(progressHolder);
     }
@@ -511,9 +519,9 @@ function addNewSessions(newIds)
         logInfo("Attempting to add session " + id);
         let parameters =
         {
-            "type" : QueryType.SingleSession,
-            "id" : id
-        }
+            type : QueryType.SingleSession,
+            id : id
+        };
         sendHtmlJsonRequest("get_status.php", parameters, addSession);
     }
 }
@@ -538,7 +546,7 @@ function showTotalBitrateTooltip(e)
 /// </summary>
 function updateTotalBitrate()
 {
-    currentSessions = $(".mediainfo");
+    const currentSessions = $(".mediainfo");
     if (currentSessions.length == 0)
     {
         $("#active").setAttribute("bitrate", 0);
@@ -550,7 +558,7 @@ function updateTotalBitrate()
         let lis = session.$("li");
         totalBitrate += parseInt(lis[lis.length - 1].$$("span").innerHTML.match(/(\d+) kbps/)[0]);
     });
-    
+
     $("#active").setAttribute("bitrate", totalBitrate);
 }
 
@@ -589,77 +597,42 @@ function addSession(response)
 }
 
 /// <summary>
-/// Returns a mediainfo element based on the given session
+/// Returns a container for an active stream entry
 /// </summary>
-function buildMediaInfo(sesh)
-{        
-    // Main container
-    logVerbose(sesh, "Adding Session");
+function getContainerNode(sesh)
+{
     const posterColors = sesh.art_colors;
     const makeDarker = posterColors.red + posterColors.green + posterColors.blue > 500;
     const opacity = makeDarker ? 0.6 : 0.4;
-    let container = buildNode("div", {
-        "class" : "mediainfo" + (makeDarker ? " darkerposter" : ""),
-        "id" : `id${sesh.session_id}`,
-        "style" : `background-image : linear-gradient(rgba(0,0,0,${opacity}),rgba(0,0,0,${opacity})), url(${sesh.art_path})`
-    },
-    0,
-    {
-        // Darken/lighten the background when entering/leaving the entry
-        "mouseenter" : function(e)
+    return buildNode("div",
         {
-            let style = e.target.style.backgroundImage;
-            let newOpacity = e.target.classList.contains("darkerposter") ? 0.8 : 0.6;
-            const newStyle = `linear-gradient(rgba(0,0,0,${newOpacity}), rgba(0,0,0,${newOpacity})),${style.substring(style.indexOf(" url("))}`;
-            e.target.style.backgroundImage = newStyle;
+            class : "mediainfo" + (makeDarker ? " darkerposter" : ""),
+            id : `id${sesh.session_id}`,
+            style : `background-image : linear-gradient(rgba(0,0,0,${opacity}),rgba(0,0,0,${opacity})), url(${sesh.art_path})`
         },
-        "mouseleave" : function(e)
+        0,
         {
-            let style = e.target.style.backgroundImage;
-            let newOpacity = e.target.classList.contains("darkerposter") ? 0.6 : 0.4;
-            const newStyle = `linear-gradient(rgba(0,0,0,${newOpacity}), rgba(0,0,0,${newOpacity})), ${style.substring(style.indexOf(" url("))}`;
-            e.target.style.backgroundImage = newStyle;
-        }
-    });
-
-    const innerHolder = buildNode("div", {"class" : "innerHolder"});
-
-    // Album/poster thumb
-    let thumbholder = buildNode("div", {"class" : "thumbholder"});
-
-    let poster = buildNode("img", {
-        "src" : sesh.thumb_path,
-        "style" : "width: 100px",
-        "alt" : "thumbnail"
-    });
-
-    // Clicking on the image will go to an external site (imdb/tmdb/audible)
-    if (sesh.hyperlink)
-    {
-        let externalLink = buildNode(
-            "a",
+            // Darken/lighten the background when entering/leaving the entry
+            mouseenter : function(e)
             {
-                "href" : sesh.hyperlink,
-                "target" : "_blank"
+                let style = e.target.style.backgroundImage;
+                let newOpacity = e.target.classList.contains("darkerposter") ? 0.8 : 0.6;
+                const newStyle = `linear-gradient(rgba(0,0,0,${newOpacity}), rgba(0,0,0,${newOpacity})),${style.substring(style.indexOf(" url("))}`;
+                e.target.style.backgroundImage = newStyle;
             },
-            0,
+            mouseleave : function(e)
             {
-                'mouseenter' :  () => {},
-                'mouseleave' :  () => {}
-            });
-        externalLink.appendChild(poster);
-        thumbholder.appendChild(externalLink);
-    }
-    else
-    {
-        thumbholder.appendChild(poster);
-    }
+                let style = e.target.style.backgroundImage;
+                let newOpacity = e.target.classList.contains("darkerposter") ? 0.6 : 0.4;
+                const newStyle = `linear-gradient(rgba(0,0,0,${newOpacity}), rgba(0,0,0,${newOpacity})), ${style.substring(style.indexOf(" url("))}`;
+                e.target.style.backgroundImage = newStyle;
+            }
+        });
+}
 
-
-    // Details
-    let details = buildNode("div", {"class" : "details"});
-
-    // link to plex. If no link is available, try linking to the external source
+function buildActiveStreamTitle(sesh)
+{
+    // Link to plex. If no link is available, try linking to the external source
     let plexLink;
     if (sesh.plex_key)
     {
@@ -670,14 +643,14 @@ function buildMediaInfo(sesh)
         plexLink = sesh.hyperlink;
     }
 
-    let link = buildNode("a", {"href" : plexLink, "target" : "_blank"});
+    let link = buildNode("a", { href : plexLink, target : "_blank" });
     link.appendChild(buildNode("span",
-        { "class" : `ppbutton  ${sesh.paused ? "pause" : "play"}` },
+        { class : `ppbutton  ${sesh.paused ? "pause" : "play"}` },
         sesh.paused ? "&#10073;&#10073;  " : "&#x25ba;  "));
 
     link.appendChild(buildNode("span", {}, `${sesh.title}`));
 
-    let inlineIconSrc = '';
+    let inlineIconSrc = "";
     switch (sesh.media_type)
     {
         case "TV Show":
@@ -691,6 +664,7 @@ function buildMediaInfo(sesh)
             break;
         case "Audiobook":
             inlineIconSrc = icons.AUDIOBOOKICON;
+            break;
         default:
             break;
     }
@@ -698,26 +672,71 @@ function buildMediaInfo(sesh)
     if (inlineIconSrc)
     {
         link.appendChild(buildNode("img", {
-            "class" : "inlineIcon",
-            "src" : inlineIconSrc,
-            "alt" : sesh.media_type
+            class : "inlineIcon",
+            src : inlineIconSrc,
+            alt : sesh.media_type
         }));
     }
 
-    // Bulleted list
+    return link;
+}
+
+function buildActivityProgress(sesh)
+{
+    let tcprogress = "transcode_progress" in sesh ? sesh.transcode_progress : 0;
+    let progressHolder = buildNode("div",
+        {
+            class : "progressHolder",
+            progress : sesh.progress,
+            duration : sesh.duration,
+            tcprogress : tcprogress
+        },
+        0,
+        {
+            mousemove : progressHover,
+            mouseleave : function()
+            {
+                this.removeAttribute("hovered");
+                dismissTooltip();
+            }
+        });
+
+    const progressPercent = (sesh.progress / sesh.duration * 100);
+    let progress = buildNode("div", { class : "progress", style : `width: ${progressPercent}%` });
+
+    if (tcprogress < progressPercent)
+    {
+        tcprogress = progressPercent;
+    }
+
+    let transcodeDiff = buildNode("div", { class : "tcdiff", style : `width: ${tcprogress - progressPercent}%` });
+
+    let remaining = buildNode("div", { class : "remaining", style : `width: ${(100 - tcprogress)}%` });
+
+    let time = buildNode("div", { class : "time" }, `${msToHms(sesh.progress)}/${msToHms(sesh.duration)}`);
+
+    progressHolder.appendChild(progress);
+    progressHolder.appendChild(transcodeDiff);
+    progressHolder.appendChild(remaining);
+    progressHolder.appendChild(time);
+    return progressHolder;
+}
+
+function buildActiveStreamDetailsList(sesh, title)
+{
     let list = buildNode("ul");
-    if (!inlineIconSrc)
+    if (!title.$$("img"))
     {
         list.appendChild(getListItem("Media type", sesh.media_type));
     }
 
-    if (sesh.album) // special handling for music
+    if (sesh.album) // Special handling for music
     {
         list.appendChild(getListItem("Album", sesh.album));
     }
 
     const date = new Date(sesh.release_date);
-    const dateOpts = { year: 'numeric', month: 'long', day: 'numeric' };
+    const dateOpts = { year : "numeric", month : "long", day : "numeric" };
     list.appendChild(getListItem("Release Date", date.toLocaleDateString("en-US", dateOpts)));
     list.appendChild(getListItem("Playback Device", sesh.playback_device));
 
@@ -741,9 +760,8 @@ function buildMediaInfo(sesh)
     if (sesh.video)
     {
         list.appendChild(getListItem("Video", getVideoString(sesh.video)));
+        list.appendChild(getListItem("Audio", getAudioString(sesh.audio)));
     }
-
-    list.appendChild(getListItem("Audio", getAudioString(sesh.audio)));
 
     if (sesh.video)
     {
@@ -752,46 +770,70 @@ function buildMediaInfo(sesh)
         list.appendChild(getListItem("Total bitrate", bitrate + " kbps"));
     }
 
-    details.appendChild(link);
-    details.appendChild(list);
+    return list;
+}
 
+function buildActiveStreamDetails(sesh)
+{
+    let details = buildNode("div", { class : "details" });
+    let title = buildActiveStreamTitle(sesh);
+    details.appendChild(title);
+    details.appendChild(buildActiveStreamDetailsList(sesh, title));
+    return details;
+}
 
-    // Progress indicator at the bottom of the container
-    let tcprogress = 'transcode_progress' in sesh ? sesh.transcode_progress : 0;
-    let progressHolder = buildNode("div", {
-        "class" : "progressHolder",
-        "progress" : sesh.progress,
-        "duration" : sesh.duration,
-        "tcprogress" : tcprogress
-    },
-    0,
-    {
-        "mousemove" : progressHover,
-        "mouseleave" : function()
+function buildActiveStreamPoster(sesh)
+{
+    let poster = buildNode(
+        "img",
         {
-            this.removeAttribute("hovered");
-            dismissTooltip();
-        }
-    });
+            src : sesh.thumb_path,
+            style : "width: 100px",
+            alt : "thumbnail"
+        });
 
-    const progressPercent = (sesh.progress / sesh.duration * 100);
-    let progress = buildNode("div", {"class" : "progress", "style" : `width: ${progressPercent}%`});
-
-    if (tcprogress < progressPercent)
+    if (!sesh.hyperlink)
     {
-        tcprogress = progressPercent;
+        return poster;
     }
 
-    let transcodeDiff = buildNode("div", {"class" : "tcdiff", "style" : `width: ${tcprogress - progressPercent}%`});
+    let externalLink = buildNode(
+        "a",
+        {
+            href : sesh.hyperlink,
+            target : "_blank"
+        },
+        0,
+        {
+            mouseenter : () => {},
+            mouseleave : () => {}
+        });
+    externalLink.appendChild(poster);
+    return externalLink;
+}
 
-    let remaining = buildNode("div", {"class" : "remaining", "style" : `width: ${(100 - tcprogress)}%`});
+/// <summary>
+/// Returns a mediainfo element based on the given session
+/// </summary>
+function buildMediaInfo(sesh)
+{
+    // Main container
+    logVerbose(sesh, "Adding Session");
+    let container = getContainerNode(sesh);
 
-    let time = buildNode("div", {"class" : "time"}, `${msToHms(sesh.progress)}/${msToHms(sesh.duration)}`);
+    const innerHolder = buildNode("div", { class : "innerHolder" });
 
-    progressHolder.appendChild(progress);
-    progressHolder.appendChild(transcodeDiff);
-    progressHolder.appendChild(remaining);
-    progressHolder.appendChild(time);
+    // Album/poster thumb
+    let thumbholder = buildNode("div", { class : "thumbholder" });
+
+    // Clicking on the image will go to an external site (imdb/tmdb/audible)
+    thumbholder.appendChild(buildActiveStreamPoster(sesh));
+
+    // Details
+    let details = buildActiveStreamDetails(sesh);
+
+    // Progress indicator at the bottom of the container
+    let progressHolder = buildActivityProgress(sesh);
 
     innerHolder.append(thumbholder);
     innerHolder.append(details);
@@ -812,7 +854,7 @@ function buildMediaInfo(sesh)
 /// </summary>
 function getListItem(key, value, id)
 {
-    let item = buildNode("li", id ? {"id" : id} : {});
+    let item = buildNode("li", id ? { id : id } : {});
     item.appendChild(buildNode("strong", {}, `${key}: `));
     item.appendChild(buildNode("span", {}, value));
     return item;
@@ -829,21 +871,21 @@ function getIPInfo(ip, id)
 {
     let parameters =
     {
-        "type" : ProcessRequest.GeoIP,
-        "ip" : ip
+        type : ProcessRequest.GeoIP,
+        ip : ip
     };
 
     let successFunc = function(response, request)
     {
         const locString = ` (${response.city}, ${response.state})`;
         const ispInfo = getListItem("ISP", response.isp);
-        let ipItem = $('#' + request.attachId);
+        let ipItem = $("#" + request.attachId);
         ipItem.innerHTML += locString;
         ipItem.parentNode.insertBefore(ispInfo, ipItem.nextSibling);
     };
 
     // Values that we'll append to our http object directly
-    let attachedParameters = { "attachId" : id };
+    let attachedParameters = { attachId : id };
 
     sendHtmlJsonRequest("process_request.php", parameters, successFunc, undefined /*failFunc*/, attachedParameters);
 }
@@ -863,7 +905,7 @@ function progressHover(e)
 function getHoverText(element)
 {
     const progress = element.children[0].style.width;
-    const tcprogress = parseFloat(element.getAttribute('tcprogress')).toFixed(2);
+    const tcprogress = parseFloat(element.getAttribute("tcprogress")).toFixed(2);
     let tcString = "";
     if (tcprogress > 0)
     {
@@ -901,7 +943,7 @@ function getVideoString(video)
         videoString = "Direct Play - " + video.original;
     }
 
-    return videoString += " (" + video.bitrate + " kbps)";
+    return videoString + " (" + video.bitrate + " kbps)";
 }
 
 /// <summary>
@@ -924,7 +966,7 @@ function getAudioString(audio)
         return audioString;
     }
 
-    return audioString += " (" + audio.bitrate + " kbps)";
+    return audioString + " (" + audio.bitrate + " kbps)";
 }
 
 /// <summary>
@@ -932,11 +974,11 @@ function getAudioString(audio)
 /// </summary>
 function msToHms(ms)
 {
-    var seconds = ms / 1000;
+    let seconds = ms / 1000;
     const hours = parseInt(seconds / 3600);
     const minutes = parseInt(seconds / 60) % 60;
     seconds = parseInt(seconds) % 60;
-    let pad2 = (time) => time < 10 ? '0' + time : time;
+    let pad2 = (time) => time < 10 ? "0" + time : time;
     let time = pad2(minutes) + ":" + pad2(seconds);
     if (hours > 0)
     {

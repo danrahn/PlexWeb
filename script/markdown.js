@@ -1,3 +1,13 @@
+/* exported markdownHelp */
+
+/* eslint-disable max-lines-per-function */ // Will this ever get fixed? Probably not.
+/* eslint-disable complexity */ // I should fix this. Whether I actually get around to it, who knows!
+/* eslint-disable class-methods-use-this */ /* Inherited classes may use 'this', and making
+                                               the base class method static breaks this */
+
+// Markdown files are the only ones that prefer single-quotes over double.
+/* eslint quotes: ["error", "single", { "avoidEscape" : true, "allowTemplateLiterals" : true }] */
+
 /*
 Converts markdown to HTML. The goal is to create this without looking at any examples
 online. That means that this will probably be hot garbage, but hopefully will work in
@@ -25,7 +35,7 @@ const State =
     Italic : 16,
     Strikethrough : 17,
     HtmlComment : 18
-}
+};
 
 const stateError = (state) => console.error('Unknown state: ' + state);
 
@@ -72,7 +82,7 @@ const stateToStr = function(state)
         default:
             return 'Unknown state: ' + state;
     }
-}
+};
 
 const stateAllowedInState = function(state, current, index)
 {
@@ -114,7 +124,7 @@ const stateAllowedInState = function(state, current, index)
             stateError(state);
             return false;
     }
-}
+};
 
 const blockMarkdown = function(state)
 {
@@ -127,25 +137,21 @@ const blockMarkdown = function(state)
         default:
             return false;
     }
-}
-
-const inlineMarkdown = function(state)
-{
-    return !blockMarkdown(state);
-}
+};
 
 const isWhitespace = function(ch)
 {
     return /\s/.test(ch);
-}
+};
 
 /// [\w\d], without the underscore
 const isAlphanumeric = function(ch)
 {
     return /[a-zA-Z0-9]/.test(ch);
-}
+};
 
-class Markdown {
+class Markdown
+{
     constructor()
     {
         this.topRun = null;
@@ -201,34 +207,32 @@ class Markdown {
         this._parseTime = 0;
         this._inParse = false;
 
-        if (diffStart == 0 || this.topRun == null || parseInt(localStorage.getItem('mdCache')) == 0)
+        if (diffStart == 0 || this.topRun === null || parseInt(localStorage.getItem('mdCache')) == 0)
         {
             this.topRun = new Run(State.None, 0, null);
             this.topRun.end = this.text.length;
             this.currentRun = this.topRun;
             return 0;
         }
-        else
+
+        let i = 0;
+        for (; i < this.topRun.innerRuns.length; ++i)
         {
-            let i = 0;
-            for (; i < this.topRun.innerRuns.length; ++i)
+            if (this.topRun.innerRuns[i].end >= diffStart)
             {
-                if (this.topRun.innerRuns[i].end >= diffStart)
-                {
-                    break;
-                }
+                break;
             }
-
-            this.topRun.cached = '';
-            if (i != this.topRun.innerRuns.length)
-            {
-                this.topRun.innerRuns.splice(i, this.topRun.innerRuns.length - i);
-            }
-
-            this.topRun.end = this.text.length;
-            this.currentRun = this.topRun;
-            return this.topRun.innerRuns.length == 0 ? 0 : this.topRun.innerRuns[this.topRun.innerRuns.length - 1].end;
         }
+
+        this.topRun.cached = '';
+        if (i != this.topRun.innerRuns.length)
+        {
+            this.topRun.innerRuns.splice(i, this.topRun.innerRuns.length - i);
+        }
+
+        this.topRun.end = this.text.length;
+        this.currentRun = this.topRun;
+        return this.topRun.innerRuns.length == 0 ? 0 : this.topRun.innerRuns[this.topRun.innerRuns.length - 1].end;
     }
 
     /// <summary>
@@ -236,7 +240,6 @@ class Markdown {
     /// </summary>
     _checkCache(text)
     {
-        // return 0;
         let diff = 0;
         let max = Math.min(text.length, this.text.length);
         while (diff != max && text[diff] == this.text[diff++]);
@@ -272,7 +275,7 @@ class Markdown {
         {
             while (i == this.currentRun.end)
             {
-                logTmi("Resetting to parent: " + (this.currentRun.parent == null ? "(null)" : stateToStr(this.currentRun.parent.state)));
+                logTmi('Resetting to parent: ' + (this.currentRun.parent === null ? '(null)' : stateToStr(this.currentRun.parent.state)));
                 this.currentRun = this.currentRun.parent;
             }
 
@@ -386,8 +389,9 @@ class Markdown {
                     {
                         break;
                     }
-                    /* __fallthrough, bold/italic */
                 }
+
+                /* __fallthrough, bold/italic */
                 case '_':
                 {
                     // First, check for HR
@@ -421,8 +425,9 @@ class Markdown {
                         continue;
                     }
 
-                    /*__fallthrough for strikethrough*/
                 }
+
+                /*__fallthrough for strikethrough*/
                 case '+':
                 {
                     if (this._checkStrikeAndUnderline(i))
@@ -571,7 +576,7 @@ class Markdown {
         }
 
         let end = this.text.indexOf('\n', start);
-        if (end == -1) { end = this.text.length };
+        if (end == -1) { end = this.text.length; }
         let header = new Header(start - headingLevel + 1, end, headingLevel, this.text, this.currentRun);
         this.currentRun = header;
         logTmi(`Added header: start=${header.start}, end=${header.end}, level=${header.headerLevel}`);
@@ -599,11 +604,10 @@ class Markdown {
         // Non-standard width/height syntax, since I explicitly don't want
         // to support direct HTML insertion.
         // ![AltText w=X,h=Y](url)
-        let dimen = /[\[ ]([wh])=(\d+%?)(?:,h=(\d+%?))?$/.exec(result.text);
+        let dimen = /[[ ]([wh])=(\d+%?)(?:,h=(\d+%?))?$/.exec(result.text);
         let width = '';
         let height = '';
-        let percent = false;
-        if (dimen != null)
+        if (dimen !== null)
         {
             if (dimen[3])
             {
@@ -693,7 +697,7 @@ class Markdown {
             {
                 if (newline)
                 {
-                    // double newline, inline element can't continue
+                    // Double newline, inline element can't continue
                     return false;
                 }
 
@@ -730,32 +734,29 @@ class Markdown {
                         continue;
                     }
 
-                    // non-alphanumeric + separators + whitespace. This
+                    // Non-alphanumeric + separators + whitespace. This
                     // might actually be an end
                     potentialSeparators = 1;
                 }
+                else if (isWhitespace(this.text[separatorIndex - 1]))
+                {
+                    // Found an actual group of opening separators. Add it to our collection
+                    foundMatch = true;
+                    separators += potentialSeparators;
+                    separatorIndex = psi;
+                }
                 else
                 {
-                    if (!isWhitespace(this.text[separatorIndex - 1]))
-                    {
-                        // Assume that separators surrounded by
-                        // punctiation is closing. It's ambiguous
-                        // and some choice has to be made
-                        potentialSeparators = 1;
-                    }
-                    else
-                    {
-                        // Found an actual group of opening separators. Add it to our collection
-                        foundMatch = true;
-                        separators += potentialSeparators;
-                        separatorIndex = psi;
-                    }
+                    // Assume that separators surrounded by
+                    // punctiation is closing. It's ambiguous
+                    // and some choice has to be made
+                    potentialSeparators = 1;
                 }
             }
 
             if (!foundMatch)
             {
-                // non-whitespace, see if it's an end sequence
+                // Non-whitespace, see if it's an end sequence
                 let psi = separatorIndex + potentialSeparators;
                 while (psi < blockEnd && this.text[psi] == sep)
                 {
@@ -888,7 +889,7 @@ class Markdown {
             {
                 if (newline)
                 {
-                    // double newline, inline element can't continue
+                    // Double newline, inline element can't continue
                     return false;
                 }
 
@@ -925,33 +926,30 @@ class Markdown {
                         continue;
                     }
 
-                    // non alphanumeric + separators + whitespace. This
+                    // Non alphanumeric + separators + whitespace. This
                     // might actually be an end
                     potentialSeparators = 1;
                 }
+                else if (isWhitespace(this.text[separatorIndex - 1]))
+                {
+                    // Found an actual group of opening separators. Add it to our collection
+                    // Note that these separators must be in pairs of two, so if we have an
+                    // odd number, round down.
+                    foundMatch = true;
+                    separators += potentialSeparators - (potentialSeparators % 2);
+                    separatorIndex = psi;
+                }
                 else
                 {
-                    if (!isWhitespace(this.text[separatorIndex - 1]))
-                    {
-                        // Assume that separators surrounded by punctuation is
-                        // closing. It's ambiguous and some choise has to be made
-                        potentialSeparators = 1;
-                    }
-                    else
-                    {
-                        // Found an actual group of opening separators. Add it to our collection
-                        // Note that these separators must be in pairs of two, so if we have an
-                        // odd number, round down.
-                        foundMatch = true;
-                        separators += potentialSeparators - (potentialSeparators % 2);
-                        separatorIndex = psi;
-                    }
+                    // Assume that separators surrounded by punctuation is
+                    // closing. It's ambiguous and some choise has to be made
+                    potentialSeparators = 1;
                 }
             }
 
             if (!foundMatch)
             {
-                // non-whitespace, see if it's an end sequence
+                // Non-whitespace, see if it's an end sequence
                 let psi = separatorIndex + potentialSeparators;
                 while (psi < blockEnd && this.text[psi] == sep)
                 {
@@ -970,7 +968,7 @@ class Markdown {
                 if (potentialSeparators > separators)
                 {
                     separatorIndex += separators;
-                    separaators = 0;
+                    separators = 0;
                     break;
                 }
                 else
@@ -1044,17 +1042,13 @@ class Markdown {
         // This will get more complicated once arbitrary nesting is supported
         let prevNewline = this.text.lastIndexOf('\n', start);
         let regex;
-        if (!this._isInListType())
-        {
-            regex = new RegExp(`^>{${nestLevel}}$`);
-        }
-        else
+        if (this._isInListType())
         {
             // Determine if our highest level parent is a blockquote or a list
             let regexStr = '>';
             let runCur = this.currentRun.state == State.ListItem ? this.currentRun.parent : this.currentRun;
             let lastState = runCur.state;
-            while (runCur != null &&
+            while (runCur !== null &&
                 (lastState == State.BlockQuote || lastState == State.UnorderedList || lastState == State.OrderedList))
             {
                 switch (lastState)
@@ -1068,10 +1062,12 @@ class Markdown {
                     case State.BlockQuote:
                         regexStr = ' *> *' + regexStr;
                         break;
+                    default:
+                        break;
                 }
 
                 runCur = runCur.parent;
-                if (runCur != null)
+                if (runCur !== null)
                 {
                     lastState = runCur.state;
                 }
@@ -1079,14 +1075,10 @@ class Markdown {
 
             regex = new RegExp(regexStr);
         }
-        // else if (this.currentRun.parent.state == State.OrderedList)
-        // {
-        //     regex = new RegExp(`^(\\d+\\.)?>{${nestLevel}}$`);
-        // }
-        // else
-        // {
-        //     regex = new RegExp(`^(\\*)?>{${nestLevel}}$`);
-        // }
+        else
+        {
+            regex = new RegExp(`^>{${nestLevel}}$`);
+        }
 
         if (!regex.test(this.text.substring(prevNewline + 1, start + 1).replace(/ /g, '')))
         {
@@ -1155,8 +1147,6 @@ class Markdown {
 
         let blockquote = new BlockQuote(start, end, nestLevel, this.currentRun);
         this.currentRun = blockquote;
-
-        return;
     }
 
     _checkIndentCodeBlock(start)
@@ -1191,7 +1181,11 @@ class Markdown {
             let type = this.currentRun.parent.state;
             let context = this.text.substring(this.text.lastIndexOf('\n', start) - 1, start + 1);
             let liStartRegex = new RegExp(`^.?\\n? {${nestLevel * 2}} ?${type == State.OrderedList ? '\\d+\\.' : '\\*'}     `);
-            if (!liStartRegex.test(context))
+            if (liStartRegex.test(context))
+            {
+                firstIsList = true;
+            }
+            else
             {
                 // Not on the same line as the list item start, check if it's
                 // a valid continuation
@@ -1200,21 +1194,13 @@ class Markdown {
                     return -1;
                 }
             }
-            else
-            {
-                firstIsList = true;
-            }
 
         }
-        else
+        // Not in a list, just need 4+ spaces. substring is nice enough to adjust invalid bounds
+        // in the case where we ask for a substring starting at a negative index
+        else if (!/^\n?\n? {3}$/.test(this.text.substring(start - 5, start)) || start == this.text.length - 1 || this.text[start + 1] == '\n')
         {
-            // Not in a list, just need 4+ spaces. substring is nice enough to adjust invalid bounds
-            // in the case where we ask for a substring starting at a negative index
-            if (!/^\n?\n?   $/.test(this.text.substring(start - 5, start)) || start == this.text.length - 1 || this.text[start + 1] == '\n')
-            {
-                return -1;
-            }
-
+            return -1;
         }
 
         // Find the end, i.e. the last line prefixed with 4+ spaces (excluding completely empty lines)
@@ -1381,7 +1367,7 @@ class Markdown {
             }
 
             return arr;
-        }
+        };
 
         let groups = splitAndTrim(definition, this);
         if (groups.length == 0)
@@ -1391,9 +1377,9 @@ class Markdown {
 
         let table =
         {
-            "header" : [],
-            "rows" : [],
-            "columnAlign" : [],
+            header : [],
+            rows : [],
+            columnAlign : [],
         };
 
         let valid = true;
@@ -1478,7 +1464,7 @@ class Markdown {
         {
             for (let col = 0; col < table.rows[row].length; ++col)
             {
-                table.rows[row][col] =  new Markdown().parse(table.rows[row][col], true /*inlineOnly*/);
+                table.rows[row][col] = new Markdown().parse(table.rows[row][col], true /*inlineOnly*/);
             }
         }
 
@@ -1562,7 +1548,6 @@ class Markdown {
         }
 
         let minspaces = 0;
-        let firstIsList = false;
         let language;
         if (this.currentRun.state == State.ListItem)
         {
@@ -1581,14 +1566,6 @@ class Markdown {
                 }
 
                 language = match[1];
-                // if (!new RegExp(`^\\n {${minspaces},${minspaces + 3}}${markers} *\\S*\\n`).test(context))
-                // {
-                //     return -1;
-                // }
-            }
-            else
-            {
-                firstIsList = true;
             }
         }
         else
@@ -1601,13 +1578,8 @@ class Markdown {
             }
 
             language = match[1];
-            // if (!new RegExp(`^\\n?${markers} *\\S*\\n?$`).test(this.text.substring(start - 3, newline + 1)))
-            // {
-            //     return -1;
-            // }
         }
 
-        let end = newline;
         let next = this._indexOrLast('\n', newline + 1);
         let nextline = this.text.substring(newline + 1, next + 1);
 
@@ -1654,7 +1626,6 @@ class Markdown {
                 return next;
             }
 
-            end = next;
             newline = next;
             next = this._indexOrLast('\n', next + 1);
             nextline = this.text.substring(newline + 1, next + 1);
@@ -1670,18 +1641,10 @@ class Markdown {
             return false;
         }
 
-        // let regexString = ordered ? '^\\d+\\. ' : ' ';
-        // // Are we nested in a blockquote?
-        // if (this.currentRun.state == State.BlockQuote)
-        // {
-        //     regexString = ` *> *{${this.currentRun.nestLevel}}` + regexString;
-        // }
         if (ordered ? !/^\d+\. /.test(this.text.substring(start)) : this.text[start + 1] != ' ')
         {
             return false;
         }
-
-        // if (!new Regex(regexString).test(this.text.substring(start)))
 
         // Two spaces adds a nesting level
         let prevNewline = this.text.lastIndexOf('\n', start);
@@ -1689,7 +1652,7 @@ class Markdown {
         let regexString = '^ *$';
         let curRun = this.currentRun;
         let quoteNests = 0;
-        while (curRun != null)
+        while (curRun !== null)
         {
             if (curRun.state == State.BlockQuote)
             {
@@ -1704,7 +1667,6 @@ class Markdown {
         }
 
         if (!new RegExp(regexString).test(prefix))
-        // if (!/^ *$/.test(spaces))
         {
             // Something other than spaces/blockquotes precedes this.
             return false;
@@ -1731,7 +1693,7 @@ class Markdown {
             else
             {
                 list = new UnorderedList(start, listEnd, nestLevel, this.currentRun);
-                logTmi(`Adding Unordered List: start=${start}, end=${listEnd}, nestLevel=${nestLevel}`)
+                logTmi(`Adding Unordered List: start=${start}, end=${listEnd}, nestLevel=${nestLevel}`);
             }
 
             this.currentRun = list;
@@ -1954,23 +1916,20 @@ class Markdown {
                 let minspaces = (nestLevel + 1) * 2;
                 if (!new RegExp(blockRegexPrefix + `  {${minspaces},}`).test(nextline))
                 {
-                    if (!RegExp(blockRegexPrefix + `  {${minspaces - 2},${minspaces - 1}}${ordered ? '\\d+\\.' : '\\*' } `).test(nextline))
+                    if (!RegExp(blockRegexPrefix + `  {${minspaces - 2},${minspaces - 1}}${ordered ? '\\d+\\.' : '\\*'} `).test(nextline))
                     {
                         return end;
                     }
                 }
             }
-            else
+            else if (RegExp(blockRegexPrefix + '  *(?:\\*|\\d+\\.) ').test(nextline))
             {
-                if (RegExp(blockRegexPrefix + '  *(?:\\*|\\d+\\.) ').test(nextline))
+                // Also can't swap between ordered/unoredred with the same nesting level
+                let minspaces = nestLevel * 2;
+                if (!RegExp(blockRegexPrefix + `  {${minspaces},}`).test(nextline) ||
+                    RegExp(blockRegexPrefix + `  {${minspaces},${minspaces + 1}}${ordered ? '\\*' : '\\d+\\.'} `).test(nextline))
                 {
-                    // Also can't swap between ordered/unoredred with the same nesting level
-                    let minspaces = nestLevel * 2;
-                    if (!RegExp(blockRegexPrefix + `  {${minspaces},}`).test(nextline) ||
-                        RegExp(blockRegexPrefix + `  {${minspaces},${minspaces + 1}}${ordered ? '\\*' : '\\d+\\.'} `).test(nextline))
-                    {
-                        return end + 1;
-                    }
+                    return end + 1;
                 }
             }
 
@@ -2045,7 +2004,7 @@ class Markdown {
                 let minspaces = (nestLevel + 1) * 2;
                 if (!RegExp(`^ {${minspaces},}`).test(nextline))
                 {
-                    if (!RegExp(`^ {${minspaces - 2},${minspaces - 1}}${ordered ? '\\d+\\.' : '\\*' } `).test(nextline))
+                    if (!RegExp(`^ {${minspaces - 2},${minspaces - 1}}${ordered ? '\\d+\\.' : '\\*'} `).test(nextline))
                     {
                         return end + 2;
                     }
@@ -2086,19 +2045,20 @@ class Markdown {
         let inline = false;
         let toFind = [']', '(', ')'];
         let idx = 0;
-        let ret = 
+        let ret =
         {
             text : '',
             url : 0,
             end : 0,
             type : 0 // 0 == regular link. 1 == "footer" syntax
-        }
+        };
 
         for (let i = start; i < end; ++i)
         {
             switch (this.text[i])
             {
                 case '[':
+                {
                     if (i == start || this._isEscaped(i))
                     {
                         break;
@@ -2124,6 +2084,7 @@ class Markdown {
                         i = innerUrl.end - 1;
                     }
                     break;
+                }
                 case ']':
                     if (toFind[idx] != ']' || this._isInline(inline, i, end) || this._isEscaped(i))
                     {
@@ -2172,7 +2133,9 @@ class Markdown {
                     }
 
                     inline = !inline;
+                    break;
                 case ':':
+                {
                     if (toFind[idx] != '(' ||
                         this.text[i - 1] != ']' ||
                         this._isEscaped(i) ||
@@ -2192,6 +2155,7 @@ class Markdown {
                     ret.type = 2;
                     ret.end = urlEnd;
                     return ret;
+                }
                 default:
                     break;
             }
@@ -2231,7 +2195,7 @@ class Run
         this.start = start;
         this.end = end;
         this.parent = parent;
-        if (parent != null)
+        if (parent !== null)
         {
             parent.innerRuns.push(this);
         }
@@ -2253,7 +2217,7 @@ class Run
 
         let ident = '';
         let par = this.parent;
-        while (par != null)
+        while (par !== null)
         {
             par = par.parent;
             ident += '   ';
@@ -2306,7 +2270,7 @@ class Run
     startContextLength() { return 0; }
     endContextLength() { return 0; }
 
-    tag(end) { return ''; }
+    tag(/*end*/) { return ''; }
 
     /// <summary>
     /// Trims the given text, where side is one of the following:
@@ -2362,7 +2326,7 @@ class Run
             }
             else
             {
-                // lonesome backslack. Treat it as a normal backslash character
+                // Lonesome backslack. Treat it as a normal backslash character
                 newText += '\\';
             }
         }
@@ -2398,7 +2362,7 @@ class Run
                 return false;
             default:
                 logWarn('Unknown state: ' + this.state);
-                return false
+                return false;
         }
     }
 
@@ -2434,7 +2398,6 @@ class Run
 
             if (!run.isBlockElement())
             {
-                // previousRun = run;
                 continue;
             }
 
@@ -2456,16 +2419,16 @@ class Run
         if (start < this.end)
         {
             let nextRun = null;
-            if (this.parent != null)
+            if (this.parent !== null)
             {
                 let iNext = this.parent.innerRuns.indexOf(this) + 1;
-                if (iNext != this.parent.innerRuns.length)
+                if (iNext == this.parent.innerRuns.length)
                 {
-                    nextRun = this.parent.innerRuns[iNext];
+                    nextRun = this.parent;
                 }
                 else
                 {
-                    nextRun = this.parent;
+                    nextRun = this.parent.innerRuns[iNext];
                 }
             }
             this._parseNewlinesCore(text, start, this.end, previousRun, nextRun);
@@ -2494,7 +2457,7 @@ class Run
                     ++cNewlines;
                 }
                 else if (next == ' ')
-                {
+                {/* Empty */
                 }
                 else
                 {
@@ -2505,7 +2468,7 @@ class Run
             }
 
             let atTop = newline == previousRun.end;
-            let atBottom = nextRun != null && newline + offset == nextRun.start;
+            let atBottom = nextRun !== null && newline + offset == nextRun.start;
 
             if (cNewlines > 1 && this.state == State.None)
             {
@@ -2660,7 +2623,7 @@ class Run
                     // element do it itself.
                     if (this.innerRuns[i - 1].isBlockElement())
                     {
-                        logWarn("Only inline elements should be hitting this");
+                        logWarn('Only inline elements should be hitting this');
                     }
 
                     return 0;
@@ -2682,14 +2645,14 @@ class Run
         // "\*" becomes "*", "\_" becomes "_", etc.
 
         // Display inline and block code blocks as-is, but everything else should
-        // strip escapes - 
+        // strip escapes -
         if (this.state != State.InlineCode && this.state != State.CodeBlock)
         {
             newText = this.escapeChars(newText, '\\*`_+~<>');
         }
 
         // All items should have htmlentities replaced
-        return newText.replace(/[&<>"'\/]/g, function(ch)
+        return newText.replace(/[&<>"'/]/g, function(ch)
         {
             const entityMap =
             {
@@ -2719,7 +2682,7 @@ class Break extends Run
     }
 
     tag(end) { return end ? '' : '<br />'; }
-    transform(newText) { return ''; }
+    transform(/*newText*/) { return ''; }
 }
 
 class Hr extends Run
@@ -2733,7 +2696,7 @@ class Hr extends Run
 
 
     // Indicators can have a variable number of characters, but we never want to actually print anything
-    transform(newText, side) { return ''; }
+    transform(/*newText,*/ /*side*/) { return ''; }
 }
 
 class Div extends Run
@@ -2748,7 +2711,7 @@ class Div extends Run
     {
         if (end)
         {
-            return "</div>";
+            return '</div>';
         }
 
         return '<div class="mdDiv">';
@@ -2840,7 +2803,7 @@ class BlockQuote extends Run
 
     tag(end) { return Run.basicTag('blockquote', end); }
 
-    transform(newText, side)
+    transform(newText, /*side*/)
     {
         // Look for 'newline + >' and remove them.
         let transformed = '';
@@ -2881,7 +2844,7 @@ class UnorderedList extends Run
 
     tag(end) { return Run.basicTag('ul', end); }
 
-    transform(newText, side)
+    transform(/*newText,*/ /*side*/)
     {
         // Nothing is allowed inside of lists other than
         // list items, so return an empty string. This
@@ -2912,7 +2875,7 @@ class OrderedList extends Run
         return `<ol start='${this.listStart}'>`;
     }
 
-    transform(newText, side)
+    transform(/*newText,*/ /*side*/)
     {
         // Nothing is allowed inside of lists other than
         // list items, so return an empty string. This
@@ -2933,12 +2896,12 @@ class ListItem extends Run
 
     tag(end) { return Run.basicTag('li', end); }
 
-    transform(newText, side)
+    transform(newText, /*side*/)
     {
         // Need to go up our chain to see how many `>` to look for and remove
         let cBlock = 0;
         let parent = this.parent;
-        while (parent != null)
+        while (parent !== null)
         {
             if (parent.state == State.BlockQuote)
             {
@@ -3001,7 +2964,7 @@ class Url extends Run
         return `<a href="${encodeURI(this.url)}">`;
     }
 
-    transform(newText, side)
+    transform(newText, /*side*/)
     {
         return super.transform(this.escapeChars(newText, '[]'));
     }
@@ -3031,7 +2994,7 @@ class ExtendedUrl extends Url
         else
         {
             logError('Could not find link match for ' + this.url);
-            return '';
+            return;
         }
 
         this.converted = true;
@@ -3059,7 +3022,7 @@ class ExtendedUrlTag extends Run
 
     tag(end) { return end ? ' -->' : '<!-- '; }
 
-    transform(newText, side)
+    transform(newText, /*side*/)
     {
         return newText;
     }
@@ -3135,7 +3098,7 @@ class Image extends Run
     }
 
     // Inline tag, no actual content
-    transform(newText, side)
+    transform(/*newText,*/ /*side*/)
     {
         return '';
     }
@@ -3180,7 +3143,7 @@ class BacktickCodeBlock extends CodeBlock
     startContextLength() { return this.text.indexOf('\n') + 1; }
     endContextLength() { return this.text.length - this.text.lastIndexOf('\n'); }
 
-    transform(newText, side)
+    transform(newText, /*side*/)
     {
         newText = super.transform(newText);
         this.buildCodeBlock(newText, function(line, i)
@@ -3212,7 +3175,7 @@ class IndentCodeBlock extends CodeBlock
 
     endContextLength() { return 0; }
 
-    transform(newText, side)
+    transform(newText, /*side*/)
     {
         newText = super.transform(this.text);
         this.buildCodeBlock(newText, function(line, i)
@@ -3245,7 +3208,7 @@ class Table extends Run
 
     tag(end) { return Run.basicTag('table', end); }
 
-    transform(newText, side)
+    transform(/*newText,*/ /*side*/)
     {
         const wrap = (text, wrapper) => `<${wrapper}>${text}</${wrapper}>`;
         const td = function(text, align)
@@ -3256,7 +3219,8 @@ class Table extends Run
             }
 
             return '<td align="' + (align == -1 ? 'left' : align == 0 ? 'center' : 'right') + `">${text}</td>`;
-        }
+        };
+
         // Ignore the text and use our table to build this up
         let header = '';
         for (let i = 0; i < this.table.header.length; ++i)
@@ -3290,7 +3254,7 @@ class InlineCodeRun extends Run
         super(State.InlineCode, start, end, parent);
         this.text = text.substring(start, end);
         this._backticks = 0;
-        while(this.text[this._backticks] == '`')
+        while (this.text[this._backticks] == '`')
         {
             ++this._backticks;
         }
@@ -3304,12 +3268,9 @@ class InlineCodeRun extends Run
 
 class InlineFormat extends Run
 {
-    constructor(state, start, end, parent)
-    {
-        super(state, start, end, parent);
-    }
+    // (Constructor same as parent)
 
-    transform(newText, side)
+    transform(newText, /*side*/)
     {
         return super.transform(newText).replace(/\n/g, '<br>');
     }
@@ -3332,7 +3293,7 @@ class Italic extends InlineFormat
 {
     constructor(start, end, parent)
     {
-        super (State.Italic, start, end, parent);
+        super(State.Italic, start, end, parent);
     }
 
     startContextLength() { return 1; }
@@ -3374,9 +3335,9 @@ class HtmlComment extends Run
         super(State.HtmlComment, start, end, parent);
     }
 
-    tag(end) { return ''; }
+    tag(/*end*/) { return ''; }
 
-    transform(newText, side)
+    transform(newText, /*side*/)
     {
         // Leave exactly as-is, we want it to be parsed as an HTML comment
         return newText;
@@ -3397,8 +3358,8 @@ function markdownHelp(callback, raw=false)
     let successFunc = function(response, request)
     {
         _mdHelpHTML = _helpMarkdown.parse(response.data);
-        callback({ data : request.raw ? _helpMarkdown.text : `<div class="md">${_mdHelpHTML}</div>`});
+        callback({ data : request.raw ? _helpMarkdown.text : `<div class="md">${_mdHelpHTML}</div>` });
     };
 
-    sendHtmlJsonRequest("process_request.php", { "type" : ProcessRequest.MarkdownText }, successFunc, undefined, { 'raw' : raw });
+    sendHtmlJsonRequest('process_request.php', { type : ProcessRequest.MarkdownText }, successFunc, undefined, { raw : raw });
 }

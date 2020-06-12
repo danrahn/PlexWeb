@@ -1,3 +1,5 @@
+
+/* exported testAll, setDarkConsole, setTrace, consoleHelp */
 /// <summary>
 /// Console logging class. Allows easy timestamped logging with various log levels
 ///
@@ -9,13 +11,13 @@
 /// All possible log levels, from most to least verbose
 /// </summary>
 const LOG = {
-    Extreme: -1, // Log everytime something is logged
-    Tmi: 0,
-    Verbose: 1,
-    Info: 2,
-    Warn: 3,
-    Error: 4,
-    Critical: 5
+    Extreme : -1, // Log every time something is logged
+    Tmi : 0,
+    Verbose : 1,
+    Info : 2,
+    Warn : 3,
+    Error : 4,
+    Critical : 5
 };
 
 const g_logStr = ["TMI", "VERBOSE", "INFO", "WARN", "ERROR", "CRITICAL"];
@@ -43,9 +45,24 @@ const g_traceColors =
     g_levelColors[0],
     g_levelColors[1],
     g_levelColors[2],
-    ["#E50; background-color: #FFFBE5", "#C40; background-color: #332B00", "inherit; background-color: #FFFBE5", "#DFC185; background-color: #332B00"],
-    ["red; background-color: #FEF0EF", "#D76868; background-color: #290000", "red; background-color: #FEF0EF", "#D76868; background-color: #290000"],
-    ["red; font-size: 2em", "red; font-size: 2em", "#800; font-size: 2em", "#C33; font-size: 2em"],
+    [
+        "#E50; background-color: #FFFBE5",
+        "#C40; background-color: #332B00",
+        "inherit; background-color: #FFFBE5",
+        "#DFC185; background-color: #332B00"
+    ],
+    [
+        "red; background-color: #FEF0EF",
+        "#D76868; background-color: #290000",
+        "red; background-color: #FEF0EF",
+        "#D76868; background-color: #290000"
+    ],
+    [
+        "red; font-size: 2em",
+        "red; font-size: 2em",
+        "#800; font-size: 2em",
+        "#C33; font-size: 2em"
+    ],
     g_levelColors[6]
 ];
 
@@ -139,6 +156,7 @@ function logError(obj, description, freeze)
     log(obj, description, freeze, LOG.Error);
 }
 
+/* eslint-disable max-lines-per-function */
 function log(obj, description, freeze, level)
 {
     if (level < g_logLevel)
@@ -146,35 +164,57 @@ function log(obj, description, freeze, level)
         return;
     }
 
-    const print = function(output, text, obj, level, colors)
+    const print = function(output, text, object, logLevel, colors)
     {
-        let textColor = `color: ${colors[level][2 + g_darkConsole]}`;
-        let titleColor = `color: ${colors[level][g_darkConsole]}`;
-        output(text, textColor, titleColor, textColor, titleColor, textColor, obj);
-    }
+        let textColor = `color: ${colors[logLevel][2 + g_darkConsole]}`;
+        let titleColor = `color: ${colors[logLevel][g_darkConsole]}`;
+        output(text, textColor, titleColor, textColor, titleColor, textColor, object);
+    };
 
-    let d = getTimestring();
+    let timestring = getTimestring();
     let colors = g_traceLogging ? g_traceColors : g_levelColors;
-    let typ = (obj) => typeof(obj) == "string" ? "%s" : "%o";
+    let typ = (object) => typeof(object) == "string" ? "%s" : "%o";
 
-    let curState = (obj, str=0) => typeof(obj) == "string" ? obj : str ? JSON.stringify(obj) : freeze ? JSON.parse(JSON.stringify(obj)) : obj;
-    if (g_logLevel === LOG.Extreme) {
+    let curState = (object, str=0) => typeof(object) == "string" ?
+        object :
+        str ?
+            JSON.stringify(object) :
+            freeze ?
+                JSON.parse(JSON.stringify(object)) :
+                object;
+    if (g_logLevel === LOG.Extreme)
+    {
         print(
             console.log,
-            `%c[%cEXTREME%c][%c${d}%c] Called log with '${description ? description + ': ' : ''}${typ(obj)}, ${level}'`, curState(obj), 6, colors);
+            `%c[%cEXTREME%c][%c${timestring}%c] Called log with '${description ? description + ": " : ""}${typ(obj)},
+            ${level}'`,
+            curState(obj),
+            6,
+            colors);
     }
 
-    let output = g_traceLogging ? console.trace : level < LOG.Info ? console.log : level < LOG.Warn ? console.info : level < LOG.Error ? console.warn : console.error;
-    print(output, `%c[%c${g_logStr[level]}%c][%c${d}%c] ${description ? description + ': ' : ''}${typ(obj)}`, curState(obj), level, colors);
+    let output = g_traceLogging ?
+        console.trace :
+        level < LOG.Info ?
+            console.log :
+            level < LOG.Warn ?
+                console.info :
+                level < LOG.Error ?
+                    console.warn :
+                    console.error;
+    print(output, `%c[%c${g_logStr[level]}%c][%c${timestring}%c] ${description ? description + ": " : ""}${typ(obj)}`, curState(obj), level, colors);
 
-    function getTimestring() {
-        let z = function(n,x=2) {
-            return ('00' + n).substr(-x);
-        }
+    function getTimestring()
+    {
+        let pl = function(str,pad=2)
+        {
+            return ("00" + str).substr(-pad);
+        };
 
-        let d = new Date();
-        return `${d.getFullYear()}.${z(d.getMonth()+1)}.${z(d.getDate())} ${z(d.getHours())}:${z(d.getMinutes())}:${z(d.getSeconds())}.${z(d.getMilliseconds(),3)}`;
-    };
+        let timestamp = new Date();
+        return `${timestamp.getFullYear()}.${pl(timestamp.getMonth()+1)}.${pl(timestamp.getDate())} ` +
+            `${pl(timestamp.getHours())}:${pl(timestamp.getMinutes())}:${pl(timestamp.getSeconds())}.${pl(timestamp.getMilliseconds(),3)}`;
+    }
 
     if (level > LOG.Warn)
     {
@@ -195,7 +235,7 @@ function consoleHelp()
     // After initializing everything we need, print a message to the user to give some basic tips
     const logLevelSav = g_logLevel;
     g_logLevel = 2;
-    logInfo(' ');
+    logInfo(" ");
     console.log("Welcome to the console!\n" +
     "If you're debugging an issue, here are some tips:\n" +
     "  1. Set dark/light mode for the console via setDarkConsole(isDark), where isDark is 1 or 0.\n" +

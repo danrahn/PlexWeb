@@ -1,70 +1,77 @@
-window.addEventListener('load', function()
+window.addEventListener("load", function()
 {
     setupLoginForm();
 });
+
+function validateLoginFields(user, pass)
+{
+    // Infallible client-side validation
+    if (!user.value)
+    {
+        Animation.queue({ backgroundColor : new Color(140, 66, 69) }, user, 500);
+        Animation.queueDelayed({ backgroundColor : new Color(100, 66, 69) }, user, 500, 500);
+    }
+
+    if (!pass.value)
+    {
+        Animation.queue({ backgroundColor : new Color(140, 66, 69) }, pass, 500);
+        Animation.queueDelayed({ backgroundColor : new Color(100, 66, 69) }, pass, 500, 500);
+    }
+
+    return user.value && pass.value;
+}
+
+function login()
+{
+    let user = $$("input[name='username']");
+    let pass = $$("input[name='password']");
+
+    if (!validateLoginFields(user, pass))
+    {
+        return;
+    }
+
+    let params =
+    {
+        type : ProcessRequest.Login,
+        username : user.value,
+        password : pass.value
+    };
+
+    let successFunc = function()
+    {
+        if (window.location.href.indexOf("?") > 0)
+        {
+            let goto = window.location.href.substring(window.location.href.indexOf("return=") + 7);
+            goto = decodeURIComponent(goto);
+            window.location = goto;
+            return;
+        }
+
+        window.location = "index.php";
+    };
+
+    let failureFunc = function(response)
+    {
+        let status = $("#formStatus");
+        status.className = "formContainer statusFail";
+        status.innerHTML = response.Error;
+        Animation.fireNow({ opacity : 1 }, status, 500);
+        Animation.queueDelayed({ opacity : 0 }, status, 5000, 1000);
+    };
+
+    sendHtmlJsonRequest("process_request.php", params, successFunc, failureFunc);
+}
 
 /// <summary>
 /// Setup event handlers for the suggestion form
 /// </summary>
 function setupLoginForm()
 {
-    $("#go").addEventListener("click", function()
-    {
-        let user = $$("input[name='username']");
-        let pass = $$("input[name='password']");
+    $("#go").addEventListener("click", login);
 
-        // Infallible client-side validation
-        if (!user.value)
-        {
-            Animation.queue({"backgroundColor" : new Color(140, 66, 69)}, user, 500);
-            Animation.queueDelayed({"backgroundColor" : new Color(100, 66, 69)}, user, 500, 500);
-        }
-
-        if (!pass.value)
-        {
-            Animation.queue({"backgroundColor" : new Color(140, 66, 69)}, pass, 500);
-            Animation.queueDelayed({"backgroundColor" : new Color(100, 66, 69)}, pass, 500, 500);
-        }
-
-        if (!user.value || !pass.value) {
-            return;
-        }
-
-        let params =
-        {
-            "type" : ProcessRequest.Login,
-            "username" : user.value,
-            "password" : pass.value
-        };
-
-        let successFunc = function()
-        {
-            if (window.location.href.indexOf("?") > 0)
-            {
-                let goto = window.location.href.substring(window.location.href.indexOf("return=") + 7);
-                goto = decodeURIComponent(goto);
-                window.location = goto;
-                return;
-            }
-
-            window.location = "index.php";
-        };
-
-        let failureFunc = function(response)
-        {
-            let status = $("#formStatus");
-            status.className = "formContainer statusFail";
-            status.innerHTML = response["Error"];
-            Animation.fireNow({"opacity" : 1}, status, 500);
-            Animation.queueDelayed({"opacity" : 0}, status, 5000, 1000);
-        };
-
-        sendHtmlJsonRequest("process_request.php", params, successFunc, failureFunc);
-        
-    });
-    
-    var inputs = $("input, select");
-    for (var i = 0; i < inputs.length; i++)
+    let inputs = $("input, select");
+    for (let i = 0; i < inputs.length; i++)
     {
         inputs[i].addEventListener("keyup", function(e)
         {
@@ -74,14 +81,14 @@ function setupLoginForm()
             }
         });
     }
-    
+
     let user = $$("input[name='username']");
     let pass = $$("input[name='password']");
 
     user.addEventListener("focusout", focusOutEvent);
     pass.addEventListener("focusout", focusOutEvent);
     $$("input[type='button']").addEventListener("focusout", focusOutEvent);
-    
+
     user.addEventListener("focus", focusInEvent);
     pass.addEventListener("focus", focusInEvent);
     $$("input[type='button']").addEventListener("focus", focusInEvent);
@@ -100,10 +107,8 @@ function focusOutEvent()
         this.className = "badInput";
         return;
     }
-    else
-    {
-        this.className = "";
-    }
+
+    this.className = "";
 }
 
 /// <summary>

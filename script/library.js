@@ -1,7 +1,8 @@
+/* exported populateFilter, getNewFilter, filterHtml, tableSearch, tableIdentifier, tableUpdateFunc  */
 
 window.addEventListener("load", function()
 {
-    sendHtmlJsonRequest("administration.php", { "type" : "sections" }, buildSections);
+    sendHtmlJsonRequest("administration.php", { type : "sections" }, buildSections);
 });
 
 function buildSections(sections)
@@ -20,7 +21,7 @@ function buildSections(sections)
             list.appendChild(listItem(key, value, value instanceof Date));
         }
 
-        list.appendChild(getRefreshNode(section['key']));
+        list.appendChild(getRefreshNode(section.key));
 
         div.appendChild(list);
         outerDiv.appendChild(div);
@@ -47,8 +48,8 @@ function listItem(key, value, dateTooltip=false)
 
 function titleCase(value)
 {
-    words = value.split('_');
-    title = '';
+    let words = value.split("_");
+    let title = "";
     words.forEach(function(word)
     {
         title += word[0].toUpperCase() + word.substring(1).toLowerCase() + " ";
@@ -60,39 +61,40 @@ function titleCase(value)
 function getRefreshNode(key)
 {
     let li = buildNode("li", {});
-    let button = buildNode('input',
-        {'type' : 'button', 'value' : 'refresh', 'section' : key, 'id' : 'section' + key },
-        'Refresh', {'click' : refreshNode});
+    let button = buildNode("input",
+        { type : "button", value : "refresh", section : key, id : "section" + key },
+        "Refresh",
+        { click : refreshNode });
     li.appendChild(button);
     return li;
 }
 
 function refreshNode()
 {
-    let key = this.getAttribute('section')
+    let key = this.getAttribute("section");
     let successFunc = function()
     {
-        btn = $('#section' + key);
-        Animation.fireNow({"backgroundColor" : new Color(63, 100, 69)}, btn, 500);
-        Animation.queueDelayed({"backgroundColor" : new Color(63, 66, 69)}, btn, 2000, 500, true);
+        let btn = $("#section" + key);
+        Animation.fireNow({ backgroundColor : new Color(63, 100, 69) }, btn, 500);
+        Animation.queueDelayed({ backgroundColor : new Color(63, 66, 69) }, btn, 2000, 500, true);
     };
 
     let failureFunc = function()
     {
-        btn = $('#section' + key);
-        Animation.fireNow({"backgroundColor" : new Color(100, 66, 69)}, btn, 500);
-        Animation.queueDelayed({"backgroundColor" : new Color(63, 66, 69)}, btn, 2000, 500, true);
+        let btn = $("#section" + key);
+        Animation.fireNow({ backgroundColor : new Color(100, 66, 69) }, btn, 500);
+        Animation.queueDelayed({ backgroundColor : new Color(63, 66, 69) }, btn, 2000, 500, true);
     };
 
-    sendHtmlJsonRequest("administration.php", { "type" : "refresh", "section" : key}, successFunc, failureFunc);
+    sendHtmlJsonRequest("administration.php", { type : "refresh", section : key }, successFunc, failureFunc);
 }
 
 function tableIdentifier()
 {
-    return 'library';
+    return "library";
 }
 
 function tableUpdateFunc()
 {
-    return () => sendHtmlJsonRequest("administration.php", { "type" : "sections" }, buildSections);
+    return () => sendHtmlJsonRequest("administration.php", { type : "sections" }, buildSections);
 }

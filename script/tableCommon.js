@@ -11,6 +11,24 @@
 ///    b. getNewFilter() - Returns the new filter based on the current state of the filter dialog
 /// </summary>
 
+/* exported
+    getPage,
+    setPage,
+    getPerPage,
+    setPerPage,
+    setPageInfo,
+    setFilter,
+    addTableItem,
+    tableItemHolder,
+    buildTableFilterCheckbox,
+    buildTableFilterDropdown,
+    filterHtmlCommon,
+    populateUserFilter,
+    displayInfoMessage,
+    tableIdCore,
+    clearElement,
+    clearTable */
+
 /// <summary>
 /// On load set up all the handlers we need
 /// </summary>
@@ -21,7 +39,8 @@ window.addEventListener("load", function()
     setupTableSearch();
     setupFilter();
     setupKeyboardNavigation();
-    document.body.addEventListener('keyup', tableFilterKeyHandler);
+    setupDirectPageNavigation();
+    document.body.addEventListener("keyup", tableFilterKeyHandler);
 });
 
 let tablePages = 0;
@@ -33,7 +52,7 @@ let tablePages = 0;
 function displayInfoMessage(message)
 {
     clearElement("tableEntries");
-    $("#tableEntries").appendChild(buildNode("div", {"id" : "resultInfo"}, message));
+    $("#tableEntries").appendChild(buildNode("div", { id : "resultInfo" }, message));
 }
 
 /// <summary>
@@ -81,7 +100,7 @@ function setupNavigation()
 /// </summary>
 function setupKeyboardNavigation()
 {
-    document.addEventListener('keyup', function(e)
+    document.addEventListener("keyup", function(e)
     {
         // Don't do anything if we're in an input field
         let active = document.activeElement;
@@ -104,7 +123,7 @@ function setupKeyboardNavigation()
                 case 39: // RIGHT
                     nextPage();
                     break;
-                case  70: // F
+                case 70: // F
                     if ($$(".filterBtn"))
                     {
                         $$(".filterBtn").click();
@@ -113,10 +132,16 @@ function setupKeyboardNavigation()
             }
         }
     });
+}
 
-    $('.pageSelect').forEach(function(input)
+/// <summary>
+/// Sets up listeners for the direct page select text boxes
+/// </summary>
+function setupDirectPageNavigation()
+{
+    $(".pageSelect").forEach(function(input)
     {
-        input.addEventListener('keyup', function(e)
+        input.addEventListener("keyup", function(e)
         {
             let key = e.keyCode ? e.keyCode : e.which;
             if (key == 13 /*enter*/)
@@ -134,85 +159,94 @@ function setupKeyboardNavigation()
             }
         });
 
-        input.addEventListener('focus', function()
+        input.addEventListener("focus", function()
         {
             this.select();
         });
-    })
+    });
 }
 
 function setupTableSearch()
 {
     // If the table does not have a search function,
     // don't show anything. Might mess up CSS
-    if (typeof(tableSearch) == 'undefined')
+    if (typeof(tableSearch) == "undefined")
     {
-        $('.searchBtn').forEach(function(btn)
+        $(".searchBtn").forEach(function(btn)
         {
-            btn.style.display = 'none';
+            btn.style.display = "none";
         });
 
         return;
     }
 
-    $('.searchBtn').forEach(function(btn)
+    $(".searchBtn").forEach(function(btn)
     {
-        btn.addEventListener('click', searchBtnClick);
+        btn.addEventListener("click", searchBtnClick);
     });
 
-    $('.searchGo').forEach(function(btn)
+    $(".searchGo").forEach(function(btn)
     {
-        btn.addEventListener('click', startTableSearch);
+        btn.addEventListener("click", startTableSearch);
     });
 
-    $('.searchInput').forEach(function(input)
+    _setupSearchListeners();
+}
+
+/// <summary>
+/// Sets up search listeners to commit on enter/cancel on escape
+/// as well as setting up the click handler for the cancel button
+/// </summary>
+function _setupSearchListeners()
+{
+    $(".searchInput").forEach(function(input)
     {
-        input.addEventListener('keydown', function(e)
+        input.addEventListener("keydown", function(e)
         {
             if (e.keyCode == 13 /*enter*/)
             {
-                this.parentNode.$$('.searchGo').click();
+                this.parentNode.$$(".searchGo").click();
             }
             else if (e.keyCode == 27 /*esc*/)
             {
-                this.value = '';
-                this.parentNode.parentNode.$$('.searchBtn').click();
+                this.value = "";
+                this.parentNode.parentNode.$$(".searchBtn").click();
             }
         });
     });
 
-    $('.searchInputClear').forEach(function(img)
+    $(".searchInputClear").forEach(function(img)
     {
-        img.addEventListener('click', function(e)
+        img.addEventListener("click", function()
         {
-            let search = this.parentNode.$$('.searchInput');
+            let search = this.parentNode.$$(".searchInput");
             if (search.value.length != 0)
             {
-                this.parentNode.$$('.searchInput').value = '';
-                this.parentNode.$$('.searchGo').click();
+                this.parentNode.$$(".searchInput").value = "";
+                this.parentNode.$$(".searchGo").click();
             }
-            
-            this.parentNode.parentNode.$$('.searchBtn').click();
+
+            this.parentNode.parentNode.$$(".searchBtn").click();
         });
-    })
+    });
 }
 
-function searchBtnClick(e)
+function searchBtnClick()
 {
-    let show = !$$('.pageStatus').style.display || $$('.pageStatus').style.display != 'none';
-    $('.pageStatus').forEach(function(ele)
+    let show = !$$(".pageStatus").style.display || $$(".pageStatus").style.display != "none";
+    $(".pageStatus").forEach(function(ele)
     {
-        ele.style.display = show ? 'none' : 'inline-block';
+        ele.style.display = show ? "none" : "inline-block";
     });
 
-    $('.searchInputHolder').forEach(function(ele)
+    $(".searchInputHolder").forEach(function(ele)
     {
-        ele.style.display = show ? 'inline-block' : 'none';
+        ele.style.display = show ? "inline-block" : "none";
     });
 
     if (show)
     {
-        this.parentNode.$$('.searchInput').focus();
+        this.parentNode.$$(".searchInput").focus();
     }
 }
 
@@ -220,11 +254,11 @@ function searchBtnClick(e)
 /// Initiates a search. If the owner hasn't defined
 /// a search function, warn the user.
 /// </summary>
-function startTableSearch(e)
+function startTableSearch()
 {
     try
     {
-        tableSearch(this.parentNode.$$('.searchInput').value);
+        tableSearch(this.parentNode.$$(".searchInput").value);
     }
     catch (e)
     {
@@ -234,17 +268,17 @@ function startTableSearch(e)
 
 function setupFilter()
 {
-    if (typeof(filterHtml) == 'undefined')
+    if (typeof(filterHtml) == "undefined")
     {
-        $('.filterBtn').forEach(function(filter)
+        $(".filterBtn").forEach(function(filter)
         {
-            filter.style.display = 'none';
+            filter.style.display = "none";
         });
 
         return;
     }
 
-    $('.filterBtn').forEach(function(filter)
+    $(".filterBtn").forEach(function(filter)
     {
         filter.addEventListener("click", launchFilter);
     });
@@ -255,15 +289,54 @@ function setupFilter()
 /// </summary>
 function launchFilter()
 {
+    let overlay = _buildAndAttachFilterOverlay();
+
+    // Somewhat hacky to do this here, but query selection doesn't
+    // work until the item is actually added to the DOM
+    let perPage = $("#showPerPage");
+    if (perPage)
+    {
+        perPage.value = getPerPage();
+    }
+
+    populateFilter();
+    $("#applyFilter").addEventListener("click", function()
+    {
+        setPage(0);
+        let applyPerPage = !!$("#showPerPage");
+        setFilter(getNewFilter(), !applyPerPage /*update*/);
+        if (applyPerPage)
+        {
+            setPerPage($("#showPerPage").value, true /*update*/);
+        }
+
+        dismissFilterDialog();
+    });
+    $("#cancelFilter").addEventListener("click", dismissFilterDialog);
+    $("#resetFilter").addEventListener("click", function()
+    {
+        setPage(0);
+        setFilter(defaultFilter(), true);
+        dismissFilterDialog();
+    });
+
+    Animation.queue({ opacity : 1 }, overlay, 250);
+
+    // Set focus to the first input
+    overlay.$$("input").focus();
+}
+
+function _buildAndAttachFilterOverlay()
+{
     let overlay = buildNode(
-        'div',
-        { 'id' : 'filterOverlay', 'style' : 'opacity: 0' },
+        "div",
+        { id : "filterOverlay", style : "opacity: 0" },
         filterHtml().outerHTML,
         {
-            'click' : function(e)
+            click : function(e)
             {
                 // A click outside the main dialog will dismiss it
-                if (e.target.id == 'filterOverlay')
+                if (e.target.id == "filterOverlay")
                 {
                     dismissFilterDialog();
                 }
@@ -272,40 +345,7 @@ function launchFilter()
     );
 
     document.body.appendChild(overlay);
-
-    // Somewhat hacky to do this here, but query selection doesn't
-    // work until the item is actually added to the DOM
-    let perPage = $('#showPerPage');
-    if (perPage)
-    {
-        perPage.value = getPerPage();
-    }
-
-    populateFilter();
-    $('#applyFilter').addEventListener('click', function()
-    {
-        setPage(0);
-        let applyPerPage = !!$('#showPerPage');
-        setFilter(getNewFilter(), !applyPerPage /*update*/)
-        if (applyPerPage)
-        {
-            setPerPage($('#showPerPage').value, true /*update*/);
-        }
-
-        dismissFilterDialog();
-    });
-    $('#cancelFilter').addEventListener('click', dismissFilterDialog);
-    $('#resetFilter').addEventListener('click', function()
-    {
-        setPage(0);
-        setFilter(defaultFilter(), true);
-        dismissFilterDialog();
-    });
-
-    Animation.queue({'opacity' : 1}, overlay, 250);
-
-    // Set focus to the first input
-    overlay.$$('input').focus();
+    return overlay;
 }
 
 /// <summary>
@@ -313,48 +353,34 @@ function launchFilter()
 /// </summary>
 function filterHtmlCommon(options)
 {
-    let container = buildNode('div', { 'id' : 'filterContainer' });
-    container.appendChild(buildNode('h3', {}, 'Filter Options'));
-    container.appendChild(buildNode('hr'));
+    let container = buildNode("div", { id : "filterContainer" });
+    container.appendChild(buildNode("h3", {}, "Filter Options"));
+    container.appendChild(buildNode("hr"));
     options.forEach(function(option)
     {
         container.appendChild(option);
     });
 
-    // In mobile view we don't show 'per page' directly in the table
-    // header to save space. Move it into the filter UI
-    if (getComputedStyle($$('.nomobile')).display != 'inline')
-    {
-        container.appendChild(buildTableFilterDropdown(
-            'Show Per Page',
-            {
-                '25' : '25',
-                '50' : '50',
-                '100' : '100',
-                'All' : '0'
-            }));
+    _checkPerPageInFilter(container);
 
-        container.appendChild(buildNode('hr'));
-    }
-
-    let buttonHolder = buildNode('div', {'class' : 'formInput'});
-    let innerButtonHolder = buildNode('div', {'class' : 'filterButtons'});
-    innerButtonHolder.appendChild(buildNode('input', {
-        'type' : 'button',
-        'value' : 'Cancel',
-        'id' : 'cancelFilter',
-        'style' : 'margin-right: 10px'
+    let buttonHolder = buildNode("div", { class : "formInput" });
+    let innerButtonHolder = buildNode("div", { class : "filterButtons" });
+    innerButtonHolder.appendChild(buildNode("input", {
+        type : "button",
+        value : "Cancel",
+        id : "cancelFilter",
+        style : "margin-right: 10px"
     }));
-    innerButtonHolder.appendChild(buildNode('input', {
-        'type' : 'button',
-        'value' : 'Reset',
-        'id' : 'resetFilter',
-        'style' : 'margin-right: 10px'
+    innerButtonHolder.appendChild(buildNode("input", {
+        type : "button",
+        value : "Reset",
+        id : "resetFilter",
+        style : "margin-right: 10px"
     }));
-    innerButtonHolder.appendChild(buildNode('input', {
-        'type' : 'button',
-        'value' : 'Apply',
-        'id' : 'applyFilter'
+    innerButtonHolder.appendChild(buildNode("input", {
+        type : "button",
+        value : "Apply",
+        id : "applyFilter"
     }));
 
     buttonHolder.appendChild(innerButtonHolder);
@@ -364,38 +390,59 @@ function filterHtmlCommon(options)
 }
 
 /// <summary>
+/// In mobile view we don't show 'per page' directly in the table
+/// header to save space. Move it into the filter UI
+/// </summary>
+function _checkPerPageInFilter(container)
+{
+    if (getComputedStyle($$(".nomobile")).display != "inline")
+    {
+        container.appendChild(buildTableFilterDropdown(
+            "Show Per Page",
+            {
+                25 : "25",
+                50 : "50",
+                100 : "100",
+                All : "0"
+            }));
+
+        container.appendChild(buildNode("hr"));
+    }
+}
+
+/// <summary>
 /// Returns a checkbox filter item with the given label and name
 /// If the name is empty, return an hr instead
 /// </summary>
 function buildTableFilterCheckbox(label, name)
 {
-    if (name == '')
+    if (name == "")
     {
-        return buildNode('hr');
+        return buildNode("hr");
     }
 
     let div = buildNode(
-        'div',
-        { 'class' : 'formInput' },
+        "div",
+        { class : "formInput" },
         0,
         {
-            'click' : function(e)
+            click : function(e)
             {
                 // If we clicked the filter itme but not directly on the label.checkbox, pretend we did
                 if (e.target == this)
                 {
-                    this.$$('input').click();
+                    this.$$("input").click();
                 }
             }
         }
     );
-    div.appendChild(buildNode('label', { 'for' : name }, label + ': '));
+    div.appendChild(buildNode("label", { for : name }, label + ": "));
     div.appendChild(buildNode(
-        'input',
+        "input",
         {
-            'type' : 'checkbox',
-            'name' : name,
-            'id' : name
+            type : "checkbox",
+            name : name,
+            id : name
         })
     );
 
@@ -408,14 +455,14 @@ function buildTableFilterCheckbox(label, name)
 function buildTableFilterDropdown(title, options, addId=false)
 {
     // Make the name the camelCase version of the title
-    let name = title.split(' ');
-    name = name.splice(0, 1)[0].toLowerCase() + name.join('');
-    let container = buildNode('div', { 'class' : 'formInput' });
-    container.appendChild(buildNode('label', { 'for' : name }, title + ': '));
-    let select = buildNode('select', { 'name' : name, 'id' : name });
+    let name = title.split(" ");
+    name = name.splice(0, 1)[0].toLowerCase() + name.join("");
+    let container = buildNode("div", { class : "formInput" });
+    container.appendChild(buildNode("label", { for : name }, title + ": "));
+    let select = buildNode("select", { name : name, id : name });
     for (let [label, value] of Object.entries(options))
     {
-        let option = buildNode('option', { 'value' : value }, label);
+        let option = buildNode("option", { value : value }, label);
         if (addId)
         {
             option.id = value;
@@ -462,12 +509,12 @@ function nextPage()
 /// </summary>
 function tableIdCore()
 {
-    if (typeof(tableIdentifier) == 'undefined')
+    if (typeof(tableIdentifier) == "undefined")
     {
-        return 'table_shared';
+        return "table_shared";
     }
 
-    return 'table_' + tableIdentifier();
+    return "table_" + tableIdentifier();
 }
 
 /// <summary>
@@ -475,8 +522,8 @@ function tableIdCore()
 /// </summary>
 function getPage()
 {
-    let page = parseInt(localStorage.getItem(tableIdCore() + '_page'));
-    if (page == null || isNaN(page) || page < 0)
+    let page = parseInt(localStorage.getItem(tableIdCore() + "_page"));
+    if (page === null || isNaN(page) || page < 0)
     {
         page = 0;
         setPage(page);
@@ -490,7 +537,7 @@ function getPage()
 /// </summary>
 function setPage(page, update)
 {
-    localStorage.setItem(tableIdCore() + '_page', page);
+    localStorage.setItem(tableIdCore() + "_page", page);
     if (update)
     {
         clearElement("tableEntries");
@@ -499,34 +546,34 @@ function setPage(page, update)
 
     if (page == 0)
     {
-        $('.previousPage').forEach(function(button)
+        $(".previousPage").forEach(function(button)
         {
-            button.classList.add('disabled');
+            button.classList.add("disabled");
             button.disabled = true;
         });
     }
     else
     {
-        $('.previousPage').forEach(function(button)
+        $(".previousPage").forEach(function(button)
         {
-            button.classList.remove('disabled');
+            button.classList.remove("disabled");
             button.disabled = false;
         });
     }
 
     if (page == tablePages - 1)
     {
-        $('.nextPage').forEach(function(button)
+        $(".nextPage").forEach(function(button)
         {
-            button.classList.add('disabled');
+            button.classList.add("disabled");
             button.disabled = true;
         });
     }
     else
     {
-        $('.nextPage').forEach(function(button)
+        $(".nextPage").forEach(function(button)
         {
-            button.classList.remove('disabled');
+            button.classList.remove("disabled");
             button.disabled = false;
         });
     }
@@ -537,9 +584,9 @@ function setPage(page, update)
 /// </summary>
 function getPerPage()
 {
-    let storage = tableIdCore() + '_perPage';
+    let storage = tableIdCore() + "_perPage";
     let perPage = parseInt(localStorage.getItem(storage));
-    if (perPage == null || isNaN(perPage) || perPage % 25 != 0 || perPage < 0)
+    if (perPage === null || isNaN(perPage) || perPage % 25 != 0 || perPage < 0)
     {
         localStorage.setItem(storage, 25);
         perPage = 25;
@@ -553,7 +600,7 @@ function getPerPage()
 /// </summary>
 function setPerPage(newPerPage, update)
 {
-    localStorage.setItem(tableIdCore() + '_perPage', newPerPage);
+    localStorage.setItem(tableIdCore() + "_perPage", newPerPage);
     $(".perPageButton").forEach((btn) =>
     {
         btn.classList.remove("selected");
@@ -579,7 +626,7 @@ function dismissFilterDialog()
     let overlay = $("#filterOverlay");
     if (overlay && overlay.style.opacity == "1")
     {
-        Animation.queue({"opacity": 0}, overlay, 250, true);
+        Animation.queue({ opacity : 0 }, overlay, 250, true);
     }
 }
 
@@ -588,11 +635,11 @@ function dismissFilterDialog()
 /// </summary>
 function setupPerPage()
 {
-    if (typeof(getPerPage) == 'undefined')
+    if (typeof(getPerPage) == "undefined")
     {
-        $('.perPageHolder').forEach(function(holder)
+        $(".perPageHolder").forEach(function(holder)
         {
-            holder.style.display = 'none';
+            holder.style.display = "none";
         });
 
         return;
@@ -605,7 +652,7 @@ function setupPerPage()
         btn.addEventListener("click", function()
         {
             let newPerPage = parseInt(this.value);
-            if (newPerPage == null || isNaN(newPerPage) || newPerPage % 25 != 0 || newPerPage < 0)
+            if (newPerPage === null || isNaN(newPerPage) || newPerPage % 25 != 0 || newPerPage < 0)
             {
                 newPerPage = 25;
             }
@@ -624,7 +671,7 @@ function setupPerPage()
 function setFilter(filter, update)
 {
     logVerbose(filter, "Setting filter to");
-    localStorage.setItem(tableIdCore() + '_filter', JSON.stringify(filter));
+    localStorage.setItem(tableIdCore() + "_filter", JSON.stringify(filter));
     if (update)
     {
         clearElement("tableEntries");
@@ -637,7 +684,7 @@ function setFilter(filter, update)
 /// </summary>
 function setPageInfo(totalRequests)
 {
-    tablePages = getPerPage() == 0 ? 1 : Math.ceil(totalRequests / getPerPage())
+    tablePages = getPerPage() == 0 ? 1 : Math.ceil(totalRequests / getPerPage());
     $(".pageSelect").forEach(function(e)
     {
         e.value = getPage() + 1;
@@ -656,13 +703,13 @@ function setPageInfo(totalRequests)
 /// </summary>
 function populateUserFilter()
 {
-    let params = { "type" : ProcessRequest.GetAllMembers };
+    let params = { type : ProcessRequest.GetAllMembers };
     let successFunc = function(response)
     {
         let select = $("#filterTo");
         response.forEach(function(user)
         {
-            select.appendChild(buildNode("option", {"value" : user.id}, user.username));
+            select.appendChild(buildNode("option", { value : user.id }, user.username));
         });
 
         select.value = getFilter().user;
@@ -670,14 +717,14 @@ function populateUserFilter()
 
     let failureFunc = function()
     {
-        Animation.queue({"backgroundColor": "rgb(100, 66, 69)"}, $("#filterTo"), 500);
-        Animation.queueDelayed({"backgroundColor": "rgb(63, 66, 69"}, $("#filterTo"), 1000, 500, true);
+        Animation.queue({ backgroundColor : "rgb(100, 66, 69)" }, $("#filterTo"), 500);
+        Animation.queueDelayed({ backgroundColor : "rgb(63, 66, 69" }, $("#filterTo"), 1000, 500, true);
     };
 
     sendHtmlJsonRequest("process_request.php", params, successFunc, failureFunc);
 }
 
-let tableEntries = $('#tableEntries');
+let tableEntries = $("#tableEntries");
 function addTableItem(element)
 {
     tableEntries.appendChild(element);
@@ -685,12 +732,12 @@ function addTableItem(element)
 
 function tableItemHolder()
 {
-    return buildNode('div', { 'class' : 'tableEntryHolder' });
+    return buildNode("div", { class : "tableEntryHolder" });
 }
 
 function clearTable()
 {
-    clearElement('tableEntries');
+    clearElement("tableEntries");
 }
 
 /// <summary>
