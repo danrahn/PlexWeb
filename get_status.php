@@ -176,10 +176,11 @@ function process()
 /// Returns our html-form session id. _Most_ streams have a built-in session id, but not all. sessionKey
 /// is always present, but doesn't always change between streams (e.g. playing through an album), so the
 /// end solution here is to squash the sessionKey with the title of the stream (removing non-alphanumeric)
+/// Also prefix with an underscore, because if the title starts with a number, we don't have a valid HTML id
 /// </summary>
 function get_sesh_id($sesh)
 {
-    return preg_replace('/[^A-Za-z0-9]/', '', $sesh['title']) . '_' . (string)$sesh['sessionKey'];
+    return '_' . preg_replace('/[^A-Za-z0-9]/', '', $sesh['title']) . '_' . (string)$sesh['sessionKey'];
 }
 
 /// <summary>
