@@ -119,7 +119,7 @@ const stateAllowedInState = function(state, current, index)
                 return false;
             }
 
-            return index < current.start + current.text.length + 1;
+            return index < current.end - current.endContextLength();
         case State.Image:
             return false;
         case State.InlineCode:
@@ -243,14 +243,13 @@ class Markdown
 
     /// <summary>
     /// Only try to reparse what we need to
-    /// TODO: Off By One. Fix after committing documentation changes
     /// </summary>
     _checkCache(text)
     {
         let diff = 0;
         let max = Math.min(text.length, this.text.length);
         while (diff != max && text[diff] == this.text[diff++]);
-        return diff;
+        return diff - 1;
     }
 
     /// <summary>
@@ -344,11 +343,11 @@ class Markdown
                     let url;
                     if (result.type == 0)
                     {
-                        url = new Url(i, result.end, result.text, result.url, this.currentRun);
+                        url = new Url(i, result.end, result.url, this.currentRun);
                     }
                     else if (result.type == 1)
                     {
-                        url = new ExtendedUrl(i, result.end, result.text, result.url, this._urls, this.currentRun);
+                        url = new ExtendedUrl(i, result.end, result.url, this._urls, this.currentRun);
                     }
                     else
                     {
@@ -1822,9 +1821,6 @@ class Markdown
     ///  3. Ordered lists
     ///    * Line must start with a number followed by a period. The list will start counting from that number
     ///    * Subsequent list items will increase from the first item, regardless of the user supplied number
-    ///  4. Nesting
-    ///
-    /// TODO: Ordered lists breaking when number is greater than 9. Fix after committing documentation changes
     /// </summary>
     _checkList(start, ordered)
     {
@@ -1894,7 +1890,17 @@ class Markdown
         }
 
         let liEnd = Math.min(this.currentRun.end, this._liEnd(start, nestLevel, ordered));
-        let li = new ListItem(start, liEnd, this.currentRun);
+        let startContext = 2;
+        if (ordered)
+        {
+            let liText = this.text.substring(start, liEnd);
+            let match = liText.match(/^\d+\. /);
+            if (match)
+            {
+                startContext = match[0].length;
+            }
+        }
+        let li = new ListItem(start, liEnd, startContext, this.currentRun);
         this.currentRun = li;
         logTmi(`Added ListItem: start=${start}, end=${liEnd}, nestLevel=${nestLevel}`);
         return true;
@@ -2093,7 +2099,7 @@ class Markdown
         let nextline = this.text.substring(newline + 1, next + 1);
         while (true)
         {
-            if (nextline.length == 0 || next + 1)
+            if (nextline.length == 0)
             {
                 return end;
             }
@@ -3087,15 +3093,26 @@ class Header extends Run
 
     /// <summary>
     /// Strips trailing '#' before calling the core transform routine
-    /// TODO: ignore escaped trailing '#'
     /// </summary>
     transform(newText, side)
     {
         newText = this.trim(newText, side);
         let i = newText.length - 1;
+
+        const isEscaped = function(text, index)
+        {
+            let bs = 0;
+            while (index - bs > 0 && text[index - 1 - bs] == '\\')
+            {
+                ++bs;
+            }
+
+            return bs % 2 == 1;
+        };
+
         while (i >= 0 && newText[i] == '#')
         {
-            if (i != 0 && newText[i - 1] == '\\')
+            if (isEscaped(newText, i))
             {
                 break;
             }
@@ -3103,7 +3120,7 @@ class Header extends Run
             --i;
         }
 
-        return super.transform(this.trim(newText.substring(0, i + 1), side));
+        return super.transform(this.escapeChars(this.trim(newText.substring(0, i + 1), side), '#'));
     }
 }
 
@@ -3112,7 +3129,9 @@ class Header extends Run
 /// </summary>
 class BlockQuote extends Run
 {
-    /// <param name="nestLevel">The nest level for the blockquote. TODO: Not Used</param>
+    /// <param name="nestLevel">
+    /// The nest level for the blockquote, i.e. how many prefixed '>' there are
+    /// </param>
     constructor(start, end, nestLevel, parent)
     {
         super(State.BlockQuote, start, end, parent);
@@ -3161,7 +3180,6 @@ class BlockQuote extends Run
 /// </summary>
 class UnorderedList extends Run
 {
-    /// <param name="nestLevel">TODO: Unused</param>
     constructor(start, end, nestLevel, parent)
     {
         super(State.UnorderedList, start, end, parent);
@@ -3189,7 +3207,6 @@ class UnorderedList extends Run
 /// </summary>
 class OrderedList extends Run
 {
-    /// <param name="nestLevel">TODO: Unused</param>
     /// <param name="listStart">The number to start counting for this list</param>
     constructor(start, end, nestLevel, listStart, parent)
     {
@@ -3227,12 +3244,13 @@ class OrderedList extends Run
 /// </summary>
 class ListItem extends Run
 {
-    constructor(start, end, parent)
+    constructor(start, end, startContext, parent)
     {
         super(State.ListItem, start, end, parent);
+        this.startContext = startContext;
     }
 
-    startContextLength() { return 2; }
+    startContextLength() { return this.startContext; }
     endContextLength() { return 0; }
 
     tag(end) { return Run.basicTag('li', end); }
@@ -3284,11 +3302,9 @@ class ListItem extends Run
 /// </summary>
 class Url extends Run
 {
-    /// <param name="text">TODO: Unused</param>
-    constructor(start, end, text, url, parent)
+    constructor(start, end, url, parent)
     {
         super(State.Url, start, end, parent);
-        this.text = text;
         this.url = url;
 
         // Links within the document should be all lowercase for consistency
@@ -3330,11 +3346,10 @@ class Url extends Run
 /// </summary>
 class ExtendedUrl extends Url
 {
-    /// <param name="text">TODO: Unused</param>
     /// <param name="urls">The dictionary mapping url identifiers with their urls</param>
-    constructor(start, end, text, url, urls, parent)
+    constructor(start, end, url, urls, parent)
     {
-        super(start, end, text, url, parent);
+        super(start, end, url, parent);
         this.urls = urls;
         this.urlLink = url;
         this.converted = false;
