@@ -238,3 +238,5 @@ const ProcessRequest =
     DisableNotificationAlert : 30,
     MarkdownText : 31,
 };
+
+console.assert(!_logErrorId || _logErrorId == ProcessRequest.LogError, "Update _logErrorId!");

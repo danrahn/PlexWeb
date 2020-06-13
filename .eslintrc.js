@@ -338,6 +338,7 @@ module.exports = {
         "log" : "readonly",
         "LOG" : "readonly",
         "g_logLevel" : "writable",
+        "_logErrorId" : "readonly",
         // animation.js
         "Animation" : "readonly",
         "Color" : "readonly",

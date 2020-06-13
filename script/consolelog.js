@@ -1,5 +1,5 @@
 
-/* exported testAll, setDarkConsole, setTrace, consoleHelp */
+/* exported testAll, setDarkConsole, setTrace, consoleHelp, _logErrorId */
 /// <summary>
 /// Console logging class. Allows easy timestamped logging with various log levels
 ///
@@ -22,6 +22,7 @@ const LOG = {
 
 const g_logStr = ["TMI", "VERBOSE", "INFO", "WARN", "ERROR", "CRITICAL"];
 const _inherit = "inherit";
+const _logErrorId = 27;
 
 /// <summary>
 /// Console color definitions for each log level
@@ -243,7 +244,7 @@ function log(obj, description, freeze, level)
         let encode = encodeURIComponent;
 
         // Note: Keep type in sync with ProcessRequest enum in common.js. It's not accessible here
-        http.send(`&type=29&error=${encode(curState(obj, 1))}&stack=${encode(Error().stack)}`);
+        http.send(`&type=${_logErrorId}&error=${encode(curState(obj, 1))}&stack=${encode(Error().stack)}`);
     }
 }
 
