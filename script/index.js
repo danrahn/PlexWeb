@@ -649,6 +649,62 @@ function getContainerNode(sesh)
 }
 
 /// <summary>
+/// Returns the path to the icon to display in the active stream's
+/// title, or an empty string if no relevant icon is found
+/// </summary>
+function getInlineIconForTitle(mediaType)
+{
+    switch (mediaType)
+    {
+        case "TV Show":
+            return icons.TVICON;
+        case "Movie":
+            return icons.MOVIEICON;
+        case "Music":
+            return icons.MUSICICON;
+        case "Audiobook":
+            return icons.AUDIOBOOKICON;
+        default:
+            return "";
+    }
+}
+
+/// <summary>
+/// Return the browser tooltip for the active stream title,
+/// which will take the user to an external site
+/// </summary>
+function getExternalLinkTitle(hyperlink)
+{
+    hyperlink = hyperlink.toLowerCase();
+    if (hyperlink.indexOf("app.plex.tv") != -1)
+    {
+        return "View on Plex";
+    }
+
+    if (hyperlink.indexOf("imdb") != -1)
+    {
+        return "View on IMDb";
+    }
+
+    if (hyperlink.indexOf("themoviedb") != -1)
+    {
+        return "View on The Movie Database";
+    }
+
+    if (hyperlink.indexOf("tvdb") != -1)
+    {
+        return "View on TVDb";
+    }
+
+    if (hyperlink.indexOf("audible") != -1)
+    {
+        return "View on Audible";
+    }
+
+    return "";
+}
+
+/// <summary>
 /// Creates the title for an active stream. The title will be a link
 /// that either navigates to plex or some other external website.
 /// Common stream types (movie/tv/music/audiobook) also adds an icon
@@ -657,41 +713,24 @@ function getContainerNode(sesh)
 function buildActiveStreamTitle(sesh)
 {
     // Link to plex. If no link is available, try linking to the external source
-    let plexLink;
+    let hyperlink;
     if (sesh.plex_key)
     {
-        plexLink = `https://app.plex.tv/desktop#!/server/${sesh.machine_id}/details?key=${encodeURIComponent(sesh.plex_key)}`;
+        hyperlink = `https://app.plex.tv/desktop#!/server/${sesh.machine_id}/details?key=${encodeURIComponent(sesh.plex_key)}`;
     }
     else
     {
-        plexLink = sesh.hyperlink;
+        hyperlink = sesh.hyperlink;
     }
 
-    let link = buildNode("a", { href : plexLink, target : "_blank" });
+    let link = buildNode("a", { href : hyperlink, target : "_blank", title : getExternalLinkTitle(hyperlink) });
     link.appendChild(buildNode("span",
         { class : `ppbutton  ${sesh.paused ? "pause" : "play"}` },
         sesh.paused ? "&#10073;&#10073;  " : "&#x25ba;  "));
 
     link.appendChild(buildNode("span", {}, `${sesh.title}`));
 
-    let inlineIconSrc = "";
-    switch (sesh.media_type)
-    {
-        case "TV Show":
-            inlineIconSrc = icons.TVICON;
-            break;
-        case "Movie":
-            inlineIconSrc = icons.MOVIEICON;
-            break;
-        case "Music":
-            inlineIconSrc = icons.MUSICICON;
-            break;
-        case "Audiobook":
-            inlineIconSrc = icons.AUDIOBOOKICON;
-            break;
-        default:
-            break;
-    }
+    let inlineIconSrc = getInlineIconForTitle(sesh.media_type);
 
     if (inlineIconSrc)
     {
@@ -947,19 +986,21 @@ function getHoverText(element)
 {
     const progress = element.children[0].style.width;
     const tcprogress = parseFloat(element.getAttribute("tcprogress")).toFixed(2);
-    let tcString = "";
+    let tcString = buildNode("div");
+    tcString.appendChild(hoverFormat("Play Progress", parseFloat(progress).toFixed(2) + "%"));
+    tcString.appendChild(buildNode("br"));
     if (tcprogress > 0)
     {
-        tcString = hoverFormat("Transcoded", tcprogress + "%");
-        tcString += "<br />";
-        tcString +=hoverFormat("Buffer", (tcprogress - parseFloat(progress)).toFixed(2) + "%");
+        tcString.appendChild(hoverFormat("Transcoded", tcprogress + "%"));
+        tcString.appendChild(buildNode("br"));
+        tcString.appendChild(hoverFormat("Buffer", (tcprogress - parseFloat(progress)).toFixed(2) + "%"));
     }
     else
     {
-        tcString = "Direct Play";
+        tcString.appendChild(buildNode("span", {}, "Direct Play"));
     }
 
-    return hoverFormat("Play Progress", parseFloat(progress).toFixed(2) + "%") + "<br />" + tcString;
+    return tcString.innerHTML;
 }
 
 /// <summary>
@@ -967,7 +1008,7 @@ function getHoverText(element)
 /// </summary>
 function hoverFormat(title, data)
 {
-    return buildNode("span", {}, `${title}: `).appendChild("span", { class : "tooltipProgress" }, data);
+    return buildNode("span", {}, `${title}: `).appendChild(buildNode("span", { class : "tooltipProgress" }, data)).parentNode;
 }
 
 /// <summary>
