@@ -96,6 +96,9 @@ let MarkdownEditor = new function()
         comment.selectionEnd = hasSelection ? start + newText.length : comment.selectionStart;
     };
 
+    /// <summary>
+    /// Adds the tab handler to the given text input
+    /// </summary>
     this.addTabHandler = function(element)
     {
         element.addEventListener('keydown', captureTab);

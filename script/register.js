@@ -1,3 +1,7 @@
+/// <summary>
+/// Handles registration process
+/// </summary>
+
 let hasUserChanged = true;
 window.addEventListener("load", function()
 {
@@ -5,6 +9,10 @@ window.addEventListener("load", function()
     setInterval(checkUsername, 1000);
 });
 
+/// <summary>
+/// On successful username check, colors the username input
+/// field red or green depending on whether it is available
+/// </summary>
 function onCheckUsernameResponse(response, request)
 {
     let username = $$("input[name='username']");
@@ -28,6 +36,9 @@ function onCheckUsernameResponse(response, request)
     }
 }
 
+/// <summary>
+/// Send a request to determine if the username entered is available
+/// </summary>
 function checkUsername()
 {
     let user = $$("input[name='username']");
@@ -59,6 +70,10 @@ function checkUsername()
     hasUserChanged = false;
 }
 
+/// <summary>
+/// Check if the given input element is empty, flashing
+/// the background red if it is.
+/// </summary>
 function verifyField(element)
 {
     if (!element.value)
@@ -67,6 +82,9 @@ function verifyField(element)
     }
 }
 
+/// <summary>
+/// Flash the background of the given element
+/// </summary>
 function flashField(element)
 {
     Animation.queue({ backgroundColor : new Color(140, 66, 69) }, element, 500);
@@ -113,6 +131,9 @@ function setupRegisterForm()
     user.focus();
 }
 
+/// <summary>
+/// Register the given user
+/// </summary>
 function sendRegistration()
 {
     let user = $$("input[name='username']");
@@ -185,12 +206,20 @@ function focusInEvent()
     this.style.backgroundColor = "rgb(63, 66, 69)";
 }
 
+/// <summary>
+/// Reset the username background when it changes
+/// </summary>
 function userKeyup()
 {
     hasUserChanged = true;
     this.style.backgroundColor = "rgb(63, 66, 69)";
 }
 
+/// <summary>
+/// Setup keydown handlers for password input.
+/// Hide confirmation field when password field is empty,
+/// and verify that the confirmation is the same as the password
+/// </summary>
 function keyDownEvent(e)
 {
     let key = e.which || e.keyCode;

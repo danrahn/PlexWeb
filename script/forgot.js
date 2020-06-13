@@ -1,9 +1,15 @@
+/// <summary>
+/// Contains logic to send a request to reset a forgotten password
+/// </summary>
 
 window.addEventListener("load", function()
 {
     setupForgotForm();
 });
 
+/// <summary>
+/// Displays the given error after a failed request
+/// </summary>
 function statusError(message)
 {
     let status = $("#formStatus");
@@ -13,6 +19,9 @@ function statusError(message)
     Animation.queueDelayed({ opacity : 0 }, status, 2000, 500);
 }
 
+/// <summary>
+/// Processes the response to the password reset request
+/// </summary>
 function forgotCallback(response)
 {
     const fadeOut = () => Animation.queue({ opacity : 0 }, $("#mainOverlay"), 250, true /*deleteAfterTransition*/);
@@ -50,6 +59,9 @@ function forgotCallback(response)
     }
 }
 
+/// <summary>
+/// Sets up the listeners for the 'forgot password' form
+/// </summary>
 function setupForgotForm()
 {
     $("#go").addEventListener("click", function()

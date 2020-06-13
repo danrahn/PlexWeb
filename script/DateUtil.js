@@ -1,3 +1,7 @@
+/// <summary>
+/// Pretty-print date functions
+/// </summary>
+
 /* exported DateUtil */
 
 let DateUtil =
@@ -48,6 +52,9 @@ let DateUtil =
         return `${yearDiff == 0 ? 1 : yearDiff} year${yearDiff == 1 ? "" : "s"} ago`;
     },
 
+    /// <summary>
+    /// Returns the full date, 'Month d, yyyy, h:mm [AM|PM]'
+    /// </summary>
     getFullDate : function(date)
     {
         if (typeof(date) == "string")
@@ -66,6 +73,9 @@ let DateUtil =
         return date.toLocaleDateString("en-US", tooltipDateOptions);
     },
 
+    /// <summary>
+    /// Helper that returns the 'xyz ago' string if it's below the cutoff
+    /// </summary>
     _checkDate : function(value, cutoff, stringVal)
     {
         if (value < cutoff)

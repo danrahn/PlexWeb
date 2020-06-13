@@ -43,6 +43,9 @@ window.addEventListener("load", function()
     document.body.addEventListener("keyup", tableFilterKeyHandler);
 });
 
+/// <summary>
+/// Global containing the total number of pages in the table
+/// </summary>
 let tablePages = 0;
 
 /// <summary>
@@ -166,6 +169,9 @@ function setupDirectPageNavigation()
     });
 }
 
+/// <summary>
+/// Setup listeners for searching the table
+/// </summary>
 function setupTableSearch()
 {
     // If the table does not have a search function,
@@ -231,6 +237,9 @@ function _setupSearchListeners()
     });
 }
 
+/// <summary>
+/// Listener fired when the search button is clicked
+/// </summary>
 function searchBtnClick()
 {
     let show = !$$(".pageStatus").style.display || $$(".pageStatus").style.display != "none";
@@ -266,6 +275,9 @@ function startTableSearch()
     }
 }
 
+/// <summary>
+/// Setup filter button listeners. If no filter is found, hide the filter icons
+/// </summary>
 function setupFilter()
 {
     if (typeof(filterHtml) == "undefined")
@@ -326,6 +338,9 @@ function launchFilter()
     overlay.$$("input").focus();
 }
 
+/// <summary>
+/// Build and return the filter dialog element
+/// </summary>
 function _buildAndAttachFilterOverlay()
 {
     let overlay = buildNode(
@@ -452,6 +467,9 @@ function buildTableFilterCheckbox(label, name)
 /// <summary>
 /// Builds a filter dropdown
 /// </summary>
+/// <param name="title">The label for the dropdown</param>
+/// <param name="options">A dictionary of options mapping labels to their associated values</param>
+/// <param name="addId">If true, adds an id to each option that equals the option's value</param>
 function buildTableFilterDropdown(title, options, addId=false)
 {
     // Make the name the camelCase version of the title
@@ -533,8 +551,12 @@ function getPage()
 }
 
 /// <summary>
-/// Stores the current page for the user
+/// Set the number of items to show per page
 /// </summary>
+/// <param name="update">
+/// If true, applies the new perPage setting
+/// False if we aren't ready to change pages yet
+/// </param>
 function setPage(page, update)
 {
     localStorage.setItem(tableIdCore() + "_page", page);
@@ -598,6 +620,10 @@ function getPerPage()
 /// <summary>
 /// Set the number of items to show per page
 /// </summary>
+/// <param name="update">
+/// If true, applies the new perPage setting
+/// False if we aren't ready to query the server for updated items yet
+/// </param>
 function setPerPage(newPerPage, update)
 {
     localStorage.setItem(tableIdCore() + "_perPage", newPerPage);
@@ -668,6 +694,10 @@ function setupPerPage()
 /// Sets the current filter. No validation, but some basic validation
 /// should exist when grabbing the filter from localStorage
 /// </summary>
+/// <param name="update">
+/// If true, applies the new filter.
+/// False if we aren't ready to query the server for updated items yet
+/// </param>
 function setFilter(filter, update)
 {
     logVerbose(filter, "Setting filter to");
@@ -724,17 +754,25 @@ function populateUserFilter()
     sendHtmlJsonRequest("process_request.php", params, successFunc, failureFunc);
 }
 
+// Store tableEntries outside of addTableItem so we don't
+// have to continuously query for it when bulk adding table entries
 let tableEntries = $("#tableEntries");
 function addTableItem(element)
 {
     tableEntries.appendChild(element);
 }
 
+/// <summary>
+/// Return a table entry's holder element
+/// </summary>
 function tableItemHolder()
 {
     return buildNode("div", { class : "tableEntryHolder" });
 }
 
+/// <summary>
+/// Remove all entries from the table
+/// </summary>
 function clearTable()
 {
     clearElement("tableEntries");

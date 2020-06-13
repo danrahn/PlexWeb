@@ -1,18 +1,37 @@
+/// <summary>
+/// Contains a form to reset a user's password, assuming a valid reset token has been provided
+/// </summary>
+
 window.addEventListener("load", function()
 {
     setupResetForm();
 });
 
+/// <summary>
+/// Returns the valid state of this request
+///
+/// Possible values:
+///  1: Valid request
+///  0: Request token expired
+/// -1: Token not found
+/// -2: Newer token available
+/// </summary>
 function valid()
 {
     return parseInt(document.body.getAttribute("valid"));
 }
 
+/// <summary>
+/// Return the password reset token
+/// </summary>
 function token()
 {
     return document.body.getAttribute("token");
 }
 
+/// <summary>
+/// Show a status message below the reset form
+/// </summary>
 function showStatus(message, error)
 {
     let status = $("#formStatus");
@@ -22,11 +41,18 @@ function showStatus(message, error)
     Animation.queueDelayed({ opacity : 0 }, status, 2000, 500);
 }
 
+/// <summary>
+/// Show an error message when the reset request fails
+/// </summary>
 function statusError(message)
 {
     showStatus(message, true);
 }
 
+/// <summary>
+/// Do initial validation to ensure we have a valid password reset request
+/// On failure, navigate to the home page (which will redirect to the login page)
+/// </summary>
 function preValidate()
 {
     const goToIndex = () => { window.location = "index.php"; };
@@ -65,6 +91,9 @@ function preValidate()
     }
 }
 
+/// <summary>
+/// Add the necessary event listeners to the reset form
+/// </summary>
 function setupResetForm()
 {
     preValidate();
@@ -92,6 +121,9 @@ function setupResetForm()
     $("#go").addEventListener("click", resetPassword);
 }
 
+/// <summary>
+/// Initiate a password reset
+/// </summary>
 function resetPassword()
 {
     let pass = $("#password").value;
@@ -138,6 +170,10 @@ function focusInEvent()
     this.style.backgroundColor = "rgb(63, 66, 69)";
 }
 
+/// <summary>
+/// Keyup listener for password inputs. Styles the confirmation
+/// background depending on whether it equals the first password input
+/// </summary>
 function keyUpEvent(e)
 {
     let key = e.which || e.keyCode;

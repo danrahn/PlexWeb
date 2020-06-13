@@ -215,6 +215,9 @@ function get_all_progress()
     return json_encode($progress);
 }
 
+/// <summary>
+/// Return minimal status information containing the number of playing and paused items
+/// </summary>
 function get_status()
 {
     $sessions = simplexml_load_string(curl(PLEX_SERVER . '/status/sessions?' . PLEX_TOKEN));
@@ -258,6 +261,9 @@ function get_single_session($sid)
     error_and_exit("400");
 }
 
+/// <summary>
+/// Return an array of all the plex library sections
+/// </summary>
 function get_library_names()
 {
     $names = [];
@@ -290,6 +296,10 @@ function get_all_sessions()
     return json_encode($slim_sessions);
 }
 
+/// <summary>
+/// Return the plex server machine identifier, used for
+/// building links to plex for active streams
+/// </summary>
 function get_machine_identifier()
 {
     $server_info = simplexml_load_string(curl(PLEX_SERVER . '?' . PLEX_TOKEN));

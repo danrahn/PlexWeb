@@ -14,6 +14,9 @@ const testMarkdown = function(testStr='')
     return new Markdown().parse(testStr);
 };
 
+/// <summary>
+/// Main test entrypoint, running all available tests
+/// </summary>
 const testSuite = function()
 {
     // Simple tests for non-nested scenarios
@@ -30,6 +33,10 @@ const testSuite = function()
     testMixed();
 };
 
+/// <summary>
+/// Creates an array of { input, expected } pairs from the
+/// given array of [input, expected] arrays
+/// </summary>
 const buildTests = function(...tests)
 {
     let testStrings = [];
@@ -41,6 +48,9 @@ const buildTests = function(...tests)
     return testStrings;
 };
 
+/// <summary>
+/// Helper to add the containing mdDiv div that `parse` returns
+/// </summary>
 const divWrap = function(str)
 {
     return `<div class="mdDiv">${str}</div>`;
@@ -262,6 +272,11 @@ const testMixed = function()
     testCore(testStrings);
 };
 
+/// <summary>
+/// Core test routine. Passes each string through the markdown parser and
+/// compares the result against our expected output.
+/// </summary>
+/// <param name="testStrings">Array of { input, expected } pairs</param>
 const testCore = function(testStrings)
 {
     let logSav = g_logLevel;

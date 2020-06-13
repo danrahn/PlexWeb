@@ -1,5 +1,12 @@
+/// <summary>
+/// Contains handlers for displaying and interacting with the main site menu
+/// </summary>
+
 getNewActivities();
 
+/// <summary>
+/// Hamburger menu click handler to expand or contract the left-hand menu
+/// </summary>
 $("#mainMenu").addEventListener("click", function()
 {
     let menu = $("#leftMenu");
@@ -11,6 +18,9 @@ $("#mainMenu").addEventListener("click", function()
     expandContractMenu(menu, menu.style.opacity != 1);
 });
 
+/// <summary>
+/// Handler to expand or contract the menu on enter/space
+/// </summary>
 $("#mainMenu").addEventListener("keyup", function(e)
 {
     let menu = $("#leftMenu");
@@ -151,6 +161,9 @@ function setEnabled(enabled)
     ].forEach((element) => enableSingle(element, enabled));
 }
 
+/// <summary>
+/// Enables or disables a single button
+/// </summary>
 function enableSingle(id, enabled)
 {
     let element = $$(`#${id} button`);
@@ -160,6 +173,10 @@ function enableSingle(id, enabled)
     }
 }
 
+/// <summary>
+/// Window keydown event handler to process
+/// potential keyboard shortcuts
+/// </summary>
 function tryNavKeyDispatch(key)
 {
     let target = "";
@@ -280,6 +297,9 @@ let dyTotal = 0;
 // The direction we're moving. 1 for expansion, -1 for contraction, 0 for nothing
 let direction = 0;
 
+/// <summary>
+/// Capture touchstart to set up our swipe gesture handling
+/// </summary>
 window.addEventListener("touchstart", function(e)
 {
     touchStart.x = e.touches[0].clientX;
@@ -302,6 +322,10 @@ window.addEventListener("touchstart", function(e)
     }
 });
 
+/// <summary>
+/// Keep track of where the user swipes, opening or closing the left menu
+/// based on their action
+/// </summary>
 window.addEventListener("touchmove", function(e)
 {
     if (direction == 0)
@@ -342,6 +366,10 @@ window.addEventListener("touchmove", function(e)
 
 });
 
+/// <summary>
+/// When the user ends their gesture, determine whether to fully
+/// expand or contract the menu
+/// </summary>
 window.addEventListener("touchend", function()
 {
     let menu = $("#leftMenu");

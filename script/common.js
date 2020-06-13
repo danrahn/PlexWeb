@@ -1,3 +1,7 @@
+/// <summary>
+/// common.js contains functions that are used by most, if not all, pages on this site
+/// </summary>
+
 /* exported $, $$, buildNode, sendHtmlJsonRequest, ProcessRequest, KEY */
 
 /// <summary>
@@ -23,11 +27,17 @@ function $$(selector, ele=document)
     return ele.querySelector(selector);
 }
 
+/// <summary>
+/// $ operator scoped to a specific element
+/// </summary>
 Element.prototype.$ = function(selector)
 {
     return $(selector, this);
 };
 
+/// <summary>
+/// $$ operator scoped to a specific element
+/// </summary>
 Element.prototype.$$ = function(selector)
 {
     return $$(selector, this);

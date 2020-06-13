@@ -25,6 +25,9 @@ function curl($url)
     return $return;
 }
 
+/// <summary>
+/// Map of library types, mapping string representations to the underlying library type
+/// </summary>
 $types = [
     "movie" => 1,
     "show" => 2,
@@ -43,16 +46,9 @@ $types = [
     "playlistItem" => 15
 ];
 
-function queryGet($query, $prop)
-{
-    if (property_exists($query, $prop))
-    {
-        return $query->$prop;
-    }
-
-    json_error_and_exit($prop . " is not set!");
-}
-
+/// <summary>
+/// Entrypoint for administration requests
+/// </summary>
 function process_query($type)
 {
     switch ($type)
@@ -71,6 +67,9 @@ function get_sections()
     return json_encode(get_sections_array());
 }
 
+/// <summary>
+/// Return an array of all sections in plex library
+/// </summary>
 function get_sections_array()
 {
     $json_sections = array();
@@ -83,6 +82,9 @@ function get_sections_array()
     return $json_sections;
 }
 
+/// <summary>
+/// Refresh the plex library with the associated id
+/// </summary>
 function refresh_library($section_id)
 {
     $found = FALSE;
@@ -117,6 +119,9 @@ function refresh_library($section_id)
     return json_success();
 }
 
+/// <summary>
+/// Return a JSON object with details for the given section
+/// </summary>
 function parse_section($section)
 {
     global $types;
@@ -139,6 +144,10 @@ function parse_section($section)
     // http://localhost:32400/library/sections/3/all?type=4&X-Plex-Container-Start=0&X-Plex-Container-Size=0&X-Plex-Token=***
 }
 
+/// <summary>
+/// Get the number of items in the given library and add it to the given section
+/// For TV/Music based libraries, include stats for Shows/Seasons/Episodes and Artists/Albums/Tracks
+/// </summary>
 function get_num_items($key, $type, &$section)
 {
     $type_start = $type;

@@ -1,3 +1,7 @@
+/// <summary>
+/// Builds a table of current requests. Implements tableCommon
+/// </summary>
+
 /* exported populateFilter, getNewFilter, filterHtml, tableSearch, tableIdentifier, tableUpdateFunc  */
 
 window.addEventListener("load", function()
@@ -95,6 +99,12 @@ function buildRequests(requests)
     setPageInfo(requests.total);
 }
 
+/// <summary>
+/// Returns the poster for a given request. Also sets up
+/// event listeners to attempt to re-download a poster
+/// if we don't have it cached. If that fails, fallback
+/// to a default poster
+/// </summary>
 function buildRequestPoster(request)
 {
     let imgHolder = buildNode("div", { class : "imgHolder" });
@@ -121,6 +131,9 @@ function buildRequestPoster(request)
     return imgHolder;
 }
 
+/// <summary>
+/// Returns the title element for a request, linked to it's specific request page
+/// </summary>
 function buildRequestTitle(request)
 {
     let requestTitle = buildNode("a", { class : "tableEntryTitle", href : `request.php?id=${request.rid}` });
@@ -387,6 +400,9 @@ function updateStatus()
         true /*dataIsString*/);
 }
 
+/// <summary>
+/// Modifies the filter HTML to reflect the current filter settings
+/// </summary>
 function populateFilter()
 {
     let filter = getFilter();
@@ -410,6 +426,9 @@ function populateFilter()
     $("#sortBy").addEventListener("change", setSortOrderValues);
 }
 
+/// <summary>
+/// Returns the new filter definition based on the state of the filter HTML
+/// </summary>
 function getNewFilter()
 {
     return {
@@ -589,6 +608,9 @@ function getFilter()
     return filter;
 }
 
+/// <summary>
+/// Returns the default filter for the requests table (i.e. nothing filtered)
+/// </summary>
 function defaultFilter()
 {
     let filter =

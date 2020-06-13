@@ -1,3 +1,9 @@
+/*
+Converts markdown to HTML. The goal is to create this without looking at any examples
+online. That means that this will probably be hot garbage, but hopefully will work in
+basic scenarios.
+*/
+
 /* exported markdownHelp */
 
 /* eslint-disable max-lines-per-function */ // Will this ever get fixed? Probably not.
@@ -8,12 +14,9 @@
 // Markdown files are the only ones that prefer single-quotes over double.
 /* eslint quotes: ["error", "single", { "avoidEscape" : true, "allowTemplateLiterals" : true }] */
 
-/*
-Converts markdown to HTML. The goal is to create this without looking at any examples
-online. That means that this will probably be hot garbage, but hopefully will work in
-basic scenarios.
-*/
-
+/// <summary>
+/// Enum of available markdown elements
+/// </summary>
 const State =
 {
     None : 0,
@@ -39,6 +42,9 @@ const State =
 
 const stateError = (state) => console.error('Unknown state: ' + state);
 
+/// <summary>
+/// Maps a given State to its string representation. Used for logging only
+/// </summary>
 const stateToStr = function(state)
 {
     switch (state)
@@ -84,6 +90,10 @@ const stateToStr = function(state)
     }
 };
 
+/// <summary>
+/// Returns whether `state` is allowed given the `current` state
+/// </summary>
+/// <param name="index">The current parse location</param>
 const stateAllowedInState = function(state, current, index)
 {
     switch (current.state)
@@ -126,6 +136,9 @@ const stateAllowedInState = function(state, current, index)
     }
 };
 
+/// <summary>
+/// Returns true if the given state is a block element
+/// </summary>
 const blockMarkdown = function(state)
 {
     switch (state)
@@ -139,17 +152,26 @@ const blockMarkdown = function(state)
     }
 };
 
+/// <summary>
+/// Returns true if the given character is a whitespace character
+/// </summary>
 const isWhitespace = function(ch)
 {
     return /\s/.test(ch);
 };
 
-/// [\w\d], without the underscore
+/// <summary>
+/// Returns true if the given character is alphanumeric.
+/// That is, [\w], without the underscore
+/// </summary>
 const isAlphanumeric = function(ch)
 {
     return /[a-zA-Z0-9]/.test(ch);
 };
 
+/// <summary>
+/// The core parser
+/// </summary>
 class Markdown
 {
     constructor()
@@ -158,32 +180,10 @@ class Markdown
         this._reset('', false);
     }
 
-    _checkHr(index, addHr=true)
-    {
-        let sep = this.text[index];
-        let linebreak = this._indexOrLast('\n', index);
-        let line = this.text.substring(this.text.lastIndexOf('\n', index) + 1, linebreak).replace(/ /g, '');
-        if (line.length < 3)
-        {
-            return false;
-        }
-
-        for (let i = 0; i < line.length; ++i)
-        {
-            if (line[i] != sep)
-            {
-                return false;
-            }
-        }
-
-        if (addHr)
-        {
-            new Hr(index, linebreak, this.currentRun);
-        }
-
-        return true;
-    }
-
+    /// <summary>
+    /// Takes the initial input text and does some initial trimming,
+    /// including removing carriage returns if present (\r)
+    /// </summary>
     _trimInput(text)
     {
         let trim = 0;
@@ -198,6 +198,12 @@ class Markdown
         return text.replace(/\t/g, '    ');
     }
 
+    /// <summary>
+    /// Resets the parser. If caching is enabled, only resets
+    /// the internal state starting at the first difference we found
+    /// in the text.
+    /// </summary>
+    /// <returns>The index to start parsing at</returns>
     _reset(text, inlineOnly, diffStart)
     {
         this.text = text;
@@ -237,6 +243,7 @@ class Markdown
 
     /// <summary>
     /// Only try to reparse what we need to
+    /// TODO: Off By One. Fix after committing documentation changes
     /// </summary>
     _checkCache(text)
     {
@@ -246,6 +253,17 @@ class Markdown
         return diff;
     }
 
+    /// <summary>
+    /// Core parse routine. Processes the given text, and returns its HTML representation
+    /// </summary>
+    /// <param name="inlineOnly">
+    /// True to ignore block elements (code blocks, lists, etc)
+    /// Currently only used when parsing the inner contents of a table.
+    /// </param>
+    /// <remarks>
+    /// We should probably utilize recursion to process nested elements instead of
+    /// having logic in various places to check the bounds of inner elements
+    /// </remarks>
     parse(text, inlineOnly=false)
     {
         if (this._inParse)
@@ -271,6 +289,8 @@ class Markdown
         let perfStart = window.performance.now();
 
         this._urls = {};
+
+        // Here we go...
         for (; i < this.text.length; ++i)
         {
             while (i == this.currentRun.end)
@@ -541,6 +561,50 @@ class Markdown
         return html;
     }
 
+    /// <summary>
+    /// Checks if we have a valid horizontal rule starting at the given index
+    /// Must only be called when this.text[index] is a dash, underscore, or asterisk
+    ///
+    /// Rules:
+    ///  Starting at `index`, there must be three or more markers on their own line. Whitespace is allowed
+    ///
+    /// </summary>
+    /// <param name="addHr">If true, will add an Hr to the current runs if we found one</param>
+    _checkHr(index, addHr=true)
+    {
+        let sep = this.text[index];
+        let linebreak = this._indexOrLast('\n', index);
+        let line = this.text.substring(this.text.lastIndexOf('\n', index) + 1, linebreak).replace(/ /g, '');
+        if (line.length < 3)
+        {
+            return false;
+        }
+
+        for (let i = 0; i < line.length; ++i)
+        {
+            if (line[i] != sep)
+            {
+                return false;
+            }
+        }
+
+        if (addHr)
+        {
+            new Hr(index, linebreak, this.currentRun);
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// Checks for a valid header element, adding it to the current runs if found
+    ///
+    /// Rules:
+    ///  1. 1-6 '#'s followed by a space
+    ///  2. Must be the start of a line, or the start of a block element (e.g. in list/blockquote/table)
+    ///  3. Trailing '#' are stripped, unless escaped by a backslash
+    /// </summary>
+    /// <returns>The index to continue parsing at</returns>
     _checkHeader(start)
     {
         // Headers need to be at the start of a line (or at least the first non-whitespace character)
@@ -583,6 +647,21 @@ class Markdown
         return start;
     }
 
+    /// <summary>
+    /// Determines if we have a valid images starting at the given `start` index.
+    /// Adds an Image to the Run list if found
+    ///
+    /// Rules:
+    ///  Full form: ![AltText w=X,h=Y](url)
+    ///    1. AltText - optional (but recommended)
+    ///    2. w=X - optional - specify the width X. Units are in pixels, unless '%' is added,
+    ///       in which case the width will be a percentage of the containing element
+    ///    3. h=Y - optional - specify the height Y. Width rules apply.
+    ///    4. If one dimension is omitted, it will scale accordingly. Specifying both will
+    ///       enforce both dimensions, possibly resulting in distortion.
+    ///    5. url - required - the link to the image
+    /// </summary>
+    /// <returns>The end index of the image string, or -1 if no image was found</returns>
     _checkImage(start)
     {
         if (this._isEscaped(start) || start == this.text.length - 1 || this.text[start + 1] != '[')
@@ -628,6 +707,23 @@ class Markdown
         return result.end;
     }
 
+    /// <summary>
+    /// Checks whether we have a valid bold or italic run, adding it to the
+    /// Run list if we do.
+    ///
+    /// Rules:
+    ///  1. Bold runs consist of text surrounded by sets of two asterisks or underscores
+    ///     __This is bold___ - **This is also bold**
+    ///  2. Italic runs consist of text surround by sets of single asterisks or underscores
+    ///     _This is italic_ - *This is also italic*
+    ///  3. Runs can be combined, and will be parsed inside-out
+    ///     '__Hello, _World__' results in an underscore followed by italicized 'Hello, World'
+    /// </summary>
+    /// <returns>
+    /// True if we found a Bold run, indicating that we should
+    /// increment our parse index so as not to parse the next character
+    /// as an italic run
+    /// </returns>
     _checkBoldItalic(start)
     {
         // Separators a tricky, as they can be nested, and can represent both
@@ -814,6 +910,20 @@ class Markdown
         return isBold;
     }
 
+    /// <summary>
+    /// Checks whether we have a valid strikethrough or underline run, adding
+    /// it to the Run list if we do.
+    ///
+    /// Rules:
+    ///  1. Strikethrough runs are surrounded by tildes
+    ///     ~~This is strikethrough~~
+    ///  2. Underline runs are surrounded by plusses
+    ///     ++This is underlined++
+    /// </summary>
+    /// <returns>
+    /// True if we found a valid run. Like _checkBoldItalic, indicates to the caller
+    /// that we should increment our parse index to skip over the second marker
+    /// </returns>
     _checkStrikeAndUnderline(start)
     {
         // Depending on what online visualizer I use, this does a multitude of things.
@@ -1005,6 +1115,10 @@ class Markdown
         return true;
     }
 
+    /// <summary>
+    /// Returns true if the current run state is a list, not counting
+    /// elements that are themselves nested within a list
+    /// </summary>
     _isInListType()
     {
         return this.currentRun.state == State.ListItem ||
@@ -1012,15 +1126,20 @@ class Markdown
             this.currentRun.state == State.UnorderedList;
     }
 
+    /// <summary>
+    /// Checks if we have a valid blockquote element, adding it the
+    /// Run list if found.
+    ///
+    /// Rules:
+    ///  * Line must start with a '>'
+    ///      * If in a list, it can be preceded by the list item indicator.
+    ///  * Can be continued on the next line without '>'
+    ///  * Can be nested with additional '>', and can skip levels. The following is fine:
+    ///      > Hello
+    ///      >>> World
+    /// </summary>
     _checkBlockQuote(start)
     {
-        // Blockquote rules:
-        //  Starts with a '>'
-        //  Can be continued on the next line without '>'
-        //  Can be nested with additional '>', and can skip levels. The following is fine:
-        //      > Hello
-        //      >>> Hi
-
         if (this._inlineOnly || this._isEscaped(start))
         {
             return;
@@ -1149,19 +1268,23 @@ class Markdown
         this.currentRun = blockquote;
     }
 
+    /// <summary>
+    /// Checks whether we have a valid indented code block.
+    ///
+    /// Rules:
+    /// 1. If not in a list, must have 4 spaces at the start of the line, and an empty line above
+    /// 2. If in a list and on the same line as the start of a listitem,
+    ///    must be indented 5 spaces from the bullet start ('* ' plus four spaces')
+    /// 3. If in a list and _not_ on the same line as the start of a listitem, must be indented
+    ///    4 spaces plus (2 * (nestLevel + 1))
+    /// </summary>
+    /// <returns>The end index of the code block, or -1 if none was found</returns>
     _checkIndentCodeBlock(start)
     {
         if (this._inlineOnly)
         {
             return -1;
         }
-        // Rules:
-        // 1. If not in a list, must have 4 spaces at the start of the line, and an empty line above
-        // 2. If in a list and on the same line as the start of a listitem,
-        //    must be indented 5 spaces from the bullet start ('* ' plus four spaces')
-        // 3. If in a list and _not_ on the same line as the start of a listitem, must be indented
-        //    4 spaces plus (2 * (nestLevel + 1))
-
 
         // Before using more complicated regex, just check to see if there are at least four spaces
         if (start < 3 ||
@@ -1266,6 +1389,33 @@ class Markdown
         return end;
     }
 
+    /// <summary>
+    /// Checks whether we have a valid table at the given index, adding it to the
+    /// Run list if found.
+    ///
+    /// Rules:
+    ///  1. Table columns are separated by pipes: '| Column1 | Column2 | Column3 |'
+    ///    * Pipes on the ends of the table are optional: 'Column1 | Column2 | Column3'
+    ///  2. The first row will be the column headers
+    ///  3. The second row _must_ be the column format definitions
+    ///    * Three dashes are required per column. More are allowed, but not less
+    ///    * Single colons before and/or after define alignment: ':---|:---:|---:'
+    ///  4. Rows after the second are regular table rows
+    ///    * Multiple pipes in a row can force a cell to be blank: '|| Column2 | Column3 |'
+    ///    * Line breaks can be added with '<br>'
+    ///    * Cells can contain any inline markdown elements
+    /// </summary>
+    /// <example>
+    /// | Column1          | Column2   | Column3 |
+    /// |:-----------------|:---------:|---:|
+    /// Pipes at the start | and end | are optional
+    /// | Left-Aligned | Centered | Right-Aligned |
+    /// | Second row defines<br>the columns. | At least 3 dashes<br>are required | but more are allowed |
+    /// || Multiple Pipes | for empty cells |
+    /// | Add line breaks<br>with \<br>
+    /// | ++Cells can be formatted++ | [with any inline elements](#) | ![Poster h=150](poster.jpg) |
+    /// </example>
+    /// <returns>The end index of the table, or -1 if a valid table was not found</returns>
     _checkTable(start)
     {
         // Break from what I have been doing and take a different approach:
@@ -1473,6 +1623,15 @@ class Markdown
         return end;
     }
 
+    /// <summary>
+    /// Check for a valid inline code block, adding it to the Run list if found.
+    ///
+    /// Rules:
+    ///  Surround text with a matching number of backticks. More backticks allows
+    ///  backticks themselves to be part of the code block:
+    ///    ```I can escape two backticks (``) by surrounding with three```
+    /// </summary>
+    /// <returns>The end index of the code run, or -1 if no run was found</returns>
     _checkInlineCode(start)
     {
         // Note that we need to match the exact number of initial backticks
@@ -1527,6 +1686,17 @@ class Markdown
         return end;
     }
 
+    /// <summary>
+    /// Checks for a valid code block. Despite the name, accepts both '`' and '~' as markers.
+    ///
+    /// Rules:
+    ///  Start with exactly three backticks or tildes at the beginning of the line
+    ///   * Starting markers can be followed by a language specification (currently unused) : '```cpp`
+    ///   * If within a list, must be indented two spaces further than the current indentation level
+    ///   * TODO: Support nesting within blockquotes
+    ///  End with exactly three backticks or tildes on their own line
+    /// </summary>
+    /// <returns>The end index of the code block, or -1 if no code block was found</returns>
     _checkBacktickCodeBlock(start)
     {
         let marker = this.text[start];
@@ -1632,6 +1802,30 @@ class Markdown
         }
     }
 
+    /// <summary>
+    /// Checks for a valid list run, adding it to the Run list if found
+    ///
+    /// Rules:
+    ///  1. General:
+    ///    * To nest lists, add two spaces per nest level before adding the list marker
+    ///      (like this comment's formatting)
+    ///    * To continue a list item on a new line, the next line must be indented at the same level
+    ///      as the parent listitem. To add an additional line break, the line must be indented two
+    ///      additional spaces:
+    ///
+    ///        * This goes to      |  * This breaks out  |  * This continues
+    ///        the next line       |                     |
+    ///                            |  of the list        |    the list, with additional spacing
+    ///
+    ///  2. Unordered lists
+    ///    * Line must start with an asterisk (or spaces followed by an asterisk if nested)
+    ///  3. Ordered lists
+    ///    * Line must start with a number followed by a period. The list will start counting from that number
+    ///    * Subsequent list items will increase from the first item, regardless of the user supplied number
+    ///  4. Nesting
+    ///
+    /// TODO: Ordered lists breaking when number is greater than 9. Fix after committing documentation changes
+    /// </summary>
     _checkList(start, ordered)
     {
         // Check if we're starting a list. This will definitely get tricky when mixing nested levels of blockquotes
@@ -1706,13 +1900,21 @@ class Markdown
         return true;
     }
 
+    /// <summary>
+    /// Helper method that returns the first occurrence of str in the
+    /// current text, starting at `start`. If not found, returns the
+    /// length of the text.
+    /// </summary>
     _indexOrLast(str, start)
     {
         let i = this.text.indexOf(str, start);
         return i == -1 ? this.text.length : i;
     }
 
-
+    /// <summary>
+    /// Searches for the end of a list within a blockquote
+    /// TODO: This seems broken. _listEndBlockQuote might be the culprit though
+    /// </summary>
     _liEndBlockQuote(start, nestLevel)
     {
         // Special handling for lists within blockquotes. Can probably be
@@ -1788,7 +1990,9 @@ class Markdown
         }
     }
 
-
+    /// <summary>
+    /// Searches for the end of a listitem, returning the end of the list
+    /// </summary>
     _liEnd(start, nestLevel)
     {
         if (this.currentRun.parent.state == State.BlockQuote)
@@ -1865,7 +2069,10 @@ class Markdown
         }
     }
 
-
+    /// <summary>
+    /// Searches for the end of a list within a block quote, returning the end.
+    /// TODO: Investigate. This may be broken
+    /// </summary>
     _listEndBlockQuote(start, nestLevel, ordered)
     {
         // Special handling for lists within blockquotes. Can probably be
@@ -1945,7 +2152,9 @@ class Markdown
         }
     }
 
-
+    /// <summary>
+    /// Searches for and returns the end of a list that starts at `start`
+    /// </summary>
     _listEnd(start, nestLevel, ordered)
     {
         if (this.currentRun.state == State.BlockQuote)
@@ -2034,6 +2243,16 @@ class Markdown
         }
     }
 
+    /// <summary>
+    /// Tests whether we have a valid URL format starting at `start`
+    ///
+    /// Format: [X](Y), where X is the display text and Y is the url
+    /// Alternate format: [X][Y], where Y is later defined as:
+    ///                      [Y]: link
+    /// </summary>
+    /// <returns>
+    /// An object containing information about the bounds of the url, or false if no URL was found
+    /// </return>
     _testUrl(start)
     {
         let end = this._indexOrLast('\n', start);
@@ -2164,6 +2383,10 @@ class Markdown
         return false;
     }
 
+    /// <summary>
+    /// Helper that determines if we're currently in an inline code block.
+    /// If we are, we should ignore the current index when parsing.
+    /// </summary>
     _isInline(inline, i, end)
     {
         if (!inline)
@@ -2175,6 +2398,11 @@ class Markdown
         return endInline != -1 && endInline < end;
     }
 
+    /// <summary>
+    /// Returns whether the character at the given index is escaped
+    /// with a backslash. Takes into account the possibility of the
+    /// backslash itself being escaped.
+    /// </summary>
     _isEscaped(index)
     {
         let bs = 0;
@@ -2187,8 +2415,20 @@ class Markdown
     }
 }
 
+/// <summary>
+/// Core Run class that contains the definition of a single span.
+/// Only the top-level run should be a pure Run. Everything else
+/// should create a class that extends a Run.
+/// </summary>
 class Run
 {
+    /// <param name="state">The type of run. See State enum</param>
+    /// <param name="start">The start index of this run</params>
+    /// <param name="end">The end index of this run</params>
+    /// <param name="parent">
+    /// The Run that holds this run. Should never be null
+    /// outside of the top-level Run
+    /// </params>
     constructor(state, start, end, parent=null)
     {
         this.state = state;
@@ -2199,15 +2439,22 @@ class Run
         {
             parent.innerRuns.push(this);
         }
+
+        // List of Runs that are contained inside of this Run
         this.innerRuns = [];
+
+        // HTML representation of this Run, generated after the run is `convert`ed.
         this.cached = '';
     }
 
-    // Conversion process:
-    //  create start tag
-    //    if first child start is not this start, add from initialText
-    //  convert() children
-    //  create end tag
+    /// <summary>
+    /// Converts the given run to HTML
+    /// </summary>
+    /// <param name="initialText">The full input markdown text</param>
+    /// <param name="inlineOnly">
+    /// True if this run's parent only allows inline elements
+    /// If true, prevents newline elements from being inserted
+    /// </param>
     convert(initialText, inlineOnly=false)
     {
         if (this.cached.length != 0)
@@ -2241,12 +2488,12 @@ class Run
             return this.cached;
         }
 
-
         if (startWithContext < this.innerRuns[0].start)
         {
             newText += this.transform(initialText.substring(startWithContext, this.innerRuns[0].start), -1);
         }
 
+        // Recurse through children
         for (let i = 0; i < this.innerRuns.length; ++i)
         {
             newText += this.innerRuns[i].convert(initialText, inlineOnly);
@@ -2265,20 +2512,40 @@ class Run
         return this.cached;
     }
 
+    /// <summary>
+    /// Total length of this run
+    /// </summary>
     length() { return this.end - this.start; }
 
+    /// <summary>
+    /// Number of prefixed characters that shouldn't be included
+    /// in the final text, as they are part of the formatting
+    /// </summary>
     startContextLength() { return 0; }
+
+    /// <summary>
+    /// Number of postfixed characters that shouldn't be included
+    /// in the final text, as they are part of the formatting.
+    /// </summary>
     endContextLength() { return 0; }
 
+    /// <summary>
+    /// Returns the HTML tag for the current Run
+    /// </summary>
+    /// <param name="end">False if we want the opening tag, true if we want the closing tag</param>
     tag(/*end*/) { return ''; }
 
     /// <summary>
-    /// Trims the given text, where side is one of the following:
-    ///  1. -2 : Don't trim
-    ///  2. -1 : Trim left only
-    ///  3.  0 : Trim both sides
-    ///  4.  1 : Trim right only
+    /// Trims whitespace from the given text
     /// </summary>
+    /// <param name="text">The text to trim</param>
+    /// <param name="side">
+    /// One of the following:
+    ///   -2: Don't trim
+    ///   -1: Trim left only
+    ///    0: Trim both sides
+    ///    1: Trim right only
+    /// </param>
     trim(text, side)
     {
         switch (side)
@@ -2294,6 +2561,10 @@ class Run
         }
     }
 
+    /// <summary>
+    /// Checks for escaped characters and removes the
+    /// backslash for the final text.
+    /// </summary>
     escapeChars(text, chars)
     {
         if (text.indexOf('\\') == -1)
@@ -2334,6 +2605,12 @@ class Run
         return newText;
     }
 
+    /// <summary>
+    /// Returns whether we should process newlines given our state
+    ///
+    /// Currently, we only process newlines in our top-level Run a nd
+    /// within lists and blockquotes
+    /// </summary>
     shouldProcessNewlines()
     {
         switch (this.state)
@@ -2366,6 +2643,9 @@ class Run
         }
     }
 
+    /// <summary>
+    /// Returns whether we consider our state to be a block element
+    /// </summary>
     isBlockElement()
     {
         switch (this.state)
@@ -2385,7 +2665,10 @@ class Run
         }
     }
 
-
+    /// <summary>
+    /// Parses the Run looking for newlines, inserting
+    /// divs and breaks into the run as necessary
+    /// </summary>
     parseNewlines(text)
     {
         // Go until we find a block element
@@ -2561,6 +2844,9 @@ class Run
         return cBreaks + divDiff;
     }
 
+    /// <summary>
+    /// Inserts a div into this Run
+    /// </summary>
     _insertDiv(start, end, text)
     {
         if (this.innerRuns.length == 0 || end < this.innerRuns[0].start)
@@ -2598,6 +2884,9 @@ class Run
         return 1 - splice;
     }
 
+    /// <summary>
+    /// Inserts a break in this run at the given index
+    /// </summary>
     _insertBreak(index)
     {
         if (this.innerRuns.length == 0 || this.innerRuns[0].start >= index)
@@ -2637,7 +2926,9 @@ class Run
         return 0;
     }
 
-
+    /// <summary>
+    /// Transforms the given text into HTML compliant text.
+    /// </summary>
     transform(newText)
     {
         // First, detect escaped characters and remove the escape, unless
@@ -2668,12 +2959,18 @@ class Run
         });
     }
 
+    /// <summary>
+    /// Helper for runs that have basic <X> </X> tags
+    /// </summary>
     static basicTag(tag, end)
     {
         return `<${end ? '/' : ''}${tag}>`;
     }
 }
 
+/// <summary>
+/// Run definition for a linebreak - <br>
+/// </summary>
 class Break extends Run
 {
     constructor(start, parent)
@@ -2682,9 +2979,14 @@ class Break extends Run
     }
 
     tag(end) { return end ? '' : '<br />'; }
+
+    // Override parent transform and return an empty string, as a break has no content
     transform(/*newText*/) { return ''; }
 }
 
+/// <summary>
+/// Horizontal Rule - <hr>
+/// </summary>
 class Hr extends Run
 {
     constructor(start, end, parent)
@@ -2694,11 +2996,13 @@ class Hr extends Run
 
     tag(end) { return end ? '' : '<hr />'; }
 
-
     // Indicators can have a variable number of characters, but we never want to actually print anything
     transform(/*newText,*/ /*side*/) { return ''; }
 }
 
+/// <summary>
+/// Div - <div>Content</div>
+/// </summary>
 class Div extends Run
 {
     constructor(start, end, text, parent)
@@ -2707,6 +3011,9 @@ class Div extends Run
         this.text = text.substring(start, end);
     }
 
+    /// <summary>
+    /// Div tag adds the mdDiv class
+    /// </summary>
     tag(end)
     {
         if (end)
@@ -2745,8 +3052,13 @@ class Div extends Run
     }
 }
 
+/// <summary>
+/// Header - <h1-6>Content</h1-6>
+/// </summary>
 class Header extends Run
 {
+    /// <param name="headerLevel">The type of header, 1-6</param>
+    /// <param name="text">Full markdown text, used to set the header element's id</param>
     constructor(start, end, headerLevel, text, parent)
     {
         super(State.Header, start, end, parent);
@@ -2760,6 +3072,9 @@ class Header extends Run
         return this.headerLevel + 1;
     }
 
+    /// <summary>
+    /// Header opening tag includes the id
+    /// </summary>
     tag(end)
     {
         if (end)
@@ -2770,8 +3085,10 @@ class Header extends Run
         return `<h${this.headerLevel} id="${this.id}">`;
     }
 
-
-    // Trailing # are removed (and strip it while we're at it)
+    /// <summary>
+    /// Strips trailing '#' before calling the core transform routine
+    /// TODO: ignore escaped trailing '#'
+    /// </summary>
     transform(newText, side)
     {
         newText = this.trim(newText, side);
@@ -2790,8 +3107,12 @@ class Header extends Run
     }
 }
 
+/// <summary>
+/// BlockQuote - <blockquote>Content</blockquote>
+/// </summary>
 class BlockQuote extends Run
 {
+    /// <param name="nestLevel">The nest level for the blockquote. TODO: Not Used</param>
     constructor(start, end, nestLevel, parent)
     {
         super(State.BlockQuote, start, end, parent);
@@ -2803,6 +3124,10 @@ class BlockQuote extends Run
 
     tag(end) { return Run.basicTag('blockquote', end); }
 
+    /// <summary>
+    /// Remove the necessary number of quote indicators ('>')
+    /// before handing it over to the core transform routine
+    /// </summary>
     transform(newText, /*side*/)
     {
         // Look for 'newline + >' and remove them.
@@ -2831,8 +3156,12 @@ class BlockQuote extends Run
     }
 }
 
+/// <summary>
+/// Unordered lists - <ul>listitems</ul>
+/// </summary>
 class UnorderedList extends Run
 {
+    /// <param name="nestLevel">TODO: Unused</param>
     constructor(start, end, nestLevel, parent)
     {
         super(State.UnorderedList, start, end, parent);
@@ -2844,17 +3173,24 @@ class UnorderedList extends Run
 
     tag(end) { return Run.basicTag('ul', end); }
 
+    /// <summary>
+    /// Nothing is allowed inside of lists other than
+    /// list items, so return an empty string. This
+    /// also helps remove pesky blockquote artifacts
+    /// </summary>
     transform(/*newText,*/ /*side*/)
     {
-        // Nothing is allowed inside of lists other than
-        // list items, so return an empty string. This
-        // also helps remove pesky blockquote artifacts
         return '';
     }
 }
 
+/// <summary>
+/// Ordered list - <ol>listitems</ul>
+/// </summary>
 class OrderedList extends Run
 {
+    /// <param name="nestLevel">TODO: Unused</param>
+    /// <param name="listStart">The number to start counting for this list</param>
     constructor(start, end, nestLevel, listStart, parent)
     {
         super(State.OrderedList, start, end, parent);
@@ -2875,15 +3211,20 @@ class OrderedList extends Run
         return `<ol start='${this.listStart}'>`;
     }
 
+    /// <summary>
+    /// Nothing is allowed inside of lists other than
+    /// list items, so return an empty string. This
+    /// also helps remove pesky blockquote artifacts
+    /// </summary>
     transform(/*newText,*/ /*side*/)
     {
-        // Nothing is allowed inside of lists other than
-        // list items, so return an empty string. This
-        // also helps remove pesky blockquote artifacts
         return '';
     }
 }
 
+/// <summary>
+/// List items - <li>Content</li>
+/// </summary>
 class ListItem extends Run
 {
     constructor(start, end, parent)
@@ -2896,9 +3237,13 @@ class ListItem extends Run
 
     tag(end) { return Run.basicTag('li', end); }
 
+    /// <summary>
+    /// Bypass the core transform method and parse it ourselves.
+    /// We need to go up our parent chain looking for blockquotes
+    /// so we can remove the correct number of blockquote markers ('>')
+    /// </summary>
     transform(newText, /*side*/)
     {
-        // Need to go up our chain to see how many `>` to look for and remove
         let cBlock = 0;
         let parent = this.parent;
         while (parent !== null)
@@ -2934,8 +3279,12 @@ class ListItem extends Run
     }
 }
 
+/// <summary>
+/// Text urls - <a href="url">Display Text</a>
+/// </summary>
 class Url extends Run
 {
+    /// <param name="text">TODO: Unused</param>
     constructor(start, end, text, url, parent)
     {
         super(State.Url, start, end, parent);
@@ -2964,14 +3313,25 @@ class Url extends Run
         return `<a href="${encodeURI(this.url)}">`;
     }
 
+    /// <summary>
+    /// Call our parent transform method after first un-escaping some
+    // additional characters ('[]')
+    /// </summary>
     transform(newText, /*side*/)
     {
         return super.transform(this.escapeChars(newText, '[]'));
     }
 }
 
+/// <summary>
+/// Alternate text urls - <a href="url">Display text</a>
+/// Handles urls defined via '[displayText][identifier]', where
+/// identifier is defined elsewhere via '[identifier]: url'
+/// </summary>
 class ExtendedUrl extends Url
 {
+    /// <param name="text">TODO: Unused</param>
+    /// <param name="urls">The dictionary mapping url identifiers with their urls</param>
     constructor(start, end, text, url, urls, parent)
     {
         super(start, end, text, url, parent);
@@ -2980,6 +3340,10 @@ class ExtendedUrl extends Url
         this.converted = false;
     }
 
+    /// <summary>
+    /// Called once the full markdown text has been parsed and
+    /// replaces the url identifier with the actual url
+    /// </summary>
     _convertUrl()
     {
         if (this.converted)
@@ -3013,6 +3377,11 @@ class ExtendedUrl extends Url
     }
 }
 
+/// <summary>
+/// Handles the extended url identifier '[identifier]: url'.
+/// Keeps the text around, but surrounds it in an HTML comment
+/// so it isn't displayed.
+/// </summary>
 class ExtendedUrlTag extends Run
 {
     constructor(start, end, parent)
@@ -3022,12 +3391,18 @@ class ExtendedUrlTag extends Run
 
     tag(end) { return end ? ' -->' : '<!-- '; }
 
+    /// <summary>
+    /// No transformation necessary, return without modification
+    /// </summary>
     transform(newText, /*side*/)
     {
         return newText;
     }
 }
 
+/// <summary>
+/// Images - <img src="url" alt="altText" width="x(%|px)" height="y(%|px)">
+/// </summary>
 class Image extends Run
 {
     constructor(start, end, altText, url, width, height, parent)
@@ -3044,7 +3419,10 @@ class Image extends Run
     startContextLength() { return 0; }
     endContextLength() { return this.end - this.start; }
 
-
+    /// <summary>
+    /// Inline tag, so return nothing on `end`. Otherwise, build the inline
+    /// element by including the url, optional dimensions, and alt text.
+    /// </summary>
     tag(end)
     {
         if (end)
@@ -3104,8 +3482,14 @@ class Image extends Run
     }
 }
 
+/// <summary>
+/// Core code block definition for shared functionality between
+/// indented and backtick/tilde blocks - <pre>Content</pre>
+/// </summary>
 class CodeBlock extends Run
 {
+    /// <param name="indent">The number of prefixed spaces before this block starts</param>
+    /// <param name="backtick">True if this is a backtick/tilde block and not an indented one</param>
     constructor(start, end, text, indent, backtick, parent)
     {
         super(State.CodeBlock, start, end, parent);
@@ -3116,6 +3500,10 @@ class CodeBlock extends Run
 
     tag(end) { return Run.basicTag('pre', end); }
 
+    /// <summary>
+    /// Splits the code block into individual lines and
+    /// applies the given function to each line
+    /// </summary>
     buildCodeBlock(text, fn)
     {
         this.finalText = '';
@@ -3124,6 +3512,9 @@ class CodeBlock extends Run
         lines.forEach(fn, this);
     }
 
+    /// <summary>
+    /// Returns a span containing the current code block line number
+    /// </summary>
     lineNumber(line, pad)
     {
         line = line.toString();
@@ -3132,6 +3523,9 @@ class CodeBlock extends Run
     }
 }
 
+/// <summary>
+/// Code block logic specific to backtick/tilde blocks
+/// </summary>
 class BacktickCodeBlock extends CodeBlock
 {
     constructor(start, end, indent, text, language, parent)
@@ -3143,6 +3537,9 @@ class BacktickCodeBlock extends CodeBlock
     startContextLength() { return this.text.indexOf('\n') + 1; }
     endContextLength() { return this.text.length - this.text.lastIndexOf('\n'); }
 
+    /// <summary>
+    /// Forwards to buildCodeBlock to correctly format each line and strip the necessary prefixed spaces
+    /// </summary>
     transform(newText, /*side*/)
     {
         newText = super.transform(newText);
@@ -3155,8 +3552,15 @@ class BacktickCodeBlock extends CodeBlock
     }
 }
 
+/// <summary>
+/// Code block logic specific to indented blocks
+/// </summary>
 class IndentCodeBlock extends CodeBlock
 {
+    /// <param name="firstIsList">
+    /// If true, indicates that this block started on the same line as the start of
+    /// a listitem, which changes the indentation rules (for the first line only)
+    /// </param>
     constructor(start, end, text, indent, firstIsList, parent)
     {
         super(start, end, text, indent, false /*backtick*/, parent);
@@ -3175,6 +3579,9 @@ class IndentCodeBlock extends CodeBlock
 
     endContextLength() { return 0; }
 
+    /// <summary>
+    /// Forwards to buildCodeBlock to correctly format each line and strip the necessary prefixed spaces
+    /// </summary>
     transform(newText, /*side*/)
     {
         newText = super.transform(this.text);
@@ -3195,8 +3602,33 @@ class IndentCodeBlock extends CodeBlock
     }
 }
 
+/// <summary>
+/// Holds the definition for a table
+///
+/// <table>
+///   <thead>
+///     <tr>
+///       <td align="XYZ">ColHeader</td>
+///       ...
+///     </tr>
+///   </thead>
+///   <tbody>
+///     <tr>
+///       <td align="XYZ">Cell</td>
+///       ...
+///     </tr>
+///     ...
+///   </tbody>
+/// </table>
+/// </summary>
 class Table extends Run
 {
+    /// <param name="table">
+    /// Table object:
+    ///  header - array of column headers
+    ///  columnAlign - alignment info for each column
+    ///  rows - array of rows, where each row is an array of cells
+    /// </param>
     constructor(start, end, table, parent)
     {
         super(State.Table, start, end, parent);
@@ -3208,6 +3640,9 @@ class Table extends Run
 
     tag(end) { return Run.basicTag('table', end); }
 
+    /// <summary>
+    /// Builds and returns the <table> content from this.table
+    /// </summary>
     transform(/*newText,*/ /*side*/)
     {
         const wrap = (text, wrapper) => `<${wrapper}>${text}</${wrapper}>`;
@@ -3247,6 +3682,9 @@ class Table extends Run
     }
 }
 
+/// <summary>
+/// Inline code run - <code>content</code>
+/// </summary>
 class InlineCodeRun extends Run
 {
     constructor(start, end, text, parent)
@@ -3266,6 +3704,9 @@ class InlineCodeRun extends Run
     tag(end) { return Run.basicTag('code', end); }
 }
 
+/// <summary>
+/// Base class for inline formatting (bold/italic/etc)
+/// </summary>
 class InlineFormat extends Run
 {
     // (Constructor same as parent)
@@ -3276,6 +3717,9 @@ class InlineFormat extends Run
     }
 }
 
+/// <summary>
+/// Bold - <strong>Content</strong>
+/// </summary>
 class Bold extends InlineFormat
 {
     constructor(start, end, parent)
@@ -3289,6 +3733,9 @@ class Bold extends InlineFormat
     tag(end) { return Run.basicTag('strong', end); }
 }
 
+/// <summary>
+/// Italic - <em>Content</em>
+/// </summary>
 class Italic extends InlineFormat
 {
     constructor(start, end, parent)
@@ -3302,6 +3749,9 @@ class Italic extends InlineFormat
     tag(end) { return Run.basicTag('em', end); }
 }
 
+/// <summary>
+/// Underline - <ins>Content</ins>
+/// </summary>
 class Underline extends InlineFormat
 {
     constructor(start, end, parent)
@@ -3315,6 +3765,9 @@ class Underline extends InlineFormat
     tag(end) { return Run.basicTag('ins', end); }
 }
 
+/// <summary>
+/// Strikethrough - <s>Content</s>
+/// </summary>
 class Strikethrough extends InlineFormat
 {
     constructor(start, end, parent)
@@ -3328,6 +3781,10 @@ class Strikethrough extends InlineFormat
     tag(end) { return Run.basicTag('s', end); }
 }
 
+/// <summary>
+/// HTML comment - <!-- Content -->
+/// Exists more for tracking than an actual markdown element
+/// </summary>
 class HtmlComment extends Run
 {
     constructor(start, end, parent)
@@ -3337,6 +3794,10 @@ class HtmlComment extends Run
 
     tag(/*end*/) { return ''; }
 
+    /// <summary>
+    /// Technically no harm in removing (returning ''), but no harm
+    /// in keeping it around either.
+    /// </summary>
     transform(newText, /*side*/)
     {
         // Leave exactly as-is, we want it to be parsed as an HTML comment
@@ -3345,8 +3806,18 @@ class HtmlComment extends Run
 }
 
 
+// Cache markdown help document so we don't ping the server every time
 let _helpMarkdown = new Markdown();
 let _mdHelpHTML = '';
+
+/// <summary>
+/// Passes the markdown help text to the given callback
+/// </summary>
+/// <param name="callback">Function to call once we have the markdown text</param>
+/// <param name="raw">
+/// If true, passes the raw markdown text to the callback.
+/// If false, passes the converted HTML to the callback.
+/// </param>
 function markdownHelp(callback, raw=false)
 {
     if (_mdHelpHTML.length != 0)

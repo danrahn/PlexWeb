@@ -1,4 +1,8 @@
 <?php
+/// <summary>
+/// Searches external (themoviedb/audible) and internal (plex) sources for media
+/// </summary>
+
 session_start();
 
 require_once "includes/config.php";
@@ -64,6 +68,9 @@ switch ($type)
 
 }
 
+/// <summary>
+/// Return information for a single tv show
+/// </summary>
 function parse_single_tv_show($show)
 {
     $show = json_decode($show);
@@ -72,6 +79,9 @@ function parse_single_tv_show($show)
     return $show;
 }
 
+/// <summary>
+/// Get the IMDb id for a tv show
+/// </summary>
 function get_imdb_id_for_tv($id)
 {
     $endpoint = "tv/" . $id . "/external_ids";
@@ -80,6 +90,9 @@ function get_imdb_id_for_tv($id)
     return $result->imdb_id;
 }
 
+/// <summary>
+/// Query TheMovieDatabase and return the raw result
+/// </summary>
 function run_query($endpoint, $params)
 {
     $query = TMDB_URL . $endpoint . TMDB_TOKEN;

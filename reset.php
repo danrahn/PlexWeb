@@ -22,6 +22,15 @@ if (!$token)
 
 $valid = validate_request($token);
 
+/// <summary>
+/// Ensure the password reset request is valid
+///
+/// Possible return values:
+///  1: Valid request
+///  0: Request token expired
+/// -1: Token not found
+/// -2: Newer token available
+/// </summary>
 function validate_request($token)
 {
     global $db;

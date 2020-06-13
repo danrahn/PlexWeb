@@ -7,6 +7,9 @@ let baseTitle = "";
 let hasChanged = false;
 let previous = { pl : 0, pa : 0 };
 
+/// <summary>
+/// Update the page title based on the stream activity
+/// </summary>
 function processQueryStatus(response)
 {
     if (response.play == 0 && response.pause == 0)
@@ -47,6 +50,10 @@ function processQueryStatus(response)
     $$("title").innerHTML = prepend + baseTitle;
 }
 
+/// <summary>
+/// Query error handler. If we've detected that the user has
+/// been logged out, cancel the timer
+/// </summary>
 function queryStatusError(response)
 {
     if (response.Error && response.Error == "Not Authorized")
@@ -56,12 +63,19 @@ function queryStatusError(response)
     }
 }
 
+/// <summary>
+/// Request plex status from the server
+/// </summary>
 function queryStatus()
 {
     sendHtmlJsonRequest("get_status.php", { type : 5 }, processQueryStatus, queryStatusError);
 }
 
 let queryStatusTimer;
+
+/// <summary>
+/// Initiates a 20 second interval to grab the current plex activity
+/// </summary>
 function startQuery()
 {
     baseTitle = window.document.title;

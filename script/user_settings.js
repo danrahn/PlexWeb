@@ -1,3 +1,6 @@
+/// <summary>
+/// Displays user information/settings, as well as the 'change password' form
+/// </summary>
 
 window.addEventListener("load", function()
 {
@@ -11,7 +14,14 @@ const changedColor = new Color(200, 150, 80);
 const successColor = new Color(100, 200, 80);
 const defaultForegroundColor = new Color(192, 189, 186);
 
+/// <summary>
+/// Constant that determines whether we got here via the "enable notifications" dialog
+/// </summary>
 const g_forNotify = parseInt(document.body.getAttribute("fornotify")) == 1;
+
+/// <summary>
+/// Setup email and phone listeners
+/// </summary>
 function setupFormListeners()
 {
     setupEmailListeners();
@@ -29,6 +39,9 @@ function setupFormListeners()
     getCurrentValues();
 }
 
+/// <summary>
+/// Allow checkboxes to check/un-check on enter in addition to space
+/// </summary>
 function checkboxKeydownListener(e)
 {
     e = e || window.event;
@@ -47,6 +60,10 @@ function checkboxKeydownListener(e)
     }
 }
 
+/// <summary>
+/// Current values that will be populated and compared
+/// against new values to determine what has changed
+/// </summary>
 let initialValues =
 {
     firstname : "",
@@ -58,12 +75,18 @@ let initialValues =
     carrier : ""
 };
 
+/// <summary>
+/// Hide or show the given element
+/// </summary>
 function setVisible(ele, vis)
 {
     ele.classList.remove(vis ? "hiddenInput" : "visibleInput");
     ele.classList.add(vis ? "visibleInput" : "hiddenInput");
 }
 
+/// <summary>
+/// Populate user settings form with current values retrieved from the server
+/// </summary>
 function applyCurrentValues(response)
 {
     // Assume all of our values are correct here
@@ -137,6 +160,9 @@ function getCurrentValues()
     sendHtmlJsonRequest("process_request.php", params, applyCurrentValues, failureFunc);
 }
 
+/// <summary>
+/// Add change event listeners to email fields
+/// </summary>
 function setupEmailListeners()
 {
     let email = $$("input[name=email]");
@@ -154,11 +180,18 @@ function setupEmailListeners()
     }
 }
 
+/// <summary>
+/// Wrapper function to core email listener
+/// </summary>
 function emailChangeListener()
 {
     emailChangeListenerCore(this);
 }
 
+/// <summary>
+/// When the user modifies their email, color the input
+/// field based on whether it's a valid email
+/// </summary>
 function emailChangeListenerCore(ele)
 {
     let email = $$("input[name=email");
@@ -196,6 +229,9 @@ function emailChangeListenerCore(ele)
     }
 }
 
+/// <summary>
+/// Setup listeners relevant to the user's phone number/phone alerts
+/// </summary>
 function setupPhoneListeners()
 {
     let phone = $$("input[name=phone]");
@@ -223,11 +259,18 @@ function setupPhoneListeners()
     }
 }
 
+/// <summary>
+/// Wrapper function to core phone listener
+/// </summary>
 function phoneListener()
 {
     phoneListenerCore(this);
 }
 
+/// <summary>
+/// When the user modifies their phone number, color the input
+/// field based on whether it's a valid number
+/// </summary>
 function phoneListenerCore(ele)
 {
     let digit = ele.value ? ele.value.replace(/[^\d]/g, "") : "";
@@ -256,11 +299,17 @@ function phoneListenerCore(ele)
     }
 }
 
+/// <summary>
+/// Wrapper function to core phone focus listener
+/// </summary>
 function phoneFocusListener()
 {
     phoneFocusListenerCore(this);
 }
 
+/// <summary>
+/// Format phone numbers to '(123) 456-7890' after the input loses focus
+/// </summary>
 function phoneFocusListenerCore(ele)
 {
     let digit = ele.value.replace(/[^\d]/g, "");
@@ -271,6 +320,9 @@ function phoneFocusListenerCore(ele)
     }
 }
 
+/// <summary>
+/// Clear all special forNotify highlighting
+/// </summary>
 function clearNotify()
 {
     $(".forNotify").forEach(function(ele)
@@ -332,6 +384,9 @@ function highlightForNotify(notificationsEnabled)
     }
 }
 
+/// <summary>
+/// Sets up listeners to change label colors when settings change from their initial values
+/// </summary>
 function setupLabelListener(label)
 {
     label.addEventListener("input", function()
@@ -366,6 +421,9 @@ function setupLabelListener(label)
     });
 }
 
+/// <summary>
+/// Add listeners to all user info labels
+/// </summary>
 function setupLabelListeners()
 {
     let inputs =
@@ -385,6 +443,10 @@ function setupLabelListeners()
     }
 }
 
+/// <summary>
+/// After successfully changing user settings, flash all
+// changed fields green to indicate success
+/// </summary>
 function onUserSettingsChanged()
 {
     let inputs =
@@ -415,6 +477,9 @@ function onUserSettingsChanged()
     });
 }
 
+/// <summary>
+/// Display a status message when we fail to update user settings
+/// </summary>
 function onFailedUserSettingsChanged(response)
 {
     let error = $("#formError");
@@ -425,6 +490,10 @@ function onFailedUserSettingsChanged(response)
     Animation.queue({ display : "none" }, error);
 }
 
+/// <summary>
+/// Verify that all user information fields have valid values before
+/// submitting a change request.
+/// </summary>
 function validateUserInfo()
 {
     let valid = true;
@@ -457,6 +526,9 @@ function validateUserInfo()
     return valid;
 }
 
+/// <summary>
+/// Sets up the button listener to submit user information changes
+/// </summary>
 function setupSubmitButton()
 {
     let submit = $("#go");
@@ -489,11 +561,17 @@ function setupSubmitButton()
     });
 }
 
+/// <summary>
+/// Returns the input field with the given name
+/// </summary>
 function getField(name, field="value", type="input")
 {
     return $$(type + "[name=" + name + "]")[field];
 }
 
+/// <summary>
+/// Set up change password listeners
+/// </summary>
 function setupPwListeners()
 {
     $("#pwForm input").forEach(function(ele)
@@ -535,6 +613,9 @@ function setupPwListeners()
     });
 }
 
+/// <summary>
+/// Initiate a password change, displaying a message indicating success or failure
+/// </summary>
 function submitPasswordChange()
 {
     let oldPass = $("#oldPass");
@@ -581,6 +662,10 @@ function submitPasswordChange()
     sendHtmlJsonRequest("process_request.php", params, successFunc, failureFunc);
 }
 
+/// <summary>
+/// Verify the list of fields passed in
+/// </summary>
+/// <returns>true if every field is valid, else false</returns>
 function verifyFields(...fields)
 {
     let ret = true;
@@ -597,6 +682,10 @@ function verifyFields(...fields)
     return ret;
 }
 
+/// <summary>
+/// Verifies the given input field is not empty, and flashes the field if it is.
+/// </summary>
+/// <returns>True if the field is not empty, else false</returns>
 function verifyField(field)
 {
     if (!field.value)
@@ -607,6 +696,9 @@ function verifyField(field)
     return !!field.value;
 }
 
+/// <summary>
+/// Flash the given input field red
+/// </summary>
 function flashField(field)
 {
     Animation.queue({ backgroundColor : new Color(140, 66, 69) }, field, 500);

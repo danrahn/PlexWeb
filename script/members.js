@@ -1,3 +1,7 @@
+/// <summary>
+/// Logic to display the list of registered users. Implements tableCommon
+/// </summary>
+
 /* exported populateFilter, getNewFilter, filterHtml, tableSearch, tableIdentifier, tableUpdateFunc  */
 
 window.addEventListener("load", function()
@@ -5,16 +9,26 @@ window.addEventListener("load", function()
     getMembers();
 });
 
+/// <summary>
+/// Unique identifier for this table. Used by tableCommon
+/// </summary>
 function tableIdentifier()
 {
     return "members";
 }
 
+/// <summary>
+/// The function to call that will update this table. Used by tableCommon
+/// </summary>
 function tableUpdateFunc()
 {
     return getMembers;
 }
 
+/// <summary>
+/// Get list of members from the server, based on the current filter
+/// </summary>
+/// <param name="searchValue">Optional search term to further filter results based on substring matching</param>
 function getMembers(searchValue="")
 {
     let parameters =
@@ -47,6 +61,10 @@ function getMembers(searchValue="")
     sendHtmlJsonRequest("process_request.php", parameters, successFunc, failureFunc);
 }
 
+/// <summary>
+/// Builds the username span of the table entry,
+/// adding different styles based on the user's level
+/// </summary>
 function getUsernameSpan(member)
 {
     let user = buildNode("span", { class : "memberName" }, member.username);
@@ -62,6 +80,9 @@ function getUsernameSpan(member)
     return user;
 }
 
+/// <summary>
+/// Builds a table entry for a single member
+/// </summary>
 function buildMember(member)
 {
     let holder = tableItemHolder();
@@ -107,6 +128,9 @@ function buildMember(member)
     return holder;
 }
 
+/// <summary>
+/// Build our member table from the server response
+/// </summary>
 function buildMembers(members)
 {
     clearElement("tableEntries");
@@ -122,6 +146,9 @@ function buildMembers(members)
     });
 }
 
+/// <summary>
+/// Event handler to expand or contrast user details when they click on (+/-)
+/// </summary>
 function expandContractMember()
 {
     if (this.innerHTML == "+")
@@ -136,6 +163,9 @@ function expandContractMember()
     }
 }
 
+/// <summary>
+/// Modifies the filter HTML to reflect the current filter settings
+/// </summary>
 function populateFilter()
 {
     let filter = getFilter();
@@ -150,6 +180,9 @@ function populateFilter()
     $("#sortBy").addEventListener("change", setSortOrderValues);
 }
 
+/// <summary>
+/// Returns the new filter definition based on the state of the filter HTML
+/// </summary>
 function getNewFilter()
 {
     return {
@@ -165,6 +198,9 @@ function getNewFilter()
     };
 }
 
+/// <summary>
+/// Handler that modifies the sort order strings based on the sort criteria
+/// </summary>
 function setSortOrderValues()
 {
     let sortBy = $("#sortBy").value;
@@ -190,6 +226,9 @@ function setSortOrderValues()
     }
 }
 
+/// <summary>
+/// Builds and returns the HTML for the filter dialog
+/// </summary>
 function filterHtml()
 {
     let options = [];
@@ -238,11 +277,17 @@ function filterHtml()
     return filterHtmlCommon(options);
 }
 
+/// <summary>
+/// Shorthand for the verbose Object's hasOwnProperty call
+/// </summary>
 function hasProp(item, property)
 {
     return Object.prototype.hasOwnProperty.call(item, property);
 }
 
+/// <summary>
+/// Retrieves the stored user filter (persists across page navigation, for better or worse)
+/// </summary>
 function getFilter()
 {
     let filter = null;
@@ -277,6 +322,9 @@ function getFilter()
     return filter;
 }
 
+/// <summary>
+/// Returns the default filter for the member table (i.e. nothing filtered)
+/// </summary>
 function defaultFilter()
 {
     return {
@@ -292,6 +340,9 @@ function defaultFilter()
     };
 }
 
+/// <summary>
+/// TableCommon's entrypoint into initiating a search
+/// </summary>
 function tableSearch(value)
 {
     getMembers(value);

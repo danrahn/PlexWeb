@@ -91,6 +91,10 @@ else
     serve_new_image($img_path, $filename, $type, $large);
 }
 
+/// <summary>
+/// Types of images we retrieve. Thumb and Background
+/// are from Plex, Posters are from external sources
+/// </summary>
 abstract class ImgType
 {
     const Thumb = 0;
@@ -190,6 +194,9 @@ function curl($url)
     return $return;
 }
 
+/// <summary>
+/// Map the passed in string type to its corresponding ImgType
+/// </summary>
 function get_type()
 {
     $type = param_or_die("type");

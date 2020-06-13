@@ -16,6 +16,9 @@ header("Etag: $etag");
 
 $plex_ok = does_plex_exist();
 
+/// <summary>
+/// Returns true if the plex server responds, false otherwise
+/// </summary>
 function does_plex_exist()
 {
     // Apache and Plex are on the same machine so a
@@ -30,6 +33,9 @@ function does_plex_exist()
     return false;
 }
 
+/// <summary>
+/// Returns the string for Plex's current status
+/// </summary>
 function get_plex_status($class)
 {
     global $plex_ok;
@@ -43,6 +49,10 @@ function get_plex_status($class)
     }
 }
 
+/// <summary>
+/// Return the name of the current user. If the user has a firstname
+/// set, return that. Otherwise return their username
+/// </summary>
 function get_username()
 {
     global $db;

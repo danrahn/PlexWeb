@@ -1,5 +1,7 @@
 <?php
-
+/// <summary>
+/// (Very) lightweight PHP API for thetvdb.com
+/// </summary>
 require_once "includes/config.php";
 
 /// <summary>
@@ -13,6 +15,11 @@ class Episode
     private $episode;
     private $name;
     private $imdb;
+
+    /// <summary>
+    /// Creates a new Episode. If the given data indicates and error,
+    /// sets the error and leaves the rest of the object empty
+    /// </summary>
     public function __construct($tvdb, $data)
     {
         if (!isset($data['data']) || count($data['data']) != 1)
@@ -51,6 +58,8 @@ class Episode
     {
         return !!$this->error;
     }
+
+    // Simple accessors
 
     public function getError()
     {
@@ -111,6 +120,9 @@ class Tvdb
         $this->login();
     }
 
+    /// <summary>
+    /// Logs in and gets the API token from thetvdb
+    /// </summary>
     public function login()
     {
         $data = [ 'apikey' => TVDB_TOKEN ];
@@ -144,6 +156,9 @@ class Tvdb
         return new Episode($this, $response);
     }
 
+    /// <summary>
+    /// Get information for an entire series
+    /// </summary>
     function get_series($showId)
     {
         $data = [];
@@ -151,6 +166,9 @@ class Tvdb
         return $response['data'];
     }
 
+    /// <summary>
+    /// Returns all episodes for a given season
+    /// </summary>
     function get_season_episodes($showId, $season)
     {
         $data = [];

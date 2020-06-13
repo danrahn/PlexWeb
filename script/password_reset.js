@@ -1,9 +1,15 @@
+/// <summary>
+/// Handles administrator password reset requests
+/// </summary>
 
 window.addEventListener("load", function()
 {
     setupResetForm();
 });
 
+/// <summary>
+/// Displays the result of a password reset request
+/// </summary>
 function showStatus(message, error)
 {
     let status = $("#formStatus");
@@ -13,6 +19,9 @@ function showStatus(message, error)
     Animation.queueDelayed({ opacity : 0 }, status, 2000, 500);
 }
 
+/// <summary>
+/// Set up the password reset form handlers
+/// </summary>
 function setupResetForm()
 {
     // Just let the backend deal with bad input. You're an admin, you should know what you're doing anyway

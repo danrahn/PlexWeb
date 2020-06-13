@@ -17,7 +17,11 @@ try {
 
 $type = (int)get('type');
 
-abstract class ProcessRequest {
+/// <summary>
+/// Enum of all possible request types
+/// </summary>
+abstract class ProcessRequest
+{
     const Login = 1;
     const Register = 2;
     const UpdatePassword = 3;
@@ -197,6 +201,9 @@ function process_request($type)
     return $message;
 }
 
+/// <summary>
+/// Enum of possible login attempt results
+/// </summary>
 class LoginResult
 {
     const Success = 1;
@@ -337,6 +344,11 @@ function register($username, $password, $confirm)
     return json_success();
 }
 
+/// <summary>
+/// Determines whether the given user has already created a request for
+/// media with the given external id. If it does exist, return the request,
+/// otherwise return NULL
+/// </summary>
 function request_exists($external_id, $userid)
 {
     global $db;
@@ -356,6 +368,14 @@ function request_exists($external_id, $userid)
     return NULL;
 }
 
+/// <summary>
+/// Add a new request, or returns an existing request if it has
+/// the same external id.
+/// </summary>
+/// <param name="suggestion">The name of the request</param>
+/// <param name="type">The type of request. Should map to common.php's RequestType</param>
+/// <param name="external_id">The external (tmdb/audible) id for the new request</param>
+/// <param name="poster">The path to the poster for this request</param>
 function process_suggestion_new($suggestion, $type, $external_id, $poster)
 {
     $type = RequestType::get_type_from_str($type);
@@ -524,6 +544,9 @@ function process_stream_access_request($which)
     }
 }
 
+/// <summary>
+/// Adds a comment to the given request.
+/// </summary>
 function add_request_comment($req_id, $content)
 {
     global $db;
@@ -584,6 +607,9 @@ function add_request_comment($req_id, $content)
     return json_success();
 }
 
+/// <summary>
+/// Return all comments for the given request
+/// </summary>
 function get_request_comments($req_id)
 {
     global $db;
@@ -616,7 +642,6 @@ function get_request_comments($req_id)
     }
 
     return json_encode($rows);
-
 }
 
 /// <summary>
@@ -769,6 +794,9 @@ function send_notifications_if_needed($type, $requester, $req_name, $content, $r
     return json_success();
 }
 
+/// <summary>
+/// Return a phone number's associated SMS email
+/// </summary>
 function get_phone_email($phone, $carrier, &$error)
 {
     $error = FALSE;
@@ -788,6 +816,11 @@ function get_phone_email($phone, $carrier, &$error)
     }
 }
 
+/// <summary>
+/// Send notifications to the given requester.
+/// </summary>
+/// <param name="text">The notification if being sent to a phone number</param>
+/// <param name="email">The notification text if being sent to an email</param>
 function send_notification($requester, $text, $email)
 {
     if ($requester->info->phone_alerts && $requester->info->phone != 0)
@@ -849,6 +882,9 @@ function get_user_from_request($req_id)
     return $user;
 }
 
+/// <summary>
+/// Return user information for all admins
+/// </summary>
 function get_admins()
 {
     global $db;
@@ -931,6 +967,9 @@ function check_username($username)
     }
 }
 
+/// <summary>
+/// Return a list of all members registered on the site
+/// </summary>
 function get_members_all()
 {
     if (!UserLevel::is_admin())
@@ -1188,6 +1227,9 @@ function search($query, $kind)
     return json_encode($final_obj);
 }
 
+/// <summary>
+/// Extract a media id from a plex guid
+/// </summary>
 function extract_id_from_guid($guid)
 {
     $guid = substr($guid, strpos($guid, '://') + 3);
@@ -1199,6 +1241,11 @@ function extract_id_from_guid($guid)
     return $guid;
 }
 
+/// <summary>
+/// Returns the imdb id associated with the the given guid.
+/// If the guid isn't associated with imdb, do some extra
+/// processing to figure out what the imdb id is.
+/// </summary>
 function get_imdb_link_from_guid($guid, $type)
 {
     global $db;
@@ -1554,6 +1601,10 @@ function get_geo_ip($ip)
     return json_encode($trimmed_json);
 }
 
+/// <summary>
+/// Set the external id of a request. Used when upgrading a legacy
+/// request to a modern one
+/// </summary>
 function set_external_id($req_id, $ext_id)
 {
     global $db;
@@ -1562,6 +1613,10 @@ function set_external_id($req_id, $ext_id)
     return json_success();
 }
 
+/// <summary>
+/// Return the next available request for the current user.
+/// </summary>
+/// <param name="forward">Direction to search, with true indicating moving forward in time</param>
 function get_next_req($cur_id, $forward)
 {
     global $db;
@@ -1591,6 +1646,13 @@ function get_next_req($cur_id, $forward)
     return '{"new_id":' . $result->fetch_row()[0] . "}";
 }
 
+/// <summary>
+/// Get all requests that match the given filter
+/// </summary>
+/// <param name="num">The number of requests to return. If 0, return all matching requests</param>
+/// <param name="page">The page number to return, i.e. skip the first (num * page) requests</param>
+/// <param name="search">Search string to substring match against request titles. Can be empty</param>
+/// <param name="filter">The filter to apply when querying for requests</param>
 function get_requests($num, $page, $search, $filter)
 {
     global $db;
@@ -1767,6 +1829,11 @@ function get_requests($num, $page, $search, $filter)
     return json_encode($requests);
 }
 
+/// <summary>
+/// Gets the poster path for the given request. If none is found,
+/// falls back to default posters. If it is found, cache it in the
+/// request.
+/// </summary>
 function get_poster_path($request)
 {
     global $db;
@@ -2080,6 +2147,9 @@ function add_create_activity($rid, $uid)
     return $db->query($query) !== FALSE;
 }
 
+/// <summary>
+/// Add a comment activity to the activity table
+/// </summary>
 function add_comment_activity($cid, $rid, $ruid, $uid)
 {
     global $db;
@@ -2089,6 +2159,9 @@ function add_comment_activity($cid, $rid, $ruid, $uid)
     return $db->query($query) !== FALSE;
 }
 
+/// <summary>
+/// Query TheMovieDatabase and return the raw result
+/// </summary>
 function run_query($endpoint)
 {
     $query = TMDB_URL . $endpoint . TMDB_TOKEN;
@@ -2101,6 +2174,9 @@ function run_query($endpoint)
     return $return;
 }
 
+/// <summary>
+/// Logs a javascript error to the database
+/// </summary>
 function log_error($error, $stack)
 {
     global $db;
@@ -2285,6 +2361,9 @@ function forgot_password_admin($username, $email)
     return json_success();
 }
 
+/// <summary>
+/// Returns whether the current user can modify the given comment
+/// </summary>
 function can_modify_comment($comment_id)
 {
     global $db;
@@ -2304,6 +2383,9 @@ function can_modify_comment($comment_id)
     return TRUE;
 }
 
+/// <summary>
+/// Delete the given comment if the current user is the author
+/// </summary>
 function delete_comment($comment_id)
 {
     global $db;
@@ -2323,6 +2405,9 @@ function delete_comment($comment_id)
     return json_success();
 }
 
+/// <summary>
+/// Update the given comment with new content
+/// </summary>
 function edit_comment($comment_id, $content)
 {
     global $db;
@@ -2413,6 +2498,9 @@ function disable_notification_alert()
     return json_success();
 }
 
+/// <summary>
+/// Returns the markdown help text
+/// </summary>
 function get_markdown_text($type)
 {
     if (!$type)

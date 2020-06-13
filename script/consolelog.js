@@ -156,6 +156,23 @@ function logError(obj, description, freeze)
     log(obj, description, freeze, LOG.Error);
 }
 
+/// <summary>
+/// Core logging routine. Prefixes a formatted timestamp based on the level
+/// </summary>
+/// <param name="obj">The object to log</param>
+/// <param name="description">
+/// A description for the object we're logging.
+/// Largely used when 'obj' is an array/dictionary and not a string
+/// </param>
+/// <param name="freeze">
+/// If true, freezes the current state of obj before logging it
+/// This prevents subsequent code from modifying the console output.
+/// </param>
+/// <param name="logLevel">
+/// The LOG level. Determines the format colors, as well as where
+/// to display the message (info, warn, err). If g_traceLogging is set,
+/// always outputs to console.trace
+/// </param>
 /* eslint-disable max-lines-per-function */
 function log(obj, description, freeze, level)
 {
@@ -230,6 +247,9 @@ function log(obj, description, freeze, level)
     }
 }
 
+/// <summary>
+/// Prints a help message to the console
+/// </summary>
 function consoleHelp()
 {
     // After initializing everything we need, print a message to the user to give some basic tips

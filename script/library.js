@@ -1,3 +1,7 @@
+/// <summary>
+/// Displays information about libraries on the plex server. Implements tableCommon
+/// </summary>
+
 /* exported populateFilter, getNewFilter, filterHtml, tableSearch, tableIdentifier, tableUpdateFunc  */
 
 window.addEventListener("load", function()
@@ -5,29 +9,43 @@ window.addEventListener("load", function()
     sendHtmlJsonRequest("administration.php", { type : "sections" }, buildSections);
 });
 
+/// <summary>
+/// Build the table of sections returned by the server
+/// </summary>
 function buildSections(sections)
 {
     let outerDiv = $("#tableEntries");
     sections.forEach(function(section)
     {
-        logInfo(section);
-        section.created = new Date(section.created * 1000);
-        section.updated = new Date(section.updated * 1000);
-        section.last_scanned = new Date(section.last_scanned * 1000);
-        let div = tableItemHolder();
-        let list = buildNode("ul");
-        for (let [key, value] of Object.entries(section))
-        {
-            list.appendChild(listItem(key, value, value instanceof Date));
-        }
-
-        list.appendChild(getRefreshNode(section.key));
-
-        div.appendChild(list);
-        outerDiv.appendChild(div);
+        outerDiv.appendChild(buildSection(section));
     });
 }
 
+/// <summary>
+/// Build the table entry for a single plex library section
+/// </summary>
+function buildSection(section)
+{
+    logInfo(section);
+    section.created = new Date(section.created * 1000);
+    section.updated = new Date(section.updated * 1000);
+    section.last_scanned = new Date(section.last_scanned * 1000);
+    let div = tableItemHolder();
+    let list = buildNode("ul");
+    for (let [key, value] of Object.entries(section))
+    {
+        list.appendChild(listItem(key, value, value instanceof Date));
+    }
+
+    list.appendChild(getRefreshNode(section.key));
+
+    div.appendChild(list);
+    return div;
+}
+
+/// <summary>
+/// Creates a list of library properties
+/// </summary>
 function listItem(key, value, dateTooltip=false)
 {
     let li = buildNode("li");
@@ -46,6 +64,9 @@ function listItem(key, value, dateTooltip=false)
     return li;
 }
 
+/// <summary>
+/// Title cases a string, treating underscores as spaces
+/// </summary>
 function titleCase(value)
 {
     let words = value.split("_");
@@ -58,6 +79,9 @@ function titleCase(value)
     return title;
 }
 
+/// <summary>
+/// Build a button that will refresh the plex library
+/// </summary>
 function getRefreshNode(key)
 {
     let li = buildNode("li", {});
@@ -69,6 +93,9 @@ function getRefreshNode(key)
     return li;
 }
 
+/// <summary>
+/// Refreshes a plex library. Colors the button on success/failure
+/// </summary>
 function refreshNode()
 {
     let key = this.getAttribute("section");
@@ -89,11 +116,17 @@ function refreshNode()
     sendHtmlJsonRequest("administration.php", { type : "refresh", section : key }, successFunc, failureFunc);
 }
 
+/// <summary>
+/// Unique identifier for this table. Used by tableCommon
+/// </summary>
 function tableIdentifier()
 {
     return "library";
 }
 
+/// <summary>
+/// Returns the function that will update this table. Used by tableCommon
+/// </summary>
 function tableUpdateFunc()
 {
     return () => sendHtmlJsonRequest("administration.php", { type : "sections" }, buildSections);

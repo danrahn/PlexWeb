@@ -1,3 +1,8 @@
+/*
+ * Table definitions for the backing database.
+ * Generated via 'show create table XYZ'
+ */
+
 CREATE TABLE `users` (
  `id` int(11) NOT NULL AUTO_INCREMENT,
  `username` varchar(50) COLLATE utf8_unicode_ci NOT NULL,

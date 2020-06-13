@@ -1,3 +1,7 @@
+/// <summary>
+/// Logic to display notification/activities relevant to the current user. Implements tableCommon
+/// </summary>
+
 /* exported populateFilter, getNewFilter, filterHtml, tableSearch, tableIdentifier, tableUpdateFunc  */
 
 window.addEventListener("load", function()
@@ -7,6 +11,10 @@ window.addEventListener("load", function()
     getActivities();
 });
 
+/// <summary>
+/// Get activities from the server, based on the current filter
+/// </summary>
+/// <param name="searchValue">Optional search term to further filter results based on substring matching</param>
 function getActivities(searchValue="")
 {
     let parameters =
@@ -37,11 +45,17 @@ function getActivities(searchValue="")
     sendHtmlJsonRequest("process_request.php", parameters, successFunc, failureFunc);
 }
 
+/// <summary>
+/// TableCommon's entrypoint into initiating a search
+/// </summary>
 function tableSearch(value)
 {
     getActivities(value);
 }
 
+/// <summary>
+/// Types of activities that are shown
+/// </summary>
 const Activity =
 {
     AddRequest : 1,
@@ -49,9 +63,11 @@ const Activity =
     StatusChange : 3
 };
 
+/// <summary>
+/// Gets the title of an activity, including a link to the relevant request
+/// </summary>
 function getTitleText(activity)
 {
-
     let name = activity.username == attrib("username") ? "You" : activity.username;
     let plainText;
     let linkText;
@@ -98,6 +114,10 @@ function getTitleText(activity)
     return { plain : plainText, link : linkText };
 }
 
+/// <summary>
+/// Creates an activity for the activity table
+/// </summary>
+/// <param name="newActivity">True if the user has not seen this request yet</param>
 function buildActivity(activity, newActivity)
 {
     let holder = tableItemHolder();
@@ -144,6 +164,9 @@ function buildActivity(activity, newActivity)
     return holder;
 }
 
+/// <summary>
+/// Builds the table of activities from the server response
+/// </summary>
 function buildActivities(response)
 {
     if (response.count == 0)
@@ -167,6 +190,9 @@ function buildActivities(response)
     setPageInfo(total);
 }
 
+/// <summary>
+/// Shorthand accessor for attributes that are inserted into the body via PHP
+/// </summary>
 function attrib(attribute)
 {
     return document.body.getAttribute(attribute);
@@ -183,7 +209,7 @@ function isAdmin()
 }
 
 /// <summary>
-/// HTML for the filter overlay/dialog. Should probably be part of the initial DOM
+/// HTML for the filter overlay/dialog
 /// </summary>
 function filterHtml()
 {
@@ -233,6 +259,9 @@ function filterHtml()
     return filterHtmlCommon(options);
 }
 
+/// <summary>
+/// Modifies the filter HTML to reflect the current filter settings
+/// </summary>
 function populateFilter()
 {
     let filter = getFilter();
@@ -249,6 +278,9 @@ function populateFilter()
     }
 }
 
+/// <summary>
+/// Returns the new filter definition based on the state of the filter HTML
+/// </summary>
 function getNewFilter()
 {
     return {
@@ -265,11 +297,17 @@ function getNewFilter()
     };
 }
 
+/// <summary>
+/// Unique identifier for this table. Used by tableCommon
+/// </summary>
 function tableIdentifier()
 {
     return "activity";
 }
 
+/// <summary>
+/// The function to call that will update this table. Used by tableCommon
+/// </summary>
 function tableUpdateFunc()
 {
     return getActivities;
@@ -291,14 +329,14 @@ function getFilter()
     }
 
     if (filter === null ||
-        !Object.prototype.hasOwnProperty.call(filter, "type") ||
-            !Object.prototype.hasOwnProperty.call(filter.type, "new") ||
-            !Object.prototype.hasOwnProperty.call(filter.type, "comment") ||
-            !Object.prototype.hasOwnProperty.call(filter.type, "status") ||
-            !Object.prototype.hasOwnProperty.call(filter.type, "mine") ||
-        !Object.prototype.hasOwnProperty.call(filter, "sort") ||
-        !Object.prototype.hasOwnProperty.call(filter, "order") ||
-        !Object.prototype.hasOwnProperty.call(filter, "user"))
+        !hasProp(filter, "type") ||
+            !hasProp(filter.type, "new") ||
+            !hasProp(filter.type, "comment") ||
+            !hasProp(filter.type, "status") ||
+            !hasProp(filter.type, "mine") ||
+        !hasProp(filter, "sort") ||
+        !hasProp(filter, "order") ||
+        !hasProp(filter, "user"))
     {
         logError("Bad filter, resetting: ");
         logError(filter);
@@ -310,6 +348,17 @@ function getFilter()
     return filter;
 }
 
+/// <summary>
+/// Shorthand for the verbose Object's hasOwnProperty call
+/// </summary>
+function hasProp(item, property)
+{
+    return Object.prototype.hasOwnProperty.call(item, property);
+}
+
+/// <summary>
+/// Returns the default filter for the activity table (i.e. nothing filtered)
+/// </summary>
 function defaultFilter()
 {
     let filter =

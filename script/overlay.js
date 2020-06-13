@@ -1,3 +1,7 @@
+/// <summary>
+/// Common logic to display custom window overlays
+/// </summary>
+
 /* exported overlay, overlayDismiss, buildOverlay */
 
 /// <summary>
@@ -23,6 +27,9 @@ function overlay(message, buttonText, buttonFunc, dismissible=true)
     );
 }
 
+/// <summary>
+/// Common method to fade out and delete an overlay
+/// </summary>
 const overlayDismiss = () => Animation.queue({ opacity : 0 }, $("#mainOverlay"), 250, true /*deleteAfterTransition*/);
 
 /// <summary>
@@ -76,6 +83,10 @@ function buildOverlay(dismissible, ...children)
     window.addEventListener("keydown", _overlayKeyListener, false);
 }
 
+/// <summary>
+/// Internal helper that dismisses an overlay when escape is pressed,
+/// but only if the overlay is set to be dismissible
+/// </summary>
 function _overlayKeyListener(e)
 {
     if (e.keyCode == KEY.ESC)

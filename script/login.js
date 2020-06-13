@@ -3,6 +3,10 @@ window.addEventListener("load", function()
     setupLoginForm();
 });
 
+/// <summary>
+/// Determines if the username and password fields are valid, i.e. are not empty
+/// Flashes the fields red if they are empty
+/// </summary>
 function validateLoginFields(user, pass)
 {
     // Infallible client-side validation
@@ -21,6 +25,10 @@ function validateLoginFields(user, pass)
     return user.value && pass.value;
 }
 
+/// <summary>
+/// Attempt to log in.
+/// Redirects in home page on success, displays the relevant error message on failure
+/// </summary>
 function login()
 {
     let user = $$("input[name='username']");

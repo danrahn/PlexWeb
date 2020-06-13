@@ -267,8 +267,10 @@ function error_and_exit($status, $message='')
     exit;
 }
 
-// Different types of requests. Media requests should probably be
-// different than permission requests, but it works out alright
+/// <summary>
+/// Class to handle different types of requests. Media requests should
+/// probably be different than permission requests, but it works out alright
+/// </summary>
 abstract class RequestType
 {
     const None = 0;
@@ -288,6 +290,9 @@ abstract class RequestType
 
     const Max = 100;
 
+    /// <summary>
+    /// Returns the underlying request type for the given integer
+    /// </summary>
     static function get_type($intval)
     {
         // Probably a better way to do this, but SplEnum doesn't seem to work
@@ -314,6 +319,9 @@ abstract class RequestType
         }
     }
 
+    /// <summary>
+    /// Returns the string representation of the given RequestType
+    /// </summary>
     static function get_str($type)
     {
         switch($type)
@@ -339,6 +347,9 @@ abstract class RequestType
         }
     }
 
+    /// <summary>
+    /// Returns the underlying request type for the given string
+    /// </summary>
     static function get_type_from_str($str)
     {
         switch (strtolower($str))
@@ -357,6 +368,9 @@ abstract class RequestType
         }
     }
 
+    /// <summary>
+    /// Returns whether the given RequestType is a media request
+    /// </summary>
     static function is_media_request($type)
     {
         switch ($type)
@@ -371,6 +385,10 @@ abstract class RequestType
         }
     }
 
+    /// <summary>
+    /// Returns whether the given RequestType is an audio-only
+    /// media type, i.e. music or an audiobook
+    /// </summary>
     static function is_audio($type)
     {
         switch ($type)
@@ -396,11 +414,17 @@ abstract class UserLevel
     const SuperModerator = 80; // Unused
     const Admin = 100;
 
+    /// <summary>
+    /// Determine whether the current user is an administrator
+    /// </summary>
     static function is_admin()
     {
         return UserLevel::current() == UserLevel::Admin;
     }
 
+    /// <summary>
+    /// Get the current user's mapped level
+    /// </summary>
     static function current()
     {
         if (!isset($_SESSION['level']))
@@ -411,11 +435,17 @@ abstract class UserLevel
         return UserLevel::get_type($_SESSION['level']);
     }
 
+    /// <summary>
+    /// Set the current user's level
+    /// </summary>
     static function set_current($level)
     {
         $_SESSION['level'] = (int)$level;
     }
 
+    /// <summary>
+    /// Get the mapped level for the given integer
+    /// </summary>
     static function get_type($level)
     {
         $level = (int)$level;

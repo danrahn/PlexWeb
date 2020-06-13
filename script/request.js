@@ -1,3 +1,10 @@
+/// <summary>
+/// Handles building an individual request and associated comments
+/// </summary>
+
+/// <summary>
+/// Add initial event listeners
+/// </summary>
 window.addEventListener("load", function()
 {
     if ($("#matchContainer"))
@@ -37,26 +44,43 @@ window.addEventListener("load", function()
     }
 });
 
+/// <summary>
+/// Returns an attribute on the document's body.
+///
+/// Really just shorthand for document.body.getAttribute
+/// </summary>
 function attr(prop)
 {
     return document.body.getAttribute(prop);
 }
 
+/// <summary>
+/// Get an attribute from the document's body as an integer
+/// </summary>
 function attrInt(prop)
 {
     return parseInt(attr(prop));
 }
 
+/// <summary>
+/// Returns whether the current user is an admin.
+/// </summary>
 function isAdmin()
 {
     return attrInt("isAdmin");
 }
 
+/// <summary>
+/// Returns the id associated with the current request
+/// </summary>
 function reqId()
 {
     return attrInt("reqId");
 }
 
+/// <summary>
+/// Add markdown related event listeners to the new comment textbox
+/// </summary>
 function setupMarkdown()
 {
     $("#newComment").addEventListener("change", parseMarkdown);
@@ -65,6 +89,9 @@ function setupMarkdown()
     MarkdownEditor.addTabHandler($("#newComment"));
 }
 
+/// <summary>
+/// Add event listeners to markdown insert buttons
+/// </summary>
 function setupMarkdownHelpers()
 {
     $("#addBold").addEventListener("click", mdDispatch);
@@ -76,6 +103,9 @@ function setupMarkdownHelpers()
     $("#showMdHelp").addEventListener("click", showMarkdownHelp);
 }
 
+/// <summary>
+/// Dispatch a markdown format button click to the correct handler
+/// </summary>
 function mdDispatch()
 {
     switch (this.id)
@@ -97,6 +127,9 @@ function mdDispatch()
     }
 }
 
+/// <summary>
+/// Parses input from the insert image dialog and returns the corresponding markdown string
+/// </summary>
 function processPhotoDimensions(link, text)
 {
     let width = $("#insertWidth").value;
@@ -140,6 +173,9 @@ function processPhotoDimensions(link, text)
     return `![${text}${whString}](${link})`;
 }
 
+/// <summary>
+/// Insert a markdown hyperlink or image from dialog input
+/// </summary>
 function insertLinkInComment()
 {
     let comment = $("#newComment");
@@ -172,6 +208,9 @@ function insertLinkInComment()
     parseMarkdown();
 }
 
+/// <summary>
+/// Return an element containing Ok and Cancel buttons for the insert markdown link/image dialog
+/// </summary>
 function getLinkOkCancelButtons(isPhoto)
 {
     let okayButton = buildNode(
@@ -207,6 +246,9 @@ function getLinkOkCancelButtons(isPhoto)
     return outerButtonContainer;
 }
 
+/// <summary>
+/// Return element containing image width/height inputs
+/// </summary>
 function buildMarkdownImageDimensionsInput()
 {
     let width = buildNode(
@@ -306,11 +348,17 @@ function addLinkOrPhoto(isPhoto)
     $("#addLinkLink").focus();
 }
 
+/// <summary>
+/// Initiate the insert image dialog
+/// </summary>
 function addPhoto()
 {
     addLinkOrPhoto(true /*isPhoto*/);
 }
 
+/// <summary>
+/// Initiate the insert link dialog
+/// </summary>
 function addLink()
 {
     addLinkOrPhoto(false /*isPhoto*/);
@@ -344,7 +392,13 @@ function mdSurround(ch)
     parseMarkdown();
 }
 
+// Global markdown object so we can cache parsed markdown
 let mdPreview = new Markdown();
+
+/// <summary>
+/// Parse the user's new comment text. If any markdown elements
+/// are (not) present, show (hide) the preview window.
+/// </summary>
 function parseMarkdown()
 {
     const text = $("#newComment").value;
@@ -360,6 +414,9 @@ function parseMarkdown()
     }
 }
 
+/// <summary>
+/// Show an overlay containing the markdown help article
+/// </summary>
 function showMarkdownHelp()
 {
     markdownHelp(function(response)
@@ -371,6 +428,10 @@ function showMarkdownHelp()
 
 let selectedSuggestion;
 
+/// <summary>
+/// Add request keyboard listener to navigate between requests
+/// on Ctrl+Left/Ctrl+Right
+/// </summary>
 function addNavListener()
 {
     document.body.addEventListener("keydown", function(e)
@@ -380,13 +441,13 @@ function addNavListener()
             return;
         }
 
-        if (!e.ctrlKey || (e.which !== 37 && e.which !== 39))
+        if (!e.ctrlKey || (e.which !== KEY.LEFT && e.which !== KEY.RIGHT))
         {
             return;
         }
 
         logVerbose("Searching for next id");
-        let parameters = { type : ProcessRequest.NextRequest, id : reqId(), dir : e.which === 37 ? "0" : "1" };
+        let parameters = { type : ProcessRequest.NextRequest, id : reqId(), dir : e.which === KEY.LEFT ? "0" : "1" };
         let successFunc = function(response)
         {
             if (response.new_id == -1)
@@ -403,6 +464,10 @@ function addNavListener()
     });
 }
 
+/// <summary>
+/// For legacy movie/tv requests that do not yet have an external id,
+/// initiate an external search to try and find a match
+/// </summary>
 function searchForMedia()
 {
     let requestType = attrInt("requestType");
@@ -418,6 +483,9 @@ function searchForMedia()
     }
 }
 
+/// <summary>
+/// Search imdb for a legacy request that does not yet have an external id set
+/// </summary>
 function searchImdb()
 {
     let id = $("#external_id").value;
@@ -463,6 +531,9 @@ function searchImdb()
     sendHtmlJsonRequest("media_search.php", parameters, successFunc, failureFunc);
 }
 
+/// <summary>
+/// Search for a legacy request and show potential matches to the user
+/// </summary>
 function searchForMediaCore()
 {
     let parameters = { type : attrInt("requestType"), query : attr("requestName") };
@@ -565,6 +636,9 @@ function buildItems(matches, holder)
     container.appendChild(button);
 }
 
+/// <summary>
+/// Navigate to IMDb (falling back to themoviedb) when a legacy request link is clicked
+/// </summary>
 function goToImdb()
 {
     let parameters = { type : attrInt("requestType"), query : this.parentNode.parentNode.getAttribute("tmdbid"), by_id : "true" };
@@ -583,6 +657,9 @@ function goToImdb()
     sendHtmlJsonRequest("media_search.php", parameters, successFunc, null, { tmdbid : this.parentNode.parentNode.getAttribute("tmdbid") });
 }
 
+/// <summary>
+/// Process a click on a potential match for a legacy request
+/// </summary>
 function clickSuggestion(e)
 {
     if (e.target.tagName.toLowerCase() == "a")
@@ -611,6 +688,9 @@ function clickSuggestion(e)
     setVisibility(disableButton, false);
 }
 
+/// <summary>
+/// Show or hide the element with the given id
+/// </summary>
 function setVisibility(id, visible)
 {
     let element = document.getElementById("#" + id);
@@ -623,6 +703,9 @@ function setVisibility(id, visible)
     element.style.height = visible ? "auto" : "0";
 }
 
+/// <summary>
+/// Match a legacy request with the selected item
+/// </summary>
 function chooseSelected()
 {
     if (!selectedSuggestion)
@@ -657,6 +740,9 @@ function chooseSelected()
     sendHtmlJsonRequest("process_request.php", params, successFunc);
 }
 
+/// <summary>
+/// Initiate a request for information on the current request
+/// </summary>
 function getMediaInfo()
 {
     let parameters = { type : attrInt("requestType"), query : attr("externalId"), by_id : "true" };
@@ -672,6 +758,11 @@ function getMediaInfo()
     sendHtmlJsonRequest("media_search.php", parameters, successFunc, failureFunc);
 }
 
+/// <summary>
+/// Return the status string based on the state of the request.
+/// If the current user is an admin, setup event listeners that enable
+/// changing the current status
+/// </summary>
 function getStatusSpan(status)
 {
     let statusSpan = buildNode("span",
@@ -692,6 +783,9 @@ function getStatusSpan(status)
     return statusSpan;
 }
 
+/// <summary>
+/// Build the request page for non-media requests (e.g. ViewStream requests)
+/// </summary>
 function getNonMediaInfo()
 {
     let outerContainer = buildNode("div", { id : "innerInfoContainer" });
@@ -707,6 +801,10 @@ function getNonMediaInfo()
     $("#infoContainer").appendChild(outerContainer);
 }
 
+/// <summary>
+/// Return an image element containing the poster for the given request,
+/// falling back to a default poster if a real one does not exist
+/// </summary>
 function buildRequestPoster(request)
 {
     let posterPath = request.poster_path;
@@ -729,6 +827,9 @@ function buildRequestPoster(request)
     return buildNode("img", { src : `poster${posterPath}&large=1`, id : "mediaPoster" });
 }
 
+/// <summary>
+/// Return the node containing a link to an external site (imdb/themoviedb) for the given request
+/// </summary>
 function buildRequestExternalLink(request)
 {
     let imdb;
@@ -752,6 +853,9 @@ function buildRequestExternalLink(request)
     return imdb;
 }
 
+/// <summary>
+/// Build and display all the request details
+/// </summary>
 function buildPage(data)
 {
     let container = $("#infoContainer");
@@ -801,6 +905,9 @@ function buildPage(data)
     container.appendChild(innerContainer);
 }
 
+/// <summary>
+/// Process admin input to change the status of a request
+/// </summary>
 function getNewStatusType(input)
 {
     let status = -1;
@@ -832,6 +939,9 @@ function getNewStatusType(input)
     return status;
 }
 
+/// <summary>
+/// Prompt the administrator for the new request status when double-clicking the current status
+/// </summary>
 function onStatusDoubleClick()
 {
     let status = getNewStatusType(prompt("Data ((A)pproved (1), (D)enied (0), (P)ending, (I)n Progress, or (W)aiting):"));
@@ -863,12 +973,18 @@ function onStatusDoubleClick()
     sendHtmlJsonRequest("update_request.php", JSON.stringify(params), successFunc, failureFunc, null, true /*dataIsString*/);
 }
 
+/// <summary>
+/// Setup double-click listener on the request status for admins
+/// </summary>
 function setupSpanDoubleClick(statusSpan)
 {
     statusSpan.className += " statusSpan";
     statusSpan.addEventListener("dblclick", onStatusDoubleClick);
 }
 
+/// <summary>
+/// Ask the server for the comments associated with this request
+/// </summary>
 function getComments()
 {
     let params = { type : ProcessRequest.GetComments, req_id : reqId() };
@@ -908,6 +1024,9 @@ function checkForNotifications()
     sendHtmlJsonRequest("process_request.php", parameters, successFunc);
 }
 
+/// <summary>
+/// Returns 'Yes' and 'No' buttons for the 'enable notifications' overlay
+/// </summary>
 function getYesNoOverlayButtons()
 {
     let yesButton = buildNode(
@@ -1151,6 +1270,9 @@ async function inlineCssIfNeeded(initialText)
 
 }
 
+/// <summary>
+/// Add a comment to the review
+/// </summary>
 async function addComment()
 {
     let comment = $("#newComment");
@@ -1188,7 +1310,15 @@ async function addComment()
     sendHtmlJsonRequest("process_request.php", params, successFunc, failureFunc, { textSav : text });
 }
 
+/// <summary>
+/// Contains a map of comment ids to the raw markdown text for the comment
+/// Used for editing comments so we don't have to ping the server again to initiate an edit
+/// </summary>
 let commentCache = {};
+
+/// <summary>
+/// Build current comments and associated buttons/controls
+/// </summary>
 function buildComments(comments)
 {
     commentCache = {};
@@ -1288,8 +1418,16 @@ function editComment()
     editor.focus();
 }
 
+// Cached markdown object for editing comments
 let mdEdit = new Markdown();
+
+// ID of the last comment we parsed
 let editCur = "";
+
+/// <summary>
+/// Parses edited comment content and updates the
+/// preview accordingly
+/// </summary>
 function parseEditMarkdown()
 {
     let sameEdit = true;

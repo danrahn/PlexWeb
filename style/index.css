@@ -130,6 +130,11 @@ a:hover .inlineIcon {
     filter: invert(49%) sepia(94%) saturate(342%) hue-rotate(71deg) brightness(89%) contrast(87%);
 }
 
+.tooltipProgress {
+    float: right;
+    padding-left: 5px;
+}
+
 /* Desktop/Landscape */
 @media (orientation: landscape), (min-width: 767px) {
     .details {

@@ -1,6 +1,16 @@
+/// <summary>
+/// Contains routines for creating new media requests
+/// </summary>
+
+// Timer that will send out external search requests on expiration
 let searchTimer;
+
+// Timer that will send out internal (plex) search requests on expiration
 let internalSearchTimer;
+
+// Global keeping track of the currently selected request suggestion
 let selectedSuggestion;
+
 window.addEventListener("load", function()
 {
     selectChanged();
@@ -9,6 +19,9 @@ window.addEventListener("load", function()
     $("#external_id").addEventListener("input", searchSpecificExternal);
 });
 
+/// <summary>
+/// Shows or hides the element with the given id
+/// </summary>
 function setInputVisibility(id, vis)
 {
     let ele = $(`#${id}`);
@@ -60,6 +73,9 @@ function suggestionChanged()
     internalSearchTimer = setTimeout(searchInternal, 250);
 }
 
+/// <summary>
+/// Sets the label for the external id input
+/// </summary>
 function setExternalType(type)
 {
     if (type == "audiobook")
@@ -156,6 +172,9 @@ function searchInternal()
     sendHtmlJsonRequest("process_request.php", parameters, successFunc, failureFunc);
 }
 
+/// <summary>
+/// Returns whether the given id is a valid external id
+/// </summary>
 function validateId(id, isAudiobook)
 {
     if (isAudiobook)
@@ -180,6 +199,9 @@ function validateId(id, isAudiobook)
     return true;
 }
 
+/// <summary>
+/// Build the list of external suggestions after a successful query
+/// </summary>
 function externalSearchSuccess(response)
 {
     logInfo(response);
@@ -242,6 +264,10 @@ function searchSpecificExternal()
     sendHtmlJsonRequest("media_search.php", parameters, externalSearchSuccess, failureFunc);
 }
 
+/// <summary>
+/// Build the season details link that kicks off the process of determining
+/// what seasons of a show are available on Plex
+/// </summary>
 function buildSeasonDetailsHandler(match)
 {
     let seasonHolder = buildNode("div", { class : "seasonDetailsHolder" });
@@ -387,6 +413,9 @@ function buildItems(matches, holder)
     container.appendChild(button);
 }
 
+/// <summary>
+/// Return the 'complete, incomplete, missing' seasons string
+/// </summary>
 function buildSeasons(seasons)
 {
     if (seasons.length == 0)
@@ -568,10 +597,13 @@ function clickSuggestion(e)
     Animation.queue({ backgroundColor : new Color(63, 66, 69) }, $("#" + enableButton), 500, 500, true);
 }
 
+/// <summary>
+/// Displays an overlay telling the user that they already created a request
+/// for the given item, asking them if they would like to add a comment to
+/// their existing request.
+/// </summary>
 function showAlreadyExistsAlert(response)
 {
-    // The user has already made a request for this item. Ask them to add
-    // a comment to the existing request instead
     let status = ["Pending", "Complete", "Denied", "In Progress", "Waiting"][response.status];
     let secondaryText = "Would you like to add a comment to the existing request?";
     let message = buildNode(
@@ -693,6 +725,9 @@ function goToRequest()
     window.location = "request.php?id=" + rid;
 }
 
+/// <summary>
+/// Shows or hides the element with the given id
+/// </summary>
 function setVisibility(id, visible)
 {
     let element = $("#" + id);
@@ -705,6 +740,9 @@ function setVisibility(id, visible)
     element.classList.add(visible ? "visible" : "hidden");
 }
 
+/// <summary>
+/// Removes all child elements of the element with the given id
+/// </summary>
 function clearElement(id)
 {
     let element = $(`#${id}`);

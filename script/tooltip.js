@@ -68,6 +68,10 @@ function showTooltip(e, text, delay=250)
     tooltipTimer = setTimeout(showTooltipCore, delay, e, text);
 }
 
+/// <summary>
+/// Core routine to show a tooltip and update its position
+/// Should not be called outside of this file
+/// </summary>
 function showTooltipCore(e, text)
 {
     showingTooltip = true;

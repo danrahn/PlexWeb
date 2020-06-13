@@ -1,4 +1,18 @@
+/// <summary>
+/// Home page of the website. Serves as a jumping off point for other actions,
+/// as well as displaying currently active streams.
+/// </summary>
+
+/// <summary>
+/// Main activity interval, checking for stream activity
+/// </summary>
 let contentUpdater = null;
+
+/// <summary>
+/// Intervals for individual streams that are currently playing.
+/// Updates the steam progress every second, as our main updater
+/// waits 10 seconds between updates.
+/// </summary>
 let innerProgressTimers = {};
 
 // Easier way to remove DOM elements
@@ -290,6 +304,9 @@ function showRestartSessionOverlay()
     $("#goToLogin").focus();
 }
 
+/// <summary>
+/// Updates the progress of the current stream and adjusts the play/pause icon as necessary
+/// </summary>
 function updateSessionProgress(item, sesh, id)
 {
     // The stream already exists - update the progress
@@ -630,6 +647,12 @@ function getContainerNode(sesh)
         });
 }
 
+/// <summary>
+/// Creates the title for an active stream. The title will be a link
+/// that either navigates to plex or some other external website.
+/// Common stream types (movie/tv/music/audiobook) also adds an icon
+/// indicating the stream type
+/// </summary>
 function buildActiveStreamTitle(sesh)
 {
     // Link to plex. If no link is available, try linking to the external source
@@ -681,6 +704,11 @@ function buildActiveStreamTitle(sesh)
     return link;
 }
 
+/// <summary>
+/// Builds the bottom progress bar of an active stream.
+/// Direct plays show only the current progress.
+/// Transcodes have an additional bar indicating transcode progress
+/// </summary>
 function buildActivityProgress(sesh)
 {
     let tcprogress = "transcode_progress" in sesh ? sesh.transcode_progress : 0;
@@ -722,6 +750,11 @@ function buildActivityProgress(sesh)
     return progressHolder;
 }
 
+/// <summary>
+/// Builds a list of the details of a given stream, including
+/// release date and audio/video quality information. Administrators
+/// get more details, like the user watching, IP address, and playback device
+/// </summary>
 function buildActiveStreamDetailsList(sesh, title)
 {
     let list = buildNode("ul");
@@ -773,6 +806,9 @@ function buildActiveStreamDetailsList(sesh, title)
     return list;
 }
 
+/// <summary>
+/// Builds the main content for a given active stream
+/// </summary>
 function buildActiveStreamDetails(sesh)
 {
     let details = buildNode("div", { class : "details" });
@@ -782,6 +818,10 @@ function buildActiveStreamDetails(sesh)
     return details;
 }
 
+/// <summary>
+/// Builds the poster element for an active stream. Clicking
+/// the poster will navigate to an external site (e.g. imdb)
+/// </summary>
 function buildActiveStreamPoster(sesh)
 {
     let poster = buildNode(
@@ -921,9 +961,12 @@ function getHoverText(element)
     return hoverFormat("Play Progress", parseFloat(progress).toFixed(2) + "%") + "<br />" + tcString;
 }
 
+/// <summary>
+/// Returns a formatted line for a stream progress tooltip
+/// </summary>
 function hoverFormat(title, data)
 {
-    return `<span>${title}: <span style='float:right; padding-left: 5px'>${data}</span></span>`;
+    return buildNode("span", {}, `${title}: `).appendChild("span", { class : "tooltipProgress" }, data);
 }
 
 /// <summary>
