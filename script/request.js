@@ -693,7 +693,7 @@ function clickSuggestion(e)
 /// </summary>
 function setVisibility(id, visible)
 {
-    let element = document.getElementById("#" + id);
+    let element = $(`#${id}`);
     if (!element)
     {
         return;
