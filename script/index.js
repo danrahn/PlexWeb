@@ -357,6 +357,7 @@ function processUpdate(sessions)
     {
         existingArray.push(existingSessions[i]);
     }
+
     existingSessions = existingArray;
 
     // The new order our elements should be in

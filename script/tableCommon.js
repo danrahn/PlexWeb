@@ -131,6 +131,7 @@ function setupKeyboardNavigation()
                     {
                         $$(".filterBtn").click();
                     }
+
                     break;
             }
         }

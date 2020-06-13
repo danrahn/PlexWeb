@@ -63,6 +63,7 @@ function getNewActivities()
     {
         return;
     }
+
     let successFunc = function(response)
     {
         let title = `${response.new == 0 ? "No" : response.new} new notification${response.new == 1 ? "" : "s"} (Shift + A)`;
@@ -270,6 +271,7 @@ window.addEventListener("click", function(e)
         {
             return;
         }
+
         parent = parent.parentNode;
     }
 

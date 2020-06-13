@@ -545,6 +545,7 @@ function searchForMediaCore()
             $("#matchContainer").innerHTML = "No matches found. Please enter the IMDb id below";
             return;
         }
+
         buildItems(response.results, "matchContainer");
     };
 
@@ -734,6 +735,7 @@ function chooseSelected()
         {
             matches[i].value = "Success! Redirecting...";
         }
+
         setTimeout(function() { window.location.reload(); }, 1000);
     };
 

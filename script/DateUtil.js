@@ -61,6 +61,7 @@ let DateUtil =
         {
             date = new Date(date);
         }
+
         let tooltipDateOptions =
         {
             month : "long",

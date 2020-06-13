@@ -214,6 +214,7 @@ function externalSearchSuccess(response)
                 $("#externalResult").innerHTML = "Movie not found";
                 return;
             }
+
             buildItems(response.movie_results, "externalResult");
             break;
         case "tv":
@@ -222,6 +223,7 @@ function externalSearchSuccess(response)
                 $("#externalResult").innerHTML = "TV Show not found";
                 return;
             }
+
             buildItems(response.tv_results, "externalResult");
             break;
         case "audiobook":
@@ -230,6 +232,7 @@ function externalSearchSuccess(response)
                 $("#externalResult").innerHTML = "Audiobook not found";
                 return;
             }
+
             buildItems([response], "externalResult");
             break;
         default:
@@ -506,10 +509,12 @@ function buildSeasonDetails(response, request)
     {
         seasonString += "Complete: " + buildSeasons(complete) + " &mdash; ";
     }
+
     if (incomplete.length != 0)
     {
         seasonString += "Incomplete: " + buildSeasons(incomplete) + " &mdash; ";
     }
+
     if (missing.length != 0)
     {
         seasonString += "Missing: " + buildSeasons(missing) + " &mdash; ";

@@ -380,6 +380,7 @@ class Markdown
                     {
                         i = inlineEnd - 1;
                     }
+
                     break;
                 }
                 case '-':
@@ -388,6 +389,7 @@ class Markdown
                     {
                         i = this._indexOrLast('\n', i) - 1;
                     }
+
                     break;
                 }
                 case '*':
@@ -455,6 +457,7 @@ class Markdown
                         // the run we just created
                         ++i;
                     }
+
                     break;
                 }
                 case '>':
@@ -485,6 +488,7 @@ class Markdown
                     {
                         i = blockEnd - 1;
                     }
+
                     break;
                 }
                 case '<':
@@ -522,8 +526,10 @@ class Markdown
                     {
                         i = tableEnd - 1;
                     }
+
                     break;
                 }
+
                 default:
                 {
                     break;
@@ -557,6 +563,7 @@ class Markdown
 
             logVerbose(`Parsed markdown in ${perfStop - perfStart}ms ${str}`);
         }
+
         return html;
     }
 
@@ -1594,6 +1601,7 @@ class Markdown
             {
                 break;
             }
+
             let row = [];
             for (let i= 0; i < groups.length; ++i)
             {
@@ -1851,6 +1859,7 @@ class Markdown
 
             curRun = curRun.parent;
         }
+
         if (quoteNests != 0)
         {
             regexString = `( *> *){${quoteNests}}$`;
@@ -1900,6 +1909,7 @@ class Markdown
                 startContext = match[0].length;
             }
         }
+
         let li = new ListItem(start, liEnd, startContext, this.currentRun);
         this.currentRun = li;
         logTmi(`Added ListItem: start=${start}, end=${liEnd}, nestLevel=${nestLevel}`);
@@ -1992,6 +2002,7 @@ class Markdown
             {
                 return parentEnd;
             }
+
             nextline = this.text.substring(newline + 1, next + 1);
         }
     }
@@ -2154,6 +2165,7 @@ class Markdown
             {
                 return parentEnd;
             }
+
             nextline = this.text.substring(newline + 1, next + 1);
         }
     }
@@ -2308,6 +2320,7 @@ class Markdown
                     {
                         i = innerUrl.end - 1;
                     }
+
                     break;
                 }
                 case ']':
@@ -2381,6 +2394,7 @@ class Markdown
                     ret.end = urlEnd;
                     return ret;
                 }
+
                 default:
                     break;
             }
@@ -2720,6 +2734,7 @@ class Run
                     nextRun = this.parent.innerRuns[iNext];
                 }
             }
+
             this._parseNewlinesCore(text, start, this.end, previousRun, nextRun);
         }
     }
