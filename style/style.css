@@ -200,10 +200,6 @@ hr {
     color: #608020;
 }
 
-.tableHolder {
-    overflow-y: scroll;
-}
-
 .hiddenInputStart {
     visibility: hidden;
     opacity: 0;
@@ -269,6 +265,12 @@ hr {
     .tableHolder td {
     	font-size: smaller;
     }
+}
+
+/* firefox */
+:root {
+    scrollbar-color: #616161C1 transparent !important;
+    scrollbar-width: thin !important;
 }
 
 /* Track */
