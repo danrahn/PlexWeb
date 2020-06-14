@@ -1414,47 +1414,13 @@ class Markdown
     /// <returns>The end index of the code block, or -1 if none was found</returns>
     _checkIndentCodeBlock(start)
     {
-        if (this._inlineOnly)
+        if (!this._indentCodeBlockPrecheck(start))
         {
             return -1;
         }
 
-        // Before using more complicated regex, just check to see if there are at least four spaces
-        if (start < 3 ||
-            this.text[start - 1] != ' ' ||
-            this.text[start - 2] != ' ' ||
-            this.text[start - 3] != ' ')
-        {
-            return -1;
-        }
-
-        let minspaces = 4;
-        let firstIsList = false;
-        if (this.currentRun.state == State.ListItem)
-        {
-            let nestLevel = this.currentRun.parent.nestLevel;
-            minspaces += (nestLevel + 1) * 2;
-            let type = this.currentRun.parent.state;
-            let context = this.text.substring(this.text.lastIndexOf('\n', start) - 1, start + 1);
-            let liStartRegex = new RegExp(`^.?\\n? {${nestLevel * 2}} ?${type == State.OrderedList ? '\\d+\\.' : '\\*'}     `);
-            if (liStartRegex.test(context))
-            {
-                firstIsList = true;
-            }
-            else
-            {
-                // Not on the same line as the list item start, check if it's
-                // a valid continuation
-                if (!new RegExp(`^\\n?\\n? {${minspaces}}`).test(context))
-                {
-                    return -1;
-                }
-            }
-
-        }
-        // Not in a list, just need 4+ spaces. substring is nice enough to adjust invalid bounds
-        // in the case where we ask for a substring starting at a negative index
-        else if (!/^\n?\n? {3}$/.test(this.text.substring(start - 5, start)) || start == this.text.length - 1 || this.text[start + 1] == '\n')
+        let params = { minspaces : 4, firstInList : false };
+        if (!this._validIndentCodeBlockStart(start, params))
         {
             return -1;
         }
@@ -1468,43 +1434,10 @@ class Markdown
         }
         else
         {
-            end = newline;
-            let next = this._indexOrLast('\n', newline + 1);
-            let nextline = this.text.substring(newline + 1, next + 1);
-            let regex = new RegExp(`^ {${minspaces}}`);
-
-            while (true)
-            {
-                if (nextline.length == 0)
-                {
-                    break;
-                }
-
-                while (/^ *\n/.test(nextline))
-                {
-                    newline = next;
-                    next = this._indexOrLast('\n', next + 1);
-                    nextline = this.text.substring(newline + 1, next + 1);
-                    if (nextline.length == 0)
-                    {
-                        break;
-                    }
-                }
-
-                // If we're here, nextline actually has content
-                if (!regex.test(nextline))
-                {
-                    break;
-                }
-
-                end = next;
-                newline = next;
-                next = this._indexOrLast('\n', next + 1);
-                nextline = this.text.substring(newline + 1, next + 1);
-            }
+            end = this._findIndentCodeBlockEnd(newline, params);
         }
 
-        let blockStart = start - (firstIsList ? 4 : minspaces) + 1;
+        let blockStart = start - (params.firstIsList ? 4 : params.minspaces) + 1;
 
         // Somewhat hacky, but if we're in a list and have an indented code block, remove any preceding line
         // breaks, as this has enough padding on its own
@@ -1517,8 +1450,107 @@ class Markdown
             }
         }
 
-        new IndentCodeBlock(blockStart, end, this.text, minspaces, firstIsList, this.currentRun);
-        logTmi(`Added Indent Code Block: start=${blockStart}, end=${end}, minspaces=${minspaces}`);
+        new IndentCodeBlock(blockStart, end, this.text, params.minspaces, params.firstIsList, this.currentRun);
+        logTmi(`Added Indent Code Block: start=${blockStart}, end=${end}, minspaces=${params.minspaces}`);
+        return end;
+    }
+
+    _indentCodeBlockPrecheck(start)
+    {
+        if (this._inlineOnly)
+        {
+            return false;
+        }
+
+        // Before using more complicated regex, just check to see if there are at least four spaces
+        if (start < 3 ||
+            this.text[start - 1] != ' ' ||
+            this.text[start - 2] != ' ' ||
+            this.text[start - 3] != ' ')
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// Returns whether we have a valid start to a code block
+    /// </summary>
+    _validIndentCodeBlockStart(start, params)
+    {
+        if (this.currentRun.state == State.ListItem)
+        {
+            // Listitems need additional indentation
+            let nestLevel = this.currentRun.parent.nestLevel;
+            params.minspaces += (nestLevel + 1) * 2;
+            let type = this.currentRun.parent.state;
+            let context = this.text.substring(this.text.lastIndexOf('\n', start) - 1, start + 1);
+            let liStartRegex = new RegExp(`^.?\\n? {${nestLevel * 2}} ?${type == State.OrderedList ? '\\d+\\.' : '\\*'}     `);
+            if (liStartRegex.test(context))
+            {
+                params.firstIsList = true;
+            }
+            else
+            {
+                // Not on the same line as the list item start, check if it's
+                // a valid continuation
+                if (!new RegExp(`^\\n?\\n? {${params.minspaces}}`).test(context))
+                {
+                    return false;
+                }
+            }
+        }
+        // Not in a list, just need 4+ spaces. substring is nice enough to adjust invalid bounds
+        // in the case where we ask for a substring starting at a negative index
+        else if (!/^\n?\n? {3}$/.test(this.text.substring(start - 5, start)) || start == this.text.length - 1 || this.text[start + 1] == '\n')
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// Returns the end of an indented code block
+    /// </summary>
+    _findIndentCodeBlockEnd(newline, params)
+    {
+        let end = newline;
+        let next = this._indexOrLast('\n', newline + 1);
+        let nextline = this.text.substring(newline + 1, next + 1);
+        let regex = new RegExp(`^ {${params.minspaces}}`);
+
+        while (true)
+        {
+            if (nextline.length == 0)
+            {
+                break;
+            }
+
+            while (/^ *\n/.test(nextline))
+            {
+                newline = next;
+                next = this._indexOrLast('\n', next + 1);
+                nextline = this.text.substring(newline + 1, next + 1);
+                if (nextline.length == 0)
+                {
+                    break;
+                }
+            }
+
+            // If we're here, nextline actually has content
+            if (!regex.test(nextline))
+            {
+                break;
+            }
+
+            end = next;
+            newline = next;
+            next = this._indexOrLast('\n', next + 1);
+            nextline = this.text.substring(newline + 1, next + 1);
+        }
+
         return end;
     }
 
@@ -1564,16 +1596,19 @@ class Markdown
     /// | Add line breaks<br>with \<br>
     /// | ++Cells can be formatted++ | [with any inline elements](#) | ![Poster h=150](poster.jpg) |
     /// </example>
+    /// <remarks>
+    /// This class breaks from the single main parser model I have been using by spawning additional
+    /// parsers for each cell of the table. It's probably a good pattern to follow for everything
+    /// else as well:
+    ///  1. Find the bounds of the entire table
+    ///  2. Create a 2D array of cells containing start and end indexes
+    ///  3. For each cell, invoke a new parser and store the result
+    ///  4. When it's time to display, don't do any transformations
+    ///     and directly display the contents we already converted
+    /// </remarks>
     /// <returns>The end index of the table, or -1 if a valid table was not found</returns>
     _checkTable(start)
     {
-        // Break from what I have been doing and take a different approach:
-        // 1. Find the bounds of the entire table
-        // 2. Create a 2D array of cells containing start and end indexes
-        // 3. For each cell, invoke a new parser and store the result
-        // 4. When it's time to display, don't do any transformations
-        //    and directly display the contents we already converted
-
         if (this._isEscaped(start))
         {
             return -1;
@@ -1582,36 +1617,14 @@ class Markdown
         // First, check to see if we're actually in a table. Basic rules:
         // 1. Pipes are required to separate columns, but pipes on either end are optional
         // 2. Three dashes are necessary on the next line for each column. ':' determines alignment
-
-        let nextbreak = this.text.indexOf('\n', start);
-        if (nextbreak == -1)
-        {
-            // Need at least two lines
-            return -1;
-        }
-
-        // Watch out for nests. We can be nested in either a listitem or blockquote. Maybe both
-        let thisLineStart = this.text.lastIndexOf('\n', start) + 1;
-        let blockEnd = this.text.length;
-        if (this.currentRun.state == State.ListItem || this.currentRun.state == State.BlockQuote)
-        {
-            if (thisLineStart <= this.currentRun.start)
-            {
-                thisLineStart = this.currentRun.start + this.currentRun.startContextLength();
-            }
-
-            blockEnd = this.currentRun.end;
-        }
-
-        let thisLine = this.text.substring(thisLineStart, nextbreak);
-
-        let defineEnd = this._indexOrLast('\n', nextbreak + 1);
-        if (defineEnd > blockEnd)
+        let bounds = this._getTableBounds(start);
+        if (!bounds.valid)
         {
             return -1;
         }
 
-        let defineLine = this.text.substring(nextbreak + 1, defineEnd);
+        let headerRow = this.text.substring(bounds.tableStart, bounds.headerEnd);
+        let defineLine = this.text.substring(bounds.headerEnd + 1, bounds.defineEnd);
 
         // The definition line _must_ be on its own, so we can be stricter about contents. Still
         // allow arbitrary spaces though, so collapse them to make parsing the definition easier
@@ -1624,74 +1637,76 @@ class Markdown
             definition = definition.replace(quoteRegex, '');
         }
 
-        // First and last can be empty, but everything else has to match
-        const splitAndTrim = function(line, self)
+        let table = { header : [], rows : [], columnAlign : [], };
+        if (!this._processTableAlignment(table, definition))
         {
-            if (line.indexOf('|') == -1)
-            {
-                return [];
-            }
-
-            line = line.trim();
-            let arr = [];
-            let span = '';
-            for (let i = 0; i < line.length; ++i)
-            {
-                if (line[i] == '|' && !self._isEscaped(i))
-                {
-                    arr.push(span);
-                    span = '';
-                    continue;
-                }
-
-                span += line[i];
-            }
-
-            if (span.length != 0)
-            {
-                arr.push(span);
-            }
-
-            // Don't trim away everything in the list if it's empty,
-            // we need some indication that we found some semblance
-            // of a table row.
-            if (arr.length > 1 && arr[arr.length - 1].length == 0)
-            {
-                arr.pop();
-            }
-
-            if (arr.length > 1 && arr[0].length == 0)
-            {
-                arr.splice(0, 1);
-            }
-
-            return arr;
-        };
-
-        let groups = splitAndTrim(definition, this);
-        if (groups.length == 0)
-        {
-            return -1; // No columns defined
+            return -1;
         }
 
-        let table =
-        {
-            header : [],
-            rows : [],
-            columnAlign : [],
-        };
+        // We have valid column definitions. Now back to the header
+        this._addTableHeaders(table, headerRow);
 
-        let valid = true;
+        let end = this._getTableRows(table, bounds.defineEnd, bounds.blockEnd, quoteRegex);
+        this._parseTableCells(table);
+
+        new Table(bounds.tableStart, end, table, this.currentRun);
+        logTmi(`Added Table: start=${bounds.tableStart}, end=${end}, $rows=${table.rows.length}, cols=${table.header.length}`);
+        return end;
+    }
+
+    /// <summary>
+    /// Returns an object containing the table bounds. If the table is invalid, bounds.valid will be false
+    /// </summary>
+    _getTableBounds(start)
+    {
+        let bounds = { valid : false };
+        bounds.headerEnd = this.text.indexOf('\n', start);
+        if (bounds.headerEnd == -1)
+        {
+            return bounds;
+        }
+
+        bounds.tableStart = this.text.lastIndexOf('\n', start) + 1;
+        bounds.blockEnd = this.text.length;
+
+        // Watch out for nests. We can be nested in either a listitem or blockquote. Maybe both
+        if (this.currentRun.state == State.ListItem || this.currentRun.state == State.BlockQuote)
+        {
+            if (bounds.tableStart <= this.currentRun.start)
+            {
+                bounds.tableStart = this.currentRun.start + this.currentRun.startContextLength();
+            }
+
+            bounds.blockEnd = this.text.length;
+        }
+
+        bounds.defineEnd = this._indexOrLast('\n', bounds.headerEnd + 1);
+        bounds.valid = bounds.defineEnd <= bounds.blockEnd;
+        return bounds;
+    }
+
+    /// <summary>
+    /// Fill out the alignment array of our table based on the given definition
+    /// </summary>
+    /// <returns>True if we have a valid definition row, false otherwise</returns>
+    _processTableAlignment(table, definition)
+    {
+        let groups = this._splitAndTrimTableRow(definition);
+        if (groups.length == 0)
+        {
+            return false;
+        }
+
+        let validCol = /^:?-{3,}:?$/;
         for (let i = 0; i < groups.length; ++i)
         {
             let col = groups[i];
-            if (!/^:?-{3,}:?$/.test(col))
+            if (!validCol.test(col))
             {
-                valid = false;
-                break;
+                return false;
             }
 
-            // -2 means don't have specific alignment
+            // -2 means we don't have specific alignment
             table.columnAlign.push(-2);
 
             if (col.startsWith(':'))
@@ -1704,21 +1719,29 @@ class Markdown
             }
         }
 
-        if (!valid)
+        return true;
+    }
+
+    /// <summary>
+    /// Parses each individual cell of the table
+    /// </summary>
+    _parseTableCells(table)
+    {
+        for (let row = 0; row < table.rows.length; ++row)
         {
-            return -1;
+            for (let col = 0; col < table.rows[row].length; ++col)
+            {
+                table.rows[row][col] = new Markdown().parse(table.rows[row][col], true /*inlineOnly*/);
+            }
         }
+    }
 
-        // We have valid column definitions. Now back to the header
-        let headers = splitAndTrim(thisLine, this);
-
-        for (let i = 0; i < groups.length; ++i)
-        {
-            // Fill the front rows first and push empty strings to any rows we didn't find content for
-            table.header.push(i >= headers.length ? '' : headers[i]);
-        }
-
-        // Now look for the rows
+    /// <summary>
+    /// Processes normal rows of the table until an invalid row is found
+    /// </summary>
+    /// <returns>The end index of the table</returns>
+    _getTableRows(table, defineEnd, blockEnd, quoteRegex)
+    {
         let newline = defineEnd;
         let end = newline;
         let next = this._indexOrLast('\n', newline + 1);
@@ -1739,14 +1762,14 @@ class Markdown
                 }
             }
 
-            let split = splitAndTrim(nextline, this);
+            let split = this._splitAndTrimTableRow(nextline);
             if (split.length == 0)
             {
                 break;
             }
 
             let row = [];
-            for (let i= 0; i < groups.length; ++i)
+            for (let i= 0; i < table.columnAlign.length; ++i)
             {
                 row.push(i >= split.length ? '' : split[i]);
             }
@@ -1759,18 +1782,67 @@ class Markdown
             nextline = this.text.substring(newline + 1, next);
         }
 
-        // Run markdown on individual cells.
-        for (let row = 0; row < table.rows.length; ++row)
+        return end;
+    }
+
+    /// <summary>
+    /// Adds individual column headers to the table given the entire row
+    /// </summary>
+    _addTableHeaders(table, headerRow)
+    {
+        let headers = this._splitAndTrimTableRow(headerRow);
+
+        for (let i = 0; i < table.columnAlign.length; ++i)
         {
-            for (let col = 0; col < table.rows[row].length; ++col)
-            {
-                table.rows[row][col] = new Markdown().parse(table.rows[row][col], true /*inlineOnly*/);
-            }
+            // Fill the front rows first and push empty strings to any rows we didn't find content for
+            table.header.push(i >= headers.length ? '' : headers[i]);
+        }
+    }
+
+    /// <summary>
+    /// Takes a table row definition and breaks it into individual cells as an array
+    /// </summary>
+    _splitAndTrimTableRow(line)
+    {
+        if (line.indexOf('|') == -1)
+        {
+            return [];
         }
 
-        new Table(thisLineStart, end, table, this.currentRun);
-        logTmi(`Added Table: start=${thisLineStart}, end=${end}, $rows=${table.rows.length}, cols=${table.header.length}`);
-        return end;
+        line = line.trim();
+        let arr = [];
+        let span = '';
+        for (let i = 0; i < line.length; ++i)
+        {
+            if (line[i] == '|' && !this._isEscaped(i))
+            {
+                arr.push(span);
+                span = '';
+                continue;
+            }
+
+            span += line[i];
+        }
+
+        if (span.length != 0)
+        {
+            arr.push(span);
+        }
+
+        // Don't trim away everything in the list if it's empty,
+        // we need some indication that we found some semblance
+        // of a table row.
+        if (arr.length > 1 && arr[arr.length - 1].length == 0)
+        {
+            arr.pop();
+        }
+
+        if (arr.length > 1 && arr[0].length == 0)
+        {
+            arr.splice(0, 1);
+        }
+
+        return arr;
     }
 
     /// <summary>
@@ -1784,22 +1856,14 @@ class Markdown
     /// <returns>The end index of the code run, or -1 if no run was found</returns>
     _checkInlineCode(start)
     {
-        // Note that we need to match the exact number of initial backticks
-        // (before a newline, for now). This allows things like
-        // "```` Start a code block with ``` ````".
+        // Note that we need to match the exact number of initial backticks.
+        // This allows things like "```` Start a code block with ``` ````".
         if (!stateAllowedInState(State.InlineCode, this.currentRun, start))
         {
             return -1;
         }
 
-        let findStr = '`';
-        let codeStart = start + 1;
-        while (codeStart < this.text.length && this.text[codeStart] == '`')
-        {
-            findStr += '`';
-            ++codeStart;
-        }
-
+        let findStr = '`'.repeat(this._getInlineCodeMarkers(start));
         if (start + (findStr.length * 2) - 1 >= this.text.length)
         {
             // Impossible for us to find a match. Need at least (2 * findStr) -1 beyond start
@@ -1835,6 +1899,20 @@ class Markdown
         return end;
     }
 
+    /// </summary>
+    /// Returns the number of consecutive backticks
+    /// </summary>
+    _getInlineCodeMarkers(start)
+    {
+        let backticks = 1;
+        while (start + backticks < this.text.length && this.text[start + backticks] == '`')
+        {
+            ++backticks;
+        }
+
+        return backticks;
+    }
+
     /// <summary>
     /// Checks for a valid code block. Despite the name, accepts both '`' and '~' as markers.
     ///
@@ -1866,45 +1944,68 @@ class Markdown
             return -1;
         }
 
-        let minspaces = 0;
-        let language;
+        let params = { minspaces : 0, language : '', markers : markers, newline : newline };
+        if (!this._validBacktickCodeBlockStart(start, params))
+        {
+            return -1;
+        }
+
+        return this._findBacktickCodeBlockEnd(start, params);
+    }
+
+    /// <summary>
+    /// Returns whether we have a valid start to a code block starting at the given index
+    /// </summary>
+    _validBacktickCodeBlockStart(start, params)
+    {
         if (this.currentRun.state == State.ListItem)
         {
             let nestLevel = this.currentRun.parent.nestLevel;
-            minspaces = (nestLevel + 1) * 2;
+            params.minspaces = (nestLevel + 1) * 2;
             let type = this.currentRun.parent.state;
-            let context = this.text.substring(this.text.lastIndexOf('\n', start), newline + 1);
-            let liStartRegex = new RegExp(`^\\n? {${nestLevel * 2}} ?${type == State.OrderedList ? '\\d+\\.' : '\\*'} {1,3}${markers} *\\S*\\n`);
+            let context = this.text.substring(this.text.lastIndexOf('\n', start), params.newline + 1);
+            let listPattern = type == State.OrderedList ? '\\d+\\.' : '\\*';
+            let liStartRegex = new RegExp(`^\\n? {${nestLevel * 2}} ?${listPattern} {1,3}${params.markers} *\\S*\\n`);
             if (!liStartRegex.test(context))
             {
                 // Not on the same line as the list item start, check if it's a valid continuation
-                let match = context.match(new RegExp(`^\\n {${minspaces},${minspaces + 3}}${markers} *(\\S*)\\n`));
+                let match = context.match(new RegExp(`^\\n {${params.minspaces},${params.minspaces + 3}}${params.markers} *(\\S*)\\n`));
                 if (!match)
                 {
-                    return -1;
+                    return false;
                 }
 
-                language = match[1];
+                params.language = match[1];
             }
         }
         else
         {
             // Not within a list item, needs to be three backticks at the very beginning of the line
-            let match = this.text.substring(start - 3, newline + 1).match(new RegExp(`^\\n?${markers} *(\\S*)\\n?$`));
+            let match = this.text.substring(start - 3, params.newline + 1).match(new RegExp(`^\\n?${params.markers} *(\\S*)\\n?$`));
             if (!match)
             {
-                return -1;
+                return false;
             }
 
-            language = match[1];
+            params.language = match[1];
         }
 
-        let next = this._indexOrLast('\n', newline + 1);
+        return true;
+    }
+
+    /// <summary>
+    /// Looks for the end of a backtick/tilde code block
+    /// <summary>
+    /// <returns>The end index of the code block, or -1 if we did not have a valid code block</returns>
+    _findBacktickCodeBlockEnd(start, params)
+    {
+        let newline = params.newline;
+        let next = this._indexOrLast('\n', params.newline + 1);
         let nextline = this.text.substring(newline + 1, next + 1);
 
         // Each subsequent line must have at least minspaces before it, otherwise it's an invalid block
-        let validLine = new RegExp(`^ {${minspaces}}`);
-        let validEnd = new RegExp(`^ {${minspaces},${minspaces + 3}}${markers}\\n?$`);
+        let validLine = new RegExp(`^ {${params.minspaces}}`);
+        let validEnd = new RegExp(`^ {${params.minspaces},${params.minspaces + 3}}${params.markers}\\n?$`);
         while (true)
         {
             if (nextline.length == 0)
@@ -1930,25 +2031,34 @@ class Markdown
 
             if (validEnd.test(nextline))
             {
-                // Somewhat hacky, but if we're in a list and have an indented code block, remove any preceding line
-                // breaks, as this has enough padding on its own
-                if (this.currentRun.state == State.ListItem)
-                {
-                    let innerRuns = this.currentRun.innerRuns;
-                    if (innerRuns.length > 0 && innerRuns[innerRuns.length - 1].state == State.LineBreak)
-                    {
-                        this.currentRun.innerRuns.pop();
-                    }
-                }
-
-                new BacktickCodeBlock(start - 2, next, minspaces, this.text, language, this.currentRun);
-                return next;
+                return this._addBacktickCodeBlock(start, next, params.minspaces, params.language);
             }
 
             newline = next;
             next = this._indexOrLast('\n', next + 1);
             nextline = this.text.substring(newline + 1, next + 1);
         }
+    }
+
+    /// <summary>
+    /// We found a valid backtick/tilde code block, add it to the run list.
+    /// </summary>
+    /// <returns>The end index of the code block</returns>
+    _addBacktickCodeBlock(start, end, minspaces, language)
+    {
+        // Somewhat hacky, but if we're in a list and have an indented code block, remove any preceding line
+        // breaks, as this has enough padding on its own
+        if (this.currentRun.state == State.ListItem)
+        {
+            let innerRuns = this.currentRun.innerRuns;
+            if (innerRuns.length > 0 && innerRuns[innerRuns.length - 1].state == State.LineBreak)
+            {
+                this.currentRun.innerRuns.pop();
+            }
+        }
+
+        new BacktickCodeBlock(start - 2, end, minspaces, this.text, language, this.currentRun);
+        return end;
     }
 
     /// <summary>
@@ -2421,128 +2531,220 @@ class Markdown
             return false;
         }
 
-        let inline = false;
-        let toFind = [']', '(', ')'];
-        let idx = 0;
         let ret =
         {
             text : '',
             url : 0,
             end : 0,
-            type : 0 // 0 == regular link. 1 == "footer" syntax
+            type : 0 // 0 == regular link, 1 == "footer" syntax, 2 == footer definition
         };
 
-        for (let i = start; i < end; ++i)
+        let urlParse =
+        {
+            start : start,
+            end : end,
+            markers : [']', '(', ')'],
+            markerIndex : 0,
+            toFind : function() { return this.markers[this.markerIndex]; },
+            inline : false,
+            ret : ret
+        };
+
+        return this._parseUrl(urlParse);
+    }
+
+    /// <summary>
+    /// Loops through all the characters in the potential URL
+    /// </summary>
+    /// <returns>A URL return object if a URL was found, otherwise false</returns>
+    _parseUrl(urlParse)
+    {
+        for (let i = urlParse.start; i < urlParse.end; ++i)
         {
             switch (this.text[i])
             {
                 case '[':
-                {
-                    if (i == start || this._isEscaped(i))
-                    {
-                        break;
-                    }
-
-                    if (toFind[idx] == '(' && this.text[i - 1] == ']')
-                    {
-                        idx = 0;
-                        ret.url = i + 1;
-                        ret.type = 1;
-                        break;
-                    }
-
-                    if (toFind[idx] != ']')
-                    {
-                        break;
-                    }
-
-                    // Nested link? Continue our search at the end of the nested link
-                    let innerUrl = this._testUrl(i);
-                    if (innerUrl)
-                    {
-                        i = innerUrl.end - 1;
-                    }
-
+                    i = this._parseUrlOpenBracket(urlParse, i);
                     break;
-                }
                 case ']':
-                    if (toFind[idx] != ']' || this._isInline(inline, i, end) || this._isEscaped(i))
+                    if (!this._parseUrlCloseBracket(urlParse, i))
                     {
-                        break;
+                        // End of table-based url
+                        return urlParse.ret;
                     }
 
-                    if (ret.type == 1)
-                    {
-                        ret.url = this.text.substring(ret.url, i);
-                        ret.end = i + 1;
-                        return ret;
-                    }
-
-                    ret.text = this.text.substring(start, i);
-
-                    ++idx;
                     break;
                 case '(':
-                    if (toFind[idx] != '(' || this.text[i - 1] == '\\')
-                    {
-                        break;
-                    }
-
-                    if (this.text[i - 1] != ']')
+                    if (!this._parseUrlOpenParen(urlParse, i))
                     {
                         return false;
                     }
 
-                    ret.url = i + 1;
-
-                    ++idx;
                     break;
                 case ')':
-                    if (toFind[idx] != ')' || this.text[i - 1] == '\\')
+                    if (this._parseUrlCloseParen(urlParse, i))
                     {
-                        break;
+                        return urlParse.ret;
                     }
 
-                    ret.url = this.text.substring(ret.url, i);
-                    ret.end = i + 1;
-                    return ret;
+                    break;
                 case '`':
-                    if (this._isEscaped(i))
-                    {
-                        break;
-                    }
-
-                    inline = !inline;
+                    this._parseUrlBacktick(urlParse, i);
                     break;
                 case ':':
-                {
-                    if (toFind[idx] != '(' ||
-                        this.text[i - 1] != ']' ||
-                        this._isEscaped(i) ||
-                        i == this.text.length - 1 ||
-                        this.text[i + 1] != ' ')
+                    if (!this._parseUrlColon(urlParse, i))
                     {
                         break;
                     }
 
-                    let urlEnd = this._indexOrLast('\n', start);
-                    if (urlEnd - (i + 2) < 1)
-                    {
-                        return false;
-                    }
-
-                    this._urls[ret.text.substring(1)] = this.text.substring(i + 2, urlEnd);
-                    ret.type = 2;
-                    ret.end = urlEnd;
-                    return ret;
-                }
-
+                    return urlParse.ret.type == 2 ? urlParse.ret : false;
                 default:
                     break;
             }
         }
 
         return false;
+    }
+
+    /// <summary>
+    /// Processes an open bracket in a potential URL. It could be part
+    /// of a nested URL or part of a table-based URL definition
+    /// </summary>
+    /// <returns>The index to resume processing. Only different if </returns>
+    _parseUrlOpenBracket(urlParse, i)
+    {
+        if (i == urlParse.start || this._isEscaped(i))
+        {
+            return i;
+        }
+
+        if (urlParse.toFind() == '(' && this.text[i - 1] == ']')
+        {
+            // We might have a table-based url ([X][Y])
+            urlParse.markerIndex = 0;
+            urlParse.ret.url = i + 1;
+            urlParse.ret.type = 1;
+            return i;
+        }
+
+        if (urlParse.toFind() != ']')
+        {
+            return i;
+        }
+
+        // Nested link? Continue our search at the end of the nested link
+        let innerUrl = this._testUrl(i);
+        if (innerUrl)
+        {
+            i = innerUrl.end - 1;
+        }
+
+        return i;
+    }
+
+    /// <summary>
+    /// Processes a closing bracket of a URL, which could be the end of the display text of a URL, or the
+    /// end of a table-based URL
+    /// </summary>
+    /// <returns>True if we should continue parsing. False if we reached the end of our table-based URL</returns>
+    _parseUrlCloseBracket(urlParse, i)
+    {
+        if (urlParse.toFind() != ']' || this._isInline(urlParse.inline, i, urlParse.end) || this._isEscaped(i))
+        {
+            return true;
+        }
+
+        if (urlParse.ret.type == 1)
+        {
+            // Table based url
+            urlParse.ret.url = this.text.substring(urlParse.ret.url, i);
+            urlParse.ret.end = i + 1;
+            return false;
+        }
+
+        urlParse.ret.text = this.text.substring(urlParse.start, i);
+        ++urlParse.markerIndex;
+        return true;
+    }
+
+    /// <summary>
+    /// Processes an opening paren of a URL, which must follow the closing bracket of the display text
+    /// </summary>
+    /// <returns>True if we should continue parsing, false if the URL is invalid</returns>
+    _parseUrlOpenParen(urlParse, i)
+    {
+        if (urlParse.toFind() != '(' || this.text[i - 1] == '\\')
+        {
+            return true;
+        }
+
+        if (this.text[i - 1] != ']')
+        {
+            return false;
+        }
+
+        urlParse.ret.url = i + 1;
+        ++urlParse.markerIndex;
+        return true;
+    }
+
+    /// <summary>
+    /// Processes a closing paren of a URL, which may be the end of our URL definition
+    /// </summary>
+    /// <returns>True if we have completed our URL definition. False to continue parsing</returns>
+    _parseUrlCloseParen(urlParse, i)
+    {
+        if (urlParse.toFind() != ')' || this.text[i - 1] == '\\')
+        {
+            return false;
+        }
+
+        urlParse.ret.url = this.text.substring(urlParse.ret.url, i);
+        urlParse.ret.end = i + 1;
+        return true;
+    }
+
+    /// <summary>
+    /// Process a backtick inside of our URL definition, which may flip the urlParse.inline switch
+    /// </summary>
+    _parseUrlBacktick(urlParse, i)
+    {
+        if (this._isEscaped(i))
+        {
+            return;
+        }
+
+        urlParse.inline = !urlParse.inline;
+    }
+
+    /// <summary>
+    /// Processes a colon inside of a URL. Only valid if it's a table-based URL definition ([marker]: URL)
+    /// </summary>
+    /// <returns>
+    /// False if we should continue parsing, true if we are done parsing. If we're done parsing,
+    /// the validity of the URL definition is determined by whether urlParse.type is correctly set
+    /// </returns>
+    _parseUrlColon(urlParse, i)
+    {
+        if (urlParse.toFind() != '(' ||
+            this.text[i - 1] != ']' ||
+            this._isEscaped(i) ||
+            i == this.text.length - 1 ||
+            this.text[i + 1] != ' ')
+        {
+            return false;
+        }
+
+        let urlEnd = this._indexOrLast('\n', urlParse.start);
+        if (urlEnd - (i + 2) < 1)
+        {
+            return true;
+        }
+
+        this._urls[urlParse.ret.text.substring(1)] = this.text.substring(i + 2, urlEnd);
+        urlParse.ret.type = 2;
+        urlParse.ret.end = urlEnd;
+        return true;
     }
 
     /// <summary>
