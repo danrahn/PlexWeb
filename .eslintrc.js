@@ -335,9 +335,11 @@ module.exports = {
         "logInfo" : "readonly",
         "logWarn" : "readonly",
         "logError" : "readonly",
+        "logFormattedText" : "readonly",
         "log" : "readonly",
         "LOG" : "readonly",
         "g_logLevel" : "writable",
+        "g_darkConsole" : "writable",
         "_logErrorId" : "readonly",
         // animation.js
         "Animation" : "readonly",

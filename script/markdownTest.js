@@ -1,4 +1,4 @@
-/* exported testMarkdown, testSuite */
+/* exported testMarkdown, markdownTestSuite */
 
 // Markdown files are the only ones that prefer single-quotes over double.
 /* eslint quotes: ["error", "single", { "avoidEscape" : true, "allowTemplateLiterals" : true }] */
@@ -17,7 +17,7 @@ const testMarkdown = function(testStr='')
 /// <summary>
 /// Main test entrypoint, running all available tests
 /// </summary>
-const testSuite = function()
+const markdownTestSuite = function()
 {
     // Simple tests for non-nested scenarios
     testHeaders();
@@ -31,6 +31,8 @@ const testSuite = function()
     testBr();
 
     testMixed();
+
+    testBugFixes();
 };
 
 /// <summary>
@@ -60,18 +62,18 @@ const testHeaders = function()
 {
     logInfo('Testing Basic Header Functionality');
     let testStrings = buildTests(
-        ['# Header 1', '<h1>Header 1</h1>'],
-        ['## Header 2', '<h2>Header 2</h2>'],
-        ['### Header 3', '<h3>Header 3</h3>'],
-        ['#### Header 4', '<h4>Header 4</h4>'],
-        ['##### Header 5', '<h5>Header 5</h5>'],
-        ['###### Header 6', '<h6>Header 6</h6>'],
+        ['# Header 1', '<h1 id="header-1">Header 1</h1>'],
+        ['## Header 2', '<h2 id="header-2">Header 2</h2>'],
+        ['### Header 3', '<h3 id="header-3">Header 3</h3>'],
+        ['#### Header 4', '<h4 id="header-4">Header 4</h4>'],
+        ['##### Header 5', '<h5 id="header-5">Header 5</h5>'],
+        ['###### Header 6', '<h6 id="header-6">Header 6</h6>'],
         ['####### Header 7', '<div class="mdDiv">####### Header 7</div>'],
         ['##Header 2', '<div class="mdDiv">##Header 2</div>'],
-        ['  ## Header 2', '<h2>Header 2</h2>'],
-        ['##   Header 2', '<h2>Header 2</h2>'],
-        ['  ##   Header 2', '<h2>Header 2</h2>'],
-        [' ## Header 2 ###  ', '<h2>Header 2</h2>']
+        ['  ## Header 2', '<h2 id="header-2">Header 2</h2>'],
+        ['##   Header 2', '<h2 id="header-2">Header 2</h2>'],
+        ['  ##   Header 2', '<h2 id="header-2">Header 2</h2>'],
+        [' ## Header 2 ###  ', '<h2 id="header-2">Header 2</h2>']
     );
 
     testCore(testStrings);
@@ -272,6 +274,19 @@ const testMixed = function()
     testCore(testStrings);
 };
 
+const testBugFixes = function()
+{
+    logInfo('Testing Bug Fixes');
+    let testStrings = buildTests(
+        [
+            '**a*\n\n* [*C\\n*',
+            '*<em>a</em><ul><li>[<em>C\\n</em></li></ul>' // This is probably its own bug. We should have a surrounding div!
+        ]
+    );
+
+    testCore(testStrings);
+};
+
 /// <summary>
 /// Core test routine. Passes each string through the markdown parser and
 /// compares the result against our expected output.
@@ -281,17 +296,51 @@ const testCore = function(testStrings)
 {
     let logSav = g_logLevel;
     g_logLevel = LOG.Info;
+    let bracketClr = 'color: inherit';
+    let textClr = `color: ${g_darkConsole ? '#D1977F' : '#9E3379'}`;
+    let arrowClr = 'color: orange';
+    let passClr = `color: ${g_darkConsole ? '#00A000' : '#006000'}`;
+    let failClr = `color: red`;
+    let successColors = [passClr, bracketClr, textClr, bracketClr, arrowClr, bracketClr, textClr, bracketClr];
+    let failureColors =
+    [
+        failClr,
+        arrowClr,
+        bracketClr,
+        textClr,
+        bracketClr,
+        arrowClr,
+        bracketClr,
+        textClr,
+        bracketClr,
+        arrowClr,
+        bracketClr,
+        textClr,
+        bracketClr
+    ];
+
     testStrings.forEach(function(str)
     {
         let result = new Markdown().parse(str.input);
+        let displayInput = _escapeTestString(str.input);
         if (result == str.expected)
         {
-            logInfo(`    Passed! [${str.input}] => [${str.expected}]`);
+            let logString = `    %cPassed!%c [%c${displayInput}%c]%c => %c[%c${str.expected}%c]`;
+            logFormattedText(LOG.Info, logString, ...successColors);
         }
         else
         {
-            logWarn(`    FAIL! Input: [${str.input}]\n\tExpected: [${str.expected}]\n\tActual:   [${result}]`);
+            let logString = `    %cFAIL!%c Input: %c[%c${displayInput}%c]%c\n\tExpected: %c[%c${str.expected}%c]%c\n\tActual:   %c[%c${result}%c]`;
+            logFormattedText(LOG.Warn, logString, ...failureColors);
         }
     });
+
     g_logLevel = logSav;
+};
+
+const _escapeTestString = function(str)
+{
+    str = str.replace(/\\/g, '\\\\');
+    str = str.replace(/\n/g, '\\n');
+    return str;
 };
