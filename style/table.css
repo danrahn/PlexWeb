@@ -42,12 +42,12 @@ option {
     background-color: rgba(0,0,0,.3);
     text-align: center;
     padding: 10px;
-    border-left: 2px solid #919191AA;
-    border-right: 2px solid #919191AA;
+    border-left: 2px solid rgba(145, 145, 145, 0.67); /* #919191AA; */
+    border-right: 2px solid rgba(145, 145, 145, 0.67); /* #919191AA; */
 }
 
 .tableHF {
-    border: 2px solid #919191AA;
+    border: 2px solid rgba(145, 145, 145, 0.67); /* #919191AA; */
     background-color: rgba(0, 200, 0, 0.1);
     overflow: auto;
 }
@@ -75,7 +75,7 @@ option {
 }
 
 .tableHF button.disabled {
-    background-color: #00000022;
+    background-color: rgba(0,0,0,0.13); /* #00000022; */
 }
 
 .tableHF button.disabled img {
@@ -85,24 +85,24 @@ option {
 .tableHF .perPageButton {
     margin: 0px;
     border: none;
-    border-left: 2px solid #919191AA;
+    border-left: 2px solid rgba(145, 145, 145, 0.67); /* #919191AA; */
 }
 
 .tableHF button.selected {
-    background-color: #00000044;
+    background-color: rgba(0,0,0,0.27); /* #00000044; */
 }
 
 .tableHF button:hover {
-    background-color: #00000022;
+    background-color: rgba(0,0,0,0.13); /* #00000022; */
 }
 
 .tableHF button.cap {
-    border-right: 2px solid #919191AA;
+    border-right: 2px solid rgba(145, 145, 145, 0.67); /* #919191AA; */
 }
 
 .tableEntryHolder {
     background-color: rgba(0,0,0,.3);
-    border: 2px solid #919191AA;
+    border: 2px solid rgba(145, 145, 145, 0.67); /* #919191AA; */
     border-top: none;
     display: inline-block;
     width: calc(100% - 4px);
@@ -168,7 +168,7 @@ option {
 
 .previousPage {
     border: none;
-    border-right: 2px solid #919191AA;
+    border-right: 2px solid rgba(145, 145, 145, 0.67); /* #919191AA; */
 }
 
 .previousPage img, .nextPage img {
@@ -183,7 +183,7 @@ option {
 
 .nextPage {
     border: none;
-    border-left: 2px solid #919191AA;
+    border-left: 2px solid rgba(145, 145, 145, 0.67); /* #919191AA; */
 }
 
 #tableHeader .previousPage {
@@ -348,7 +348,7 @@ option {
 
     .imgHolder img {
         height: 128px;
-        border: 2px solid #919191AA;
+        border: 2px solid rgba(145, 145, 145, 0.67); /* #919191AA; */
     }
 
     .pageStatus, .searchInputHolder {

@@ -4,12 +4,12 @@
 }
 
 .adminName {
-    color: rgba(240, 66, 69);
+    color: rgb(240, 66, 69);
     font-weight: bold;
 }
 
 .newName {
-    color: rgba(63, 180, 69);
+    color: rgb(63, 180, 69);
 }
 
 .lastSeen {

@@ -19,6 +19,7 @@
 }
 
 .md code {
+    font-family: "consolas", monospace;
     background: rgba(0, 0, 0, 0.3);
     padding: 3px 5px 3px 5px;
     font-size: 90%;
@@ -30,14 +31,23 @@
 }
 
 .md pre {
+    font-family: "consolas", monospace;
     font-size: 0.8rem;
     padding-top: 0.3rem;
     padding-bottom: 0.3rem;
     line-height: 1rem;
-    background: linear-gradient(to bottom, #0003 0, #0003 0.3rem, #4442 0.3rem, #4442 1.3rem, #0003 1.3rem, #0003 2rem);
+    /* background: linear-gradient(to bottom, #0003 0, #0003 0.3rem, #4442 0.3rem, #4442 1.3rem, #0003 1.3rem, #0003 2rem); */
+    background: linear-gradient(
+        to bottom,
+        rgba(0,0,0,0.19) 0,
+        rgba(0,0,0,0.19) 0.3rem,
+        rgba(64,64,64,0.13) 0.3rem,
+        rgba(64,64,64,0.19) 1.3rem,
+        rgba(0,0,0,0.19) 1.3rem,
+        rgba(0,0,0,0.19) 2rem);
     background-size: 100% 2rem;
     overflow: auto;
-    border-right: 5px solid #0003;
+    border-right: 5px solid rgba(0,0,0,0.19); /* #0003; */
 }
 
 .md blockquote {

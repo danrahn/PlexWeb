@@ -19,11 +19,11 @@
     margin-right: auto;
     margin-top: 10px;
     margin-bottom: 10px;
-    background-color: #00000033;
+    background-color: rgba(0, 0, 0, 0.2); /* #00000033 */
 }
 
 .action:hover {
-    background-color: #00000055;
+    background-color: rgba(0, 0, 0, 0.33); /* #00000055; */
 }
 
 .actionImg {

@@ -324,7 +324,7 @@ a:hover {
 }
 
 #mdHelper button {
-    background-color: rgba(63, 66, 69);
+    background-color: rgb(63, 66, 69);
     padding: 4px;
     border-style: solid;
     border-left: 1px solid #818181;
@@ -334,7 +334,7 @@ a:hover {
 }
 
 #mdHelper button:hover {
-    background-color: rgba(83, 86, 89);
+    background-color: rgb(83, 86, 89);
     padding: 4px;
 }
 
@@ -360,7 +360,7 @@ a:hover {
 
 .commentAction {
     padding: 3px;
-    border: 1px solid #0000;
+    border: 1px solid rgba(0,0,0,0);
     border-radius: 2px;
     margin-right: 5px;
     display: inline;
@@ -372,7 +372,7 @@ a:hover {
 }
 
 .commentAction:hover {
-    border: 1px solid #c1c1c1aa;
+    border: 1px solid rgba(193, 193, 193, 0.67); /* #c1c1c1aa; */
     box-shadow: 0 0 6px #919191;
     transition: border 0.25s, box-shadow 0.5s;
 }
@@ -395,7 +395,7 @@ a:hover {
 .commentEditor {
     float: none;
     width: calc(100% - 6px);
-    border: 1px solid #0000;
+    border: 1px solid rgba(0,0,0,0);
     padding: 2px;
     display: block;
     background: rgba(20,20,20,0.5);
