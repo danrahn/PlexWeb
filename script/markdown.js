@@ -291,6 +291,9 @@ class Markdown
         return html;
     }
 
+    /// <summary>
+    /// Actually start parsing, starting from the given start index
+    /// </summary>
     _parseCore(start)
     {
         let perfStart = window.performance.now();
@@ -389,6 +392,10 @@ class Markdown
         }
     }
 
+    /// <summary>
+    /// Process a dash ('-') character, which might be part of a horizontal rule
+    /// </summary>
+    /// <returns>The updated position to resume parsing</returns>
     _checkDash(i)
     {
         if (this._checkHr(i))
@@ -546,6 +553,11 @@ class Markdown
         return result.end - 1; // Nothing allowed inside of an image
     }
 
+    /// <summary>
+    /// Process an open bracket. This could be a regular URL or a definition
+    /// for an extended table-based URL
+    /// </summary>
+    /// <returns>The position we should continue parsing from</returns>
     _checkOpenBracket(i)
     {
         if (!stateAllowedInState(State.Url, this.currentRun, i))
@@ -590,6 +602,10 @@ class Markdown
         return i;
     }
 
+    /// <summary>
+    /// Process a backtick character, which could be the start of an inline code section or a code block
+    /// </summary>
+    /// <returns>The position we should continue parsing from</returns>
     _checkBacktick(i)
     {
         if (this._isEscaped(i))
@@ -615,6 +631,11 @@ class Markdown
         return i;
     }
 
+    /// <summary>
+    /// Process an asterisk, which could be part of a horizontal rule, the
+    /// start of a listitem, or bold/italic formatting
+    /// </summary>
+    /// <returns>The position we should continue parsing from</returns>
     _checkAsterisk(i)
     {
         if (this._isEscaped(i))
@@ -638,6 +659,10 @@ class Markdown
         return this._checkUnderscore(i);
     }
 
+    /// <summary>
+    /// Process an underscore, which can be part of a horizontal rule or bold/italic formatting
+    /// </summary>
+    /// <returns>The position we should continue parsing from</returns>
     _checkUnderscore(i)
     {
         // First, check for HR
@@ -656,6 +681,9 @@ class Markdown
         return i;
     }
 
+    /// <summary>
+    /// Returns whether we're inside of our parent element's special context, e.g. the link portion of a URL
+    /// </summary>
     _inSpecialContext(start)
     {
         let parentContextStartLength = this.currentRun.startContextLength();
@@ -732,7 +760,7 @@ class Markdown
         };
 
         // Find a match for our separator.
-        if (!this._findBoldItalicBounds(sepInfo))
+        if (!this._findMatchingBoldItalicMarker(sepInfo))
         {
             return false;
         }
@@ -740,6 +768,12 @@ class Markdown
         return this._makeBoldOrItalic(start, sepInfo);
     }
 
+    /// <summary>
+    /// Add the bold/italic span to our current run.
+    /// </summary>
+    /// <param name="start">The start position of the run</param>
+    /// <param name="sepInfo">The separator info, which contains (among other things) the marker ('*' or '_') and end index of the run</param>
+    /// <returns>True if we added a bold run, false if we added an italic run</returns>
     _makeBoldOrItalic(start, sepInfo)
     {
         let isBold = false;
@@ -766,7 +800,7 @@ class Markdown
     ///  An opening separator run must be preceded by whitespace and end with non-whitespace
     /// A closing separator run must be preceded by non-whitespace and end with whitespace
     /// </summary>
-    _findBoldItalicBounds(sepInfo)
+    _findMatchingBoldItalicMarker(sepInfo)
     {
         let loopInfo = { inline : false, newline : false };
         let blockEnd = this.currentRun.end - this.currentRun.endContextLength();
@@ -815,6 +849,11 @@ class Markdown
         return sepInfo.count == 0;
     }
 
+    /// <summary>
+    /// Returns whether we should process the current index for our bold/italic marker
+    /// We don't continue if we've detected that we're in an inline code block, the
+    /// separator is escaped, or we come across a double newline
+    /// </summary>
     _boldItalicLoopPrecheck(loopInfo, sepInfo, blockEnd)
     {
         if (this.text[sepInfo.index] == '`' && !this._isEscaped(sepInfo.index))
@@ -844,9 +883,16 @@ class Markdown
         return true;
     }
 
+    /// <summary>
+    /// Checks to see if the marker at the current index is the start of a new bold/italic run
+    /// </summary>
+    /// <returns>
+    /// True  : We found the start of a new, potentially nested, bold/italic run
+    /// False : We did not find the start of a new run
+    /// -1    : We found markers surrounded by whitespace and should not consider them when matching markers
+    /// </returns>
     _checkBoldItalicOpening(sepInfo, blockEnd)
     {
-        // Opening?
         let foundMatch = false;
         sepInfo.tentativeIndex = sepInfo.index + sepInfo.tentativeCount;
         while (sepInfo.tentativeIndex < blockEnd && this.text[sepInfo.tentativeIndex] == sepInfo.separator)
@@ -886,6 +932,10 @@ class Markdown
         return foundMatch;
     }
 
+    /// <summary>
+    /// Checks whether the marker at the current index is closing a bold/italic run
+    /// </summary>
+    /// <returns>True if the marker does close a bold/italic run</returns>
     _findBoldItalicEnd(sepInfo, blockEnd)
     {
         // Non-whitespace, see if it's an end sequence
@@ -924,6 +974,10 @@ class Markdown
         return sepInfo.count == 0;
     }
 
+    /// <summary>
+    /// Processes a tilde character, which could be the start of a code block or strikethrough formatting
+    /// </summary>
+    /// <returns>The position we should continue parsing from</returns>
     _checkTilde(i)
     {
         if (this._isEscaped(i))
@@ -942,6 +996,10 @@ class Markdown
         return this._checkPlus(i);
     }
 
+    /// <summary>
+    /// Processes a plus character, which could be the start of underline formatting
+    /// </summary>
+    /// <returns>The position we should continue parsing from</returns>
     _checkPlus(i)
     {
         if (this._checkStrikeAndUnderline(i))
@@ -1152,9 +1210,12 @@ class Markdown
         return true;
     }
 
+    /// <summary>
+    /// Process a space character, which could be the start of an indented code block
+    /// </summary>
+    /// <returns>The position we should continue parsing from</returns>
     _checkSpace(i)
     {
-        // Potential code block, alternative to three backticks/tildes
         let blockEnd = this._checkIndentCodeBlock(i);
         if (blockEnd != -1)
         {
@@ -1164,6 +1225,10 @@ class Markdown
         return i;
     }
 
+    /// <summary>
+    /// Process a less-than character, which could be part of an HTML tag that we want to keep track of
+    /// </summary>
+    /// <returns>The position we should continue parsing from</returns>
     _checkLessThan(i)
     {
         // Allow two things. Line breaks and comments
@@ -1465,6 +1530,10 @@ class Markdown
         return end;
     }
 
+    /// <summary>
+    /// Process a pipe character, which could be the start of a table
+    /// </summary>
+    /// <returns>The position we should continue parsing from</returns>
     _checkPipe(i)
     {
         // Tables
@@ -2606,6 +2675,9 @@ class Run
         return this.cached;
     }
 
+    /// <summary>
+    /// Returns how deeply nested we are from the top-level run
+    /// </summary>
     _nestLevel()
     {
         let nest = 0;
@@ -2872,6 +2944,10 @@ class Run
         return cBreaks + divDiff;
     }
 
+    /// <summary>
+    /// Parses a single run of newlines
+    /// </summary>
+    /// <returns>An object indicating the number of line breaks we added, and the new offset to parse from</returns>
     _parseNewline(text, newline, end, doubles, previousRun, nextRun)
     {
         // Also allow for arbitrary spaces here
@@ -2913,6 +2989,16 @@ class Run
         return parseResult;
     }
 
+    /// <summary>
+    /// Add line breaks for a particular run of newlines
+    /// </summary>
+    /// <param name="newline">The start of this newline run</param>
+    /// <param name="cNewlines">The number of newlines in this run</param>
+    /// <param name="previousRun">The closest preceding run to newline. Potentially its own parent</param>
+    /// <param name="nextRun">The run directly after newline</param>
+    /// <param name="atTop">True if newline is immediately after our previousRun</param>
+    /// <param name="atBottom">True if nextRun is immediately after our newline run</param>
+    /// <returns>The number of line breaks added</returns>
     _addBreaks(newline, cNewlines, previousRun, nextRun, atTop, atBottom)
     {
         let cBreaks = 0;
@@ -2962,6 +3048,10 @@ class Run
         return cBreaks;
     }
 
+    /// <summary>
+    /// Determines whether we should add a linebreak based on the current state
+    /// and the state of whatever run is directly to the left/right of us
+    /// </summary>
     _shouldAddBreak(state, compareRun)
     {
         return !compareRun.isBlockElement() ||
