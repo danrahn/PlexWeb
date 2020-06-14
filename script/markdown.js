@@ -420,18 +420,10 @@ class Markdown
     {
         let sep = this.text[index];
         let linebreak = this._indexOrLast('\n', index);
-        let line = this.text.substring(this.text.lastIndexOf('\n', index) + 1, linebreak).replace(/ /g, '');
-        if (line.length < 3)
+        let line = this.text.substring(this.text.lastIndexOf('\n', index) + 1, linebreak);
+        if (!RegExp(`^( *${sep == '*' ? '\\*' : sep} *){3,}$`).test(line))
         {
             return false;
-        }
-
-        for (let i = 0; i < line.length; ++i)
-        {
-            if (line[i] != sep)
-            {
-                return false;
-            }
         }
 
         if (addHr)
