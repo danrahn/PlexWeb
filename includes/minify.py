@@ -427,40 +427,28 @@ const State =
     if rem_tmi:
         lines = re.sub(r'(\/\*@__PURE__\*\/)?\blogTmi\(.*\); *\n', '', lines)
 
-    # Now look for things that are very method-like.
-    curVar = 'a'
+    # currentRun is used quite a bit
+    lines = re.sub(r'\bthis\.currentRun\b', 'this.' + next_var(), lines)
 
+    # State of a run
+    lines = re.sub(r'\.state\b', '.' + next_var(), lines)
+
+    # Inner runs
+    lines = re.sub(r'\binnerRuns\b', next_var(), lines)
+
+    # Run methods
+    lines = re.sub(r'\bstartContextLength\b', next_var(), lines)
+    lines = re.sub(r'\bendContextLength\b', next_var(), lines)
+    lines = re.sub(r'\btransform\b', next_var(), lines)
+
+    # Now look for things that are very method-like.
     v = 0
     for match in re.finditer(r'\n    (_\w+)\(', lines):
         v += 1
-        lines = re.sub(r'\b' + match.group(1) + r'\b', curVar, lines)
-
-        # skip over i/j/k. Hopefully I remember not to have
-        # other single-letter variable names
-        if curVar == 'h':
-            curVar = 'l'
-        elif curVar == 'z':
-            curVar = 'A'
-        else:
-            curVar = chr(ord(curVar) + 1)
-
-        if curVar == 'Z':
-            print('Ran out of method variable names! Consider rewriting this mess')
-            break
-
-    # currentRun is used quite a bit
-    lines = re.sub(r'\bthis\.currentRun\b', 'this.X', lines)
-
-    # State of a run
-    lines = re.sub(r'\.state\b', '.s', lines)
-
-    # Inner runs
-    lines = re.sub(r'\binnerRuns\b', '_i', lines)
-
-    # Run methods
-    lines = re.sub(r'\bstartContextLength\b', '_S', lines)
-    lines = re.sub(r'\bendContextLength\b', '_E', lines)
-    lines = re.sub(r'\btransform\b', '_T', lines)
+        cur_var = next_var()
+        if cur_var == '':
+            return lines
+        lines = re.sub(r'\b' + match.group(1) + r'\b', cur_var, lines)
 
     # TODO: this.text is _very_ heavily used, but multiple classes
     # use this, so it breaks things.
@@ -475,6 +463,35 @@ const State =
     lines = 'String.prototype.s = String.prototype.substring;\n' + lines
 
     return lines
+
+
+g_var_cur = 'a'
+def next_var():
+    global g_var_cur
+
+    # skip over i/j/k. Hopefully I remember not to have
+    # other single-letter variable name
+    base = g_var_cur[:len(g_var_cur) - 1]
+    cur = g_var_cur[len(g_var_cur) - 1]
+    if cur == 'h' and base == '':
+        cur = 'l'
+    elif cur == 'z':
+        cur = 'A'
+    elif cur == 'Z':
+        cur = 'a'
+        if base == '':
+            base = '_'
+        elif base == '_':
+            base = '_a'
+        elif base == '_z':
+            print('Why are there so many method names?! Things are broken, consider rewriting this mess')
+            return ''
+        else:
+            base = base[0] + chr(ord(base[1]) + 1)
+    else:
+        cur = chr(ord(cur) + 1)
+    g_var_cur = base + cur
+    return g_var_cur
 
 
 def minify(babel, quiet):
