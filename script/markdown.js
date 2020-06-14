@@ -285,12 +285,19 @@ class Markdown
         let i = this._reset(text, inlineOnly, this._checkCache(text));
         this._inParse = true;
 
-        let perfStart = window.performance.now();
+        let html = this._parseCore(i);
 
+        this._inParse = false;
+        return html;
+    }
+
+    _parseCore(start)
+    {
+        let perfStart = window.performance.now();
         this._urls = {};
 
         // Here we go...
-        for (; i < this.text.length; ++i)
+        for (let i = start; i < this.text.length; ++i)
         {
             while (i == this.currentRun.end)
             {
@@ -298,245 +305,8 @@ class Markdown
                 this.currentRun = this.currentRun.parent;
             }
 
-            switch (this.text[i])
-            {
-                case '#':
-                {
-                    i = this._checkHeader(i);
-                    break;
-                }
-                case '!':
-                {
-                    let imageEnd = this._checkImage(i);
-                    if (imageEnd != -1)
-                    {
-                        // Nothing inside of an image is allowed
-                        i = imageEnd - 1;
-                    }
-
-                    break;
-                }
-                case '[':
-                {
-                    if (!stateAllowedInState(State.Url, this.currentRun, i))
-                    {
-                        continue;
-                    }
-
-                    if (this._isEscaped(i))
-                    {
-                        continue;
-                    }
-
-                    let result = this._testUrl(i);
-                    if (!result)
-                    {
-                        continue;
-                    }
-
-                    // Must be contained in its parent element
-                    if (this.currentRun.end < result.end)
-                    {
-                        continue;
-                    }
-
-                    let url;
-                    if (result.type == 0)
-                    {
-                        url = new Url(i, result.end, result.url, this.currentRun);
-                    }
-                    else if (result.type == 1)
-                    {
-                        url = new ExtendedUrl(i, result.end, result.url, this._urls, this.currentRun);
-                    }
-                    else
-                    {
-                        url = new ExtendedUrlTag(i, result.end, this.currentRun);
-                        i = result.end - 1;
-                    }
-
-                    this.currentRun = url;
-                    logTmi(`Added url: start=${url.start}, end=${url.end}, text=${url.text}, url=${url.url}`);
-                    break;
-                }
-                case '`':
-                {
-                    if (this._isEscaped(i))
-                    {
-                        continue;
-                    }
-
-                    // Multiline code block if it's the start of a line and there are three of these
-                    let multilineBlockEnd = this._checkBacktickCodeBlock(i);
-                    if (multilineBlockEnd != -1)
-                    {
-                        i = multilineBlockEnd - 1;
-                        continue;
-                    }
-
-                    // Couldn't parse as a code block, so try an inline block.
-                    let inlineEnd = this._checkInlineCode(i);
-                    if (inlineEnd != -1)
-                    {
-                        i = inlineEnd - 1;
-                    }
-
-                    break;
-                }
-                case '-':
-                {
-                    if (this._checkHr(i))
-                    {
-                        i = this._indexOrLast('\n', i) - 1;
-                    }
-
-                    break;
-                }
-                case '*':
-                {
-                    if (this._isEscaped(i))
-                    {
-                        continue;
-                    }
-
-                    if (this._checkHr(i))
-                    {
-                        i = this._indexOrLast('\n', i) - 1;
-                        continue;
-                    }
-
-                    // Unordered list. Returns true if we successfully parsed an unordered list item
-                    if (this._checkList(i, false /*ordered*/))
-                    {
-                        break;
-                    }
-                }
-
-                /* __fallthrough, bold/italic */
-                case '_':
-                {
-                    // First, check for HR
-                    if (this._checkHr(i))
-                    {
-                        i = this._indexOrLast('\n', i) - 1;
-                        continue;
-                    }
-
-                    // Only returns true if we added a bold run, indicating that we should
-                    // also increment i as to not be included in a subsequent check
-                    if (this._checkBoldItalic(i))
-                    {
-                        ++i;
-                    }
-
-                    break;
-                }
-                case '~':
-                {
-                    if (this._isEscaped(i))
-                    {
-                        continue;
-                    }
-
-                    // Multiline code block if there are three of these in a row
-                    let multilineBlockEnd = this._checkBacktickCodeBlock(i);
-                    if (multilineBlockEnd != -1)
-                    {
-                        i = multilineBlockEnd - 1;
-                        continue;
-                    }
-
-                }
-
-                /*__fallthrough for strikethrough*/
-                case '+':
-                {
-                    if (this._checkStrikeAndUnderline(i))
-                    {
-                        // Skip over the second ~/+, as it's part of
-                        // the run we just created
-                        ++i;
-                    }
-
-                    break;
-                }
-                case '>':
-                {
-                    this._checkBlockQuote(i);
-                    break;
-                }
-                case '0':
-                case '1':
-                case '2':
-                case '3':
-                case '4':
-                case '5':
-                case '6':
-                case '7':
-                case '8':
-                case '9':
-                {
-                    this._checkList(i, true /*ordered*/);
-                    break;
-                }
-                case ' ':
-                {
-                    // Potential code block, alternative to three backticks/tildes
-
-                    let blockEnd = this._checkIndentCodeBlock(i);
-                    if (blockEnd != -1)
-                    {
-                        i = blockEnd - 1;
-                    }
-
-                    break;
-                }
-                case '<':
-                {
-                    // Allow two things. Line breaks and comments
-                    if (!this._isEscaped(i) && /<br ?\/?>/.test(this.text.substring(i, i + 5)))
-                    {
-                        let br = new Break(i, this.currentRun);
-                        br.end = this.text.indexOf('>', i) + 1;
-                        continue;
-                    }
-
-                    if (!this.text.substring(i, i + 4) == '<!--')
-                    {
-                        continue;
-                    }
-
-                    let endComment = this.text.indexOf('-->', i);
-                    if (endComment == -1)
-                    {
-                        continue;
-                    }
-
-                    endComment += 3;
-
-                    new HtmlComment(i, endComment, this.currentRun);
-                    i = endComment - 1;
-                    break;
-                }
-                case '|':
-                {
-                    // Tables
-                    let tableEnd = this._checkTable(i);
-                    if (tableEnd != -1)
-                    {
-                        i = tableEnd - 1;
-                    }
-
-                    break;
-                }
-
-                default:
-                {
-                    break;
-                }
-            }
+            i = this._dispatch(i);
         }
-
 
         logTmi(this.topRun, 'Parsing tree');
         this.markdownPresent = this.topRun.innerRuns.length != 0;
@@ -568,6 +338,68 @@ class Markdown
     }
 
     /// <summary>
+    /// Dispatches to the handler based on the character at the given index
+    /// </summary>
+    /// <returns>The new position to resume parsing</returns>
+    _dispatch(index)
+    {
+        switch (this.text[index])
+        {
+            case '#':
+                return this._checkHeader(index);
+            case '!':
+                return this._checkImage(index);
+            case '[':
+                return this._checkOpenBracket(index);
+            case '`':
+                return this._checkBacktick(index);
+            case '-':
+                return this._checkDash(index);
+            case '*':
+                return this._checkAsterisk(index);
+            case '_':
+                return this._checkUnderscore(index);
+            case '~':
+                return this._checkTilde(index);
+            case '+':
+                return this._checkPlus(index);
+            case '>':
+                this._checkBlockQuote(index);
+                return index;
+            case '0':
+            case '1':
+            case '2':
+            case '3':
+            case '4':
+            case '5':
+            case '6':
+            case '7':
+            case '8':
+            case '9':
+                this._checkList(index, true /*ordered*/);
+                return index;
+            case ' ':
+                return this._checkSpace(index);
+            case '<':
+                return this._checkLessThan(index);
+            case '|':
+                return this._checkPipe(index);
+            default:
+                return index;
+        }
+    }
+
+    _checkDash(i)
+    {
+        if (this._checkHr(i))
+        {
+            return this._indexOrLast('\n', i) - 1;
+        }
+
+        return i;
+    }
+
+    /// <summary>
     /// Checks if we have a valid horizontal rule starting at the given index
     /// Must only be called when this.text[index] is a dash, underscore, or asterisk
     ///
@@ -576,6 +408,7 @@ class Markdown
     ///
     /// </summary>
     /// <param name="addHr">If true, will add an Hr to the current runs if we found one</param>
+    /// <returns>The position to resume parsing</returns>
     _checkHr(index, addHr=true)
     {
         let sep = this.text[index];
@@ -667,23 +500,23 @@ class Markdown
     ///       enforce both dimensions, possibly resulting in distortion.
     ///    5. url - required - the link to the image
     /// </summary>
-    /// <returns>The end index of the image string, or -1 if no image was found</returns>
+    /// <returns>The position we should continue parsing from</returns>
     _checkImage(start)
     {
         if (this._isEscaped(start) || start == this.text.length - 1 || this.text[start + 1] != '[')
         {
-            return -1;
+            return start;
         }
 
         let result = this._testUrl(start + 1);
         if (!result)
         {
-            return -1;
+            return start;
         }
 
         if (this.currentRun.end < result.end)
         {
-            return -1;
+            return start;
         }
 
         // Non-standard width/height syntax, since I explicitly don't want
@@ -710,7 +543,125 @@ class Markdown
         }
 
         new Image(start, result.end, result.text, result.url, width, height, this.currentRun);
-        return result.end;
+        return result.end - 1; // Nothing allowed inside of an image
+    }
+
+    _checkOpenBracket(i)
+    {
+        if (!stateAllowedInState(State.Url, this.currentRun, i))
+        {
+            return i;
+        }
+
+        if (this._isEscaped(i))
+        {
+            return i;
+        }
+
+        let result = this._testUrl(i);
+        if (!result)
+        {
+            return i;
+        }
+
+        // Must be contained in its parent element
+        if (this.currentRun.end < result.end)
+        {
+            return i;
+        }
+
+        let url;
+        if (result.type == 0)
+        {
+            url = new Url(i, result.end, result.url, this.currentRun);
+        }
+        else if (result.type == 1)
+        {
+            url = new ExtendedUrl(i, result.end, result.url, this._urls, this.currentRun);
+        }
+        else
+        {
+            url = new ExtendedUrlTag(i, result.end, this.currentRun);
+            i = result.end - 1;
+        }
+
+        this.currentRun = url;
+        logTmi(`Added url: start=${url.start}, end=${url.end}, text=${url.text}, url=${url.url}`);
+        return i;
+    }
+
+    _checkBacktick(i)
+    {
+        if (this._isEscaped(i))
+        {
+            return i;
+        }
+
+        // Multiline code block if it's the start of a line and there are three of these
+        let multilineBlockEnd = this._checkBacktickCodeBlock(i);
+        if (multilineBlockEnd != -1)
+        {
+            i = multilineBlockEnd - 1;
+            return i;
+        }
+
+        // Couldn't parse as a code block, so try an inline block.
+        let inlineEnd = this._checkInlineCode(i);
+        if (inlineEnd != -1)
+        {
+            i = inlineEnd - 1;
+        }
+
+        return i;
+    }
+
+    _checkAsterisk(i)
+    {
+        if (this._isEscaped(i))
+        {
+            return i;
+        }
+
+        if (this._checkHr(i))
+        {
+            return this._indexOrLast('\n', i) - 1;
+        }
+
+        // Unordered list. Returns true if we successfully parsed an unordered list item
+        if (this._checkList(i, false /*ordered*/))
+        {
+            return i;
+        }
+
+        // Essentially a fallthrough, since asterisks and underscores
+        // can both be used as bold/italic markers
+        return this._checkUnderscore(i);
+    }
+
+    _checkUnderscore(i)
+    {
+        // First, check for HR
+        if (this._checkHr(i))
+        {
+            return this._indexOrLast('\n', i) - 1;
+        }
+
+        // Only returns true if we added a bold run, indicating that we should
+        // also increment i as to not be included in a subsequent check
+        if (this._checkBoldItalic(i))
+        {
+            ++i;
+        }
+
+        return i;
+    }
+
+    _inSpecialContext(start)
+    {
+        let parentContextStartLength = this.currentRun.startContextLength();
+        let parentContextEndLength = this.currentRun.endContextLength();
+        return ((parentContextStartLength != 0 && start - this.currentRun.start < parentContextStartLength) ||
+            (parentContextEndLength != 0 && this.currentRun.end - start <= parentContextEndLength));
     }
 
     /// <summary>
@@ -730,20 +681,20 @@ class Markdown
     /// increment our parse index so as not to parse the next character
     /// as an italic run
     /// </returns>
+    /// <remarks>
+    /// Separators a tricky, as they can be nested, and can represent both
+    /// bold (2 separators) and italics (1 separator). The exact format is
+    /// determined by the ending separator.
+    ///
+    /// Another tricky thing. If separators are not matched (__A_), it should be
+    /// rendered as _<i>A</i>. So if we've reached the end of our block and have
+    /// too many separators, we need to drop a few of them from the format and
+    /// add them to the text.
+    /// </remarks>
     _checkBoldItalic(start)
     {
-        // Separators a tricky, as they can be nested, and can represent both
-        // bold (2 separators) and italics (1 separator). The exact format is
-        // determined by the ending separator.
-        //
-        // Another tricky thing. If separators are not matched (__A_), it should be
-        // rendered as _<i>A</i>. So if we've reached the end of our block and have
-        // too many separators, we need to drop a few of them from the format and
-        // add them to the text.
-
         // A non-alphanumeric number should precede this.
-        // Might want to tweak this a bit more by digging into surrounding/parent
-        // runs.
+        // Might want to tweak this a bit more by digging into surrounding/parent runs.
         if (start != 0 && (isAlphanumeric(this.text[start - 1]) || this._isEscaped(start)))
         {
             return false;
@@ -751,18 +702,12 @@ class Markdown
 
         let sep = this.text[start];
 
-        // Man, I really need to compartmentalize this nasty processing loop
-
         // Also check that we aren't in any special regions of our current run
-        let parentContextStartLength = this.currentRun.startContextLength();
-        let parentContextEndLength = this.currentRun.endContextLength();
-        if ((parentContextStartLength != 0 && start - this.currentRun.start < parentContextStartLength) ||
-            (parentContextEndLength != 0 && this.currentRun.end - start <= parentContextEndLength))
+        if (this._inSpecialContext(start))
         {
             return false;
         }
 
-        let blockEnd = this.currentRun.end - this.currentRun.endContextLength();
         let separators = 1;
         let separatorIndex = start + 1;
         while (this.text[separatorIndex] == sep)
@@ -777,143 +722,236 @@ class Markdown
             return false;
         }
 
-        // Need to find a match for our separator.
-        // Rules:
-        //  An opening separator run must be preceded by whitespace and end with non-whitespace
-        // A closing separator run must be preceded by non-whitespace and end with whitespace
-        let inline = false;
-        let newline = false;
-        for (; separators != 0 && separatorIndex < blockEnd; ++separatorIndex)
+        let sepInfo =
         {
-            if (this.text[separatorIndex] == '`' && !this._isEscaped(separatorIndex))
-            {
-                inline = !inline;
-            }
+            count : separators,
+            index : separatorIndex,
+            tentativeCount : 0,
+            tentativeIndex : 0,
+            separator : sep
+        };
 
-            if (this._isInline(inline, separatorIndex, blockEnd))
-            {
-                continue;
-            }
+        // Find a match for our separator.
+        if (!this._findBoldItalicBounds(sepInfo))
+        {
+            return false;
+        }
 
-            if (this.text[separatorIndex] == '\n')
+        return this._makeBoldOrItalic(start, sepInfo);
+    }
+
+    _makeBoldOrItalic(start, sepInfo)
+    {
+        let isBold = false;
+        let boldItalic;
+        if (this.text[start + 1] == sepInfo.separator && this.text[sepInfo.index - 2] == sepInfo.separator)
+        {
+            logTmi(`Adding bold run: start=${start}, end=${sepInfo.index}`);
+            boldItalic = new Bold(start, sepInfo.index, this.currentRun);
+            isBold = true;
+        }
+        else
+        {
+            logTmi(`Adding italic run: start=${start}, end=${sepInfo.index}`);
+            boldItalic = new Italic(start, sepInfo.index, this.currentRun);
+        }
+
+        this.currentRun = boldItalic;
+        return isBold;
+    }
+
+    /// <summary>
+    /// Finds a match for a start sequence of separators
+    /// Rules:
+    ///  An opening separator run must be preceded by whitespace and end with non-whitespace
+    /// A closing separator run must be preceded by non-whitespace and end with whitespace
+    /// </summary>
+    _findBoldItalicBounds(sepInfo)
+    {
+        let loopInfo = { inline : false, newline : false };
+        let blockEnd = this.currentRun.end - this.currentRun.endContextLength();
+        for (; sepInfo.count != 0 && sepInfo.index < blockEnd; ++sepInfo.index)
+        {
+            if (!this._boldItalicLoopPrecheck(loopInfo, sepInfo, blockEnd))
             {
-                if (newline)
+                if (loopInfo.newline === 2)
                 {
                     // Double newline, inline element can't continue
                     return false;
                 }
 
-                newline = true;
                 continue;
             }
 
-            newline = false;
-
-            if (this.text[separatorIndex] != sep || this._isEscaped(separatorIndex))
+            if (this.text[sepInfo.index] != sepInfo.separator || this._isEscaped(sepInfo.index))
             {
                 continue;
             }
 
             // Check to see if it's the start of an opening or closing sequence
-            let potentialSeparators = 1;
+            sepInfo.tentativeCount = 1;
             let foundMatch = false;
-            if (!isAlphanumeric(this.text[separatorIndex - 1]))
+            if (!isAlphanumeric(this.text[sepInfo.index - 1]))
             {
-                // Opening?
-                let psi = separatorIndex + potentialSeparators;
-                while (psi < blockEnd && this.text[psi] == sep)
+                foundMatch = this._checkBoldItalicOpening(sepInfo, blockEnd);
+                if (foundMatch == -1)
                 {
-                    ++potentialSeparators;
-                    ++psi;
-                }
-
-                if (psi == blockEnd || isWhitespace(this.text[psi]))
-                {
-                    if (isWhitespace(this.text[separatorIndex - 1]))
-                    {
-                        // Separators surrounded by whitespace, don't parse
-                        separatorIndex = psi;
-                        continue;
-                    }
-
-                    // Non-alphanumeric + separators + whitespace. This
-                    // might actually be an end
-                    potentialSeparators = 1;
-                }
-                else if (isWhitespace(this.text[separatorIndex - 1]))
-                {
-                    // Found an actual group of opening separators. Add it to our collection
-                    foundMatch = true;
-                    separators += potentialSeparators;
-                    separatorIndex = psi;
-                }
-                else
-                {
-                    // Assume that separators surrounded by
-                    // punctuation is closing. It's ambiguous
-                    // and some choice has to be made
-                    potentialSeparators = 1;
+                    continue;
                 }
             }
 
             if (!foundMatch)
             {
-                // Non-whitespace, see if it's an end sequence
-                let psi = separatorIndex + potentialSeparators;
-                while (psi < blockEnd && this.text[psi] == sep)
+                if (this._findBoldItalicEnd(sepInfo, blockEnd))
                 {
-                    ++potentialSeparators;
-                    ++psi;
+                    return true;
                 }
 
-                if (psi != blockEnd && isAlphanumeric(this.text[psi]))
-                {
-                    // Group of separators with alphanumeric on either end,
-                    // skip over it
-                    separatorIndex = psi;
-                    continue;
-                }
-
-                if (potentialSeparators > separators)
-                {
-                    separatorIndex += separators;
-                    separators = 0;
-                    break;
-                }
-                else
-                {
-                    separatorIndex += potentialSeparators;
-                    separators -= potentialSeparators;
-                    if (separators == 0)
-                    {
-                        break;
-                    }
-                }
+                continue;
             }
         }
 
-        if (separators != 0)
+        // If the count is not 0, we didn't find a match. Move on to the next character
+        return sepInfo.count == 0;
+    }
+
+    _boldItalicLoopPrecheck(loopInfo, sepInfo, blockEnd)
+    {
+        if (this.text[sepInfo.index] == '`' && !this._isEscaped(sepInfo.index))
         {
-            // Didn't find a match, move to the next character
+            loopInfo.inline = !loopInfo.inline;
+        }
+
+        if (this._isInline(loopInfo.inline, sepInfo.index, blockEnd))
+        {
             return false;
         }
 
-        let isBold = false;
-        let bi;
-        if (this.text[start + 1] == sep && this.text[separatorIndex - 2] == sep)
+        if (this.text[sepInfo.index] == '\n')
         {
-            logTmi(`Adding bold run: start=${start}, end=${separatorIndex}`);
-            bi = new Bold(start, separatorIndex, this.currentRun);
-            isBold = true;
+            if (loopInfo.newline)
+            {
+                // Double newline, inline element can't continue
+                loopInfo.newline = 2;
+                return false;
+            }
+
+            loopInfo.newline = true;
+            return false;
+        }
+
+        loopInfo.newline = false;
+        return true;
+    }
+
+    _checkBoldItalicOpening(sepInfo, blockEnd)
+    {
+        // Opening?
+        let foundMatch = false;
+        sepInfo.tentativeIndex = sepInfo.index + sepInfo.tentativeCount;
+        while (sepInfo.tentativeIndex < blockEnd && this.text[sepInfo.tentativeIndex] == sepInfo.separator)
+        {
+            ++sepInfo.tentativeCount;
+            ++sepInfo.tentativeIndex;
+        }
+
+        if (sepInfo.tentativeIndex == blockEnd || isWhitespace(this.text[sepInfo.tentativeIndex]))
+        {
+            if (isWhitespace(this.text[sepInfo.index - 1]))
+            {
+                // Separators surrounded by whitespace, don't parse
+                sepInfo.index = sepInfo.tentativeIndex;
+                return -1;
+            }
+
+            // Non-alphanumeric + separators + whitespace. This
+            // might actually be an end
+            sepInfo.tentativeCount = 1;
+        }
+        else if (isWhitespace(this.text[sepInfo.index - 1]))
+        {
+            // Found an actual group of opening separators. Add it to our collection
+            foundMatch = true;
+            sepInfo.count += sepInfo.tentativeCount;
+            sepInfo.index = sepInfo.tentativeIndex;
         }
         else
         {
-            logTmi(`Adding italic run: start=${start}, end=${separatorIndex}`);
-            bi = new Italic(start, separatorIndex, this.currentRun);
+            // Assume that separators surrounded by
+            // punctuation is closing. It's ambiguous
+            // and some choice has to be made
+            sepInfo.tentativeCount = 1;
         }
 
-        this.currentRun = bi;
-        return isBold;
+        return foundMatch;
+    }
+
+    _findBoldItalicEnd(sepInfo, blockEnd)
+    {
+        // Non-whitespace, see if it's an end sequence
+        sepInfo.tentativeIndex = sepInfo.index + sepInfo.tentativeCount;
+        while (sepInfo.tentativeIndex < blockEnd && this.text[sepInfo.tentativeIndex] == sepInfo.separator)
+        {
+            ++sepInfo.tentativeCount;
+            ++sepInfo.tentativeIndex;
+        }
+
+        if (sepInfo.tentativeIndex != blockEnd && isAlphanumeric(this.text[sepInfo.tentativeIndex]))
+        {
+            // Group of separators with alphanumeric on either end,
+            // skip over it
+            sepInfo.index = sepInfo.tentativeIndex;
+            return false;
+        }
+
+        if (sepInfo.tentativeCount > sepInfo.count)
+        {
+            sepInfo.index += sepInfo.count;
+            sepInfo.count = 0;
+            return true;
+        }
+
+        sepInfo.index += sepInfo.tentativeCount;
+        sepInfo.count -= sepInfo.tentativeCount;
+
+        // If we're going to continue our loop, backtrack sepInfo.index because we'll
+        // increment it as part of the loop definition.
+        if (sepInfo.count != 0)
+        {
+            --sepInfo.index;
+        }
+
+        return sepInfo.count == 0;
+    }
+
+    _checkTilde(i)
+    {
+        if (this._isEscaped(i))
+        {
+            return i;
+        }
+
+        // Multiline code block if there are three of these in a row
+        let multilineBlockEnd = this._checkBacktickCodeBlock(i);
+        if (multilineBlockEnd != -1)
+        {
+            return multilineBlockEnd - 1;
+        }
+
+        /* __fallthrough for strikethrough */
+        return this._checkPlus(i);
+    }
+
+    _checkPlus(i)
+    {
+        if (this._checkStrikeAndUnderline(i))
+        {
+            // Skip over the second ~/+, as it's part of
+            // the run we just created
+            ++i;
+        }
+
+        return i;
     }
 
     /// <summary>
@@ -921,9 +959,9 @@ class Markdown
     /// it to the Run list if we do.
     ///
     /// Rules:
-    ///  1. Strikethrough runs are surrounded by tildes
+    ///  1. Strikethrough runs are surrounded by 2 tildes
     ///     ~~This is strikethrough~~
-    ///  2. Underline runs are surrounded by plusses
+    ///  2. Underline runs are surrounded by 2 plusses
     ///     ++This is underlined++
     /// </summary>
     /// <returns>
@@ -932,13 +970,6 @@ class Markdown
     /// </returns>
     _checkStrikeAndUnderline(start)
     {
-        // Depending on what online visualizer I use, this does a multitude of things.
-        // Usually two strikes through (~~A~~), but sometimes it only takes one (~A~).
-        // For others, one creates a subscript, and three creates a code block. Gah.
-        //
-        // For this parser, keep things simple for now. Two indicates a strikethrough.
-        // They can be nested (though you shouldn't need it...) just like '*' and '_'
-        //
         // What can/should be shared with bold/italic? Loops are __very__ similar, but it
         // gets tricky because '*' and '_' can be both bold _and_ italic
         if (start != 0 && (isAlphanumeric(this.text[start - 1]) || this._isEscaped(start)))
@@ -1105,20 +1136,59 @@ class Markdown
             return false;
         }
 
-        let su;
+        let strikeOrUnderline;
         if (sep == '+')
         {
             logTmi(`Adding underline run: start=${start}, end=${separatorIndex}`);
-            su = new Underline(start, separatorIndex, this.currentRun);
+            strikeOrUnderline = new Underline(start, separatorIndex, this.currentRun);
         }
         else
         {
             logTmi(`Adding strikethrough run: start-${start}, end=${separatorIndex}`);
-            su = new Strikethrough(start, separatorIndex, this.currentRun);
+            strikeOrUnderline = new Strikethrough(start, separatorIndex, this.currentRun);
         }
 
-        this.currentRun = su;
+        this.currentRun = strikeOrUnderline;
         return true;
+    }
+
+    _checkSpace(i)
+    {
+        // Potential code block, alternative to three backticks/tildes
+        let blockEnd = this._checkIndentCodeBlock(i);
+        if (blockEnd != -1)
+        {
+            i = blockEnd - 1;
+        }
+
+        return i;
+    }
+
+    _checkLessThan(i)
+    {
+        // Allow two things. Line breaks and comments
+        if (!this._isEscaped(i) && /<br ?\/?>/.test(this.text.substring(i, i + 5)))
+        {
+            let br = new Break(i, this.currentRun);
+            br.end = this.text.indexOf('>', i) + 1;
+            return i;
+        }
+
+        if (!this.text.substring(i, i + 4) == '<!--')
+        {
+            return i;
+        }
+
+        let endComment = this.text.indexOf('-->', i);
+        if (endComment == -1)
+        {
+            return i;
+        }
+
+        endComment += 3;
+
+        new HtmlComment(i, endComment, this.currentRun);
+        return endComment - 1;
     }
 
     /// <summary>
@@ -1393,6 +1463,18 @@ class Markdown
         new IndentCodeBlock(blockStart, end, this.text, minspaces, firstIsList, this.currentRun);
         logTmi(`Added Indent Code Block: start=${blockStart}, end=${end}, minspaces=${minspaces}`);
         return end;
+    }
+
+    _checkPipe(i)
+    {
+        // Tables
+        let tableEnd = this._checkTable(i);
+        if (tableEnd != -1)
+        {
+            i = tableEnd - 1;
+        }
+
+        return i;
     }
 
     /// <summary>
@@ -1672,7 +1754,6 @@ class Markdown
         }
 
         end += findStr.length;
-
         if (end > lineEnd || end > this.currentRun.end)
         {
             return -1;
@@ -2482,19 +2563,12 @@ class Run
             return this.cached;
         }
 
-        let ident = '';
-        let par = this.parent;
-        while (par !== null)
-        {
-            par = par.parent;
-            ident += '   ';
-        }
-
         if (!inlineOnly && this.shouldProcessNewlines())
         {
             this.parseNewlines(initialText);
         }
 
+        let ident = ''.repeat(this._nestLevel * 3); // Indent logging to indicate nest level
         logTmi(`${ident}Converting State.${stateToStr(this.state)} : ${this.start}-${this.end}. ${this.innerRuns.length} children.`);
         let newText = this.tag(false /*end*/);
 
@@ -2530,6 +2604,19 @@ class Run
 
         this.cached = newText + this.tag(true /*end*/);
         return this.cached;
+    }
+
+    _nestLevel()
+    {
+        let nest = 0;
+        let parent = this.parent;
+        while (parent !== null)
+        {
+            parent = parent.parent;
+            ++nest;
+        }
+
+        return nest;
     }
 
     /// <summary>
@@ -2750,89 +2837,9 @@ class Run
         let cBreaks = 0;
         while (newline != -1 && newline < end)
         {
-            // Also allow for arbitrary spaces here
-            let cNewlines = 1;
-            let offset = 1;
-            while (newline + offset < end)
-            {
-                let next = text[newline + offset];
-                if (next == '\n')
-                {
-                    ++cNewlines;
-                }
-                else if (next == ' ')
-                {/* Empty */
-                }
-                else
-                {
-                    break;
-                }
-
-                ++offset;
-            }
-
-            let atTop = newline == previousRun.end;
-            let atBottom = nextRun !== null && newline + offset == nextRun.start;
-
-            if (cNewlines > 1 && this.state == State.None)
-            {
-                if ((!atTop && !atBottom) || cNewlines > 2)
-                {
-                    doubles.push([newline, newline + offset]);
-                    newline = text.indexOf('\n', newline + offset);
-                    continue;
-                }
-            }
-
-            const shouldAdd = (state, comp) => !comp.isBlockElement() ||
-                    (state == State.ListItem &&
-                        (comp.state == State.ListItem ||
-                            comp.state == State.OrderedList ||
-                            comp.state == State.UnorderedList));
-
-            if (atTop)
-            {
-                // We're at the start of the block, only add a break under certain conditions
-                if (shouldAdd(this.state, previousRun))
-                {
-                    cBreaks += this._insertBreak(newline);
-                }
-            }
-            else if (atBottom)
-            {
-                if (shouldAdd(this.state, nextRun))
-                {
-                    cBreaks += this._insertBreak(newline);
-                }
-            }
-            else
-            {
-                cBreaks += this._insertBreak(newline);
-            }
-
-            // Second break (or first, depending on the state above)
-            if (cNewlines > 1)
-            {
-                if (atTop)
-                {
-                    if (cNewlines > 2 || shouldAdd(this.state, previousRun))
-                    {
-                        cBreaks += this._insertBreak(newline + 1);
-                    }
-                }
-                else if (atBottom)
-                {
-                    if (cNewlines > 2 || shouldAdd(this.state, nextRun))
-                    {
-                        cBreaks += this._insertBreak(newline + 1);
-                    }
-                }
-                else
-                {
-                    cBreaks += this._insertBreak(newline + 1);
-                }
-            }
-
+            let parseResult = this._parseNewline(text, newline, end, doubles, previousRun, nextRun);
+            cBreaks += parseResult.breaks;
+            let offset = parseResult.newlineOffset;
             newline = text.indexOf('\n', newline + offset);
         }
 
@@ -2863,6 +2870,105 @@ class Run
         }
 
         return cBreaks + divDiff;
+    }
+
+    _parseNewline(text, newline, end, doubles, previousRun, nextRun)
+    {
+        // Also allow for arbitrary spaces here
+        let cNewlines = 1;
+        let offset = 1;
+        while (newline + offset < end)
+        {
+            let next = text[newline + offset];
+            if (next == '\n')
+            {
+                ++cNewlines;
+            }
+            else if (next == ' ')
+            {/* Empty */
+            }
+            else
+            {
+                break;
+            }
+
+            ++offset;
+        }
+
+        let parseResult = { breaks : 0, newlineOffset : offset };
+
+        let atTop = newline == previousRun.end;
+        let atBottom = nextRun !== null && newline + offset == nextRun.start;
+
+        if (cNewlines > 1 && this.state == State.None)
+        {
+            if ((!atTop && !atBottom) || cNewlines > 2)
+            {
+                doubles.push([newline, newline + offset]);
+                return parseResult;
+            }
+        }
+
+        parseResult.breaks = this._addBreaks(newline, cNewlines, previousRun, nextRun, atTop, atBottom);
+        return parseResult;
+    }
+
+    _addBreaks(newline, cNewlines, previousRun, nextRun, atTop, atBottom)
+    {
+        let cBreaks = 0;
+        if (atTop)
+        {
+            // We're at the start of the block, only add a break under certain conditions
+            if (this._shouldAddBreak(this.state, previousRun))
+            {
+                cBreaks += this._insertBreak(newline);
+            }
+        }
+        else if (atBottom)
+        {
+            if (this._shouldAddBreak(this.state, nextRun))
+            {
+                cBreaks += this._insertBreak(newline);
+            }
+        }
+        else
+        {
+            cBreaks += this._insertBreak(newline);
+        }
+
+        // Second break (or first, depending on the state above)
+        if (cNewlines > 1)
+        {
+            if (atTop)
+            {
+                if (cNewlines > 2 || this._shouldAddBreak(this.state, previousRun))
+                {
+                    cBreaks += this._insertBreak(newline + 1);
+                }
+            }
+            else if (atBottom)
+            {
+                if (cNewlines > 2 || this._shouldAddBreak(this.state, nextRun))
+                {
+                    cBreaks += this._insertBreak(newline + 1);
+                }
+            }
+            else
+            {
+                cBreaks += this._insertBreak(newline + 1);
+            }
+        }
+
+        return cBreaks;
+    }
+
+    _shouldAddBreak(state, compareRun)
+    {
+        return !compareRun.isBlockElement() ||
+            (state == State.ListItem &&
+                (compareRun.state == State.ListItem ||
+                    compareRun.state == State.OrderedList ||
+                    compareRun.state == State.UnorderedList));
     }
 
     /// <summary>
@@ -2961,6 +3067,13 @@ class Run
         if (this.state != State.InlineCode && this.state != State.CodeBlock)
         {
             newText = this.escapeChars(newText, '\\*`_+~<>');
+        }
+
+        // Other classes might want to keep newlines around for extra
+        // processing, but if we're in a plain Run, we don't want them
+        if (this.state == State.None)
+        {
+            newText = newText.replace(/\n/g, '');
         }
 
         // All items should have htmlentities replaced
@@ -3462,47 +3575,53 @@ class Image extends Run
 
         let base = `<img src="${encodeURI(this.url)}" alt="${super.transform(this.altText)}"`;
 
-        let widthP = false;
-        if (this.width.endsWith('px'))
-        {
-            this.width = parseInt(this.width.substring(0, this.width.length - 2));
-        }
-        else if (this.width.endsWith('%'))
-        {
-            this.width = parseInt(this.width.substring(0, this.width.length - 1));
-            widthP = true;
-        }
-        else
-        {
-            this.width = parseInt(this.width);
-        }
-
+        let widthP = this._parseDimension(true /*width*/);
         if (!isNaN(this.width))
         {
             base += ` width="${this.width}${widthP ? '%' : 'px'}"`;
         }
 
-        let heightP = false;
-        if (this.height.endsWith('px'))
-        {
-            this.height = parseInt(this.height.substring(0, this.height.length - 2));
-        }
-        else if (this.height.endsWith('%'))
-        {
-            this.height = parseInt(this.height.substring(0, this.height.length - 1));
-            heightP = true;
-        }
-        else
-        {
-            this.height = parseInt(this.height);
-        }
-
+        let heightP = this._parseDimension(false /*width*/);
         if (!isNaN(this.height))
         {
             base += ` height="${this.height}${heightP ? '%' : 'px'}"`;
         }
 
         return base + '>';
+    }
+
+    /// <summary>
+    /// Parses the string width/height and converts it to an integer
+    /// </summary>
+    /// <returns>true if the dimension is given in percentage, false if pixels</returns>
+    _parseDimension(width)
+    {
+        let dimen = width ? this.width : this.height;
+        let percentage = false;
+        if (dimen.endsWith('px'))
+        {
+            dimen = parseInt(dimen.substring(0, dimen.length - 2));
+        }
+        else if (dimen.endsWith('%'))
+        {
+            dimen = parseInt(dimen.substring(0, dimen.length - 1));
+            percentage = true;
+        }
+        else
+        {
+            dimen = parseInt(dimen);
+        }
+
+        if (width)
+        {
+            this.width = dimen;
+        }
+        else
+        {
+            this.height = dimen;
+        }
+
+        return percentage;
     }
 
     // Inline tag, no actual content
