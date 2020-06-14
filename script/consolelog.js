@@ -1,5 +1,5 @@
 
-/* exported testAll, setDarkConsole, setTrace, consoleHelp, _logErrorId */
+/* exported testConsolelog, setDarkConsole, setTrace, consoleHelp, _logErrorId */
 /// <summary>
 /// Console logging class. Allows easy timestamped logging with various log levels
 ///
@@ -97,7 +97,7 @@ if (isNaN(g_darkConsole))
 logInfo("Welcome to the console! For debugging help, call consoleHelp()");
 
 // Don't include this in minified versions
-function testAll()
+function testConsolelog()
 {
     const old = g_logLevel;
     setLogLevel(-1);
@@ -108,6 +108,7 @@ function testAll()
     logWarn("Warn!");
     logError("Error!");
     log("Crit!", undefined, false /*freeze*/, LOG.Critical);
+    logFormattedText(LOG.Info, "%cFormatted%c,%c Text!%c", "color: green", "color: red", "color: orange", "color: inherit");
     setLogLevel(old);
 }
 
@@ -157,6 +158,11 @@ function logError(obj, description, freeze)
     log(obj, description, freeze, LOG.Error);
 }
 
+function logFormattedText(level, text, ...format)
+{
+    log("", text, false /*freeze*/, level, true /*textOnly*/, ...format);
+}
+
 /// <summary>
 /// Core logging routine. Prefixes a formatted timestamp based on the level
 /// </summary>
@@ -174,8 +180,12 @@ function logError(obj, description, freeze)
 /// to display the message (info, warn, err). If g_traceLogging is set,
 /// always outputs to console.trace
 /// </param>
+/// <param name="more">
+/// A list of additional formatting to apply to the description
+/// Note that this cannot apply to `obj`, only `description`.
+/// </param>
 /* eslint-disable max-lines-per-function */
-function log(obj, description, freeze, level)
+function log(obj, description, freeze, level, textOnly, ...more)
 {
     if (level < g_logLevel)
     {
@@ -186,7 +196,7 @@ function log(obj, description, freeze, level)
     {
         let textColor = `color: ${colors[logLevel][2 + g_darkConsole]}`;
         let titleColor = `color: ${colors[logLevel][g_darkConsole]}`;
-        output(text, textColor, titleColor, textColor, titleColor, textColor, object);
+        output(text, textColor, titleColor, textColor, titleColor, textColor, ...more, object);
     };
 
     let timestring = getTimestring();
@@ -204,8 +214,7 @@ function log(obj, description, freeze, level)
     {
         print(
             console.log,
-            `%c[%cEXTREME%c][%c${timestring}%c] Called log with '${description ? description + ": " : ""}${typ(obj)},
-            ${level}'`,
+            `%c[%cEXTREME%c][%c${timestring}%c] Called log with '${description ? description + ": " : ""}${typ(obj)},${level}'`,
             curState(obj),
             6,
             colors);
@@ -220,7 +229,8 @@ function log(obj, description, freeze, level)
                 level < LOG.Error ?
                     console.warn :
                     console.error;
-    print(output, `%c[%c${g_logStr[level]}%c][%c${timestring}%c] ${description ? description + ": " : ""}${typ(obj)}`, curState(obj), level, colors);
+    let desc = description ? textOnly ? description : `${description}: ${typ(obj)}` : "";
+    print(output, `%c[%c${g_logStr[level]}%c][%c${timestring}%c] ${desc}`, curState(obj), level, colors);
 
     function getTimestring()
     {
