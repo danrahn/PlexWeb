@@ -4134,8 +4134,8 @@ function markdownHelp(callback, raw=false)
 
     let successFunc = function(response, request)
     {
-        _mdHelpHTML = _helpMarkdown.parse(response.data);
-        callback({ data : request.raw ? _helpMarkdown.text : `<div class="md">${_mdHelpHTML}</div>` });
+        _mdHelpHTML = `<div class="md">${_helpMarkdown.parse(response.data)}</div>`;
+        callback({ data : request.raw ? _helpMarkdown.text : _mdHelpHTML });
     };
 
     sendHtmlJsonRequest('process_request.php', { type : ProcessRequest.MarkdownText }, successFunc, undefined, { raw : raw });
