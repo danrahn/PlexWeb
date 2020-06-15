@@ -713,6 +713,45 @@ class Markdown
     /// </remarks>
     _checkBoldItalic(start)
     {
+        return this._checkFormat(start, true /*allowSingle*/);
+    }
+
+    /// <summary>
+    /// The core underlying format parser for bold, italic, underline, and strikethrough
+    /// </summary>
+    /// <returns>True if we added a format that uses a double identifier, false if single (i.e. italic)</returns>
+    _checkFormat(start, allowSingle)
+    {
+        let sepInfo =
+        {
+            count : 0,
+            index : 0,
+            tentativeCount : 0,
+            tentativeIndex : 0,
+            separator : '',
+            allowSingle : allowSingle
+        };
+
+        if (!this._formatPrecheck(start, sepInfo))
+        {
+            return false;
+        }
+
+        // Find a match for our separator.
+        if (!this._findMatchingFormattingMarker(sepInfo))
+        {
+            return false;
+        }
+
+        return this._makeFormat(start, sepInfo);
+    }
+
+    /// <summary>
+    /// Does some initial checks on the text surrounding the potential formatted block
+    /// </summary>
+    /// <returns>True if we might be starting a formatted block. False if we definitely aren't</returns>
+    _formatPrecheck(start, sepInfo)
+    {
         // A non-alphanumeric number should precede this.
         // Might want to tweak this a bit more by digging into surrounding/parent runs.
         if (start != 0 && (isAlphanumeric(this.text[start - 1]) || this._isEscaped(start)))
@@ -720,70 +759,77 @@ class Markdown
             return false;
         }
 
-        let sep = this.text[start];
-
-        // Also check that we aren't in any special regions of our current run
+        sepInfo.separator = this.text[start];
         if (this._inSpecialContext(start))
         {
             return false;
         }
 
-        let separators = 1;
-        let separatorIndex = start + 1;
-        while (this.text[separatorIndex] == sep)
+        sepInfo.count = 1;
+        sepInfo.index = start + 1;
+        while (sepInfo.index < this.text.length && this.text[sepInfo.index] == sepInfo.separator)
         {
-            ++separators;
-            ++separatorIndex;
+            ++sepInfo.count;
+            ++sepInfo.index;
+        }
+
+        if (!sepInfo.allowSingle && (sepInfo.count % 2) == 1)
+        {
+            // Odd number of separators, not allowed if we don't allow single separators
+            return false;
         }
 
         // Next character in run must not be whitespace
-        if (isWhitespace(this.text[separatorIndex]))
+        if (isWhitespace(this.text[sepInfo.index]))
         {
             return false;
         }
 
-        let sepInfo =
-        {
-            count : separators,
-            index : separatorIndex,
-            tentativeCount : 0,
-            tentativeIndex : 0,
-            separator : sep
-        };
-
-        // Find a match for our separator.
-        if (!this._findMatchingBoldItalicMarker(sepInfo))
-        {
-            return false;
-        }
-
-        return this._makeBoldOrItalic(start, sepInfo);
+        return true;
     }
 
     /// <summary>
-    /// Add the bold/italic span to our current run.
+    /// Add the format span to our current run.
     /// </summary>
     /// <param name="start">The start position of the run</param>
-    /// <param name="sepInfo">The separator info, which contains (among other things) the marker ('*' or '_') and end index of the run</param>
-    /// <returns>True if we added a bold run, false if we added an italic run</returns>
-    _makeBoldOrItalic(start, sepInfo)
+    /// <param name="sepInfo">The separator info, which contains (among other things) the marker and end index of the run</param>
+    /// <returns>True if we added a format that uses a double identifier, false if single (i.e. italic)</returns>
+    _makeFormat(start, sepInfo)
     {
-        let isBold = false;
-        let boldItalic;
-        if (this.text[start + 1] == sepInfo.separator && this.text[sepInfo.index - 2] == sepInfo.separator)
+        let format;
+        let isSingle = false;
+        switch (sepInfo.separator)
         {
-            logTmi(`Adding bold run: start=${start}, end=${sepInfo.index}`);
-            boldItalic = new Bold(start, sepInfo.index, this.currentRun);
-            isBold = true;
-        }
-        else
-        {
-            logTmi(`Adding italic run: start=${start}, end=${sepInfo.index}`);
-            boldItalic = new Italic(start, sepInfo.index, this.currentRun);
+            case '*':
+            case '_':
+                if (this.text[start + 1] == sepInfo.separator && this.text[sepInfo.index - 2] == sepInfo.separator)
+                {
+                    logTmi(`Adding bold run: start=${start}, end=${sepInfo.index}`);
+                    format = new Bold(start, sepInfo.index, this.currentRun);
+                    isSingle = true;
+                }
+                else
+                {
+                    logTmi(`Adding italic run: start=${start}, end=${sepInfo.index}`);
+                    format = new Italic(start, sepInfo.index, this.currentRun);
+                    isSingle = true;
+                }
+                break;
+            case '+':
+                logTmi(`Adding underline run: start=${start}, end=${sepInfo.index}`);
+                format = new Underline(start, sepInfo.index, this.currentRun);
+                break;
+            case '~':
+                logTmi(`Adding strikethrough run: start-${start}, end=${sepInfo.index}`);
+                format = new Strikethrough(start, sepInfo.index, this.currentRun);
+                break;
+            default:
+                logError(`How did we try to make a format with a '${sepInfo.separator}'?`);
+                break;
         }
 
-        this.currentRun = boldItalic;
-        return isBold;
+        this.currentRun = format;
+        return !isSingle;
     }
 
     /// <summary>
@@ -792,34 +838,29 @@ class Markdown
     ///  An opening separator run must be preceded by whitespace and end with non-whitespace
     /// A closing separator run must be preceded by non-whitespace and end with whitespace
     /// </summary>
-    _findMatchingBoldItalicMarker(sepInfo)
+    _findMatchingFormattingMarker(sepInfo)
     {
         let loopInfo = { inline : false, newline : false };
         let blockEnd = this.currentRun.end - this.currentRun.endContextLength();
         for (; sepInfo.count != 0 && sepInfo.index < blockEnd; ++sepInfo.index)
         {
-            if (!this._boldItalicLoopPrecheck(loopInfo, sepInfo, blockEnd))
+            let precheck = this._formatLoopPrecheck(loopInfo, sepInfo, blockEnd);
+            if (precheck == -1)
             {
-                if (loopInfo.newline === 2)
-                {
-                    // Double newline, inline element can't continue
-                    return false;
-                }
-
-                continue;
+                // Double newline
+                return false;
             }
 
-            if (this.text[sepInfo.index] != sepInfo.separator || this._isEscaped(sepInfo.index))
+            if (!precheck)
             {
                 continue;
             }
 
-            // Check to see if it's the start of an opening or closing sequence
             sepInfo.tentativeCount = 1;
             let foundMatch = false;
             if (!isAlphanumeric(this.text[sepInfo.index - 1]))
             {
-                foundMatch = this._checkBoldItalicOpening(sepInfo, blockEnd);
+                foundMatch = this._checkFormattingOpening(sepInfo, blockEnd);
                 if (foundMatch == -1)
                 {
                     continue;
@@ -828,7 +869,8 @@ class Markdown
 
             if (!foundMatch)
             {
-                if (this._findBoldItalicEnd(sepInfo, blockEnd))
+                // Non-whitespace, see if it's an end sequence
+                if (this._findFormattingEnd(sepInfo, blockEnd))
                 {
                     return true;
                 }
@@ -837,16 +879,20 @@ class Markdown
             }
         }
 
-        // If the count is not 0, we didn't find a match. Move on to the next character
         return sepInfo.count == 0;
     }
 
     /// <summary>
-    /// Returns whether we should process the current index for our bold/italic marker
+    /// Returns whether we should process the current index for our formatting marker
     /// We don't continue if we've detected that we're in an inline code block, the
     /// separator is escaped, or we come across a double newline
     /// </summary>
-    _boldItalicLoopPrecheck(loopInfo, sepInfo, blockEnd)
+    /// <returns>
+    ///  1 : we should continue
+    ///  0 : we should move on to the next character
+    /// -1 : we should stop processing
+    /// </returns>
+    _formatLoopPrecheck(loopInfo, sepInfo, blockEnd)
     {
         if (this.text[sepInfo.index] == '`' && !this._isEscaped(sepInfo.index))
         {
@@ -855,7 +901,7 @@ class Markdown
 
         if (this._isInline(loopInfo.inline, sepInfo.index, blockEnd))
         {
-            return false;
+            return 0;
         }
 
         if (this.text[sepInfo.index] == '\n')
@@ -864,26 +910,32 @@ class Markdown
             {
                 // Double newline, inline element can't continue
                 loopInfo.newline = 2;
-                return false;
+                return -1;
             }
 
             loopInfo.newline = true;
-            return false;
+            return 0;
         }
 
         loopInfo.newline = false;
-        return true;
+
+        if (this.text[sepInfo.index] != sepInfo.separator || this._isEscaped(sepInfo.index))
+        {
+            return 0;
+        }
+
+        return 1;
     }
 
     /// <summary>
-    /// Checks to see if the marker at the current index is the start of a new bold/italic run
+    /// Checks to see if the marker at the current index is the start of a new formatting run
     /// </summary>
     /// <returns>
-    /// True  : We found the start of a new, potentially nested, bold/italic run
+    /// True  : We found the start of a new, potentially nested, format run
     /// False : We did not find the start of a new run
     /// -1    : We found markers surrounded by whitespace and should not consider them when matching markers
     /// </returns>
-    _checkBoldItalicOpening(sepInfo, blockEnd)
+    _checkFormattingOpening(sepInfo, blockEnd)
     {
         let foundMatch = false;
         sepInfo.tentativeIndex = sepInfo.index + sepInfo.tentativeCount;
@@ -895,23 +947,24 @@ class Markdown
 
         if (sepInfo.tentativeIndex == blockEnd || isWhitespace(this.text[sepInfo.tentativeIndex]))
         {
-            if (isWhitespace(this.text[sepInfo.index - 1]))
+            // BI doesn't have single sep check
+            if ((!sepInfo.allowSingle && sepInfo.tentativeCount == 1) || isWhitespace(this.text[sepInfo.tentativeIndex - 1]))
             {
-                // Separators surrounded by whitespace, don't parse
                 sepInfo.index = sepInfo.tentativeIndex;
                 return -1;
             }
 
-            // Non-alphanumeric + separators + whitespace. This
-            // might actually be an end
+            // Non alphanumeric + separators + whitespace. This might actually be an end
             sepInfo.tentativeCount = 1;
         }
         else if (isWhitespace(this.text[sepInfo.index - 1]))
         {
             // Found an actual group of opening separators. Add it to our collection
+            // Note that these separators must be in pairs of two, so if we have an
+            // odd number, round down (strike/underline only).
             foundMatch = true;
-            sepInfo.count += sepInfo.tentativeCount;
             sepInfo.index = sepInfo.tentativeIndex;
+            sepInfo.count += sepInfo.tentativeCount - (sepInfo.allowSingle ? 0 : (sepInfo.tentativeCount % 2));
         }
         else
         {
@@ -925,10 +978,10 @@ class Markdown
     }
 
     /// <summary>
-    /// Checks whether the marker at the current index is closing a bold/italic run
+    /// Checks whether the marker at the current index is closing a format run
     /// </summary>
-    /// <returns>True if the marker does close a bold/italic run</returns>
-    _findBoldItalicEnd(sepInfo, blockEnd)
+    /// <returns>True if the marker does close a format run</returns>
+    _findFormattingEnd(sepInfo, blockEnd)
     {
         // Non-whitespace, see if it's an end sequence
         sepInfo.tentativeIndex = sepInfo.index + sepInfo.tentativeCount;
@@ -940,8 +993,7 @@ class Markdown
 
         if (sepInfo.tentativeIndex != blockEnd && isAlphanumeric(this.text[sepInfo.tentativeIndex]))
         {
-            // Group of separators with alphanumeric on either end,
-            // skip over it
+            // Group of separators with alphanumeric on either end, skip over it
             sepInfo.index = sepInfo.tentativeIndex;
             return false;
         }
@@ -954,7 +1006,7 @@ class Markdown
         }
 
         sepInfo.index += sepInfo.tentativeCount;
-        sepInfo.count -= sepInfo.tentativeCount;
+        sepInfo.count -= (sepInfo.tentativeCount - ((sepInfo.allowSingle ? 0 : sepInfo.tentativeCount % 2)));
 
         // If we're going to continue our loop, backtrack sepInfo.index because we'll
         // increment it as part of the loop definition.
@@ -1020,186 +1072,7 @@ class Markdown
     /// </returns>
     _checkStrikeAndUnderline(start)
     {
-        // What can/should be shared with bold/italic? Loops are __very__ similar, but it
-        // gets tricky because '*' and '_' can be both bold _and_ italic
-        if (start != 0 && (isAlphanumeric(this.text[start - 1]) || this._isEscaped(start)))
-        {
-            return false;
-        }
-
-        let sep = this.text[start];
-
-        // Need at least 4 additional characters to make a complete run
-        if (start >= this.text.length - 4 || this.text[start + 1] != sep)
-        {
-            return false;
-        }
-
-        let parentContextStartLength = this.currentRun.startContextLength();
-        let parentContextEndLength = this.currentRun.endContextLength();
-        if ((parentContextStartLength != 0 && start - this.currentRun.start < parentContextStartLength) ||
-            (parentContextEndLength != 0 && this.currentRun.end - start <= parentContextEndLength))
-        {
-            return false;
-        }
-
-        let blockEnd = this.currentRun.end - this.currentRun.endContextLength();
-        let separators = 2;
-        let separatorIndex = start + 2;
-        while (separatorIndex < this.text.length && this.text[separatorIndex] == sep)
-        {
-            ++separators;
-            ++separatorIndex;
-        }
-
-        if (separators % 2 == 1)
-        {
-            //  Odd number of separators, not allowed here
-            return false;
-        }
-
-        // Next character in run must not be whitespace
-        if (isWhitespace(this.text[separatorIndex]))
-        {
-            return false;
-        }
-
-        // Need to find a match for our separator.
-        // Keeping track of just inline code (and not block) is okay because we
-        // currently don't allow these annotations to span multiple lines. If that
-        // changes, this will have to change as well.
-        let inline = false;
-        let newline = false;
-        for (; separators != 0 && separatorIndex < blockEnd; ++separatorIndex)
-        {
-            if (this.text[separatorIndex] == '`' && !this._isEscaped(separatorIndex))
-            {
-                inline = !inline;
-            }
-
-            if (this._isInline(inline, separatorIndex, blockEnd))
-            {
-                continue;
-            }
-
-            if (this.text[separatorIndex] == '\n')
-            {
-                if (newline)
-                {
-                    // Double newline, inline element can't continue
-                    return false;
-                }
-
-                newline = true;
-                continue;
-            }
-
-            newline = false;
-
-            if (this.text[separatorIndex] != sep || this._isEscaped(separatorIndex))
-            {
-                continue;
-            }
-
-            // Check to see if it's the start of an opening or closing sequence
-            let potentialSeparators = 1;
-            let foundMatch = false;
-            if (!isAlphanumeric(this.text[separatorIndex - 1]))
-            {
-                // Opening? (psi == potentialSeparatorIndex)
-                let psi = separatorIndex + potentialSeparators;
-                while (psi < blockEnd && this.text[psi] == sep)
-                {
-                    ++potentialSeparators;
-                    ++psi;
-                }
-
-                if (psi == blockEnd || isWhitespace(this.text[psi]))
-                {
-                    if (potentialSeparators == 1 || isWhitespace(this.text[separatorIndex - 1]))
-                    {
-                        // Single separator or separators surrounded by whitespace, don't parse
-                        separatorIndex = psi;
-                        continue;
-                    }
-
-                    // Non alphanumeric + separators + whitespace. This
-                    // might actually be an end
-                    potentialSeparators = 1;
-                }
-                else if (isWhitespace(this.text[separatorIndex - 1]))
-                {
-                    // Found an actual group of opening separators. Add it to our collection
-                    // Note that these separators must be in pairs of two, so if we have an
-                    // odd number, round down.
-                    foundMatch = true;
-                    separators += potentialSeparators - (potentialSeparators % 2);
-                    separatorIndex = psi;
-                }
-                else
-                {
-                    // Assume that separators surrounded by punctuation is
-                    // closing. It's ambiguous and some choice has to be made
-                    potentialSeparators = 1;
-                }
-            }
-
-            if (!foundMatch)
-            {
-                // Non-whitespace, see if it's an end sequence
-                let psi = separatorIndex + potentialSeparators;
-                while (psi < blockEnd && this.text[psi] == sep)
-                {
-                    ++potentialSeparators;
-                    ++psi;
-                }
-
-                if (psi != blockEnd && isAlphanumeric(this.text[psi]))
-                {
-                    // Group of separators with alphanumeric on either end,
-                    // skip over it
-                    separatorIndex = psi;
-                    continue;
-                }
-
-                if (potentialSeparators > separators)
-                {
-                    separatorIndex += separators;
-                    separators = 0;
-                    break;
-                }
-                else
-                {
-                    separatorIndex += potentialSeparators;
-                    separators -= (potentialSeparators - (potentialSeparators % 2));
-                    if (separators == 0)
-                    {
-                        break;
-                    }
-                }
-            }
-        }
-
-        if (separators != 0)
-        {
-            // Didn't find a match
-            return false;
-        }
-
-        let strikeOrUnderline;
-        if (sep == '+')
-        {
-            logTmi(`Adding underline run: start=${start}, end=${separatorIndex}`);
-            strikeOrUnderline = new Underline(start, separatorIndex, this.currentRun);
-        }
-        else
-        {
-            logTmi(`Adding strikethrough run: start-${start}, end=${separatorIndex}`);
-            strikeOrUnderline = new Strikethrough(start, separatorIndex, this.currentRun);
-        }
-
-        this.currentRun = strikeOrUnderline;
-        return true;
+        return this._checkFormat(start, false /*allowSingle*/);
     }
 
     /// <summary>
