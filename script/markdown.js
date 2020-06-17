@@ -224,7 +224,9 @@ class Markdown
         let i = 0;
         for (; i < this.topRun.innerRuns.length; ++i)
         {
-            if (this.topRun.innerRuns[i].end >= diffStart)
+            // Check one past the end, since we might be breaking into the middle
+            // of a block element
+            if (this.topRun.innerRuns[i].end + 1 >= diffStart)
             {
                 break;
             }
@@ -1214,9 +1216,10 @@ class Markdown
         }
 
         let parentState = this.currentRun.state;
-        if (nestLevel > 1 && parentState != State.BlockQuote)
+        if (nestLevel > 1 && parentState != State.BlockQuote && parentState != State.ListItem)
         {
-            logError('Something went wrong! Nested blockquotes should have a blockquote parent, found ' + stateToStr(parentState));
+            logError('Something went wrong! ' +
+                'Nested blockquotes should have a blockquote parent or be nested in a list, found ' + stateToStr(parentState));
             return;
         }
 
@@ -2104,10 +2107,17 @@ class Markdown
                 }
             }
 
+
+            if (RegExp(blockRegexPrefix + '>').test(nextline))
+            {
+                // New blockquote nest level, can't bleed into it
+                return end;
+            }
+
             if (cEmpty == 1)
             {
                 let minspaces = (nestLevel + 1) * 2;
-                if (!RegExp(blockRegexNewline + ` {${minspaces},}`).test(nextline))
+                if (!RegExp(blockRegexPrefix + ` {${minspaces},}`).test(nextline))
                 {
                     return end;
                 }
@@ -2117,11 +2127,6 @@ class Markdown
                 let minspaces = (nestLevel + 1) * 2;
                 if (RegExp(blockRegexPrefix + `  {0,${minspaces - 1}}(?:\\*|\\d+\\.) `).test(nextline))
                 {
-                    return end;
-                }
-                else if (RegExp(blockRegexPrefix + ' *>').test(nextline))
-                {
-                    // New blockquote nest level, can't bleed into it
                     return end;
                 }
             }
@@ -2286,6 +2291,13 @@ class Markdown
                 }
             }
 
+            if (RegExp(blockRegexPrefix + '>').test(nextline))
+            {
+                // New blockquote nest level, can't bleed into it. Blockquotes that are
+                // nested inside of this listitem are okay though
+                return end;
+            }
+
             if (cEmpty == 1)
             {
                 let minspaces = (nestLevel + 1) * 2;
@@ -2296,11 +2308,6 @@ class Markdown
                         return end;
                     }
                 }
-            }
-            else if (RegExp(blockRegexPrefix + ' *>').test(nextline))
-            {
-                // New blockquote nest level, can't bleed into it
-                return end;
             }
             else if (RegExp(blockRegexPrefix + '  *(?:\\*|\\d+\\.) ').test(nextline))
             {
