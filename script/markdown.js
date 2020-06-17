@@ -2249,7 +2249,7 @@ class Markdown
     {
         // Special handling for lists within blockquotes. Can probably be
         // combined, but this makes it easier
-        let blockRegexPrefix = `^[^.]*( *> *){${this._parentBlockQuoteNestLevel() - 1}} *>`;
+        let blockRegexPrefix = `^[^>]*( *> *){${this._parentBlockQuoteNestLevel() - 1}} *>`;
         let blockRegexNewline = new RegExp(blockRegexPrefix + ' *\\n');
         let parentEnd = this.currentRun.end;
 

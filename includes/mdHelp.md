@@ -70,8 +70,8 @@ Hello! This is my Markdown Parser. It's a bit slow, but what do you expect from 
     ```
     3. Ordered lists will start at the first number given
     6. And always increase by one, regardless of what is written
-    5. I can continue a list item on the next lin
-e    without indenting
+    5. I can continue a list item on the next line
+    without indenting
 
       But if I want to add a line break, it must be indented 2 additional spaces
       1. Nested lists must be indented 2 spaces from their parent
@@ -120,6 +120,7 @@ e    without indenting
     *   *   *   *
         _ _ _ _
 
-### In Progress/Not Done
-* **Nesting** - This is the biggest current issue. While most things play nice with nested lists and nested block quotes, nesting lists/quotes within quotes/lists needs work. This includes downstream issues with elements that span multiple lines (code blocks/tables), who will have to know whether leading `>`, `*`, `\d+\.` are expected and should be ignored.
+### In Progress
+* **Nesting** - Nesting lists/blockquotes within each other is tricky, and extremely error prone. While most basic cases are now working, there's likely still lots of work to be done.
+  * > 1. > Look, a quote within a list within a quote within a list!
 * Many other things I'm sure

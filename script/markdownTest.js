@@ -340,6 +340,10 @@ const testBlockListNest = function()
         [
             '> * > A\n> B',
             '<blockquote><ul><li><blockquote>A</blockquote>B</li></ul></blockquote>'
+        ],
+        [
+            '> * > A\n>   >> B',
+            '<blockquote><ul><li><blockquote>A<br /><blockquote>B</blockquote></blockquote></li></ul></blockquote>'
         ]
     );
 
