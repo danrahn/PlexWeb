@@ -287,6 +287,7 @@ const testMixed = function()
     return testCore(testStrings);
 };
 
+/* eslint-disable max-lines-per-function */
 const testBlockListNest = function()
 {
     logInfo('Testing Nested Blockquotes and Lists');
@@ -318,11 +319,33 @@ const testBlockListNest = function()
         [
             '> * A\n>\n>>   B',
             '<blockquote><ul><li>A</li></ul><br /><blockquote>B</blockquote></blockquote>'
+        ],
+        [
+            '> * A\n>  > * B',
+            '<blockquote><ul><li>A<br /><blockquote><ul><li>B</li></ul></blockquote></li></ul></blockquote>'
+        ],
+        [
+            '> 1. > * A',
+            '<blockquote><ol start="1"><li><blockquote><ul><li>A</li></ul></blockquote></li></ol></blockquote>'
+        ],
+        [
+            '* 2. >> A',
+            '<ul><li><ol start="2"><li><blockquote><blockquote>A</blockquote></blockquote></li></ol></li></ul>'
+        ],
+        [
+            '> * > A\n>\n> B',
+            // Note: should we have a br after the ul?
+            '<blockquote><ul><li><blockquote>A</blockquote></li></ul><br />B</blockquote>'
+        ],
+        [
+            '> * > A\n> B',
+            '<blockquote><ul><li><blockquote>A</blockquote>B</li></ul></blockquote>'
         ]
     );
 
     return testCore(testStrings);
 };
+/* eslint-enable max-lines-per-function */
 
 const testBugFixes = function()
 {

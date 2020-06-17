@@ -1127,11 +1127,12 @@ class Markdown
     /// Returns true if the current run state is a list, not counting
     /// elements that are themselves nested within a list
     /// </summary>
-    _isInListType()
+    _inListOrQuote()
     {
         return this.currentRun.state == State.ListItem ||
             this.currentRun.state == State.OrderedList ||
-            this.currentRun.state == State.UnorderedList;
+            this.currentRun.state == State.UnorderedList ||
+            this.currentRun.state == State.BlockQuote;
     }
 
     /// <summary>
@@ -1154,22 +1155,13 @@ class Markdown
         }
 
         let nestLevel = 1;
-        let offset = 1;
-        while (start - offset >= 0 && /[> ]/.test(this.text[start - offset]))
-        {
-            if (this.text[start - offset] == '>')
-            {
-                ++nestLevel;
-            }
-
-            ++offset;
-        }
 
         // Must be the beginning of the line, or nested in a list.
         // This will get more complicated once arbitrary nesting is supported
         let prevNewline = this.text.lastIndexOf('\n', start);
         let regex;
-        if (this._isInListType())
+        let inListOrQuote = this._inListOrQuote();
+        if (this._inListOrQuote())
         {
             // Determine if our highest level parent is a blockquote or a list
             let regexStr = '>';
@@ -1191,6 +1183,7 @@ class Markdown
                         break;
                     case State.BlockQuote:
                         regexStr = ' *> *' + regexStr;
+                        ++nestLevel;
                         break;
                     default:
                         break;
@@ -1239,7 +1232,7 @@ class Markdown
         // '>' on all lines.
 
         let lineEnd = this.text.indexOf('\n', start);
-        let end = this.text.length; // By default, the blockquote covers the rest of the text
+        let end = inListOrQuote ? this.currentRun.end : this.text.length;
         while (lineEnd != -1 && lineEnd != this.text.length - 1)
         {
             let next = this.text[lineEnd + 1];
@@ -1977,25 +1970,31 @@ class Markdown
         // Two spaces adds a nesting level
         let prevNewline = this.text.lastIndexOf('\n', start);
         let prefix = this.text.substring(prevNewline + 1, start);
-        let regexString = '^ *$';
+
+        // Similar to _checkBlockQuote's loop
         let curRun = this.currentRun;
-        let quoteNests = 0;
+        let regexString = '';
         while (curRun !== null)
         {
-            if (curRun.state == State.BlockQuote)
+            switch (curRun.state)
             {
-                ++quoteNests;
+                case State.OrderedList:
+                    regexString = ' *(\\d+\\.)? *' + regexString;
+                    break;
+                case State.UnorderedList:
+                    regexString = ' *(\\*)? *' + regexString;
+                    break;
+                case State.BlockQuote:
+                    regexString = ' *> *' + regexString;
+                    break;
+                default:
+                    break;
             }
 
             curRun = curRun.parent;
         }
 
-        if (quoteNests != 0)
-        {
-            regexString = `( *> *){${quoteNests}}$`;
-        }
-
-        if (!new RegExp(regexString).test(prefix))
+        if (!new RegExp(`^${regexString}$`).test(prefix))
         {
             // Something other than spaces/blockquotes precedes this.
             return false;
@@ -2065,7 +2064,7 @@ class Markdown
     {
         // Special handling for lists within blockquotes. Can probably be
         // combined, but this makes it easier
-        let blockRegexPrefix = `^.*( *> *){${this._parentBlockQuoteNestLevel() - 1}} *>`;
+        let blockRegexPrefix = `^[^>]*( *> *){${this._parentBlockQuoteNestLevel() - 1}} *>`;
         let blockRegexNewline = new RegExp(blockRegexPrefix + ' *\\n');
         let parentEnd = this.currentRun.end;
 
@@ -2250,7 +2249,7 @@ class Markdown
     {
         // Special handling for lists within blockquotes. Can probably be
         // combined, but this makes it easier
-        let blockRegexPrefix = `^.*( *> *){${this._parentBlockQuoteNestLevel() - 1}} *>`;
+        let blockRegexPrefix = `^[^.]*( *> *){${this._parentBlockQuoteNestLevel() - 1}} *>`;
         let blockRegexNewline = new RegExp(blockRegexPrefix + ' *\\n');
         let parentEnd = this.currentRun.end;
 
@@ -3662,6 +3661,13 @@ class ListItem extends Run
             }
 
             lines[i] = this.trim(line.substring(j), side == Run.Side.Right ? Run.Side.Full : Run.Side.Left);
+
+            // Remove empty lines to avoid excess newlines when joining
+            if (lines[i].length == 0)
+            {
+                lines.splice(i, 1);
+                --i;
+            }
         }
 
         return lines.join('\n');
