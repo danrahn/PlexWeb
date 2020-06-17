@@ -2716,6 +2716,18 @@ class Markdown
 }
 
 /// <summary>
+/// Enum of sides passed into Run.transform to let us
+/// know what portion of the element we're processing
+/// </summary>
+let RunSide =
+{
+    Left : -1,
+    Middle : 0,
+    Right : 1,
+    Full : 2
+};
+
+/// <summary>
 /// Core Run class that contains the definition of a single span.
 /// Only the top-level run should be a pure Run. Everything else
 /// should create a class that extends a Run.
@@ -2769,17 +2781,25 @@ class Run
 
         // Even the setup for logging can get expensive when 'convert' is called hundreds/thousands
         // of times. Do some faster short-circuiting before setting anything up.
-        const logTmi = g_logLevel < LOG.Verbose;
-        let ident = logTmi ? ' '.repeat(this._nestLevel * 3) : ''; // Indent logging to indicate nest level
-        if (logTmi) logTmi(`${ident}Converting State.${stateToStr(this.state)} : ${this.start}-${this.end}. ${this.innerRuns.length} children.`);
+        const shouldLogTmi = g_logLevel < LOG.Verbose;
+        let ident = shouldLogTmi ? ' '.repeat(this._nestLevel * 3) : ''; // Indent logging to indicate nest level
+        if (shouldLogTmi)
+        {
+            logTmi(`${ident}Converting State.${stateToStr(this.state)} : ${this.start}-${this.end}. ${this.innerRuns.length} children.`);
+        }
+
         this.cached = this.tag(false /*end*/);
 
         let startWithContext = this.start + this.startContextLength();
         let endWithContext = this.end - this.endContextLength();
         if (this.innerRuns.length == 0)
         {
-            this.cached += this.transform(initialText.substring(startWithContext, endWithContext), Run.Side.Full);
-            if (logTmi) logTmi(`${ident}Returning '${this.cached + this.tag(true)}'`);
+            this.cached += this.transform(initialText.substring(startWithContext, endWithContext), RunSide.Full);
+            if (shouldLogTmi)
+            {
+                logTmi(`${ident}Returning '${this.cached + this.tag(true)}'`);
+            }
+
             let endTag = this.tag(true /*end*/);
             this.cached += endTag;
             return this.cached;
@@ -2787,7 +2807,7 @@ class Run
 
         if (startWithContext < this.innerRuns[0].start)
         {
-            this.cached += this.transform(initialText.substring(startWithContext, this.innerRuns[0].start), Run.Side.Left);
+            this.cached += this.transform(initialText.substring(startWithContext, this.innerRuns[0].start), RunSide.Left);
         }
 
         // Recurse through children
@@ -2796,13 +2816,13 @@ class Run
             this.cached += this.innerRuns[i].convert(initialText, inlineOnly);
             if (i != this.innerRuns.length - 1 && this.innerRuns[i].end < this.innerRuns[i + 1].start)
             {
-                this.cached += this.transform(initialText.substring(this.innerRuns[i].end, this.innerRuns[i + 1].start), Run.Side.Middle);
+                this.cached += this.transform(initialText.substring(this.innerRuns[i].end, this.innerRuns[i + 1].start), RunSide.Middle);
             }
         }
 
         if (this.innerRuns[this.innerRuns.length - 1].end < endWithContext)
         {
-            this.cached += this.transform(initialText.substring(this.innerRuns[this.innerRuns.length - 1].end, endWithContext), Run.Side.Right);
+            this.cached += this.transform(initialText.substring(this.innerRuns[this.innerRuns.length - 1].end, endWithContext), RunSide.Right);
         }
 
         // Don't directly += this, because Headers do hacky things to this.cached when grabbing the end tag
@@ -2854,18 +2874,18 @@ class Run
     /// Trims whitespace from the given text
     /// </summary>
     /// <param name="text">The text to trim</param>
-    /// <param name="side">A value from the Run.Side enum</param>
+    /// <param name="side">A value from the RunSide enum</param>
     trim(text, side)
     {
         switch (side)
         {
-            case Run.Side.Full:
+            case RunSide.Full:
                 return text.trim();
-            case Run.Side.Left:
+            case RunSide.Left:
                 return text.replace(/^\s+/gm, '');
-            case Run.Side.Right:
+            case RunSide.Right:
                 return text.replace(/\s+$/gm, '');
-            case Run.Side.Middle:
+            case RunSide.Middle:
                 return text;
             default:
                 logError('Unknown side: ' + side);
@@ -3326,18 +3346,6 @@ class Run
 }
 
 /// <summary>
-/// Enum of sides passed into Run.transform to let us
-/// know what portion of the element we're processing
-/// </summary>
-Run.Side =
-{
-    Left : -1,
-    Middle : 0,
-    Right : 1,
-    Full : 2
-};
-
-/// <summary>
 /// Run definition for a linebreak - <br>
 /// </summary>
 class Break extends Run
@@ -3652,7 +3660,7 @@ class ListItem extends Run
 
         // If we're parsing the beginning of the list item, we can skip
         // the first line as the starting '>' are not included
-        for (let i = ((side == Run.Side.Left || side == Run.Side.Full) ? 1 : 0); i < lines.length; ++i)
+        for (let i = ((side == RunSide.Left || side == RunSide.Full) ? 1 : 0); i < lines.length; ++i)
         {
             let line = lines[i];
             let found = 0;
@@ -3667,7 +3675,7 @@ class ListItem extends Run
                 ++j;
             }
 
-            lines[i] = this.trim(line.substring(j), side == Run.Side.Right ? Run.Side.Full : Run.Side.Left);
+            lines[i] = this.trim(line.substring(j), side == RunSide.Right ? RunSide.Full : RunSide.Left);
 
             // Remove empty lines to avoid excess newlines when joining
             if (lines[i].length == 0)
