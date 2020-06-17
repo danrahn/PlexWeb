@@ -37,6 +37,7 @@ class MarkdownTestSuite
         logInfo('');
         let totalTests = overallResults.passed + overallResults.failed;
         logInfo(`Passed ${overallResults.passed} of ${totalTests} tests (${((overallResults.passed / totalTests) * 100).toFixed(2)}%)`);
+        return overallResults;
     }
 
     static testHeaders()
@@ -376,9 +377,11 @@ class MarkdownTestSuite
             }
             else
             {
-                let logString = `    %cFAIL!%c Input: %c[%c${displayInput}%c]%c\n` +
-                    `\tExpected: %c[%c${str.expected}%c]%c\n` +
-                    `\tActual:   %c[%c${result}%c]`;
+                let fixedIndent = ' '.repeat(36); // Indent from the consolelog header
+                let logString = `   %cFAIL!\n` +
+                    `${fixedIndent}%cInput:    %c[%c${displayInput}%c]%c\n` +
+                    `${fixedIndent}Expected: %c[%c${str.expected}%c]%c\n` +
+                    `${fixedIndent}Actual:   %c[%c${result}%c]`;
                 logFormattedText(LOG.Warn, logString, ...colors.failure);
                 ++stats.failed;
             }

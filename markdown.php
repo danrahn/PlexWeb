@@ -55,6 +55,7 @@ verify_loggedin(true, "markdown.php");
             <textarea id="query" rows=20></textarea>
             <br>
             <input type="button" value="Test" id="markdownSubmit" />
+            <input type="button" value="Run Test Suite" id="markdownTestSuite" />
             <div id="info" style="text-align: center; margin: auto"><div class="formInput" style="color: #c1c1c1; text-align: center; width: 150px; margin: auto"><label for="liveupdate">Live updates: </label><input type="checkbox" name="liveupdate" id="liveupdate" checked="checked"></div></form>
         </div>
     </div>
@@ -120,6 +121,15 @@ $('#query').addEventListener('keyup', parseMarkdown);
 
 $('#query').addEventListener('keydown', parseShortcuts);
 MarkdownEditor.addTabHandler($('#query'));
+
+$('#markdownTestSuite').addEventListener('click', function()
+{
+    let testResults = MarkdownTestSuite.runSuite();
+    let totalTests = testResults.passed + testResults.failed;
+    let passRate = ((testResults.passed / totalTests) * 100).toFixed(2);
+    let auxText = (totalTests == testResults.passed ? '. Yay!' : '') + '\n\nSee the console (F12) for more details';
+    alert(`Test Results: Passed ${testResults.passed} of ${totalTests} tests (${passRate}%)${auxText}`);
+ });
 
 markdownHelp(function(response)
 {
