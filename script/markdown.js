@@ -2297,6 +2297,11 @@ class Markdown
                     }
                 }
             }
+            else if (RegExp(blockRegexPrefix + ' *>').test(nextline))
+            {
+                // New blockquote nest level, can't bleed into it
+                return end;
+            }
             else if (RegExp(blockRegexPrefix + '  *(?:\\*|\\d+\\.) ').test(nextline))
             {
                 // Also can't swap between ordered/unordered with the same nesting level
@@ -2306,11 +2311,6 @@ class Markdown
                 {
                     return end + 1;
                 }
-            }
-            else if (RegExp(blockRegexPrefix + ' *>').test(nextline))
-            {
-                // New blockquote nest level, can't bleed into it
-                return end;
             }
 
             end = next;
@@ -2418,11 +2418,11 @@ class Markdown
     }
 
     /// <summary>
-    /// Returns whether the current run is nested in a Run of the given state
+    /// Returns whether the current run is or is nested in a Run of the given state
     /// </summary>
     _nestedIn(state)
     {
-        let parent = this.currentRun.parent;
+        let parent = this.currentRun;
         while (parent !== null)
         {
             if (parent.state == state)
