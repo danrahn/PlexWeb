@@ -86,6 +86,11 @@ def process():
 
 
 def process_svg_icons(force, quiet):
+    '''
+    Looks for new/modified SVG icons and copies them to the root icon folder
+    with a hash attached to the file name for cache efficiency
+    '''
+
     print('Looking for updated icons...')
     old_icons = glob.glob('icon/*.svg')
     new_icons = []
@@ -130,15 +135,13 @@ def cmp_sizes(comp):
         noultra = comp[file]['noultra']
         ultra = comp[file]['ultra']
         print(file + ':', noultra, 'to', ultra, ':', str(round((1 - (ultra / noultra)) * 100, 2)) + '%')
-    # cur = glob.glob('min/*.min.js')
-    # old = glob.glob('min_preultra/*.min.js')
-    # for i in range(len(cur)):
-    #     curSize = Path(cur[i]).stat().st_size
-    #     oldSize = Path(old[i]).stat().st_size
-    #     print(cur[i][:cur[i].find('.')] + ':', oldSize, 'to', str(curSize) + ':', str(round((1 - (curSize / oldSize)) * 100, 2)) + '%')
 
 
 def check_long_words(min_letters):
+    '''
+    Checks minified files for tokens that take up the most bytes, gated on the passed in minimum word length
+    '''
+
     files = glob.glob("min/*.min.js")
     words = {}
     for file in files:
@@ -177,6 +180,7 @@ def process_file(file, modified_dates, force, rem_log, ultra):
 
 
 def get_lines(file):
+    '''Returns all lines of the given file as a single string'''
     with open(file) as content:
         try:
             return ''.join(content.readlines())
@@ -233,6 +237,14 @@ def needs_parse(file, includes, modified_dates):
 
 
 def create_temp(includes, rem_log, ultra):
+    '''
+    Creates a temporary javascript file that combines all the necessary includes for a web page.
+
+    Arguments:
+        rem_log: integer describing what (if any) logging statements should be removed to further reduce file size
+        ultra: if True, does additional generally unsafe preprocessing to further reduce file size
+    '''
+
     combined = '(function(){'
     consolelog = ''
     for include in includes:
@@ -288,6 +300,9 @@ def create_temp(includes, rem_log, ultra):
 
 # Minify the ProcessRequest enum via direct substitution
 def minify_process_request(combined):
+    '''
+    Removes the ProcessRequest enum from the given string using direct substitution
+    '''
     start = combined.find('\nconst ProcessRequest =')
     if start == -1:
         return combined
@@ -302,6 +317,9 @@ def minify_process_request(combined):
 
 # Minify the KEY enum via direct substitution
 def minify_keycodes(combined):
+    '''
+    Removes the KEY enum from the given string using direct substitution
+    '''
     start = combined.find('\nconst KEY =')
     if start == -1:
         return
@@ -316,6 +334,9 @@ def minify_keycodes(combined):
 
 
 def write_temp(file, combined):
+    '''
+    Writes the given combined contents to the given file name in a temporary directory
+    '''
     if not os.path.exists('tmp'):
         os.makedirs('tmp')
     with open('tmp/' + file[:file.rfind('.')] + '.tmp.js', 'w+') as temp_file:
@@ -337,82 +358,8 @@ def preminify_markdown(lines, rem_tmi):
     markdown.js that our minification tools would otherwise overlook
     '''
 
-    # start with states. This is copied from markdown.js
-    define = '''const State =
-{
-    None : 0,
-    Div : 1,
-    LineBreak : 2,
-    Hr : 3,
-    OrderedList : 4,
-    UnorderedList : 5,
-    ListItem : 6,
-    Header : 7,
-    CodeBlock : 8,
-    BlockQuote : 9,
-    Table : 10,
-    Url : 11,
-    Image : 12,
-    InlineCode : 13,
-    Bold : 14,
-    Underline : 15,
-    Italic : 16,
-    Strikethrough : 17,
-    HtmlComment : 18
-}'''
-    newStates = '''
-const State =
-{
-    N : 0,
-    D : 1,
-    L : 2,
-    H : 3,
-    O : 4,
-    U : 5,
-    I : 6,
-    R : 7,
-    C : 8,
-    B : 9,
-    T : 10,
-    Y : 11,
-    M : 12,
-    K : 13,
-    X : 14,
-    E : 15,
-    A : 16,
-    S : 17,
-    Z : 18
-}
-    '''
-    rep = {
-        'None' : 'N',
-        'Div' : 'D',
-        'LineBreak' : 'L',
-        'Hr' : 'H',
-        'OrderedList' : 'O',
-        'UnorderedList' : 'U',
-        'ListItem' : 'I',
-        'Header' : 'R',
-        'CodeBlock' : 'C',
-        'BlockQuote' : 'B',
-        'Table' : 'T',
-        'Url' : 'Y',
-        'Image' : 'M',
-        'InlineCode' : 'K',
-        'Bold' : 'X',
-        'Underline' : 'E',
-        'Italic' : 'A',
-        'Strikethrough' : 'S',
-        'HtmlComment' : 'Z'
-    }
-
-    idx = lines.find(define)
-    if idx == -1:
-        print('Error pre-minifying markdown. Couldn\'t find State definition, did it change?')
-        return lines
-    lines = lines.replace(define, newStates)
-    for key in rep:
-        lines = lines.replace('State.' + key, 'State.' + rep[key])
+    # start with direct replacement for the State enum
+    lines = minify_markdown_state_enum(lines)
 
     # stateToStr takes up a lot of space when it probably doesn't have to for the minified version
     # Save several hundred bytes by removing it
@@ -465,8 +412,31 @@ const State =
     return lines
 
 
+def minify_markdown_state_enum(lines):
+    '''
+    Uses direct substitution to remove the State enum from markdown.js
+    '''
+
+    start = lines.find('\nconst State =')
+    if start == -1:
+        print('Error pre-minifying markdown. Couldn\'t find State definition, did it change?')
+        return lines
+
+    end = lines.find('}', start)
+    definition = lines[start:end]
+    lines = lines[:start] + lines[end + 2:]
+    results = re.findall(r'(\w+) : (\d+)', definition)
+    for result in results:
+        lines = lines.replace('State.' + result[0], str(result[1]))
+    return lines
+
+
 g_var_cur = 'a'
 def next_var():
+    '''
+    Returns the next available minified variable, tracked globally
+    '''
+
     global g_var_cur
 
     # skip over i/j/k. Hopefully I remember not to have
@@ -537,6 +507,7 @@ def minify(babel, quiet):
 
 
 def run_cmd(file, options, babel, quiet):
+    '''Finally invoke the node command to minify the given file'''
     base_file = file[file.find(os.sep) + 1:file.find('.')]
     remove_existing(base_file)
     file_hash = get_hash(file)
@@ -563,17 +534,22 @@ def run_cmd(file, options, babel, quiet):
 
 
 def remove_existing(base):
+    '''Remove all minified files from the min directory'''
     for file in glob.glob('min' + os.sep + base + '.*.min.js'):
         os.remove(file)
 
 
 def get_hash(file):
+    '''Returns the md5 hash of the given file, truncated to the last 10 digits'''
     with open(file, 'rb') as filebytes:
         # Just return the last 10 digits. Likelihood of overlap is still miniscule
         return hashlib.md5(filebytes.read()).hexdigest()[:10]
 
 
 def process_output(output):
+    '''
+    Processes and filters minification output to reduce noise
+    '''
     lines = output.split('\n')
     pure = 0
     for line in lines:
