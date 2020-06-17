@@ -1599,12 +1599,19 @@ class Markdown
     /// </summary>
     _parseTableCells(table)
     {
+        // Normal rows
         for (let row = 0; row < table.rows.length; ++row)
         {
             for (let col = 0; col < table.rows[row].length; ++col)
             {
                 table.rows[row][col] = new Markdown().parse(table.rows[row][col], true /*inlineOnly*/);
             }
+        }
+
+        // Header row
+        for (let col = 0; col < table.header.length; ++col)
+        {
+            table.header[col] = new Markdown().parse(table.header[col], true /*inlineOnly*/);
         }
     }
 

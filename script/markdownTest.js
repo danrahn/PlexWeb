@@ -28,6 +28,7 @@ class MarkdownTestSuite
         addResult(this.testUnderline());
         addResult(this.testHr());
         addResult(this.testBr());
+        addResult(this.testTable());
 
         addResult(this.testMixed());
         addResult(this.testQuoteListNest());
@@ -146,7 +147,9 @@ class MarkdownTestSuite
             ],
             ['~~Multiline\nSupport~~', this._divWrap('<s>Multiline<br>Support</s>')],
             ['~~More\nThan\nTwo~~', this._divWrap('<s>More<br>Than<br>Two</s>')],
-            ['~~Double\n\nNewline~~', this._divWrap('~~Double') + this._divWrap('Newline~~')]
+            ['~~Double\n\nNewline~~', this._divWrap('~~Double') + this._divWrap('Newline~~')],
+            ['~Single Marker~', this._divWrap('~Single Marker~')],
+            ['~~~Odd Markers~~~', this._divWrap('~<s>Odd Markers</s>~')]
         );
 
         return this._runSingleSuite(tests, 'Basic Strikethrough Functionality');
@@ -165,7 +168,9 @@ class MarkdownTestSuite
             ],
             ['++Multiline\nSupport++', this._divWrap('<ins>Multiline<br>Support</ins>')],
             ['++More\nThan\nTwo++', this._divWrap('<ins>More<br>Than<br>Two</ins>')],
-            ['++Double\n\nNewline++', this._divWrap('++Double') + this._divWrap('Newline++')]
+            ['++Double\n\nNewline++', this._divWrap('++Double') + this._divWrap('Newline++')],
+            ['+Single Marker+', this._divWrap('+Single Marker+')],
+            ['+++Odd Markers+++', this._divWrap('+<ins>Odd Markers</ins>+')]
         );
 
         return this._runSingleSuite(tests, 'Basic Strikethrough Functionality');
@@ -221,6 +226,48 @@ class MarkdownTestSuite
         );
 
         return this._runSingleSuite(tests, 'Basic Line Break Functionality');
+    }
+
+    static testTable()
+    {
+        let tests = this._buildTests(
+            [
+                // Basic, no bounding pipes
+                'A|B|C\n---|---|---\nD|E|F',
+                '<table><thead><tr><td>A</td><td>B</td><td>C</td></tr></thead><tbody><tr><td>D</td><td>E</td><td>F</td></tr></tbody></table>'
+            ],
+            [
+                // Basic, bounding pipes
+                '|A|B|C|\n|---|---|---|\n|D|E|F|',
+                '<table><thead><tr><td>A</td><td>B</td><td>C</td></tr></thead><tbody><tr><td>D</td><td>E</td><td>F</td></tr></tbody></table>'
+            ],
+            [
+                // Alignment
+                '|A|B|C|\n|:---|:---:|---:|\n|D|E|F|',
+                '<table>' +
+                    '<thead>' +
+                        '<tr><td align="left">A</td><td align="center">B</td><td align="right">C</td></tr>' +
+                    '</thead>' +
+                    '<tbody>' +
+                    '<tr><td align="left">D</td><td align="center">E</td><td align="right">F</td></tr>' +
+                    '</tbody>' +
+                '</table>'
+            ],
+            [
+                // Inline Formatting, no block formatting
+                '|~~A~~|> B|* C|\n|---|---|---|\n|**D**|`E`|[F](markdown.php)|',
+                '<table>' +
+                    '<thead>' +
+                        '<tr><td><s>A</s></td><td>&gt; B</td><td>* C</td></tr>' +
+                    '</thead>' +
+                    '<tbody>' +
+                    '<tr><td><strong>D</strong></td><td><code>E</code></td><td><a href="markdown.php">F</a></td></tr>' +
+                    '</tbody>' +
+                '</table>'
+            ]
+        );
+
+        return this._runSingleSuite(tests, 'Basic Table Functionality');
     }
 
     static testMixed()
