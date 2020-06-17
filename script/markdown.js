@@ -1803,14 +1803,13 @@ class Markdown
         let markers = marker.repeat(3);
 
         // Why am I checking backwards? Doesn't it make more sense to trigger this after I see the first one?
-        if (this._inlineOnly || !new RegExp(markers).test(this.text.substring(start - 2, start + 1)))
+        if (this._inlineOnly || this.text[start - 1] != marker || this.text[start - 2] != marker)
         {
             return -1;
         }
 
         // If start ever get around to it, text after the ticks indicates the language
         // (e.g. "```cpp" for C++). For now though, just ignore it.
-
         let newline = this.text.indexOf('\n', start);
         if (newline == -1 || newline == this.text.length - 1)
         {
@@ -2117,6 +2116,11 @@ class Markdown
                 {
                     return end;
                 }
+                else if (RegExp(blockRegexPrefix + ' *>').test(nextline))
+                {
+                    // New blockquote nest level, can't bleed into it
+                    return end;
+                }
             }
 
             end = next;
@@ -2280,6 +2284,11 @@ class Markdown
                 {
                     return end + 1;
                 }
+            }
+            else if (RegExp(blockRegexPrefix + ' *>').test(nextline))
+            {
+                // New blockquote nest level, can't bleed into it
+                return end;
             }
 
             end = next;
@@ -2692,7 +2701,7 @@ class Run
     /// True if this run's parent only allows inline elements
     /// If true, prevents newline elements from being inserted
     /// </param>
-    convert(initialText, inlineOnly=false)
+    convert(initialText, inlineOnly)
     {
         if (this.cached.length != 0)
         {
@@ -2704,23 +2713,26 @@ class Run
             this.parseNewlines(initialText);
         }
 
-        let ident = ''.repeat(this._nestLevel * 3); // Indent logging to indicate nest level
-        logTmi(`${ident}Converting State.${stateToStr(this.state)} : ${this.start}-${this.end}. ${this.innerRuns.length} children.`);
+        // Even the setup for logging can get expensive when 'convert' is called hundreds/thousands
+        // of times. Do some faster short-circuiting before setting anything up.
+        const logTmi = g_logLevel < LOG.Verbose;
+        let ident = logTmi ? ' '.repeat(this._nestLevel * 3) : ''; // Indent logging to indicate nest level
+        if (logTmi) logTmi(`${ident}Converting State.${stateToStr(this.state)} : ${this.start}-${this.end}. ${this.innerRuns.length} children.`);
         let newText = this.tag(false /*end*/);
 
         let startWithContext = this.start + this.startContextLength();
         let endWithContext = this.end - this.endContextLength();
         if (this.innerRuns.length == 0)
         {
-            newText += this.transform(initialText.substring(startWithContext, endWithContext), 0);
-            logTmi(`${ident}Returning '${newText + this.tag(true)}'`);
+            newText += this.transform(initialText.substring(startWithContext, endWithContext), Run.Side.Full);
+            if (logTmi) logTmi(`${ident}Returning '${newText + this.tag(true)}'`);
             this.cached = newText + this.tag(true /*end*/);
             return this.cached;
         }
 
         if (startWithContext < this.innerRuns[0].start)
         {
-            newText += this.transform(initialText.substring(startWithContext, this.innerRuns[0].start), -1);
+            newText += this.transform(initialText.substring(startWithContext, this.innerRuns[0].start), Run.Side.Left);
         }
 
         // Recurse through children
@@ -2729,13 +2741,13 @@ class Run
             newText += this.innerRuns[i].convert(initialText, inlineOnly);
             if (i != this.innerRuns.length - 1 && this.innerRuns[i].end < this.innerRuns[i + 1].start)
             {
-                newText += this.transform(initialText.substring(this.innerRuns[i].end, this.innerRuns[i + 1].start), -2);
+                newText += this.transform(initialText.substring(this.innerRuns[i].end, this.innerRuns[i + 1].start), Run.Side.Middle);
             }
         }
 
         if (this.innerRuns[this.innerRuns.length - 1].end < endWithContext)
         {
-            newText += this.transform(initialText.substring(this.innerRuns[this.innerRuns.length - 1].end, endWithContext), 1);
+            newText += this.transform(initialText.substring(this.innerRuns[this.innerRuns.length - 1].end, endWithContext), Run.Side.Right);
         }
 
         this.cached = newText + this.tag(true /*end*/);
@@ -2785,24 +2797,21 @@ class Run
     /// Trims whitespace from the given text
     /// </summary>
     /// <param name="text">The text to trim</param>
-    /// <param name="side">
-    /// One of the following:
-    ///   -2: Don't trim
-    ///   -1: Trim left only
-    ///    0: Trim both sides
-    ///    1: Trim right only
-    /// </param>
+    /// <param name="side">A value from the Run.Side enum</param>
     trim(text, side)
     {
         switch (side)
         {
-            case 0:
+            case Run.Side.Full:
                 return text.trim();
-            case -1:
+            case Run.Side.Left:
                 return text.replace(/^\s+/gm, '');
-            case 1:
+            case Run.Side.Right:
                 return text.replace(/\s+$/gm, '');
+            case Run.Side.Middle:
+                return text;
             default:
+                logError('Unknown side: ' + side);
                 return text;
         }
     }
@@ -3260,6 +3269,18 @@ class Run
 }
 
 /// <summary>
+/// Enum of sides passed into Run.transform to let us
+/// know what portion of the element we're processing
+/// </summary>
+Run.Side =
+{
+    Left : -1,
+    Middle : 0,
+    Right : 1,
+    Full : 2
+};
+
+/// <summary>
 /// Run definition for a linebreak - <br>
 /// </summary>
 class Break extends Run
@@ -3545,7 +3566,7 @@ class ListItem extends Run
     /// We need to go up our parent chain looking for blockquotes
     /// so we can remove the correct number of blockquote markers ('>')
     /// </summary>
-    transform(newText, /*side*/)
+    transform(newText, side)
     {
         let cBlock = 0;
         let parent = this.parent;
@@ -3560,7 +3581,10 @@ class ListItem extends Run
         }
 
         let lines = newText.split('\n');
-        for (let i = 1; i < lines.length; ++i)
+
+        // If we're parsing the beginning of the list item, we can skip
+        // the first line as the starting '>' are not included
+        for (let i = (side == Run.Side.Left ? 1 : 0); i < lines.length; ++i)
         {
             let line = lines[i];
             let found = 0;
@@ -3575,7 +3599,7 @@ class ListItem extends Run
                 ++j;
             }
 
-            lines[i] = line.substring(j);
+            lines[i] = this.trim(line.substring(j), Run.Side.Left);
         }
 
         return lines.join('\n');

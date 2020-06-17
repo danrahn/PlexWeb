@@ -281,6 +281,10 @@ const testBugFixes = function()
         [
             '**a*\n\n* [*C\\n*',
             '*<em>a</em><ul><li>[<em>C\\n</em></li></ul>' // This is probably its own bug. We should have a surrounding div!
+        ],
+        [
+            '> * A\n> B\n>> C',
+            '<blockquote><ul><li>A<br />B</li></ul><blockquote>C</blockquote></blockquote>'
         ]
     );
 
