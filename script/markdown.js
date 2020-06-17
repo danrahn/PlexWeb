@@ -452,8 +452,7 @@ class Markdown
         let newline = this.text.lastIndexOf('\n', start);
 
         let between = this.text.substring(newline + 1, start);
-        if (between.replace(/ /g, '').length != 0 &&
-            (this.currentRun.state != State.ListItem || !/^ *(\*|\d+\.) /.test(between)))
+        if (!RegExp('^' + this._nestRegex() + '$').test(between))
         {
             return start;
         }
@@ -485,6 +484,36 @@ class Markdown
         this.currentRun = header;
         logTmi(`Added header: start=${header.start}, end=${header.end}, level=${header.headerLevel}`);
         return start;
+    }
+
+    /// <summary>
+    /// Returns the regex to match an "empty" line start for nested block elements
+    /// </summary>
+    _nestRegex()
+    {
+        let run = this.currentRun;
+        let regex = '';
+        while (run !== null)
+        {
+            switch (run.state)
+            {
+                case State.OrderedList:
+                    regex = '(\\d+\\.)? *' + regex;
+                    break;
+                case State.UnorderedList:
+                    regex = '(\\*)? *' + regex;
+                    break;
+                case State.BlockQuote:
+                    regex = '> *' + regex;
+                    break;
+                default:
+                    break;
+            }
+
+            run = run.parent;
+        }
+
+        return ' *' + regex;
     }
 
     /// <summary>
@@ -1160,49 +1189,18 @@ class Markdown
         // This will get more complicated once arbitrary nesting is supported
         let prevNewline = this.text.lastIndexOf('\n', start);
         let regex;
-        let inListOrQuote = this._inListOrQuote();
-        if (this._inListOrQuote())
+        let run = this.currentRun;
+        while (run !== null)
         {
-            // Determine if our highest level parent is a blockquote or a list
-            let regexStr = '>';
-            let runCur = this.currentRun.state == State.ListItem ? this.currentRun.parent : this.currentRun;
-            let lastState = runCur.state;
-            while (runCur !== null &&
-                (lastState == State.BlockQuote ||
-                    lastState == State.UnorderedList ||
-                    lastState == State.OrderedList ||
-                    lastState == State.ListItem))
+            if (run.state == State.BlockQuote)
             {
-                switch (lastState)
-                {
-                    case State.OrderedList:
-                        regexStr = ' *(\\d+\\.)? *' + regexStr;
-                        break;
-                    case State.UnorderedList:
-                        regexStr = ' *(\\*)? *' + regexStr;
-                        break;
-                    case State.BlockQuote:
-                        regexStr = ' *> *' + regexStr;
-                        ++nestLevel;
-                        break;
-                    default:
-                        break;
-                }
-
-                runCur = runCur.parent;
-                if (runCur !== null)
-                {
-                    lastState = runCur.state;
-                }
+                ++nestLevel;
             }
 
-            regex = new RegExp(regexStr);
-        }
-        else
-        {
-            regex = new RegExp(`^>{${nestLevel}}$`);
+            run = run.parent;
         }
 
+        regex = RegExp(this._nestRegex() + '>');
         if (!regex.test(this.text.substring(prevNewline + 1, start + 1).replace(/ /g, '')))
         {
             return;
@@ -1232,7 +1230,7 @@ class Markdown
         // '>' on all lines.
 
         let lineEnd = this.text.indexOf('\n', start);
-        let end = inListOrQuote ? this.currentRun.end : this.text.length;
+        let end = this.currentRun.end;
         while (lineEnd != -1 && lineEnd != this.text.length - 1)
         {
             let next = this.text[lineEnd + 1];
@@ -1978,29 +1976,7 @@ class Markdown
         let prevNewline = this.text.lastIndexOf('\n', start);
         let prefix = this.text.substring(prevNewline + 1, start);
 
-        // Similar to _checkBlockQuote's loop
-        let curRun = this.currentRun;
-        let regexString = '';
-        while (curRun !== null)
-        {
-            switch (curRun.state)
-            {
-                case State.OrderedList:
-                    regexString = ' *(\\d+\\.)? *' + regexString;
-                    break;
-                case State.UnorderedList:
-                    regexString = ' *(\\*)? *' + regexString;
-                    break;
-                case State.BlockQuote:
-                    regexString = ' *> *' + regexString;
-                    break;
-                default:
-                    break;
-            }
-
-            curRun = curRun.parent;
-        }
-
+        let regexString = this._nestRegex();
         if (!new RegExp(`^${regexString}$`).test(prefix))
         {
             // Something other than spaces/blockquotes precedes this.
@@ -2816,13 +2792,19 @@ class Run
             this.cached += this.innerRuns[i].convert(initialText, inlineOnly);
             if (i != this.innerRuns.length - 1 && this.innerRuns[i].end < this.innerRuns[i + 1].start)
             {
-                this.cached += this.transform(initialText.substring(this.innerRuns[i].end, this.innerRuns[i + 1].start), RunSide.Middle);
+                this.cached += this.transform(
+                    initialText.substring(this.innerRuns[i].end, this.innerRuns[i + 1].start),
+                    RunSide.Middle,
+                    this.innerRuns[i]);
             }
         }
 
         if (this.innerRuns[this.innerRuns.length - 1].end < endWithContext)
         {
-            this.cached += this.transform(initialText.substring(this.innerRuns[this.innerRuns.length - 1].end, endWithContext), RunSide.Right);
+            this.cached += this.transform(
+                initialText.substring(this.innerRuns[this.innerRuns.length - 1].end, endWithContext),
+                RunSide.Right,
+                this.innerRuns[this.innerRuns.length - 1]);
         }
 
         // Don't directly += this, because Headers do hacky things to this.cached when grabbing the end tag
@@ -3529,7 +3511,7 @@ class BlockQuote extends Run
     /// Remove the necessary number of quote indicators ('>')
     /// before handing it over to the core transform routine
     /// </summary>
-    transform(newText, /*side*/)
+    transform(newText, side, previousRun)
     {
         // Look for 'newline + >' and remove them.
         let transformed = '';
@@ -3539,6 +3521,11 @@ class BlockQuote extends Run
             newText = '\n' + newText;
         }
 
+        let trimSpaces =
+            side == RunSide.Full ||
+            side == RunSide.Left ||
+            (previousRun && (previousRun.isBlockElement() || previousRun.state == State.LineBreak));
+
         for (let i = 0; i < newText.length; ++i)
         {
             if (newText[i] != '\n')
@@ -3547,9 +3534,20 @@ class BlockQuote extends Run
                 continue;
             }
 
+            let lastQuote = i;
             while (i + 1 < newText.length && /[> ]/.test(newText[i + 1]))
             {
                 ++i;
+
+                if (newText[i] == '>')
+                {
+                    lastQuote = i;
+                }
+            }
+
+            if (!trimSpaces)
+            {
+                i = lastQuote;
             }
         }
 
@@ -3642,7 +3640,7 @@ class ListItem extends Run
     /// We need to go up our parent chain looking for blockquotes
     /// so we can remove the correct number of blockquote markers ('>')
     /// </summary>
-    transform(newText, side)
+    transform(newText, side, previousRun)
     {
         let cBlock = 0;
         let parent = this.parent;
@@ -3656,10 +3654,14 @@ class ListItem extends Run
             parent = parent.parent;
         }
 
+        // Even if we're in the middle or end of our run we still want to trim leading whitespace if
+        // our previous run is a block element.
+        let trimBeginning = previousRun && (previousRun.isBlockElement() || previousRun.state == State.LineBreak);
+
         let lines = newText.split('\n');
 
         // If we're parsing the beginning of the list item, we can skip
-        // the first line as the starting '>' are not included
+        // the first line as the starting '>'s are not included
         for (let i = ((side == RunSide.Left || side == RunSide.Full) ? 1 : 0); i < lines.length; ++i)
         {
             let line = lines[i];
@@ -3675,7 +3677,8 @@ class ListItem extends Run
                 ++j;
             }
 
-            lines[i] = this.trim(line.substring(j), side == RunSide.Right ? RunSide.Full : RunSide.Left);
+            let trimSide = trimBeginning ? side == RunSide.Right ? RunSide.Full : RunSide.Left : side;
+            lines[i] = this.trim(line.substring(j), trimSide);
 
             // Remove empty lines to avoid excess newlines when joining
             if (lines[i].length == 0)

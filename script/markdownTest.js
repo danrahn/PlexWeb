@@ -57,7 +57,11 @@ class MarkdownTestSuite
             ['  ##   Header 2', '<h2 id="header-2">Header 2</h2>'],
             [' ## Header 2 ###  ', '<h2 id="header-2">Header 2</h2>'],
             ['# _Header_ ~~With~~ ++Formatting++', '<h1 id="header-with-formatting"><em>Header</em> <s>With</s> <ins>Formatting</ins></h1>'],
-            ['# [Header With Link](https://danrahn.com)', '<h1 id="header-with-link"><a href="https://danrahn.com">Header With Link</a></h1>']
+            ['# [Header With Link](https://danrahn.com)', '<h1 id="header-with-link"><a href="https://danrahn.com">Header With Link</a></h1>'],
+            ['1. # Header in list', '<ol start="1"><li><h1 id="header-in-list">Header in list</h1></li></ol>'],
+            ['* # Header in list', '<ul><li><h1 id="header-in-list">Header in list</h1></li></ul>'],
+            ['> # Header in quote', '<blockquote><h1 id="header-in-quote">Header in quote</h1></blockquote>'],
+            ['* > # Header in list quote', '<ul><li><blockquote><h1 id="header-in-list-quote">Header in list quote</h1></blockquote></li></ul>'],
         );
 
         return this._runSingleSuite(tests, 'Basic Header Functionality');
@@ -378,6 +382,14 @@ class MarkdownTestSuite
             [
                 '> * A\n> B\n>> C',
                 '<blockquote><ul><li>A<br />B</li></ul><blockquote>C</blockquote></blockquote>'
+            ],
+            [
+                '> ## Header in blockquote',
+                '<blockquote><h2 id="header-in-blockquote">Header in blockquote</h2></blockquote>'
+            ],
+            [
+                '* **Hello** World',
+                '<ul><li><strong>Hello</strong> World</li></ul>'
             ]
         );
 
@@ -472,9 +484,9 @@ class MarkdownTestSuite
     {
         let bracketClr = 'color: inherit';
         let textClr = `color: ${dark ? '#D1977F' : '#9E3379'}`;
-        let arrowClr = 'color: orange';
-        let passClr = `color: ${dark ? '#00A000' : '#006000'}`;
-        let failClr = `color: red`;
+        let arrowClr = `color: ${dark ? 'orange' : 'orangered'}`;
+        let passClr = `color: ${dark ? '#00C000' : '#006000'}`;
+        let failClr = `color: ${dark ? 'tomato' : 'red'}`;
         let successColors = [passClr, bracketClr, textClr, bracketClr, arrowClr, bracketClr, textClr, bracketClr];
         let failureColors =
         [
