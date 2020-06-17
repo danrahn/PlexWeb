@@ -1249,7 +1249,7 @@ class Markdown
             let nextNest = 0;
             let nextChar;
             let nextOffset = 1;
-            while (lineEnd + nextOffset < this.text.length && /[> ]/.test((nextChar = this.text[lineEnd + nextOffset])))
+            while (lineEnd + nextOffset < end && /[> ]/.test((nextChar = this.text[lineEnd + nextOffset])))
             {
                 if (nextChar == '>')
                 {
