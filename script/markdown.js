@@ -479,7 +479,7 @@ class Markdown
 
         let end = this.text.indexOf('\n', start);
         if (end == -1) { end = this.text.length; }
-        let header = new Header(start - headingLevel + 1, end, headingLevel, this.text, this.currentRun);
+        let header = new Header(start - headingLevel + 1, end, headingLevel, this.currentRun);
         this.currentRun = header;
         logTmi(`Added header: start=${header.start}, end=${header.end}, level=${header.headerLevel}`);
         return start;
@@ -2718,39 +2718,42 @@ class Run
         const logTmi = g_logLevel < LOG.Verbose;
         let ident = logTmi ? ' '.repeat(this._nestLevel * 3) : ''; // Indent logging to indicate nest level
         if (logTmi) logTmi(`${ident}Converting State.${stateToStr(this.state)} : ${this.start}-${this.end}. ${this.innerRuns.length} children.`);
-        let newText = this.tag(false /*end*/);
+        this.cached = this.tag(false /*end*/);
 
         let startWithContext = this.start + this.startContextLength();
         let endWithContext = this.end - this.endContextLength();
         if (this.innerRuns.length == 0)
         {
-            newText += this.transform(initialText.substring(startWithContext, endWithContext), Run.Side.Full);
-            if (logTmi) logTmi(`${ident}Returning '${newText + this.tag(true)}'`);
-            this.cached = newText + this.tag(true /*end*/);
+            this.cached += this.transform(initialText.substring(startWithContext, endWithContext), Run.Side.Full);
+            if (logTmi) logTmi(`${ident}Returning '${this.cached + this.tag(true)}'`);
+            let endTag = this.tag(true /*end*/);
+            this.cached += endTag;
             return this.cached;
         }
 
         if (startWithContext < this.innerRuns[0].start)
         {
-            newText += this.transform(initialText.substring(startWithContext, this.innerRuns[0].start), Run.Side.Left);
+            this.cached += this.transform(initialText.substring(startWithContext, this.innerRuns[0].start), Run.Side.Left);
         }
 
         // Recurse through children
         for (let i = 0; i < this.innerRuns.length; ++i)
         {
-            newText += this.innerRuns[i].convert(initialText, inlineOnly);
+            this.cached += this.innerRuns[i].convert(initialText, inlineOnly);
             if (i != this.innerRuns.length - 1 && this.innerRuns[i].end < this.innerRuns[i + 1].start)
             {
-                newText += this.transform(initialText.substring(this.innerRuns[i].end, this.innerRuns[i + 1].start), Run.Side.Middle);
+                this.cached += this.transform(initialText.substring(this.innerRuns[i].end, this.innerRuns[i + 1].start), Run.Side.Middle);
             }
         }
 
         if (this.innerRuns[this.innerRuns.length - 1].end < endWithContext)
         {
-            newText += this.transform(initialText.substring(this.innerRuns[this.innerRuns.length - 1].end, endWithContext), Run.Side.Right);
+            this.cached += this.transform(initialText.substring(this.innerRuns[this.innerRuns.length - 1].end, endWithContext), Run.Side.Right);
         }
 
-        this.cached = newText + this.tag(true /*end*/);
+        // Don't directly += this, because Headers do hacky things to this.cached when grabbing the end tag
+        let endTag = this.tag(true /*end*/);
+        this.cached += endTag;
         return this.cached;
     }
 
@@ -3371,12 +3374,10 @@ class Header extends Run
 {
     /// <param name="headerLevel">The type of header, 1-6</param>
     /// <param name="text">Full markdown text, used to set the header element's id</param>
-    constructor(start, end, headerLevel, text, parent)
+    constructor(start, end, headerLevel, parent)
     {
         super(State.Header, start, end, parent);
         this.headerLevel = headerLevel;
-        this.id = text.substring(start, end).trim().toLowerCase();
-        this.id = this.id.replace(/ /g, '-').replace(/[^-_a-zA-Z0-9]/g, '').replace(/^-+/, '').replace(/-+$/, '');
     }
 
     startContextLength()
@@ -3391,10 +3392,23 @@ class Header extends Run
     {
         if (end)
         {
-            return `</h${this.headerLevel}>`;
+            let endTag = `</h${this.headerLevel}>`;
+
+            // Get __real__ hacky and inefficient in order to find the proper id for this element
+            let div = document.createElement('div');
+            div.innerHTML = this.cached + endTag;
+            let id = div.innerText.toLowerCase().replace(/ /g, '-').replace(/[^-_a-zA-Z0-9]/g, '').replace(/^-+/, '').replace(/-+$/, '');
+            if (/^\d/.test(id))
+            {
+                // Id's can't start with a number. Prefix with an underscore
+                id = '_' + id;
+            }
+
+            this.cached = this.cached.replace('__ID__', id);
+            return endTag;
         }
 
-        return `<h${this.headerLevel} id="${this.id}">`;
+        return `<h${this.headerLevel} id="__ID__">`;
     }
 
     /// <summary>

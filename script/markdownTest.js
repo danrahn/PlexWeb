@@ -19,20 +19,30 @@ const testMarkdown = function(testStr='')
 /// </summary>
 const markdownTestSuite = function()
 {
+    let overallResults = { passed : 0, failed : 0 };
+    const addResult = (suiteResults) =>
+    {
+        overallResults.passed += suiteResults.passed;
+        overallResults.failed += suiteResults.failed;
+    };
+
     // Simple tests for non-nested scenarios
-    testHeaders();
-    testUrl();
-    testInline();
-    testBold();
-    testItalic();
-    testStrikethrough();
-    testUnderline();
-    testHr();
-    testBr();
+    addResult(testHeaders());
+    addResult(testUrl());
+    addResult(testInline());
+    addResult(testBold());
+    addResult(testItalic());
+    addResult(testStrikethrough());
+    addResult(testUnderline());
+    addResult(testHr());
+    addResult(testBr());
 
-    testMixed();
+    addResult(testMixed());
 
-    testBugFixes();
+    addResult(testBugFixes());
+
+    logInfo('');
+    logInfo(`Ran ${overallResults.passed + overallResults.failed} Tests: Passed: ${overallResults.passed}  -  Failed: ${overallResults.failed}`);
 };
 
 /// <summary>
@@ -73,10 +83,12 @@ const testHeaders = function()
         ['  ## Header 2', '<h2 id="header-2">Header 2</h2>'],
         ['##   Header 2', '<h2 id="header-2">Header 2</h2>'],
         ['  ##   Header 2', '<h2 id="header-2">Header 2</h2>'],
-        [' ## Header 2 ###  ', '<h2 id="header-2">Header 2</h2>']
+        [' ## Header 2 ###  ', '<h2 id="header-2">Header 2</h2>'],
+        ['# _Header_ ~~With~~ ++Formatting++', '<h1 id="header-with-formatting"><em>Header</em> <s>With</s> <ins>Formatting</ins></h1>'],
+        ['# [Header With Link](https://danrahn.com)', '<h1 id="header-with-link"><a href="https://danrahn.com">Header With Link</a></h1>']
     );
 
-    testCore(testStrings);
+    return testCore(testStrings);
 };
 
 const testUrl = function()
@@ -105,7 +117,7 @@ const testUrl = function()
         ]
     );
 
-    testCore(testStrings);
+    return testCore(testStrings);
 };
 
 const testInline = function()
@@ -120,7 +132,7 @@ const testInline = function()
         ['`[Link](index.php)`', divWrap('<code>[Link](index.php)</code>')]
     );
 
-    testCore(testStrings);
+    return testCore(testStrings);
 };
 
 const testBold = function()
@@ -150,7 +162,7 @@ const testBold = function()
         ['**Double\n\nNewline**', divWrap('**Double') + divWrap('Newline**')]
     );
 
-    testCore(testStrings);
+    return testCore(testStrings);
 };
 
 const testItalic = function()
@@ -178,7 +190,7 @@ const testItalic = function()
         ['_Double\n\nNewline_', divWrap('_Double') + divWrap('Newline_')]
     );
 
-    testCore(testStrings);
+    return testCore(testStrings);
 };
 
 const testStrikethrough = function()
@@ -198,7 +210,7 @@ const testStrikethrough = function()
         ['~~Double\n\nNewline~~', divWrap('~~Double') + divWrap('Newline~~')]
     );
 
-    testCore(testStrings);
+    return testCore(testStrings);
 };
 
 
@@ -219,7 +231,7 @@ const testUnderline = function()
         ['++Double\n\nNewline++', divWrap('++Double') + divWrap('Newline++')]
     );
 
-    testCore(testStrings);
+    return testCore(testStrings);
 };
 
 const testHr = function()
@@ -234,7 +246,7 @@ const testHr = function()
         ['  _    _    _    _', '<hr />']
     );
 
-    testCore(testStrings);
+    return testCore(testStrings);
 };
 
 const testBr = function()
@@ -246,7 +258,7 @@ const testBr = function()
         ['A\nB\nC', divWrap('A<br />B<br />C')]
     );
 
-    testCore(testStrings);
+    return testCore(testStrings);
 };
 
 const testMixed = function()
@@ -255,11 +267,11 @@ const testMixed = function()
     let testStrings = buildTests(
         [
             '# ___Header_ [`1`](link)__',
-            '<h1><strong><em>Header</em> <a href="link"><code>1</code></a></strong></h1>'
+            '<h1 id="header-1"><strong><em>Header</em> <a href="link"><code>1</code></a></strong></h1>'
         ],
         [
             '# ___Header__ [`1`](link)_',
-            '<h1><em><strong>Header</strong> <a href="link"><code>1</code></a></em></h1>'
+            '<h1 id="header-1"><em><strong>Header</strong> <a href="link"><code>1</code></a></em></h1>'
         ],
         [
             '**_Hello_**',
@@ -271,7 +283,7 @@ const testMixed = function()
         ]
     );
 
-    testCore(testStrings);
+    return testCore(testStrings);
 };
 
 const testBugFixes = function()
@@ -288,7 +300,7 @@ const testBugFixes = function()
         ]
     );
 
-    testCore(testStrings);
+    return testCore(testStrings);
 };
 
 /// <summary>
@@ -298,6 +310,7 @@ const testBugFixes = function()
 /// <param name="testStrings">Array of { input, expected } pairs</param>
 const testCore = function(testStrings)
 {
+    let stats = { passed : 0, failed : 0 };
     let logSav = g_logLevel;
     g_logLevel = LOG.Info;
     let bracketClr = 'color: inherit';
@@ -331,15 +344,19 @@ const testCore = function(testStrings)
         {
             let logString = `    %cPassed!%c [%c${displayInput}%c]%c => %c[%c${str.expected}%c]`;
             logFormattedText(LOG.Info, logString, ...successColors);
+            ++stats.passed;
         }
         else
         {
             let logString = `    %cFAIL!%c Input: %c[%c${displayInput}%c]%c\n\tExpected: %c[%c${str.expected}%c]%c\n\tActual:   %c[%c${result}%c]`;
             logFormattedText(LOG.Warn, logString, ...failureColors);
+            ++stats.failed;
         }
     });
 
     g_logLevel = logSav;
+    logInfo(`Ran ${stats.passed + stats.failed} Tests: Passed: ${stats.passed}  -  Failed: ${stats.failed}`);
+    return stats;
 };
 
 const _escapeTestString = function(str)
