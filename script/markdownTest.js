@@ -38,6 +38,7 @@ const markdownTestSuite = function()
     addResult(testBr());
 
     addResult(testMixed());
+    addResult(testBlockListNest());
 
     addResult(testBugFixes());
 
@@ -280,6 +281,27 @@ const testMixed = function()
         [
             '**_Hello**_',
             '<div class="mdDiv"><strong>_Hello</strong>_</div>'
+        ]
+    );
+
+    return testCore(testStrings);
+};
+
+const testBlockListNest = function()
+{
+    logInfo('Testing Nested Blockquotes and Lists');
+    let testStrings = buildTests(
+        [
+            '> 1. ListItem1\n> 2. ListItem2',
+            '<blockquote><ol start="1"><li>ListItem1</li><li>ListItem2</li></ol></blockquote>'
+        ],
+        [
+            '> 1. ListItem1\n> 1. ListItem2',
+            '<blockquote><ol start="1"><li>ListItem1</li><li>ListItem2</li></ol></blockquote>'
+        ],
+        [
+            '> * A\n>   1. B\n>   2. C\n> * D',
+            '<blockquote><ul><li>A<br /><ol start="1"><li>B</li><li>C</li></ol></li><li>D</li></ul></blockquote>'
         ]
     );
 

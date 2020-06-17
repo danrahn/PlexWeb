@@ -1174,7 +1174,10 @@ class Markdown
             let runCur = this.currentRun.state == State.ListItem ? this.currentRun.parent : this.currentRun;
             let lastState = runCur.state;
             while (runCur !== null &&
-                (lastState == State.BlockQuote || lastState == State.UnorderedList || lastState == State.OrderedList))
+                (lastState == State.BlockQuote ||
+                    lastState == State.UnorderedList ||
+                    lastState == State.OrderedList ||
+                    lastState == State.ListItem))
             {
                 switch (lastState)
                 {
@@ -2059,7 +2062,7 @@ class Markdown
     {
         // Special handling for lists within blockquotes. Can probably be
         // combined, but this makes it easier
-        let blockRegexPrefix = `^.*( *> *){${this.currentRun.parent.nestLevel - 1}} *>`;
+        let blockRegexPrefix = `^.*( *> *){${this._parentBlockQuoteNestLevel() - 1}} *>`;
         let blockRegexNewline = new RegExp(blockRegexPrefix + ' *\\n');
         let parentEnd = this.currentRun.end;
 
@@ -2137,11 +2140,30 @@ class Markdown
     }
 
     /// <summary>
+    /// Returns the nest level for the closest parent blockquote, or 0 if we are not in a blockquote
+    /// </summary>
+    _parentBlockQuoteNestLevel()
+    {
+        let parent = this.currentRun;
+        while (parent !== null)
+        {
+            if (parent.state == State.BlockQuote)
+            {
+                return parent.nestLevel;
+            }
+
+            parent = parent.parent;
+        }
+
+        return 0;
+    }
+
+    /// <summary>
     /// Searches for the end of a listitem, returning the end of the list
     /// </summary>
     _liEnd(start, nestLevel)
     {
-        if (this.currentRun.parent.state == State.BlockQuote)
+        if (this._nestedIn(State.BlockQuote))
         {
             return this._liEndBlockQuote(start, nestLevel);
         }
@@ -2223,7 +2245,7 @@ class Markdown
     {
         // Special handling for lists within blockquotes. Can probably be
         // combined, but this makes it easier
-        let blockRegexPrefix = `^.*( *> *){${this.currentRun.nestLevel - 1}} *>`;
+        let blockRegexPrefix = `^.*( *> *){${this._parentBlockQuoteNestLevel() - 1}} *>`;
         let blockRegexNewline = new RegExp(blockRegexPrefix + ' *\\n');
         let parentEnd = this.currentRun.end;
 
@@ -2309,7 +2331,7 @@ class Markdown
     /// </summary>
     _listEnd(start, nestLevel, ordered)
     {
-        if (this.currentRun.state == State.BlockQuote)
+        if (this._nestedIn(State.BlockQuote))
         {
             return this._listEndBlockQuote(start, nestLevel, ordered);
         }
@@ -2393,6 +2415,25 @@ class Markdown
             if (next == -1) { next = this.text.length; }
             nextline = this.text.substring(newline + 1, next + 1);
         }
+    }
+
+    /// <summary>
+    /// Returns whether the current run is nested in a Run of the given state
+    /// </summary>
+    _nestedIn(state)
+    {
+        let parent = this.currentRun.parent;
+        while (parent !== null)
+        {
+            if (parent.state == state)
+            {
+                return true;
+            }
+
+            parent = parent.parent;
+        }
+
+        return false;
     }
 
     /// <summary>
@@ -3545,7 +3586,7 @@ class OrderedList extends Run
             return '</ol>';
         }
 
-        return `<ol start='${this.listStart}'>`;
+        return `<ol start="${this.listStart}">`;
     }
 
     /// <summary>
@@ -3598,7 +3639,7 @@ class ListItem extends Run
 
         // If we're parsing the beginning of the list item, we can skip
         // the first line as the starting '>' are not included
-        for (let i = (side == Run.Side.Left ? 1 : 0); i < lines.length; ++i)
+        for (let i = ((side == Run.Side.Left || side == Run.Side.Full) ? 1 : 0); i < lines.length; ++i)
         {
             let line = lines[i];
             let found = 0;
@@ -3613,7 +3654,7 @@ class ListItem extends Run
                 ++j;
             }
 
-            lines[i] = this.trim(line.substring(j), Run.Side.Left);
+            lines[i] = this.trim(line.substring(j), side == Run.Side.Right ? Run.Side.Full : Run.Side.Left);
         }
 
         return lines.join('\n');
