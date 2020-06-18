@@ -35,6 +35,8 @@ class MarkdownTestSuite
         addResult(this.testBacktickCodeBlock());
         addResult(this.testTildeCodeBlock());
         addResult(this.testMixedBacktickTildeCodeBlock());
+        addResult(this.testOrderedList());
+        addResult(this.testUnorderedList());
 
         addResult(this.testMixed());
         addResult(this.testQuoteListNest());
@@ -64,7 +66,7 @@ class MarkdownTestSuite
             [' ## Header 2 ###  ', '<h2 id="header-2">Header 2</h2>'],
             ['# _Header_ ~~With~~ ++Formatting++', '<h1 id="header-with-formatting"><em>Header</em> <s>With</s> <ins>Formatting</ins></h1>'],
             ['# [Header With Link](https://danrahn.com)', '<h1 id="header-with-link"><a href="https://danrahn.com">Header With Link</a></h1>'],
-            ['1. # Header in list', '<ol start="1"><li><h1 id="header-in-list">Header in list</h1></li></ol>'],
+            ['1. # Header in list', '<ol><li><h1 id="header-in-list">Header in list</h1></li></ol>'],
             ['* # Header in list', '<ul><li><h1 id="header-in-list">Header in list</h1></li></ul>'],
             ['> # Header in quote', '<blockquote><h1 id="header-in-quote">Header in quote</h1></blockquote>'],
             ['* > # Header in list quote', '<ul><li><blockquote><h1 id="header-in-list-quote">Header in list quote</h1></blockquote></li></ul>'],
@@ -289,6 +291,134 @@ class MarkdownTestSuite
         return this._runSingleSuite(tests, 'Basic Table Functionality');
     }
 
+    static testUnorderedList()
+    {
+        let tests = this._buildTests(
+            [
+                '* A',
+                '<ul><li>A</li></ul>',
+            ],
+            [
+                '*A',
+                this._divWrap('*A')
+            ],
+            [
+                '*\nA',
+                this._divWrap('*<br />A')
+            ],
+            [
+                '* \nA',
+                '<ul><li><br />A</li></ul>'
+            ],
+            [
+                '* \nA\nB',
+                '<ul><li><br />A<br />B</li></ul>'
+            ],
+            [
+                '* A * B',
+                '<ul><li>A * B</li></ul>'
+            ],
+            [
+                '* A\n* B',
+                '<ul><li>A<br /></li><li>B</li></ul>'
+            ],
+            [
+                '* A\n * B',
+                '<ul><li>A<br /></li><li>B</li></ul>'
+            ],
+            [
+                '* A\n  * B',
+                '<ul><li>A<br /><ul><li>B</li></ul></li></ul>'
+            ],
+            [
+                '* A\n\n* B',
+                '<ul><li>A<br /><br /></li><li>B</li></ul>'
+            ],
+            [
+                '* A\n\n\n* B',
+                '<ul><li>A<br /><br /></li></ul><ul><li>B</li></ul>'
+            ],
+            [
+                '* A\n  * B\n* C',
+                '<ul><li>A<br /><ul><li>B<br /></li></ul></li><li>C</li></ul>'
+            ],
+            [
+                '* A\n\n  B',
+                '<ul><li>A<br /><br />B</li></ul>'
+            ],
+            [
+                '* A\n  * B\n\n    C',
+                '<ul><li>A<br /><ul><li>B<br /><br />C</li></ul></li></ul>'
+            ]
+        );
+
+        return this._runSingleSuite(tests, 'List Functionality');
+    }
+
+    static testOrderedList()
+    {
+        let tests = this._buildTests(
+            [
+                '1. A',
+                '<ol><li>A</li></ol>',
+            ],
+            [
+                '1.A',
+                this._divWrap('1.A')
+            ],
+            [
+                '1.\nA',
+                this._divWrap('1.<br />A')
+            ],
+            [
+                '1. \nA',
+                '<ol><li><br />A</li></ol>'
+            ],
+            [
+                '1. \nA\nB',
+                '<ol><li><br />A<br />B</li></ol>'
+            ],
+            [
+                '1. A 2. B',
+                '<ol><li>A 2. B</li></ol>'
+            ],
+            [
+                '1. A\n2. B',
+                '<ol><li>A<br /></li><li>B</li></ol>'
+            ],
+            [
+                '1. A\n 2. B',
+                '<ol><li>A<br /></li><li>B</li></ol>'
+            ],
+            [
+                '1. A\n  2. B',
+                '<ol><li>A<br /><ol start="2"><li>B</li></ol></li></ol>'
+            ],
+            [
+                '1. A\n\n2. B',
+                '<ol><li>A<br /><br /></li><li>B</li></ol>'
+            ],
+            [
+                '1. A\n\n\n2. B',
+                '<ol><li>A<br /><br /></li></ol><ol start="2"><li>B</li></ol>'
+            ],
+            [
+                '1. A\n  2. B\n3. C',
+                '<ol><li>A<br /><ol start="2"><li>B<br /></li></ol></li><li>C</li></ol>'
+            ],
+            [
+                '1. A\n\n  B',
+                '<ol><li>A<br /><br />B</li></ol>'
+            ],
+            [
+                '1. A\n  2. B\n\n    C',
+                '<ol><li>A<br /><ol start="2"><li>B<br /><br />C</li></ol></li></ol>'
+            ]
+        );
+
+        return this._runSingleSuite(tests, 'List Functionality');
+    }
+
     static testBacktickCodeBlock()
     {
         return this._testTickTildeBlockCore('```');
@@ -354,12 +484,12 @@ class MarkdownTestSuite
             [
                 // Double nest same line
                 `* 1. ${marker}\n    A\n    ${marker}`,
-                `<ul><li><ol start="1"><li><pre>${this._preWrap('A')}</pre></li></ol></li></ul>`
+                `<ul><li><ol><li><pre>${this._preWrap('A')}</pre></li></ol></li></ul>`
             ],
             [
                 // Bad spacing for double nesting
                 `* 1. ${marker}\n  A\n  ${marker}`,
-                `<ul><li><ol start="1"><li>${marker}<br />A<br />${marker}</li></ol></li></ul>`
+                `<ul><li><ol><li>${marker}<br />A<br />${marker}</li></ol></li></ul>`
             ],
             [
                 // Allow for some leeway when dealing with indentation in lists
@@ -389,7 +519,7 @@ class MarkdownTestSuite
             [
                 // Block + List nesting
                 `1. > ${marker}\n>A\n  >${marker}`,
-                `<ol start="1"><li><blockquote><pre>${this._preWrap('A')}</pre></blockquote></li></ol>`
+                `<ol><li><blockquote><pre>${this._preWrap('A')}</pre></blockquote></li></ol>`
             ],
             [
                 // Block + List nesting. Since our direct parent is a blockquote, it takes precedence over any list indentation rules
@@ -399,17 +529,17 @@ class MarkdownTestSuite
             [
                 // Block + List nesting. Since our direct parent is a list, we need the proper (list + 2) indentation
                 `> 1. ${marker}\n>   A\n>   ${marker}`,
-                `<blockquote><ol start="1"><li><pre>${this._preWrap('A')}</pre></li></ol></blockquote>`
+                `<blockquote><ol><li><pre>${this._preWrap('A')}</pre></li></ol></blockquote>`
             ],
             [
                 // Block + List nesting. Since our direct parent is a list, we need the proper (list + 2) indentation
                 `> 1. ${marker}\n>  A\n>  ${marker}`,
-                `<blockquote><ol start="1"><li>${marker}<br />A<br />${marker}</li></ol></blockquote>`
+                `<blockquote><ol><li>${marker}<br />A<br />${marker}</li></ol></blockquote>`
             ],
             [
                 // Allow whitespace after blockquote nested inside of list
                 `1. \n  > ${marker}\n  > A\n  > ${marker}`,
-                `<ol start="1"><li><blockquote><pre>${this._preWrap(' A')}</pre></blockquote></li></ol>`
+                `<ol><li><blockquote><pre>${this._preWrap(' A')}</pre></blockquote></li></ol>`
             ]
         );
 
@@ -449,15 +579,15 @@ class MarkdownTestSuite
         let tests = this._buildTests(
             [
                 '> 1. ListItem1\n> 2. ListItem2',
-                '<blockquote><ol start="1"><li>ListItem1</li><li>ListItem2</li></ol></blockquote>'
+                '<blockquote><ol><li>ListItem1</li><li>ListItem2</li></ol></blockquote>'
             ],
             [
                 '> 1. ListItem1\n> 1. ListItem2',
-                '<blockquote><ol start="1"><li>ListItem1</li><li>ListItem2</li></ol></blockquote>'
+                '<blockquote><ol><li>ListItem1</li><li>ListItem2</li></ol></blockquote>'
             ],
             [
                 '> * A\n>   1. B\n>   2. C\n> * D',
-                '<blockquote><ul><li>A<br /><ol start="1"><li>B</li><li>C</li></ol></li><li>D</li></ul></blockquote>'
+                '<blockquote><ul><li>A<br /><ol><li>B</li><li>C</li></ol></li><li>D</li></ul></blockquote>'
             ],
             [
                 '> * A\n>> * B',
@@ -481,7 +611,7 @@ class MarkdownTestSuite
             ],
             [
                 '> 1. > * A',
-                '<blockquote><ol start="1"><li><blockquote><ul><li>A</li></ul></blockquote></li></ol></blockquote>'
+                '<blockquote><ol><li><blockquote><ul><li>A</li></ul></blockquote></li></ol></blockquote>'
             ],
             [
                 '* 2. >> A',
@@ -625,7 +755,6 @@ class MarkdownTestSuite
     /// </summary>
     static _escapeTestString(str)
     {
-        str = str.replace(/\\/g, '\\\\');
         str = str.replace(/\n/g, '\\n');
         return str;
     }

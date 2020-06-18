@@ -39,7 +39,7 @@ module.exports = {
         "capitalized-comments" : ["error",
             "always",
             {
-                "ignorePattern" : "h[\\dr]|\\w+\\.\\w+|\\btextarea\\b",
+                "ignorePattern" : "h[\\dr]|\\w+\\.\\w+|\\btextarea\\b|\\w+=",
                 "ignoreInlineComments" : true,
                 "ignoreConsecutiveComments" : true
             }],

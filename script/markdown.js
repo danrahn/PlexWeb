@@ -2018,7 +2018,7 @@ class Markdown
         // First need to determine if this is a new list. If so, create the ol/ul
         if (this.currentRun.state != (ordered ? State.OrderedList : State.UnorderedList) || nestLevel > this.currentRun.nestLevel)
         {
-            let listEnd = this._listEnd(start, nestLevel, ordered);
+            let listEnd = this._listEnd(start, nestLevel, ordered, true /*wholeList*/);
             let list;
             if (ordered)
             {
@@ -2034,7 +2034,7 @@ class Markdown
             this.currentRun = list;
         }
 
-        let liEnd = Math.min(this.currentRun.end, this._liEnd(start, nestLevel, ordered));
+        let liEnd = Math.min(this.currentRun.end, this._listEnd(start, nestLevel, ordered, false /*wholeList*/));
         let startContext = 2;
         if (ordered)
         {
@@ -2094,9 +2094,12 @@ class Markdown
     }
 
     /// <summary>
-    /// Searches for the end of a listitem, returning the end of the list
+    /// Searches for and returns the end of a list or list item that starts at `start`
+    ///
+    /// TODO: Remove differences between quote-nested lists and "regular" ones to avoid
+    /// the messy logic strewn throughout this method.
     /// </summary>
-    _liEnd(start, nestLevel)
+    _listEnd(start, nestLevel, ordered, wholeList)
     {
         let quoteNest = this._parentBlockQuoteNestLevel();
         let inBlockQuote = quoteNest != 0;
@@ -2105,105 +2108,6 @@ class Markdown
         if (inBlockQuote)
         {
             linePrefixRegex = `[^>]*( *> *){${quoteNest - 1}} *>`;
-        }
-        else
-        {
-            // If we're not nested in any blockquotes, we don't expect
-            // any extra characters in front of us on newlines
-            linePrefixRegex = '';
-        }
-
-        let emptyLineRegex = new RegExp(`^${linePrefixRegex}${inBlockQuote ? ' *\\n' : '\\n$'}`);
-        let parentEnd = this.currentRun.end;
-
-        // This is really just the ulEnd loop, but for a single li. Write this up then
-        // look into sharing based on the slight differences.
-        let newline = this.text.indexOf('\n', start);
-        if (newline == -1 || newline == this.text.length - 1)
-        {
-            return parentEnd;
-        }
-
-        let end = newline;
-        let next = this._indexOrParentEnd('\n', newline + 1);
-        let nextline = this.text.substring(newline + 1, next + 1);
-
-        while (true)
-        {
-            if (nextline.length == 0)
-            {
-                return end;
-            }
-
-            let cEmpty = 0;
-            while (emptyLineRegex.test(nextline))
-            {
-                ++cEmpty;
-                if (cEmpty == 2)
-                {
-                    return end + (inBlockQuote ? 0 : 2);
-                }
-
-                newline = next;
-                next = this._indexOrParentEnd('\n', next + 1);
-                nextline = this.text.substring(newline + 1, next + 1);
-                if (nextline.length == 0)
-                {
-                    // Just a bunch of newlines at the end without additional context
-                    return end + (inBlockQuote ? 0 : 2);
-                }
-            }
-
-            if (inBlockQuote && RegExp('^' + linePrefixRegex + '>').test(nextline))
-            {
-                // New blockquote nest level, can't bleed into it
-                return end;
-            }
-
-            // If we're here, nextline actually has content
-            if (cEmpty == 1)
-            {
-                // If there is a line break within the list, the list item
-                // only continues if there are (minspaces + 1) * 2 spaces before
-                // the content.
-                let minspaces = (nestLevel + 1) * 2;
-                if (!RegExp(`^${linePrefixRegex} {${minspaces},}`).test(nextline))
-                {
-                    return end + (inBlockQuote ? 0 : 2);
-                }
-            }
-            else
-            {
-                // Not a double newline. To continue the list item we need
-                // general content of any kind, or a new list item that's indented
-                // (minspaces + 1) * 2
-                let minspaces = (nestLevel + 1) * 2;
-                if (RegExp(`^${linePrefixRegex} {0,${minspaces - 1}}(?:\\*|\\d+\\.) `).test(nextline))
-                {
-                    return end + (inBlockQuote ? 0 : 1);
-                }
-            }
-
-            end = next;
-            newline = next;
-            next = this._indexOrLast('\n', next + 1);
-            nextline = this.text.substring(newline + 1, next + 1);
-        }
-    }
-
-    /// <summary>
-    /// Searches for and returns the end of a list that starts at `start`
-    /// </summary>
-    _listEnd(start, nestLevel, ordered)
-    {
-
-        let quoteNest = this._parentBlockQuoteNestLevel();
-        let inBlockQuote = quoteNest != 0;
-
-        let linePrefixRegex;
-        if (inBlockQuote)
-        {
-            linePrefixRegex = `[^>]*( *> *){${this._parentBlockQuoteNestLevel() - 1}} *>`;
         }
         else
         {
@@ -2224,6 +2128,7 @@ class Markdown
         let end = newline;
         let next = this._indexOrParentEnd('\n', newline + 1);
         let nextline = this.text.substring(newline + 1, next + 1);
+
         while (true)
         {
             if (nextline.length == 0)
@@ -2268,13 +2173,14 @@ class Markdown
                 let minspaces = (nestLevel + 1) * 2;
                 if (!RegExp(`^${linePrefixRegex} {${minspaces},}`).test(nextline))
                 {
-                    if (!RegExp(`^${linePrefixRegex} {${minspaces - 2},${minspaces - 1}}${ordered ? '\\d+\\.' : '\\*'} `).test(nextline))
+                    let spacePrefix = `${linePrefixRegex} {${minspaces - 2},${minspaces - 1}}`;
+                    if (!wholeList || !RegExp(`^${spacePrefix}${ordered ? '\\d+\\.' : '\\*'} `).test(nextline))
                     {
                         return end + (inBlockQuote ? 0 : 2);
                     }
                 }
             }
-            else
+            else if (wholeList)
             {
                 // Not a double newline, if it's a new listitem, it must be indented
                 // at least (nestLevel * 2) spaces. Otherwise, any level of indentation is fine
@@ -2285,8 +2191,19 @@ class Markdown
                     if (!RegExp(`^${linePrefixRegex} {${minspaces},}`).test(nextline) ||
                         RegExp(`^${linePrefixRegex} {${minspaces},${minspaces + 1}}${ordered ? '\\*' : '\\d+\\.'} `).test(nextline))
                     {
-                        return end + 1;
+                        return end + (inBlockQuote ? 0 : 1);
                     }
+                }
+            }
+            else
+            {
+                // Not a double newline. To continue the list item we need
+                // general content of any kind, or a new list item that's indented
+                // (minspaces + 1) * 2
+                let minspaces = (nestLevel + 1) * 2;
+                if (RegExp(`^${linePrefixRegex} {0,${minspaces - 1}}(?:\\*|\\d+\\.) `).test(nextline))
+                {
+                    return end + (inBlockQuote ? 0 : 1);
                 }
             }
 
@@ -3495,6 +3412,12 @@ class OrderedList extends Run
         if (end)
         {
             return '</ol>';
+        }
+
+        if (this.listStart == 1)
+        {
+            // start="X" is unnecessary when the list starts with 1
+            return '<ol>';
         }
 
         return `<ol start="${this.listStart}">`;
