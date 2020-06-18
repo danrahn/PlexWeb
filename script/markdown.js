@@ -3688,7 +3688,7 @@ class ListItem extends Run
             }
         }
 
-        return lines.join('\n');
+        return super.transform(lines.join('\n'));
     }
 }
 

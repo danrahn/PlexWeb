@@ -394,6 +394,10 @@ class MarkdownTestSuite
             [
                 '**->** A',
                 '<div class="mdDiv"><strong>-&gt;</strong> A</div>'
+            ],
+            [
+                '* \\*A\\*',
+                '<ul><li>*A*</li></ul>'
             ]
         );
 
