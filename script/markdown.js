@@ -640,6 +640,13 @@ class Markdown
         let multilineBlockEnd = this._checkBacktickCodeBlock(i);
         if (multilineBlockEnd != -1)
         {
+            if (multilineBlockEnd == -2)
+            {
+                // Valid start, invalid end. Just assume things are broken and
+                // don't try parsing inline code snippets
+                return i + 2;
+            }
+
             i = multilineBlockEnd - 1;
             return i;
         }
@@ -1064,6 +1071,11 @@ class Markdown
         let multilineBlockEnd = this._checkBacktickCodeBlock(i);
         if (multilineBlockEnd != -1)
         {
+            if (multilineBlockEnd == -2)
+            {
+                return i;
+            }
+
             return multilineBlockEnd - 1;
         }
 
@@ -1800,7 +1812,11 @@ class Markdown
     ///   * TODO: Support nesting within blockquotes
     ///  End with exactly three backticks or tildes on their own line
     /// </summary>
-    /// <returns>The end index of the code block, or -1 if no code block was found</returns>
+    /// <returns>
+    /// The end index of the code block
+    /// -1 if no code block was found
+    /// -2 if we found a valid start to a code block, but couldn't find an end
+    /// </returns>
     _checkBacktickCodeBlock(start)
     {
         let marker = this.text[start];
@@ -1819,7 +1835,7 @@ class Markdown
             return -1;
         }
 
-        let params = { minspaces : 0, language : '', markers : markers, newline : newline };
+        let params = { minIndent : 0, language : '', markers : markers, newline : newline, regexStr : this._nestRegex() };
         if (!this._validBacktickCodeBlockStart(start, params))
         {
             return -1;
@@ -1833,45 +1849,38 @@ class Markdown
     /// </summary>
     _validBacktickCodeBlockStart(start, params)
     {
+        let context = this.text.substring(this.text.lastIndexOf('\n', start) + 1, start);
+
+        // If our direct parent is a list, find its indentation level; we need to be indented two more than that
         if (this.currentRun.state == State.ListItem)
         {
-            let nestLevel = this.currentRun.parent.nestLevel;
-            params.minspaces = (nestLevel + 1) * 2;
-            let type = this.currentRun.parent.state;
-            let context = this.text.substring(this.text.lastIndexOf('\n', start), params.newline + 1);
-            let listPattern = type == State.OrderedList ? '\\d+\\.' : '\\*';
-            let liStartRegex = new RegExp(`^\\n? {${nestLevel * 2}} ?${listPattern} {1,3}${params.markers} *\\S*\\n`);
-            if (!liStartRegex.test(context))
-            {
-                // Not on the same line as the list item start, check if it's a valid continuation
-                let match = context.match(new RegExp(`^\\n {${params.minspaces},${params.minspaces + 3}}${params.markers} *(\\S*)\\n`));
-                if (!match)
-                {
-                    return false;
-                }
-
-                params.language = match[1];
-            }
-        }
-        else
-        {
-            // Not within a list item, needs to be three backticks at the very beginning of the line
-            let match = this.text.substring(start, params.newline + 1).match(new RegExp(`^\\n?${params.markers} *(\\S*)\\n?$`));
-            if (!match)
+            let listStart = this.currentRun.parent.start;
+            params.minIndent = this.text.substring(this.text.lastIndexOf('\n', listStart) + 1, listStart).length + 2;
+            if (context.length < params.minIndent)
             {
                 return false;
             }
-
-            params.language = match[1];
         }
 
+        if (!RegExp('^' + params.regexStr + '$').test(context))
+        {
+            return false;
+        }
+
+        let match = this.text.substring(start + 3, params.newline + 1).match(/^ *(\w*)\n/);
+        if (!match)
+        {
+            return false;
+        }
+
+        params.language = match[1];
         return true;
     }
 
     /// <summary>
     /// Looks for the end of a backtick/tilde code block
     /// <summary>
-    /// <returns>The end index of the code block, or -1 if we did not have a valid code block</returns>
+    /// <returns>The end index of the code block, or -2 if we did not have a valid code block</returns>
     _findBacktickCodeBlockEnd(start, params)
     {
         let newline = params.newline;
@@ -1879,13 +1888,14 @@ class Markdown
         let nextline = this.text.substring(newline + 1, next + 1);
 
         // Each subsequent line must have at least minspaces before it, otherwise it's an invalid block
-        let validLine = new RegExp(`^ {${params.minspaces}}`);
-        let validEnd = new RegExp(`^ {${params.minspaces},${params.minspaces + 3}}${params.markers}\\n?$`);
+        let validLine = RegExp('^' + params.regexStr);
+
+        let validEnd = RegExp('^' + params.regexStr + params.markers + '\\n?$');
         while (true)
         {
             if (nextline.length == 0)
             {
-                return -1;
+                return -2;
             }
 
             while (/^ *\n$/.test(nextline))
@@ -1895,18 +1905,33 @@ class Markdown
                 nextline = this.text.substring(newline + 1, next + 1);
                 if (nextline.length == 0)
                 {
-                    return -1;
+                    return -2;
                 }
             }
 
             if (!validLine.test(nextline))
             {
-                return -1;
+                return -2;
             }
 
             if (validEnd.test(nextline))
             {
-                return this._addBacktickCodeBlock(start, next, params.minspaces, params.language);
+                let indent = this.text.indexOf(params.markers, newline) - (newline + 1);
+                if (indent < params.minIndent)
+                {
+                    return -2;
+                }
+
+                if (params.minIndent == 0 || indent <= params.minIndent + 3)
+                {
+                    return this._addBacktickCodeBlock(start, next, params.minIndent, params.language);
+                }
+            }
+
+            // If we have a minimum indent, make sure we follow it
+            if (params.minIndent != 0 && !RegExp('^' + params.regexStr + '$').test(nextline.substring(0, params.minIndent)))
+            {
+                return -2;
             }
 
             newline = next;
@@ -3947,6 +3972,17 @@ class BacktickCodeBlock extends CodeBlock
     {
         super(start, end, text, indent, true /*backtick*/, parent);
         this.language = language;
+        this.quoteLevel = 0;
+        let run = this.parent;
+        while (run !== null)
+        {
+            if (run.state == State.BlockQuote)
+            {
+                ++this.quoteLevel;
+            }
+
+            run = run.parent;
+        }
     }
 
     startContextLength() { return this.text.indexOf('\n') + 1; }
@@ -3960,10 +3996,53 @@ class BacktickCodeBlock extends CodeBlock
         newText = super.transform(newText);
         this.buildCodeBlock(newText, function(line, i)
         {
-            this.finalText += this.lineNumber(i + 1, this.pad) + line.substring(this.indent) + '\n';
+            let trimmedLine = this._getTrimmedLine(line);
+            this.finalText += this.lineNumber(i + 1, this.pad) + trimmedLine + '\n';
         });
 
         return this.finalText;
+    }
+
+    /// <summary>
+    /// Returns the given line with all prefixed nest-related characters removed
+    /// </summary>
+    _getTrimmedLine(line)
+    {
+        if (this.indent != 0)
+        {
+            // We're nested in a list and should use this.indent to determine how much
+            // to trim. However, we've replaced all '>' with '&gt;' already (since we don't
+            // want to escape our added line number span), so we need to adjust our substring
+            // start to account for additional characters
+            return line.substring(this.indent + (this.quoteLevel * 3));
+        }
+
+        if (this.quoteLevel == 0)
+        {
+            // We're not nested inside of anything. Use the raw line
+            return line;
+        }
+
+        // We're nested inside of a blockquote. Trim up to our block level
+        let left = this.quoteLevel;
+        let trim = 0;
+        for (; trim < line.length; ++trim)
+        {
+            // At this point we've already translated '>' to '&gt;'
+            if (line[trim] == '&' && line.substring(trim + 1, trim + 4) == 'gt;' && --left == 0)
+            {
+                trim += 4;
+                break;
+            }
+        }
+
+        if (trim != line.length)
+        {
+            return line.substring(trim);
+        }
+
+        logError("We're in a block quote, but didn't find the right number of markers");
+        return line;
     }
 }
 

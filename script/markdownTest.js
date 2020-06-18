@@ -4,6 +4,9 @@
 /* eslint quotes: ["error", "single", { "avoidEscape" : true, "allowTemplateLiterals" : true }] */
 /* eslint-disable class-methods-use-this */
 
+// The only methods (currently) over the maximum are just lists of relevant tests
+/* eslint-disable max-lines-per-function */
+
 class MarkdownTestSuite
 {
     /// <summary>
@@ -29,6 +32,9 @@ class MarkdownTestSuite
         addResult(this.testHr());
         addResult(this.testBr());
         addResult(this.testTable());
+        addResult(this.testBacktickCodeBlock());
+        addResult(this.testTildeCodeBlock());
+        addResult(this.testMixedBacktickTildeCodeBlock());
 
         addResult(this.testMixed());
         addResult(this.testQuoteListNest());
@@ -103,7 +109,12 @@ class MarkdownTestSuite
             ['``Inline ` Code``', this._divWrap('<code>Inline ` Code</code>')],
             ['`This isn\'t closed', this._divWrap('`This isn&#39;t closed')],
             ['`Hello _**++~~There~~++**_`', this._divWrap('<code>Hello _**++~~There~~++**_</code>')],
-            ['`[Link](index.php)`', this._divWrap('<code>[Link](index.php)</code>')]
+            ['`[Link](index.php)`', this._divWrap('<code>[Link](index.php)</code>')],
+            // We allow single line continuations
+            ['`Hello\nWorld`', this._divWrap('<code>Hello\nWorld</code>')],
+            ['```Hello World\nHi```', this._divWrap('<code>Hello World\nHi</code>')],
+            // But intentionally break things if we start with what we though was a valid block
+            ['```Hello\nWorld```', this._divWrap('```Hello<br />World```')]
         );
 
         return this._runSingleSuite(tests, 'Basic Inline Functionality');
@@ -274,6 +285,133 @@ class MarkdownTestSuite
         return this._runSingleSuite(tests, 'Basic Table Functionality');
     }
 
+    static testBacktickCodeBlock()
+    {
+        return this._testTickTildeBlockCore('```');
+    }
+
+    static testTildeCodeBlock()
+    {
+        return this._testTickTildeBlockCore('~~~');
+    }
+
+    static testMixedBacktickTildeCodeBlock()
+    {
+        let tests = this._buildTests(
+            [
+                // Allow tilde within tick
+                '```\n~~~\nA\n~~~\n```',
+                `<pre>${this._preWrap('~~~', 'A', '~~~')}</pre>`
+            ],
+            [
+                // Allow tick within tilde
+                '~~~\n```\nA\n```\n~~~',
+                `<pre>${this._preWrap('```', 'A', '```')}</pre>`
+            ]
+        );
+
+        return this._runSingleSuite(tests, 'Mixed tilde/backtick code blocks');
+    }
+
+    static _testTickTildeBlockCore(marker)
+    {
+        let tests = this._buildTests(
+            [
+                `${marker}\nA\n${marker}`,
+                `<pre>${this._preWrap('A')}</pre>`
+            ],
+            [
+                `${marker}\nA\nB\n${marker}`,
+                `<pre>${this._preWrap('A', 'B')}</pre>`
+            ],
+            [
+                `* ${marker}\n  A\n  ${marker}`,
+                `<ul><li><pre>${this._preWrap('A')}</pre></li></ul>`
+            ],
+            [
+                `* A\n  * B\n    ${marker}cpp\n    C\n    D\n    ${marker}`,
+                `<ul><li>A<br /><ul><li>B<pre>${this._preWrap('C', 'D')}</pre></li></ul></li></ul>`
+            ],
+            [
+                // We still think we're part of B, and our indentation is incorrect
+                `* A\n  * B\n  ${marker}\n  C\n  ${marker}`,
+                `<ul><li>A<br /><ul><li>B<br />${marker}<br />C<br />${marker}</li></ul></li></ul>`
+            ],
+            [
+                // The extra line break between B and the block means we can successfully be a part of A
+                `* A\n  * B\n\n  ${marker}\n  C\n  ${marker}`,
+                `<ul><li>A<br /><ul><li>B<br /><br /></li></ul><pre>${this._preWrap('C')}</pre></li></ul>`
+            ],
+            [
+                // Start on the same line as the list
+                `* ${marker}\n  A\n  ${marker}`,
+                `<ul><li><pre>${this._preWrap('A')}</pre></li></ul>`
+            ],
+            [
+                // Double nest same line
+                `* 1. ${marker}\n    A\n    ${marker}`,
+                `<ul><li><ol start="1"><li><pre>${this._preWrap('A')}</pre></li></ol></li></ul>`
+            ],
+            [
+                // Bad spacing for double nesting
+                `* 1. ${marker}\n  A\n  ${marker}`,
+                `<ul><li><ol start="1"><li>${marker}<br />A<br />${marker}</li></ol></li></ul>`
+            ],
+            [
+                // Allow for some leeway when dealing with indentation in lists
+                `* \n    ${marker}\n    A\n    ${marker}`,
+                `<ul><li><pre>${this._preWrap('  A')}</pre></li></ul>`
+            ],
+            [
+                // Blockquote nest
+                `>${marker}\n>A\n>${marker}`,
+                `<blockquote><pre>${this._preWrap('A')}</pre></blockquote>`
+            ],
+            [
+                // Not requiring space between blockquote and content means extra space added to nested code blocks
+                `> ${marker}\n> A\n> ${marker}`,
+                `<blockquote><pre>${this._preWrap(' A')}</pre></blockquote>`
+            ],
+            [
+                // Can't change blockquote level
+                `>${marker}\n>A\n>>${marker}`,
+                `<blockquote>${marker}<br />A<br /><blockquote>${marker}</blockquote></blockquote>`
+            ],
+            [
+                // But we can have a "nested" blockquote within the body of the code block
+                `>${marker}\n>A\n>>${marker}\n>${marker}`,
+                `<blockquote><pre>${this._preWrap('A', '&gt;' + marker)}</pre></blockquote>`
+            ],
+            [
+                // Block + List nesting
+                `1. > ${marker}\n>A\n  >${marker}`,
+                `<ol start="1"><li><blockquote><pre>${this._preWrap('A')}</pre></blockquote></li></ol>`
+            ],
+            [
+                // Block + List nesting. Since our direct parent is a blockquote, it takes precedence over any list indentation rules
+                `* >${marker}\n>A\n>${marker}`,
+                `<ul><li><blockquote><pre>${this._preWrap('A')}</pre></blockquote></li></ul>`
+            ],
+            [
+                // Block + List nesting. Since our direct parent is a list, we need the proper (list + 2) indentation
+                `> 1. ${marker}\n>   A\n>   ${marker}`,
+                `<blockquote><ol start="1"><li><pre>${this._preWrap('A')}</pre></li></ol></blockquote>`
+            ],
+            [
+                // Block + List nesting. Since our direct parent is a list, we need the proper (list + 2) indentation
+                `> 1. ${marker}\n>  A\n>  ${marker}`,
+                `<blockquote><ol start="1"><li>${marker}<br />A<br />${marker}</li></ol></blockquote>`
+            ],
+            [
+                // Allow whitespace after blockquote nested inside of list
+                `1. \n  > ${marker}\n  > A\n  > ${marker}`,
+                `<ol start="1"><li><blockquote><pre>${this._preWrap(' A')}</pre></blockquote></li></ol>`
+            ]
+        );
+
+        return this._runSingleSuite(tests, (marker == '```' ? 'Backtick' : 'Tilde') + ' code blocks');
+    }
+
     static testMixed()
     {
         let tests = this._buildTests(
@@ -298,7 +436,6 @@ class MarkdownTestSuite
         return this._runSingleSuite(tests, 'Basic Mixed Inline Elements');
     }
 
-    /* eslint-disable max-lines-per-function */
     /// <summary>
     /// Tests various BlockQuote and (Un)OrderedList nesting possibilities
     /// All these cases are issues that have (hopefully) been fixed
@@ -367,7 +504,6 @@ class MarkdownTestSuite
 
         return this._runSingleSuite(tests, 'Advanced Nested BlockQuote/Lists Functionality');
     }
-    /* eslint-enable max-lines-per-function */
 
     /// <summary>
     /// Tests to ensure that bugs that were previously fixed no longer repro
@@ -401,7 +537,7 @@ class MarkdownTestSuite
             ],
             [
                 '```\nA ```\n```',
-                '<pre>' + this._preWrap('A ```', 1) + '</pre>'
+                '<pre>' + this._preWrap('A ```') + '</pre>'
             ]
         );
 
@@ -440,9 +576,10 @@ class MarkdownTestSuite
         {
             let result = new Markdown().parse(str.input);
             let displayInput = MarkdownTestSuite._escapeTestString(str.input);
+            let displayExpected = MarkdownTestSuite._escapeTestString(str.expected);
             if (result == str.expected)
             {
-                let logString = `    %cPassed!%c [%c${displayInput}%c]%c => %c[%c${str.expected}%c]`;
+                let logString = `    %cPassed!%c [%c${displayInput}%c]%c => %c[%c${displayExpected}%c]`;
                 logFormattedText(LOG.Info, logString, ...colors.success);
                 ++stats.passed;
             }
@@ -451,7 +588,7 @@ class MarkdownTestSuite
                 let fixedIndent = ' '.repeat(36); // Indent from the consolelog header
                 let logString = `   %cFAIL!\n` +
                     `${fixedIndent}%cInput:    %c[%c${displayInput}%c]%c\n` +
-                    `${fixedIndent}Expected: %c[%c${str.expected}%c]%c\n` +
+                    `${fixedIndent}Expected: %c[%c${MarkdownTestSuite._escapeTestString(displayExpected)}%c]%c\n` +
                     `${fixedIndent}Actual:   %c[%c${MarkdownTestSuite._escapeTestString(result)}%c]`;
                 logFormattedText(LOG.Warn, logString, ...colors.failure);
                 ++stats.failed;
@@ -531,8 +668,14 @@ class MarkdownTestSuite
     /// <summary>
     /// Helper to add the line number span to code block tests
     /// </summary>
-    static _preWrap(line, number)
+    static _preWrap(...lines)
     {
-        return `<span class="codeLineNumber">${number}</span>${line}\n`;
+        let result = '';
+        lines.forEach(function(line, lineNumber)
+        {
+            result += `<span class="codeLineNumber">${lineNumber + 1}</span>${line}\n`;
+        });
+
+        return result;
     }
 }
