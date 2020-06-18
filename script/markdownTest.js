@@ -390,6 +390,10 @@ class MarkdownTestSuite
             [
                 '* **Hello** World',
                 '<ul><li><strong>Hello</strong> World</li></ul>'
+            ],
+            [
+                '**->** A',
+                '<div class="mdDiv"><strong>-&gt;</strong> A</div>'
             ]
         );
 

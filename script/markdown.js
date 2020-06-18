@@ -1200,7 +1200,7 @@ class Markdown
             run = run.parent;
         }
 
-        regex = RegExp(this._nestRegex() + '>');
+        regex = RegExp('^' + this._nestRegex() + '>$');
         if (!regex.test(this.text.substring(prevNewline + 1, start + 1).replace(/ /g, '')))
         {
             return;
