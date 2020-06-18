@@ -398,6 +398,10 @@ class MarkdownTestSuite
             [
                 '* \\*A\\*',
                 '<ul><li>*A*</li></ul>'
+            ],
+            [
+                '```\nA ```\n```',
+                '<pre>' + this._preWrap('A ```', 1) + '</pre>'
             ]
         );
 
@@ -448,7 +452,7 @@ class MarkdownTestSuite
                 let logString = `   %cFAIL!\n` +
                     `${fixedIndent}%cInput:    %c[%c${displayInput}%c]%c\n` +
                     `${fixedIndent}Expected: %c[%c${str.expected}%c]%c\n` +
-                    `${fixedIndent}Actual:   %c[%c${result}%c]`;
+                    `${fixedIndent}Actual:   %c[%c${MarkdownTestSuite._escapeTestString(result)}%c]`;
                 logFormattedText(LOG.Warn, logString, ...colors.failure);
                 ++stats.failed;
             }
@@ -522,5 +526,13 @@ class MarkdownTestSuite
     static _divWrap(str)
     {
         return `<div class="mdDiv">${str}</div>`;
+    }
+
+    /// <summary>
+    /// Helper to add the line number span to code block tests
+    /// </summary>
+    static _preWrap(line, number)
+    {
+        return `<span class="codeLineNumber">${number}</span>${line}\n`;
     }
 }

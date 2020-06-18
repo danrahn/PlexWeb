@@ -1806,8 +1806,7 @@ class Markdown
         let marker = this.text[start];
         let markers = marker.repeat(3);
 
-        // Why am I checking backwards? Doesn't it make more sense to trigger this after I see the first one?
-        if (this._inlineOnly || this.text[start - 1] != marker || this.text[start - 2] != marker)
+        if (this._inlineOnly || start >= this.text.length - 3 || this.text[start + 1] != marker || this.text[start + 2] != marker)
         {
             return -1;
         }
@@ -1857,7 +1856,7 @@ class Markdown
         else
         {
             // Not within a list item, needs to be three backticks at the very beginning of the line
-            let match = this.text.substring(start - 3, params.newline + 1).match(new RegExp(`^\\n?${params.markers} *(\\S*)\\n?$`));
+            let match = this.text.substring(start, params.newline + 1).match(new RegExp(`^\\n?${params.markers} *(\\S*)\\n?$`));
             if (!match)
             {
                 return false;
@@ -1933,7 +1932,7 @@ class Markdown
             }
         }
 
-        new BacktickCodeBlock(start - 2, end, minspaces, this.text, language, this.currentRun);
+        new BacktickCodeBlock(start, end, minspaces, this.text, language, this.currentRun);
         return end;
     }
 
