@@ -114,7 +114,11 @@ class MarkdownTestSuite
             ['`Hello\nWorld`', this._divWrap('<code>Hello\nWorld</code>')],
             ['```Hello World\nHi```', this._divWrap('<code>Hello World\nHi</code>')],
             // But intentionally break things if we start with what we though was a valid block
-            ['```Hello\nWorld```', this._divWrap('```Hello<br />World```')]
+            ['```Hello\nWorld```', this._divWrap('```Hello<br />World```')],
+            // If we're escaping backticks and they are at the beginning or end of the string, strip the space...
+            ['`` `Hello, World` ``', this._divWrap('<code>`Hello, World`</code>')],
+            // But don't do anything if there are multiple spaces
+            ['``  `Hello, World`  ``', this._divWrap('<code>  `Hello, World`  </code>')]
         );
 
         return this._runSingleSuite(tests, 'Basic Inline Functionality');

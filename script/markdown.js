@@ -4196,6 +4196,27 @@ class InlineCodeRun extends Run
     endContextLength() { return this._backticks; }
 
     tag(end) { return Run.basicTag('code', end); }
+
+    /// <summary>
+    /// Transform the inline code snippet by removing a leading or trailing space
+    /// iff it's next to a backtick
+    transform(newText)
+    {
+        if (newText.length > 1)
+        {
+            if (newText[0] == ' ' && newText[1] == '`')
+            {
+                newText = newText.substring(1);
+            }
+
+            if (newText[newText.length - 1] == ' ' && newText[newText.length - 2] == '`')
+            {
+                newText = newText.substring(0, newText.length - 1);
+            }
+        }
+
+        return super.transform(newText);
+    }
 }
 
 /// <summary>
