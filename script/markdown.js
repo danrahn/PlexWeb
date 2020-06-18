@@ -2075,103 +2075,6 @@ class Markdown
     }
 
     /// <summary>
-    /// Searches for the end of a list within a blockquote
-    /// TODO: This seems broken. _listEndBlockQuote might be the culprit though
-    /// </summary>
-    _liEndBlockQuote(start, nestLevel)
-    {
-        // Special handling for lists within blockquotes. Can probably be
-        // combined, but this makes it easier
-        let quoteNest = this._parentBlockQuoteNestLevel();
-        let linePrefixRegex;
-        if (quoteNest == 0)
-        {
-            // If we're not nested in a blockquote, don't create the much more
-            // expensive blockquote regex detection
-            linePrefixRegex = '';
-        }
-        else
-        {
-            linePrefixRegex = `^[^>]*( *> *){${quoteNest - 1}} *>`;
-        }
-
-        let emptyLineRegex = new RegExp(linePrefixRegex + ' *\\n');
-        let parentEnd = this.currentRun.end;
-
-        let newline = this.text.indexOf('\n', start);
-        if (newline == -1 || newline == this.text.length - 1)
-        {
-            return parentEnd;
-        }
-
-        let end = newline;
-        let next = this._indexOrParentEnd('\n', newline + 1);
-        let nextline = this.text.substring(newline + 1, next + 1);
-
-        while (true)
-        {
-            if (nextline.length == 0)
-            {
-                return end;
-            }
-
-            let cEmpty = 0;
-            while (emptyLineRegex.test(nextline))
-            {
-                ++cEmpty;
-                if (cEmpty == 2)
-                {
-                    // Two 'blank' lines kills the list
-                    return end;
-                }
-
-                newline = next;
-                next = this.text.indexOf('\n', next + 1);
-                if (next == -1) { next = parentEnd; }
-                nextline = this.text.substring(newline + 1, next + 1);
-                if (nextline.length == 0)
-                {
-                    return end;
-                }
-            }
-
-
-            if (RegExp(linePrefixRegex + '>').test(nextline))
-            {
-                // New blockquote nest level, can't bleed into it
-                return end;
-            }
-
-            if (cEmpty == 1)
-            {
-                let minspaces = (nestLevel + 1) * 2;
-                if (!RegExp(linePrefixRegex + ` {${minspaces},}`).test(nextline))
-                {
-                    return end;
-                }
-            }
-            else
-            {
-                let minspaces = (nestLevel + 1) * 2;
-                if (RegExp(linePrefixRegex + `  {0,${minspaces - 1}}(?:\\*|\\d+\\.) `).test(nextline))
-                {
-                    return end;
-                }
-            }
-
-            end = next;
-            newline = next;
-            next = this._indexOrParentEnd('\n', next + 1);
-            if (newline > next)
-            {
-                return parentEnd;
-            }
-
-            nextline = this.text.substring(newline + 1, next + 1);
-        }
-    }
-
-    /// <summary>
     /// Returns the nest level for the closest parent blockquote, or 0 if we are not in a blockquote
     /// </summary>
     _parentBlockQuoteNestLevel()
@@ -2195,11 +2098,22 @@ class Markdown
     /// </summary>
     _liEnd(start, nestLevel)
     {
-        if (this._nestedIn(State.BlockQuote))
+        let quoteNest = this._parentBlockQuoteNestLevel();
+        let inBlockQuote = quoteNest != 0;
+
+        let linePrefixRegex;
+        if (inBlockQuote)
         {
-            return this._liEndBlockQuote(start, nestLevel);
+            linePrefixRegex = `[^>]*( *> *){${quoteNest - 1}} *>`;
+        }
+        else
+        {
+            // If we're not nested in any blockquotes, we don't expect
+            // any extra characters in front of us on newlines
+            linePrefixRegex = '';
         }
 
+        let emptyLineRegex = new RegExp(`^${linePrefixRegex}${inBlockQuote ? ' *\\n' : '\\n$'}`);
         let parentEnd = this.currentRun.end;
 
         // This is really just the ulEnd loop, but for a single li. Write this up then
@@ -2222,22 +2136,28 @@ class Markdown
             }
 
             let cEmpty = 0;
-            while (nextline == '\n')
+            while (emptyLineRegex.test(nextline))
             {
                 ++cEmpty;
                 if (cEmpty == 2)
                 {
-                    return end;
+                    return end + (inBlockQuote ? 0 : 2);
                 }
 
                 newline = next;
-                next = this._indexOrLast('\n', next + 1);
+                next = this._indexOrParentEnd('\n', next + 1);
                 nextline = this.text.substring(newline + 1, next + 1);
                 if (nextline.length == 0)
                 {
                     // Just a bunch of newlines at the end without additional context
-                    return end;
+                    return end + (inBlockQuote ? 0 : 2);
                 }
+            }
+
+            if (inBlockQuote && RegExp('^' + linePrefixRegex + '>').test(nextline))
+            {
+                // New blockquote nest level, can't bleed into it
+                return end;
             }
 
             // If we're here, nextline actually has content
@@ -2247,9 +2167,9 @@ class Markdown
                 // only continues if there are (minspaces + 1) * 2 spaces before
                 // the content.
                 let minspaces = (nestLevel + 1) * 2;
-                if (!RegExp(`^ {${minspaces},}`).test(nextline))
+                if (!RegExp(`^${linePrefixRegex} {${minspaces},}`).test(nextline))
                 {
-                    return end;
+                    return end + (inBlockQuote ? 0 : 2);
                 }
             }
             else
@@ -2258,9 +2178,9 @@ class Markdown
                 // general content of any kind, or a new list item that's indented
                 // (minspaces + 1) * 2
                 let minspaces = (nestLevel + 1) * 2;
-                if (RegExp(`^ {0,${minspaces - 1}}(?:\\*|\\d+\\.) `).test(nextline))
+                if (RegExp(`^${linePrefixRegex} {0,${minspaces - 1}}(?:\\*|\\d+\\.) `).test(nextline))
                 {
-                    return end + 1;
+                    return end + (inBlockQuote ? 0 : 1);
                 }
             }
 
@@ -2272,28 +2192,30 @@ class Markdown
     }
 
     /// <summary>
-    /// Searches for the end of a list within a block quote, returning the end.
-    /// TODO: Investigate. This may be broken
+    /// Searches for and returns the end of a list that starts at `start`
     /// </summary>
-    _listEndBlockQuote(start, nestLevel, ordered)
+    _listEnd(start, nestLevel, ordered)
     {
-        // Special handling for lists within blockquotes. Can probably be
-        // combined, but this makes it easier
-        let linePrefixRegex;
+
         let quoteNest = this._parentBlockQuoteNestLevel();
-        if (quoteNest == 0)
+        let inBlockQuote = quoteNest != 0;
+
+        let linePrefixRegex;
+        if (inBlockQuote)
         {
-            linePrefixRegex = '';
+            linePrefixRegex = `[^>]*( *> *){${this._parentBlockQuoteNestLevel() - 1}} *>`;
         }
         else
         {
-            linePrefixRegex = `^[^>]*( *> *){${this._parentBlockQuoteNestLevel() - 1}} *>`;
+            // If we're not nested in any blockquotes, we don't expect
+            // any extra characters in front of us on newlines
+            linePrefixRegex = '';
         }
 
-        let emptyLineRegex = new RegExp(linePrefixRegex + ' *\\n');
+        let emptyLineRegex = new RegExp(`^${linePrefixRegex}${inBlockQuote ? ' *\\n' : '\\n$'}`);
         let parentEnd = this.currentRun.end;
 
-        let newline = this._indexOrParentEnd('\n', start);
+        let newline = this.text.indexOf('\n', start);
         if (newline == -1 || newline >= parentEnd)
         {
             return parentEnd;
@@ -2315,109 +2237,25 @@ class Markdown
                 ++cEmpty;
                 if (cEmpty == 2)
                 {
-                    // Two 'blank' lines kills the list
-                    return end;
-                }
-
-                newline = next;
-                next = this.text.indexOf('\n', next + 1);
-                if (next == -1) { next = parentEnd; }
-                nextline = this.text.substring(newline + 1, next + 1);
-                if (nextline.length == 0)
-                {
-                    return end;
-                }
-            }
-
-            if (RegExp(linePrefixRegex + '>').test(nextline))
-            {
-                // New blockquote nest level, can't bleed into it. Blockquotes that are
-                // nested inside of this listitem are okay though
-                return end;
-            }
-
-            if (cEmpty == 1)
-            {
-                let minspaces = (nestLevel + 1) * 2;
-                if (!new RegExp(linePrefixRegex + `  {${minspaces},}`).test(nextline))
-                {
-                    if (!RegExp(linePrefixRegex + `  {${minspaces - 2},${minspaces - 1}}${ordered ? '\\d+\\.' : '\\*'} `).test(nextline))
-                    {
-                        return end;
-                    }
-                }
-            }
-            else if (RegExp(linePrefixRegex + '  *(?:\\*|\\d+\\.) ').test(nextline))
-            {
-                // Also can't swap between ordered/unordered with the same nesting level
-                let minspaces = nestLevel * 2;
-                if (!RegExp(linePrefixRegex + `  {${minspaces},}`).test(nextline) ||
-                    RegExp(linePrefixRegex + `  {${minspaces},${minspaces + 1}}${ordered ? '\\*' : '\\d+\\.'} `).test(nextline))
-                {
-                    return end + 1;
-                }
-            }
-
-            end = next;
-            newline = next;
-            next = this._indexOrParentEnd('\n', next + 1);
-            if (newline > next || newline > parentEnd)
-            {
-                return parentEnd;
-            }
-
-            nextline = this.text.substring(newline + 1, next + 1);
-        }
-    }
-
-    /// <summary>
-    /// Searches for and returns the end of a list that starts at `start`
-    /// </summary>
-    _listEnd(start, nestLevel, ordered)
-    {
-        if (this._nestedIn(State.BlockQuote))
-        {
-            return this._listEndBlockQuote(start, nestLevel, ordered);
-        }
-
-        let newline = this.text.indexOf('\n', start);
-        if (newline == -1 || newline == this.text.length - 1)
-        {
-            return this.text.length;
-        }
-
-        let end = newline;
-        let next = this.text.indexOf('\n', newline + 1);
-
-        // Note that substring handles the case where 'end' is outside the bounds of the string,
-        // so setting this to this.text.length is fine
-        if (next == -1) { next = this.text.length; }
-        let nextline = this.text.substring(newline + 1, next + 1);
-        while (true)
-        {
-            if (nextline.length == 0)
-            {
-                return end;
-            }
-
-            let cEmpty = 0;
-            while (nextline == '\n')
-            {
-                ++cEmpty;
-                if (cEmpty == 2)
-                {
                     // Two blank lines kills the list
-                    return end;
+                    return end + (inBlockQuote ? 0 : 2);
                 }
 
                 newline = next;
-                next = this._indexOrLast('\n', next + 1);
+                next = this._indexOrParentEnd('\n', next + 1);
                 nextline = this.text.substring(newline + 1, next + 1);
                 if (nextline.length == 0)
                 {
                     // Just a bunch of newlines at the end without additional context
-                    return end;
+                    return end + (inBlockQuote ? 0 : 2);
                 }
+            }
+
+            if (inBlockQuote && RegExp('^' + linePrefixRegex + '>').test(nextline))
+            {
+                // New blockquote nest level, can't bleed into it. Blockquotes that are
+                // nested inside of this listitem are okay though
+                return end;
             }
 
             // If we're here, nextline actually has content
@@ -2428,11 +2266,11 @@ class Markdown
                 // a listitem and a potential continuation of the current li, it must
                 // be indented with (nestLevel + 1) * 2 spaces
                 let minspaces = (nestLevel + 1) * 2;
-                if (!RegExp(`^ {${minspaces},}`).test(nextline))
+                if (!RegExp(`^${linePrefixRegex} {${minspaces},}`).test(nextline))
                 {
-                    if (!RegExp(`^ {${minspaces - 2},${minspaces - 1}}${ordered ? '\\d+\\.' : '\\*'} `).test(nextline))
+                    if (!RegExp(`^${linePrefixRegex} {${minspaces - 2},${minspaces - 1}}${ordered ? '\\d+\\.' : '\\*'} `).test(nextline))
                     {
-                        return end;
+                        return end + (inBlockQuote ? 0 : 2);
                     }
                 }
             }
@@ -2440,12 +2278,12 @@ class Markdown
             {
                 // Not a double newline, if it's a new listitem, it must be indented
                 // at least (nestLevel * 2) spaces. Otherwise, any level of indentation is fine
-                if (/^ *(?:\*|\d+\.) /.test(nextline))
+                if (RegExp(`^${linePrefixRegex} *(?:\\*|\\d+\\.) `).test(nextline))
                 {
                     // Also can't swap between ordered/unordered with the same nesting level
                     let minspaces = nestLevel * 2;
-                    if (!RegExp(`^ {${minspaces},}`).test(nextline) ||
-                        RegExp(`^ {${minspaces},${minspaces + 1}}${ordered ? '\\*' : '\\d+\\.'} `).test(nextline))
+                    if (!RegExp(`^${linePrefixRegex} {${minspaces},}`).test(nextline) ||
+                        RegExp(`^${linePrefixRegex} {${minspaces},${minspaces + 1}}${ordered ? '\\*' : '\\d+\\.'} `).test(nextline))
                     {
                         return end + 1;
                     }
@@ -2454,7 +2292,7 @@ class Markdown
 
             end = next;
             newline = next;
-            next = this._indexOrLast('\n', next + 1);
+            next = this._indexOrParentEnd('\n', next + 1);
             nextline = this.text.substring(newline + 1, next + 1);
         }
     }
@@ -3190,18 +3028,8 @@ class Run
     _addBreaks(newline, cNewlines, previousRun, nextRun, atTop, atBottom)
     {
         let cBreaks = 0;
-        if (atTop && atBottom)
-        {
-            // We're squished in the middle of two elements. If they're both block elements,
-            // only add a break if it's 2+ newlines
-            if (cNewlines > 2 && !previousRun.isBlockElement() && !nextRun.isBlockElement())
-            {
-                return this._insertBreak(newline);
-            }
 
-            return 0;
-        }
-        else if (atTop)
+        if (atTop)
         {
             // We're at the start of the block, only add a break under certain conditions
             if (this._shouldAddBreak(this.state, previousRun))
