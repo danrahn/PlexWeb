@@ -344,7 +344,7 @@ class MarkdownTestSuite
             [
                 // The extra line break between B and the block means we can successfully be a part of A
                 `* A\n  * B\n\n  ${marker}\n  C\n  ${marker}`,
-                `<ul><li>A<br /><ul><li>B<br /><br /></li></ul><pre>${this._preWrap('C')}</pre></li></ul>`
+                `<ul><li>A<br /><ul><li>B</li></ul><pre>${this._preWrap('C')}</pre></li></ul>`
             ],
             [
                 // Start on the same line as the list
