@@ -142,7 +142,7 @@ For more details on block elements, see [Block Element Details](#block-element-d
     * **Incorrect**: `***++~~All Four***++~~` - ***++~~All Four***++~~
   2. To escape a formatting character, prepend a backslash:
     * `\*This won't be italicized\*` - \*This won't be italicized\*
-    * `*\*\*This is italic, but not bold\*\**` - *\*\*This is italic, but not bold*
+    * `*\*\*This is italic, but not bold\*\**` - *\*\*This is italic, but not bold\*\**
 
 <br>
 ### Code Snippets
@@ -283,7 +283,7 @@ If code blocks are nested inside of a list, they must be indented two additional
   1. Top level
     * First nest
       * Second Nest
-        3. Third nest
+        0. Third nest
         5. Third nest
       * Second nest
     1. First nest, but a different list than above, as ordered and unordered lists cannot be combined

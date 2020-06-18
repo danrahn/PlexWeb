@@ -540,6 +540,14 @@ class MarkdownTestSuite
                 // Allow whitespace after blockquote nested inside of list
                 `1. \n  > ${marker}\n  > A\n  > ${marker}`,
                 `<ol><li><blockquote><pre>${this._preWrap(' A')}</pre></blockquote></li></ol>`
+            ],
+            [
+                `${marker}\n  ${marker}\n${marker}`,
+                `<pre>${this._preWrap('  ' + marker)}</pre>`
+            ],
+            [
+                `${marker}\n ${marker}\n${marker}`,
+                `<pre>${this._preWrap('')}</pre>${this._divWrap(marker)}`
             ]
         );
 
@@ -672,6 +680,14 @@ class MarkdownTestSuite
             [
                 '```\nA ```\n```',
                 '<pre>' + this._preWrap('A ```') + '</pre>'
+            ],
+            [
+                '> ```\n\n> ```',
+                '<blockquote>```</blockquote><blockquote>```</blockquote>'
+            ],
+            [
+                '> ```\n>\n> ```',
+                `<blockquote><pre>${this._preWrap('')}</pre></blockquote>`
             ]
         );
 

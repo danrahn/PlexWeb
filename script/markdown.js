@@ -1835,7 +1835,14 @@ class Markdown
             return -1;
         }
 
-        let params = { minIndent : 0, language : '', markers : markers, newline : newline, regexStr : this._nestRegex() };
+        let nestRegex = this._nestRegex();
+        while (nestRegex.endsWith(' *'))
+        {
+            nestRegex = nestRegex.substring(0, nestRegex.length - 2);
+        }
+
+        nestRegex += ' {0,1}'; // Allow only a single space gap
+        let params = { minIndent : 0, language : '', markers : markers, newline : newline, regexStr : nestRegex };
         if (!this._validBacktickCodeBlockStart(start, params))
         {
             return -1;
@@ -1884,13 +1891,14 @@ class Markdown
     _findBacktickCodeBlockEnd(start, params)
     {
         let newline = params.newline;
-        let next = this._indexOrLast('\n', params.newline + 1);
+        let next = this._indexOrParentEnd('\n', params.newline + 1);
         let nextline = this.text.substring(newline + 1, next + 1);
 
         // Each subsequent line must have at least minspaces before it, otherwise it's an invalid block
         let validLine = RegExp('^' + params.regexStr);
 
         let validEnd = RegExp('^' + params.regexStr + params.markers + '\\n?$');
+        let blankLine = RegExp('^' + params.regexStr + '\\n$');
         while (true)
         {
             if (nextline.length == 0)
@@ -1898,10 +1906,10 @@ class Markdown
                 return -2;
             }
 
-            while (/^ *\n$/.test(nextline))
+            while (blankLine.test(nextline))
             {
                 newline = next;
-                next = this._indexOrLast('\n', next + 1);
+                next = this._indexOrParentEnd('\n', next + 1);
                 nextline = this.text.substring(newline + 1, next + 1);
                 if (nextline.length == 0)
                 {
@@ -1935,7 +1943,7 @@ class Markdown
             }
 
             newline = next;
-            next = this._indexOrLast('\n', next + 1);
+            next = this._indexOrParentEnd('\n', next + 1);
             nextline = this.text.substring(newline + 1, next + 1);
         }
     }
@@ -2575,7 +2583,7 @@ class Run
         this.cached = this.tag(false /*end*/);
 
         let startWithContext = this.start + this.startContextLength();
-        let endWithContext = this.end - this.endContextLength();
+        let endWithContext = Math.max(startWithContext, this.end - this.endContextLength());
         if (this.innerRuns.length == 0)
         {
             this.cached += this.transform(initialText.substring(startWithContext, endWithContext), RunSide.Full);
@@ -3827,7 +3835,7 @@ class BacktickCodeBlock extends CodeBlock
             }
         }
 
-        if (trim != line.length)
+        if (left == 0)
         {
             return line.substring(trim);
         }
