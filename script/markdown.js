@@ -271,18 +271,33 @@ class Markdown
             return '';
         }
 
-        // Do some initial pruning, and get rid of carriage returns
-        text = this._trimInput(text).replace(/\r/g, '');
-        if (this._cachedParse.length != 0 &&
-            this._inlineOnly == inlineOnly &&
-            this.text == text)
+        // Make some assumptions about inlineOnly not continuing from a previous
+        // parse and skip some of the checks below to save some time
+        let i;
+        if (inlineOnly)
         {
-            logTmi('Identical content, returning cached content');
-            this.sameText = true;
-            return this._cachedParse;
+            this.text = text;
+            this.topRun = new Run(State.None, 0 /*start*/, this.text.length, null /*parent*/);
+            this.currentRun = this.topRun;
+            this._inlineOnly = inlineOnly;
+            i = 0;
+        }
+        else
+        {
+            // Do some initial pruning, and get rid of carriage returns
+            text = this._trimInput(text).replace(/\r/g, '');
+            if (this._cachedParse.length != 0 &&
+                this._inlineOnly == inlineOnly &&
+                this.text == text)
+            {
+                logTmi('Identical content, returning cached content');
+                this.sameText = true;
+                return this._cachedParse;
+            }
+
+            i = this._reset(text, inlineOnly, this._checkCache(text));
         }
 
-        let i = this._reset(text, inlineOnly, this._checkCache(text));
         this._inParse = true;
 
         let html = this._parseCore(i);
@@ -480,7 +495,7 @@ class Markdown
 
         let end = this.text.indexOf('\n', start);
         if (end == -1) { end = this.text.length; }
-        let header = new Header(start - headingLevel + 1, end, headingLevel, this.currentRun);
+        let header = new Header(start - headingLevel + 1, end, this.text, headingLevel, this.currentRun);
         this.currentRun = header;
         logTmi(`Added header: start=${header.start}, end=${header.end}, level=${header.headerLevel}`);
         return start;
@@ -1613,7 +1628,7 @@ class Markdown
             return false;
         }
 
-        let validCol = /^:?-{3,}:?$/;
+        const validCol = /^:?-{3,}:?$/;
         for (let i = 0; i < groups.length; ++i)
         {
             let col = groups[i];
@@ -2184,6 +2199,10 @@ class Markdown
         params.nextline = this.text.substring(params.newline + 1, params.next + 1);
         params.emptyLineRegex = new RegExp(`^${params.linePrefixRegex}${params.inBlockQuote ? ' *\\n' : '\\n$'}`);
 
+        // Set various regex that we don't always need, but the one time cost of creating RegExp we don't
+        // always need is outweighed by the potential cost of continuously recreating them in the loop below
+        this._setListEndLoopRegex(params);
+
         while (true)
         {
             if (params.nextline.length == 0)
@@ -2197,15 +2216,10 @@ class Markdown
                 return params.end;
             }
 
-            if (!this._checkNextListLine(params))
+            if (!this._checkNextListLineAndAdvance(params))
             {
                 return params.end;
             }
-
-            params.end = params.next;
-            params.newline = params.next;
-            params.next = this._indexOrParentEnd('\n', params.next + 1);
-            params.nextline = this.text.substring(params.newline + 1, params.next + 1);
         }
     }
 
@@ -2239,7 +2253,28 @@ class Markdown
         return true;
     }
 
-    _checkNextListLine(params)
+    _setListEndLoopRegex(params)
+    {
+        let minspaces = (params.nestLevel + 1) * 2;
+        params.nextLineIndented = RegExp(`^${params.linePrefixRegex} {${minspaces},}`);
+        let spacePrefix = `${params.linePrefixRegex} {${minspaces - 2},${minspaces - 1}}`;
+        params.nextLineContinuesList = params.wholeList ? RegExp(`^${spacePrefix}${params.ordered ? '\\d+\\.' : '\\*'} `) : '';
+
+        if (params.wholeList)
+        {
+            params.nextLineIsNewListItem = RegExp(`^${params.linePrefixRegex} *(?:\\*|\\d+\\.) `);
+            minspaces -= 2;
+            params.sufficientIndent = RegExp(`^${params.linePrefixRegex} {${minspaces},}`);
+            let oppositeListType = params.ordered ? '\\*' : '\\d+\\.';
+            params.swappedListType = RegExp(`^${params.linePrefixRegex} {${minspaces},${minspaces + 1}}${oppositeListType} `);
+        }
+        else
+        {
+            params.endOfListItem = RegExp(`^${params.linePrefixRegex} {0,${minspaces - 1}}(?:\\*|\\d+\\.) `);
+        }
+    }
+
+    _checkNextListLineAndAdvance(params)
     {
         if (params.inBlockQuote && RegExp('^' + params.linePrefixRegex + '>').test(params.nextline))
         {
@@ -2255,11 +2290,9 @@ class Markdown
             // item must be indented at 2 * nestLevel. If the next line is not
             // a listitem and a potential continuation of the current li, it must
             // be indented with (nestLevel + 1) * 2 spaces
-            let minspaces = (params.nestLevel + 1) * 2;
-            if (!RegExp(`^${params.linePrefixRegex} {${minspaces},}`).test(params.nextline))
+            if (!params.nextLineIndented.test(params.nextline))
             {
-                let spacePrefix = `${params.linePrefixRegex} {${minspaces - 2},${minspaces - 1}}`;
-                if (!params.wholeList || !RegExp(`^${spacePrefix}${params.ordered ? '\\d+\\.' : '\\*'} `).test(params.nextline))
+                if (!params.wholeList || !params.nextLineContinuesList.test(params.nextline))
                 {
                     params.end += (params.inBlockQuote ? 0 : 2);
                     return false;
@@ -2268,14 +2301,14 @@ class Markdown
         }
         else if (params.wholeList)
         {
-            // Not a double newline, if it's a new listitem, it must be indented
-            // at least (nestLevel * 2) spaces. Otherwise, any level of indentation is fine
-            if (RegExp(`^${params.linePrefixRegex} *(?:\\*|\\d+\\.) `).test(params.nextline))
+            // Not a double newline, if it's a new listitem, it must be the same type of
+            // list, or indented at least (nestLevel * 2) spaces. If it's not a new listitem,
+            // any level of indentation is fine
+            if (params.nextLineIsNewListItem.test(params.nextline))
             {
                 // Also can't swap between ordered/unordered with the same nesting level
-                let minspaces = params.nestLevel * 2;
-                if (!RegExp(`^${params.linePrefixRegex} {${minspaces},}`).test(params.nextline) ||
-                    RegExp(`^${params.linePrefixRegex} {${minspaces},${minspaces + 1}}${params.ordered ? '\\*' : '\\d+\\.'} `).test(params.nextline))
+                if (!params.sufficientIndent.test(params.nextline) ||
+                    params.swappedListType.test(params.nextline))
                 {
                     params.end += (params.inBlockQuote ? 0 : 1);
                     return false;
@@ -2287,13 +2320,17 @@ class Markdown
             // Not a double newline. To continue the list item we need
             // general content of any kind, or a new list item that's indented
             // (minspaces + 1) * 2
-            let minspaces = (params.nestLevel + 1) * 2;
-            if (RegExp(`^${params.linePrefixRegex} {0,${minspaces - 1}}(?:\\*|\\d+\\.) `).test(params.nextline))
+            if (params.endOfListItem.test(params.nextline))
             {
                 params.end += (params.inBlockQuote ? 0 : 1);
                 return false;
             }
         }
+
+        params.end = params.next;
+        params.newline = params.next;
+        params.next = this._indexOrParentEnd('\n', params.next + 1);
+        params.nextline = this.text.substring(params.newline + 1, params.next + 1);
 
         return true;
     }
@@ -3319,15 +3356,77 @@ class Header extends Run
 {
     /// <param name="headerLevel">The type of header, 1-6</param>
     /// <param name="text">Full markdown text, used to set the header element's id</param>
-    constructor(start, end, headerLevel, parent)
+    constructor(start, end, text, headerLevel, parent)
     {
         super(State.Header, start, end, parent);
         this.headerLevel = headerLevel;
+        this.text = text.substring(start, end);
     }
 
     startContextLength()
     {
         return this.headerLevel + 1;
+    }
+
+    /// <summary>
+    /// Determine the "display text" of the given run, not caring about
+    /// special characters for things like **formatting** because we strip
+    /// it later anyway.
+    /// </summary>
+    /// <remarks>
+    /// A lot of code for what it does, but the alternative is to create an
+    /// HTML element, set the innerHTML, then grab the innerText. While much
+    /// more concise, in limited testing this method is 5-7x faster than that,
+    /// and especially faster in the expected case of limited formatting inside
+    /// of the header.
+    /// </remarks>
+    _id(run)
+    {
+        // Fast case - no inner elements
+        if (run.innerRuns.length == 0)
+        {
+            switch (run.state)
+            {
+                case State.Url:
+                    return this.text.substring(run.start - this.start, run.end - run.endContextLength() - this.start);
+                case State.Image:
+                    return run.altText;
+                default:
+                    return this.text.substring(run.start - this.start, run.end - this.start);
+            }
+        }
+
+        let innerText = '';
+        if (run.start < run.innerRuns[0].start)
+        {
+            innerText += this.text.substring(run.start - this.start, run.innerRuns[0].start - this.start);
+        }
+
+        let innerRun;
+        for (let i = 0; i < run.innerRuns.length; ++i)
+        {
+            innerRun = run.innerRuns[i];
+            innerText += this._id(innerRun);
+            if (i != run.innerRuns.length - 1 && innerRun.end < run.innerRuns[i + 1].start)
+            {
+                innerText += this.text.substring(innerRun.end - this.start, run.innerRuns[i + 1].start - this.start);
+            }
+        }
+
+        if (run.end > innerRun.end)
+        {
+            switch (run.state)
+            {
+                case State.Url:
+                    innerText += this.text.substring(innerRun.end - this.start, run.end - run.endContextLength() - this.start);
+                    break;
+                default:
+                    innerText += this.text.substring(innerRun.end - this.start, run.end - this.start);
+                    break;
+            }
+        }
+
+        return innerText;
     }
 
     /// <summary>
@@ -3339,13 +3438,10 @@ class Header extends Run
         {
             let endTag = `</h${this.headerLevel}>`;
 
-            // Get __real__ hacky and inefficient in order to find the proper id for this element
-            let div = document.createElement('div');
-            div.innerHTML = this.cached + endTag;
-            let id = div.innerText.toLowerCase().replace(/ /g, '-').replace(/[^-_a-zA-Z0-9]/g, '').replace(/^-+/, '').replace(/-+$/, '');
+            let id = this._id(this);
+            id = id.replace(/[^ a-z0-9]/gi, '').trim().replace(/ +/g, '-').toLowerCase();
             if (/^\d/.test(id))
             {
-                // Id's can't start with a number. Prefix with an underscore
                 id = '_' + id;
             }
 
