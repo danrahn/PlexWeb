@@ -35,6 +35,7 @@ class MarkdownTestSuite
         addResult(this.testBacktickCodeBlock());
         addResult(this.testTildeCodeBlock());
         addResult(this.testMixedBacktickTildeCodeBlock());
+        addResult(this.testIndentCodeBlock());
         addResult(this.testOrderedList());
         addResult(this.testUnorderedList());
 
@@ -552,6 +553,131 @@ class MarkdownTestSuite
         );
 
         return this._runSingleSuite(tests, (marker == '```' ? 'Backtick' : 'Tilde') + ' code blocks');
+    }
+
+    static testIndentCodeBlock()
+    {
+        let tests = this._buildTests(
+            [
+                '    A',
+                `<pre>${this._preWrap('A')}</pre>`
+            ],
+            [
+                '     A',
+                `<pre>${this._preWrap(' A')}</pre>`
+            ],
+            [
+                '   A',
+                this._divWrap('A')
+            ],
+            [
+                '    A\n    B',
+                `<pre>${this._preWrap('A', 'B')}</pre>`
+            ],
+            [
+                '    A\n   B',
+                `<pre>${this._preWrap('A')}</pre>${this._divWrap('B')}`
+            ],
+            // Lists
+            [
+                '*     A',
+                `<ul><li><pre>${this._preWrap('A')}</pre></li></ul>`
+            ],
+            [
+                '1.     A',
+                `<ol><li><pre>${this._preWrap('A')}</pre></li></ol>`
+            ],
+            [
+                '*    A',
+                '<ul><li>   A</li></ul>'
+            ],
+            [
+                // No break after li, before pre, probably a bug
+                '* \n      A',
+                `<ul><li><pre>${this._preWrap('A')}</pre></li></ul>`
+            ],
+            [
+                '* \n       A',
+                `<ul><li><pre>${this._preWrap(' A')}</pre></li></ul>`
+            ],
+            [
+                '*     A\n      B',
+                `<ul><li><pre>${this._preWrap('A', 'B')}</pre></li></ul>`
+            ],
+            [
+                '* \n      A\n     B',
+                `<ul><li><pre>${this._preWrap('A')}</pre>B</li></ul>`
+            ],
+            [
+                '* *     A',
+                `<ul><li><ul><li><pre>${this._preWrap('A')}</pre></li></ul></li></ul>`
+            ],
+            [
+                '* \n  *     A',
+                `<ul><li><br /><ul><li><pre>${this._preWrap('A')}</pre></li></ul></li></ul>`
+            ],
+            [
+                '* \n  * \n    * \n          A',
+                `<ul><li><br /><ul><li><br /><ul><li><pre>${this._preWrap('A')}</pre></li></ul></li></ul></li></ul>`
+            ],
+            // Quotes
+            [
+                '>    A',
+                `<blockquote><pre>${this._preWrap('A')}</pre></blockquote>`
+            ],
+            [
+                '>    A\n>    B',
+                `<blockquote><pre>${this._preWrap('A', 'B')}</pre></blockquote>`
+            ],
+            [
+                '>     A\n>   B',
+                `<blockquote><pre>${this._preWrap(' A')}</pre>B</blockquote>`
+            ],
+            [
+                `>    A\n\n>    B`,
+                `<blockquote><pre>${this._preWrap('A')}</pre></blockquote><blockquote><pre>${this._preWrap('B')}</pre></blockquote>`
+            ],
+            [
+                '>>    A\n>    B',
+                `<blockquote><blockquote><pre>${this._preWrap('A')}</pre></blockquote><pre>${this._preWrap('B')}</pre></blockquote>`
+            ],
+            [
+                '>    A\n>>    B',
+                `<blockquote><pre>${this._preWrap('A')}</pre><blockquote><pre>${this._preWrap('B')}</pre></blockquote></blockquote>`
+            ],
+            // Mixed list + quote
+            [
+                '> *     A',
+                `<blockquote><ul><li><pre>${this._preWrap('A')}</pre></li></ul></blockquote>`
+            ],
+            [
+                '* >    A',
+                `<ul><li><blockquote><pre>${this._preWrap('A')}</pre></blockquote></li></ul>`
+            ],
+            [
+                '* \n>\n>    A',
+                `<ul><li><blockquote><br /><pre>${this._preWrap('A')}</pre></blockquote></li></ul>`
+            ],
+            [
+                '1. \n  > A\n  >    B\n  >    C\n  *     D',
+                `<ol>` +
+                    `<li>` +
+                        `<blockquote>` +
+                            `A<br />` +
+                            `<pre>${this._preWrap('B', 'C')}</pre>` +
+                        `</blockquote>` +
+                        `<ul>` +
+                            `<li>` +
+                                `<pre>${this._preWrap('D')}</pre>` +
+                            `</li>` +
+                        `</ul>` +
+                    `</li>` +
+                `</ol>`
+            ]
+
+        );
+
+        return this._runSingleSuite(tests, 'Indented code blocks');
     }
 
     static testMixed()

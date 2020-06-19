@@ -343,16 +343,7 @@ Pipes at the start | and end | are optional
   2. HTML comments - Anything between `<!--` and `-->` will be ignored and unescaped, acting exactly like an HTML comment
 
 ## Issues
-1. Nested Code Blocks - Currently, indented code blocks cannot be nested in lists or quotes:
-  ```
-  >     A
-  ```
-  Renders as
-  >     A
-  Instead of
-  > ```
-  > A
-  > ```
+1. No major issues/deficiencies are currently known, but many smaller bugs/quirks exist that are too trivial transient to list here.
 
 
 <br>

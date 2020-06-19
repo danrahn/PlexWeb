@@ -1301,27 +1301,112 @@ class Markdown
             return -1;
         }
 
-        let params = { minspaces : 4, firstInList : false };
-        if (!this._validIndentCodeBlockStart(start, params))
+        // To account for nesting:
+        // Go backwards in the tree, stopping as soon as we find a quote.
+        // Take the quote's nest level to have a base regex of ^([^>]*>){nestLevel}
+        // Along the way to the first quote, also build up the list regex, both for the
+        // first line (which can contain multiple list indicators, e.g. '* > * 1.     Block')
+        // and subsequent lines, which will be our base regex plus our list's nest level * 2 + 2
+
+        let quoteNest = this._parentBlockQuoteNestLevel();
+        let quoteRegex = '^';
+        if (quoteNest != 0)
+        {
+            quoteRegex = `^(?:[^>]*>){${quoteNest}}`;
+        }
+
+        let listNestLevel = -1; // -1 ensures we don't add additional spaces in nextLineRegex further below
+        let firstLineRegex = '';
+        let run = this.currentRun;
+        let lastNewline = this.text.lastIndexOf('\n', start);
+        while (run !== null)
+        {
+            if (run.state == State.BlockQuote)
+            {
+                break;
+            }
+
+            if (run.state == State.ListItem)
+            {
+                if (listNestLevel == -1)
+                {
+                    listNestLevel = run.parent.nestLevel;
+                }
+
+                // If our last newline is beyond the start of this run, then
+                // it won't be in our line and we should expect two spaces
+                if (lastNewline > run.start)
+                {
+                    firstLineRegex = '  ' + firstLineRegex;
+                }
+                else
+                {
+                    firstLineRegex = `${run.parent.state == State.OrderedList ? '\\d+\\.' : '\\*'} {1,4}` + firstLineRegex;
+                }
+            }
+
+            run = run.parent;
+        }
+
+        if (listNestLevel != -1 && quoteNest != 0)
+        {
+            // If we're nested in both lists and quotes, we need
+            // to allow for some space between the quote and the start of the list
+            firstLineRegex = quoteRegex + ' {1,3}' + firstLineRegex + '    $';
+        }
+        else
+        {
+            firstLineRegex = quoteRegex + firstLineRegex + '    $';
+        }
+
+        let context = this.text.substring(lastNewline + 1, start + 1);
+        if (!RegExp(firstLineRegex).test(context))
         {
             return -1;
         }
 
-        // Find the end, i.e. the last line prefixed with 4+ spaces (excluding completely empty lines)
-        let newline = this.text.indexOf('\n', start);
-        let end;
-        if (newline == -1 || newline == this.text.length - 1)
+        let blankLineRegex = RegExp(`${quoteRegex} *\\n`);
+        let nextLineString = `${quoteRegex} {${(listNestLevel + 1) * 2}}    `;
+        let nextLineRegex = RegExp(nextLineString);
+
+        let newline = this._indexOrParentEnd('\n', start);
+        let end = newline;
+        let next = this._indexOrParentEnd('\n', newline + 1);
+        let nextline = this.text.substring(newline + 1, next + 1);
+
+        while (true)
         {
-            end = this.text.length;
-        }
-        else
-        {
-            end = this._findIndentCodeBlockEnd(newline, params);
+            if (nextline.length == 0)
+            {
+                break;
+            }
+
+            while (blankLineRegex.test(nextline))
+            {
+                newline = next;
+                next = this._indexOrParentEnd('\n', next + 1);
+                nextline = this.text.substring(newline + 1, next + 1);
+                if (nextline.length == 0)
+                {
+                    break;
+                }
+            }
+
+            // If we're here, nextline actually has content
+            if (!nextLineRegex.test(nextline))
+            {
+                break;
+            }
+
+            end = next;
+            newline = next;
+            next = this._indexOrParentEnd('\n', next + 1);
+            nextline = this.text.substring(newline + 1, next + 1);
         }
 
-        let blockStart = start - (params.firstIsList ? 4 : params.minspaces) + 1;
+        let blockStart = start - 3;
 
-        // Somewhat hacky, but if we're in a list and have an indented code block, remove any preceding line
+        // Hacky, but if we're in a list and have an indented code block, remove any preceding line
         // breaks, as this has enough padding on its own
         if (this.currentRun.state == State.ListItem)
         {
@@ -1332,8 +1417,7 @@ class Markdown
             }
         }
 
-        new IndentCodeBlock(blockStart, end, this.text, params.minspaces, params.firstIsList, this.currentRun);
-        logTmi(`Added Indent Code Block: start=${blockStart}, end=${end}, minspaces=${params.minspaces}`);
+        new IndentCodeBlock(blockStart, end, nextLineString, this.currentRun);
         return end;
     }
 
@@ -1354,86 +1438,6 @@ class Markdown
         }
 
         return true;
-    }
-
-    /// <summary>
-    /// Returns whether we have a valid start to a code block
-    /// </summary>
-    _validIndentCodeBlockStart(start, params)
-    {
-        if (this.currentRun.state == State.ListItem)
-        {
-            // Listitems need additional indentation
-            let nestLevel = this.currentRun.parent.nestLevel;
-            params.minspaces += (nestLevel + 1) * 2;
-            let type = this.currentRun.parent.state;
-            let context = this.text.substring(this.text.lastIndexOf('\n', start) - 1, start + 1);
-            let liStartRegex = new RegExp(`^.?\\n? {${nestLevel * 2}} ?${type == State.OrderedList ? '\\d+\\.' : '\\*'}     `);
-            if (liStartRegex.test(context))
-            {
-                params.firstIsList = true;
-            }
-            else
-            {
-                // Not on the same line as the list item start, check if it's
-                // a valid continuation
-                if (!new RegExp(`^\\n?\\n? {${params.minspaces}}`).test(context))
-                {
-                    return false;
-                }
-            }
-        }
-        // Not in a list, just need 4+ spaces. substring is nice enough to adjust invalid bounds
-        // in the case where we ask for a substring starting at a negative index
-        else if (!/^\n?\n? {3}$/.test(this.text.substring(start - 5, start)) || start == this.text.length - 1 || this.text[start + 1] == '\n')
-        {
-            return false;
-        }
-
-        return true;
-    }
-
-    /// <summary>
-    /// Returns the end of an indented code block
-    /// </summary>
-    _findIndentCodeBlockEnd(newline, params)
-    {
-        let end = newline;
-        let next = this._indexOrLast('\n', newline + 1);
-        let nextline = this.text.substring(newline + 1, next + 1);
-        let regex = new RegExp(`^ {${params.minspaces}}`);
-
-        while (true)
-        {
-            if (nextline.length == 0)
-            {
-                break;
-            }
-
-            while (/^ *\n/.test(nextline))
-            {
-                newline = next;
-                next = this._indexOrLast('\n', next + 1);
-                nextline = this.text.substring(newline + 1, next + 1);
-                if (nextline.length == 0)
-                {
-                    break;
-                }
-            }
-
-            // If we're here, nextline actually has content
-            if (!regex.test(nextline))
-            {
-                break;
-            }
-
-            end = next;
-            newline = next;
-            next = this._indexOrLast('\n', next + 1);
-            nextline = this.text.substring(newline + 1, next + 1);
-        }
-
-        return end;
     }
 
     /// <summary>
@@ -3727,29 +3731,12 @@ class Image extends Run
 /// </summary>
 class CodeBlock extends Run
 {
-    /// <param name="indent">The number of prefixed spaces before this block starts</param>
-    /// <param name="backtick">True if this is a backtick/tilde block and not an indented one</param>
-    constructor(start, end, text, indent, backtick, parent)
+    constructor(start, end, parent)
     {
         super(State.CodeBlock, start, end, parent);
-        this.text = text.substring(start, end);
-        this.indent = indent;
-        this.backtick = backtick;
     }
 
     tag(end) { return Run.basicTag('pre', end); }
-
-    /// <summary>
-    /// Splits the code block into individual lines and
-    /// applies the given function to each line
-    /// </summary>
-    buildCodeBlock(text, fn)
-    {
-        this.finalText = '';
-        let lines = text.split('\n');
-        this.pad = lines.length.toString().length;
-        lines.forEach(fn, this);
-    }
 
     /// <summary>
     /// Returns a span containing the current code block line number
@@ -3769,7 +3756,9 @@ class BacktickCodeBlock extends CodeBlock
 {
     constructor(start, end, indent, text, language, parent)
     {
-        super(start, end, text, indent, true /*backtick*/, parent);
+        super(start, end, parent);
+        this.indent = indent;
+        this.text = text.substring(start, end);
         this.language = language;
         this.quoteLevel = 0;
         let run = this.parent;
@@ -3793,13 +3782,25 @@ class BacktickCodeBlock extends CodeBlock
     transform(newText, /*side*/)
     {
         newText = super.transform(newText);
-        this.buildCodeBlock(newText, function(line, i)
+        this._buildCodeBlock(newText, function(line, i)
         {
             let trimmedLine = this._getTrimmedLine(line);
             this.finalText += this.lineNumber(i + 1, this.pad) + trimmedLine + '\n';
         });
 
         return this.finalText;
+    }
+
+    /// <summary>
+    /// Splits the code block into individual lines and
+    /// applies the given function to each line
+    /// </summary>
+    _buildCodeBlock(text, fn)
+    {
+        this.finalText = '';
+        let lines = text.split('\n');
+        this.pad = lines.length.toString().length;
+        lines.forEach(fn, this);
     }
 
     /// <summary>
@@ -3850,48 +3851,49 @@ class BacktickCodeBlock extends CodeBlock
 /// </summary>
 class IndentCodeBlock extends CodeBlock
 {
-    /// <param name="firstIsList">
-    /// If true, indicates that this block started on the same line as the start of
-    /// a listitem, which changes the indentation rules (for the first line only)
-    /// </param>
-    constructor(start, end, text, indent, firstIsList, parent)
+    constructor(start, end, nextLineRegex, parent)
     {
-        super(start, end, text, indent, false /*backtick*/, parent);
-        this.firstIsList = firstIsList;
+        super(start, end, parent);
+        this.nextLineRegex = nextLineRegex;
     }
 
-    startContextLength()
-    {
-        if (this.firstIsList)
-        {
-            return 4;
-        }
-
-        return this.indent;
-    }
-
+    startContextLength() { return 4; }
     endContextLength() { return 0; }
 
     /// <summary>
-    /// Forwards to buildCodeBlock to correctly format each line and strip the necessary prefixed spaces
+    /// Format each line and strip the necessary prefixed spaces/quote markers
     /// </summary>
     transform(newText, /*side*/)
     {
-        newText = super.transform(this.text);
-        this.buildCodeBlock(newText, function(line, i)
+        let finalText = '';
+        let lines = newText.split('\n');
+        this.pad = lines.length.toString().length;
+        let matchRegex = RegExp(this.nextLineRegex + '(.*)');
+        for (let i = 0; i < lines.length; ++i)
         {
             const lineNumber = this.lineNumber(i + 1, this.pad);
-            if (i == 0 && this.firstIsList)
+            let line = lines[i];
+            if (i == 0)
             {
-                this.finalText += lineNumber + line.substring(4) + '\n';
+                // First line is not indented at all
+                finalText += lineNumber + super.transform(line) + '\n';
             }
             else
             {
-                this.finalText += lineNumber + line.substring(this.indent) + '\n';
+                let match = line.match(matchRegex);
+                if (match)
+                {
+                    finalText += lineNumber + super.transform(match[1]) + '\n';
+                }
+                else
+                {
+                    logWarn('Error parsing indent code block line: ' + line);
+                    finalText += line + '\n';
+                }
             }
-        });
+        }
 
-        return this.finalText;
+        return finalText;
     }
 }
 
