@@ -881,7 +881,8 @@ function buildActiveStreamPoster(sesh)
         "a",
         {
             href : sesh.hyperlink,
-            target : "_blank"
+            target : "_blank",
+            title : getExternalLinkTitle(sesh.hyperlink)
         },
         0,
         {
