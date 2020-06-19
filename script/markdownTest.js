@@ -549,6 +549,10 @@ class MarkdownTestSuite
             [
                 `${marker}\n ${marker}\n${marker}`,
                 `<pre>${this._preWrap('')}</pre>${this._divWrap(marker)}`
+            ],
+            [
+                '```C++\nA\n```',
+                `<pre>${this._preWrap('A')}</pre>`
             ]
         );
 
@@ -577,6 +581,11 @@ class MarkdownTestSuite
             [
                 '    A\n   B',
                 `<pre>${this._preWrap('A')}</pre>${this._divWrap('B')}`
+            ],
+            [
+                // Blank lines without indents are okay
+                '    A\n\n    B',
+                `<pre>${this._preWrap('A', '', 'B')}</pre>`
             ],
             // Lists
             [

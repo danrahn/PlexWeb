@@ -1923,7 +1923,8 @@ class Markdown
             return false;
         }
 
-        let match = this.text.substring(start + 3, params.newline + 1).match(/^ *(\w*)\n/);
+        // Language after the backtick. Generally only allow letters, but C++/C# should also be accounted for
+        let match = this.text.substring(start + 3, params.newline + 1).match(/^ *([\w+#]*)\n/);
         if (!match)
         {
             return false;
@@ -4045,6 +4046,7 @@ class IndentCodeBlock extends CodeBlock
         let lines = newText.split('\n');
         this.pad = lines.length.toString().length;
         let matchRegex = RegExp(this.nextLineRegex + '(.*)');
+        let blankMatchRegex = RegExp(this.nextLineRegex.substring(0, this.nextLineRegex.length - 4) + '(.*)');
         for (let i = 0; i < lines.length; ++i)
         {
             const lineNumber = this.lineNumber(i + 1, this.pad);
@@ -4061,10 +4063,14 @@ class IndentCodeBlock extends CodeBlock
                 {
                     finalText += lineNumber + super.transform(match[1]) + '\n';
                 }
+                else if ((match = line.match(blankMatchRegex)))
+                {
+                    finalText += lineNumber + '\n';
+                }
                 else
                 {
                     logWarn('Error parsing indent code block line: ' + line);
-                    finalText += line + '\n';
+                    finalText += lineNumber + super.transform(line) + '\n';
                 }
             }
         }
