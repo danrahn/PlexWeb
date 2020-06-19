@@ -157,12 +157,12 @@ For more details on block elements, see [Block Element Details](#block-element-d
 
 1. Display text can have formatting applied just like any other part of the document: ``[**Formatted** `link`](markdown.php)`` - [**Formatted** `link`](markdown.php)
 
-2. **Alternate form**:  Sometimes you might be linking to the same page multiple times. You can write that URL once and reference it in multiple places with the following syntax:
+2. **Alternate form**:  In addition to inline links as described above, there are also reference links. These allow you to specify the link itself elsewhere, and reference it in multiple other areas using the following syntax:
   ```
-  [Display Text][Link1]
-  [Another Link][Link1]
+  [Display Text][Ref]
+  [Another Link][Ref]
   ...
-  [Link1]: danrahn.com
+  [Ref]: danrahn.com
   ```
   This is equivalent to
   ```
@@ -180,8 +180,8 @@ In addition to alt text, you can also specify the width and/or height of the ima
   * `![AltText w=50%](url)` - Width is 50% of the page. Height scales accordingly
   * `![AltText h=50%](url)` - Height is 50% of its original size. Width scales accordingly
 
-For example, `![Poster w=100](poster/zxGkno93ExrTMsJVllH6mzQ652z.jpg)`:
-  ![Poster w=100](poster/zxGkno93ExrTMsJVllH6mzQ652z.jpg)
+For example, `![Poster w=100](poster/movieDefault.svg)`:
+  ![Poster w=100](poster/movieDefault.svg)
 
 <br>
 ---
@@ -322,7 +322,7 @@ Pipes at the start | and end | are optional
 | Second row defines<br>the columns. | At least 3 dashes<br>are required | but more are allowed |
 || Multiple Pipes | for empty cells |
 | Add line breaks<br>with \<br>
-| ++Cells can be formatted++ | [with any inline elements](#) | ![Poster h=150](poster/zxGkno93ExrTMsJVllH6mzQ652z.jpg) |
+| ++Cells can be formatted++ | [with any inline elements](#) | ![Poster h=150](poster/movieDefault.svg) |
 ```
 | Column1          | Column2   | Column3 |
 |:-----------------|:---------:|---:|
@@ -331,7 +331,7 @@ Pipes at the start | and end | are optional
 | Second row defines<br>the columns. | At least 3 dashes<br>are required | but more are allowed |
 || Multiple Pipes | for empty cells |
 | Add line breaks<br>with \<br>
-| ++Cells can be formatted++ | [with any inline elements](#) | ![Poster h=150](poster/zxGkno93ExrTMsJVllH6mzQ652z.jpg) |
+| ++Cells can be formatted++ | [with any inline elements](#) | ![Poster h=150](poster/movieDefault.svg) |
 
 
 <br>

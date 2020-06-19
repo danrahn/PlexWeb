@@ -578,7 +578,7 @@ class Markdown
 
     /// <summary>
     /// Process an open bracket. This could be a regular URL or a definition
-    /// for an extended table-based URL
+    /// for an reference URL
     /// </summary>
     /// <returns>The position we should continue parsing from</returns>
     _checkOpenBracket(i)
@@ -612,11 +612,11 @@ class Markdown
         }
         else if (result.type == 1)
         {
-            url = new ExtendedUrl(i, result.end, result.url, this._urls, this.currentRun);
+            url = new ReferenceUrl(i, result.end, result.url, this._urls, this.currentRun);
         }
         else
         {
-            url = new ExtendedUrlTag(i, result.end, this.currentRun);
+            url = new ReferenceUrlDefinition(i, result.end, this.currentRun);
             i = result.end - 1;
         }
 
@@ -2268,7 +2268,7 @@ class Markdown
             text : '',
             url : 0,
             end : 0,
-            type : 0 // 0 == regular link, 1 == "footer" syntax, 2 == footer definition
+            type : 0 // 0 == regular link, 1 == reference, 2 == reference definition
         };
 
         let urlParse =
@@ -2301,7 +2301,7 @@ class Markdown
                 case ']':
                     if (!this._parseUrlCloseBracket(urlParse, i))
                     {
-                        // End of table-based url
+                        // End of reference link
                         return urlParse.ret;
                     }
 
@@ -2340,9 +2340,12 @@ class Markdown
 
     /// <summary>
     /// Processes an open bracket in a potential URL. It could be part
-    /// of a nested URL or part of a table-based URL definition
+    /// of a nested URL or part of a reference URL definition
     /// </summary>
-    /// <returns>The index to resume processing. Only different if </returns>
+    /// <returns>
+    /// The index to resume processing. Only different if we have
+    // a nested link and want to skip to the end of it
+    /// </returns>
     _parseUrlOpenBracket(urlParse, i)
     {
         if (i == urlParse.start || this._isEscaped(i))
@@ -2352,7 +2355,7 @@ class Markdown
 
         if (urlParse.toFind() == '(' && this.text[i - 1] == ']')
         {
-            // We might have a table-based url ([X][Y])
+            // We might have a reference link ([X][Y])
             urlParse.markerIndex = 0;
             urlParse.ret.url = i + 1;
             urlParse.ret.type = 1;
@@ -2376,9 +2379,9 @@ class Markdown
 
     /// <summary>
     /// Processes a closing bracket of a URL, which could be the end of the display text of a URL, or the
-    /// end of a table-based URL
+    /// end of a reference URL
     /// </summary>
-    /// <returns>True if we should continue parsing. False if we reached the end of our table-based URL</returns>
+    /// <returns>True if we should continue parsing. False if we reached the end of our reference link</returns>
     _parseUrlCloseBracket(urlParse, i)
     {
         if (urlParse.toFind() != ']' || this._isInline(urlParse.inline, i, urlParse.end) || this._isEscaped(i))
@@ -2388,7 +2391,7 @@ class Markdown
 
         if (urlParse.ret.type == 1)
         {
-            // Table based url
+            // Reference link
             urlParse.ret.url = this.text.substring(urlParse.ret.url, i);
             urlParse.ret.end = i + 1;
             return false;
@@ -2450,7 +2453,7 @@ class Markdown
     }
 
     /// <summary>
-    /// Processes a colon inside of a URL. Only valid if it's a table-based URL definition ([marker]: URL)
+    /// Processes a colon inside of a URL. Only valid if it's the definition for a reference link ([marker]: URL)
     /// </summary>
     /// <returns>
     /// False if we should continue parsing, true if we are done parsing. If we're done parsing,
@@ -3566,7 +3569,7 @@ class Url extends Run
 /// Handles urls defined via '[displayText][identifier]', where
 /// identifier is defined elsewhere via '[identifier]: url'
 /// </summary>
-class ExtendedUrl extends Url
+class ReferenceUrl extends Url
 {
     /// <param name="urls">The dictionary mapping url identifiers with their urls</param>
     constructor(start, end, url, urls, parent)
@@ -3615,11 +3618,11 @@ class ExtendedUrl extends Url
 }
 
 /// <summary>
-/// Handles the extended url identifier '[identifier]: url'.
+/// Handles the reference link definition '[identifier]: url'.
 /// Keeps the text around, but surrounds it in an HTML comment
 /// so it isn't displayed.
 /// </summary>
-class ExtendedUrlTag extends Run
+class ReferenceUrlDefinition extends Run
 {
     constructor(start, end, parent)
     {
