@@ -6,7 +6,6 @@ basic scenarios.
 
 /* exported markdownHelp */
 
-/* eslint-disable complexity */ // I should fix this. Whether I actually get around to it, who knows!
 /* eslint-disable class-methods-use-this */ /* Inherited classes may use 'this', and making
                                                the base class method static breaks this */
 
@@ -345,6 +344,7 @@ class Markdown
     /// Dispatches to the handler based on the character at the given index
     /// </summary>
     /// <returns>The new position to resume parsing</returns>
+    /* eslint-disable complexity */ // Breaking up a switch is pointless
     _dispatch(index)
     {
         switch (this.text[index])
@@ -392,6 +392,7 @@ class Markdown
                 return index;
         }
     }
+    /* eslint-enable complexity */
 
     /// <summary>
     /// Process a dash ('-') character, which might be part of a horizontal rule
@@ -1365,14 +1366,14 @@ class Markdown
         {
             quoteNest : 0,
             listNestLevel : 0, // -1 ensures we don't add additional spaces in nextLineRegex
-            firstLineRegex : ''
+            firstLineRegex : '',
+            quoteRegex : '^'
         };
 
         params.quoteNest = this._parentBlockQuoteNestLevel();
-        let quoteRegex = '^';
         if (params.quoteNest != 0)
         {
-            quoteRegex = `^(?:[^>]*>){${params.quoteNest}}`;
+            params.quoteRegex = `^(?:[^>]*>){${params.quoteNest}}`;
         }
 
         params.listNestLevel = -1;
@@ -1382,7 +1383,8 @@ class Markdown
 
         // If we're nested in both lists and quotes, we need
         // to allow for some space between the quote and the start of the list
-        params.firstLineRegex = quoteRegex + (doubleNest ? ' {1,3}' : '') + params.firstLineRegex + '    $';
+        params.firstLineRegex = params.quoteRegex + (doubleNest ? ' {1,3}' : '') + params.firstLineRegex + '    $';
+        return params;
     }
 
     /// <summary>
@@ -2159,122 +2161,153 @@ class Markdown
     /// the messy logic strewn throughout this method.
     /// </summary>
     // This is the last long function, and breaking it down really doesn't make much sense
-    /* eslint-disable max-lines-per-function */
     _listEnd(start, nestLevel, ordered, wholeList)
     {
         let quoteNest = this._parentBlockQuoteNestLevel();
-        let inBlockQuote = quoteNest != 0;
+        let params = {};
+        params.inBlockQuote = quoteNest != 0;
+        params.nestLevel = nestLevel;
+        params.ordered = ordered;
+        params.wholeList = wholeList;
 
-        let linePrefixRegex;
-        if (inBlockQuote)
+        params.linePrefixRegex = '';
+        if (params.inBlockQuote)
         {
-            linePrefixRegex = `[^>]*( *> *){${quoteNest - 1}} *>`;
+            params.linePrefixRegex = `[^>]*( *> *){${quoteNest - 1}} *>`;
         }
         else
         {
             // If we're not nested in any blockquotes, we don't expect
             // any extra characters in front of us on newlines
-            linePrefixRegex = '';
+            params.linePrefixRegex = '';
         }
 
-        let emptyLineRegex = new RegExp(`^${linePrefixRegex}${inBlockQuote ? ' *\\n' : '\\n$'}`);
         let parentEnd = this.currentRun.end;
 
-        let newline = this.text.indexOf('\n', start);
-        if (newline == -1 || newline >= parentEnd)
+        params.newline = this.text.indexOf('\n', start);
+        if (params.newline == -1 || params.newline >= parentEnd)
         {
             return parentEnd;
         }
 
-        let end = newline;
-        let next = this._indexOrParentEnd('\n', newline + 1);
-        let nextline = this.text.substring(newline + 1, next + 1);
+        params.end = params.newline;
+        params.next = this._indexOrParentEnd('\n', params.newline + 1);
+        params.nextline = this.text.substring(params.newline + 1, params.next + 1);
+        params.emptyLineRegex = new RegExp(`^${params.linePrefixRegex}${params.inBlockQuote ? ' *\\n' : '\\n$'}`);
 
         while (true)
         {
-            if (nextline.length == 0)
+            if (params.nextline.length == 0)
             {
-                return end;
+                return params.end;
             }
 
-            let cEmpty = 0;
-            while (emptyLineRegex.test(nextline))
+            params.empty = 0;
+            if (!this._checkListEndLineBreaks(params))
             {
-                ++cEmpty;
-                if (cEmpty == 2)
-                {
-                    // Two blank lines kills the list
-                    return end + (inBlockQuote ? 0 : 2);
-                }
-
-                newline = next;
-                next = this._indexOrParentEnd('\n', next + 1);
-                nextline = this.text.substring(newline + 1, next + 1);
-                if (nextline.length == 0)
-                {
-                    // Just a bunch of newlines at the end without additional context
-                    return end + (inBlockQuote ? 0 : 2);
-                }
+                return params.end;
             }
 
-            if (inBlockQuote && RegExp('^' + linePrefixRegex + '>').test(nextline))
+            if (!this._checkNextListLine(params))
             {
-                // New blockquote nest level, can't bleed into it. Blockquotes that are
-                // nested inside of this listitem are okay though
-                return end;
+                return params.end;
             }
 
-            // If we're here, nextline actually has content
-            if (cEmpty == 1)
-            {
-                // If there is a line break within the list, the next list
-                // item must be indented at 2 * nestLevel. If the next line is not
-                // a listitem and a potential continuation of the current li, it must
-                // be indented with (nestLevel + 1) * 2 spaces
-                let minspaces = (nestLevel + 1) * 2;
-                if (!RegExp(`^${linePrefixRegex} {${minspaces},}`).test(nextline))
-                {
-                    let spacePrefix = `${linePrefixRegex} {${minspaces - 2},${minspaces - 1}}`;
-                    if (!wholeList || !RegExp(`^${spacePrefix}${ordered ? '\\d+\\.' : '\\*'} `).test(nextline))
-                    {
-                        return end + (inBlockQuote ? 0 : 2);
-                    }
-                }
-            }
-            else if (wholeList)
-            {
-                // Not a double newline, if it's a new listitem, it must be indented
-                // at least (nestLevel * 2) spaces. Otherwise, any level of indentation is fine
-                if (RegExp(`^${linePrefixRegex} *(?:\\*|\\d+\\.) `).test(nextline))
-                {
-                    // Also can't swap between ordered/unordered with the same nesting level
-                    let minspaces = nestLevel * 2;
-                    if (!RegExp(`^${linePrefixRegex} {${minspaces},}`).test(nextline) ||
-                        RegExp(`^${linePrefixRegex} {${minspaces},${minspaces + 1}}${ordered ? '\\*' : '\\d+\\.'} `).test(nextline))
-                    {
-                        return end + (inBlockQuote ? 0 : 1);
-                    }
-                }
-            }
-            else
-            {
-                // Not a double newline. To continue the list item we need
-                // general content of any kind, or a new list item that's indented
-                // (minspaces + 1) * 2
-                let minspaces = (nestLevel + 1) * 2;
-                if (RegExp(`^${linePrefixRegex} {0,${minspaces - 1}}(?:\\*|\\d+\\.) `).test(nextline))
-                {
-                    return end + (inBlockQuote ? 0 : 1);
-                }
-            }
-
-            end = next;
-            newline = next;
-            next = this._indexOrParentEnd('\n', next + 1);
-            nextline = this.text.substring(newline + 1, next + 1);
+            params.end = params.next;
+            params.newline = params.next;
+            params.next = this._indexOrParentEnd('\n', params.next + 1);
+            params.nextline = this.text.substring(params.newline + 1, params.next + 1);
         }
     }
-    /* eslint-enable max-lines-per-function */
+
+    /// <summary>
+    /// Checks for newlines in a list. If there are too many line breaks, or
+    /// we reach the end of our bounds, set params.end and return false. If
+    /// we don't find the end of a list, return true.
+    _checkListEndLineBreaks(params)
+    {
+        while (params.emptyLineRegex.test(params.nextline))
+        {
+            ++params.empty;
+            if (params.empty == 2)
+            {
+                // Two blank lines kills the list
+                params.end += (params.inBlockQuote ? 0 : 2);
+                return false;
+            }
+
+            params.newline = params.next;
+            params.next = this._indexOrParentEnd('\n', params.next + 1);
+            params.nextline = this.text.substring(params.newline + 1, params.next + 1);
+            if (params.nextline.length == 0)
+            {
+                // Just a bunch of newlines at the end without additional context
+                params.end += (params.inBlockQuote ? 0 : 2);
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    _checkNextListLine(params)
+    {
+        if (params.inBlockQuote && RegExp('^' + params.linePrefixRegex + '>').test(params.nextline))
+        {
+            // New blockquote nest level, can't bleed into it. Blockquotes that are
+            // nested inside of this listitem are okay though
+            return false;
+        }
+
+        // If we're here, nextline actually has content
+        if (params.empty == 1)
+        {
+            // If there is a line break within the list, the next list
+            // item must be indented at 2 * nestLevel. If the next line is not
+            // a listitem and a potential continuation of the current li, it must
+            // be indented with (nestLevel + 1) * 2 spaces
+            let minspaces = (params.nestLevel + 1) * 2;
+            if (!RegExp(`^${params.linePrefixRegex} {${minspaces},}`).test(params.nextline))
+            {
+                let spacePrefix = `${params.linePrefixRegex} {${minspaces - 2},${minspaces - 1}}`;
+                if (!params.wholeList || !RegExp(`^${spacePrefix}${params.ordered ? '\\d+\\.' : '\\*'} `).test(params.nextline))
+                {
+                    params.end += (params.inBlockQuote ? 0 : 2);
+                    return false;
+                }
+            }
+        }
+        else if (params.wholeList)
+        {
+            // Not a double newline, if it's a new listitem, it must be indented
+            // at least (nestLevel * 2) spaces. Otherwise, any level of indentation is fine
+            if (RegExp(`^${params.linePrefixRegex} *(?:\\*|\\d+\\.) `).test(params.nextline))
+            {
+                // Also can't swap between ordered/unordered with the same nesting level
+                let minspaces = params.nestLevel * 2;
+                if (!RegExp(`^${params.linePrefixRegex} {${minspaces},}`).test(params.nextline) ||
+                    RegExp(`^${params.linePrefixRegex} {${minspaces},${minspaces + 1}}${params.ordered ? '\\*' : '\\d+\\.'} `).test(params.nextline))
+                {
+                    params.end += (params.inBlockQuote ? 0 : 1);
+                    return false;
+                }
+            }
+        }
+        else
+        {
+            // Not a double newline. To continue the list item we need
+            // general content of any kind, or a new list item that's indented
+            // (minspaces + 1) * 2
+            let minspaces = (params.nestLevel + 1) * 2;
+            if (RegExp(`^${params.linePrefixRegex} {0,${minspaces - 1}}(?:\\*|\\d+\\.) `).test(params.nextline))
+            {
+                params.end += (params.inBlockQuote ? 0 : 1);
+                return false;
+            }
+        }
+
+        return true;
+    }
 
     /// <summary>
     /// Returns whether the current run is or is nested in a Run of the given state
