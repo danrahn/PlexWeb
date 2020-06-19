@@ -912,6 +912,12 @@ function buildPage(data)
 /// </summary>
 function getNewStatusType(input)
 {
+    if (!input)
+    {
+        // Either escape or no input. Don't do anything
+        return -1;
+    }
+
     let status = -1;
     let first = input.toLowerCase()[0];
     switch (first)
