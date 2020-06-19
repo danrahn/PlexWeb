@@ -402,7 +402,7 @@ class Markdown
     {
         if (this._checkHr(i))
         {
-            return this._indexOrLast('\n', i) - 1;
+            return this._indexOrParentEnd('\n', i) - 1;
         }
 
         return i;
@@ -421,7 +421,7 @@ class Markdown
     _checkHr(index, addHr=true)
     {
         let sep = this.text[index];
-        let linebreak = this._indexOrLast('\n', index);
+        let linebreak = this._indexOrParentEnd('\n', index);
         let line = this.text.substring(this.text.lastIndexOf('\n', index) + 1, linebreak);
         if (!RegExp(`^( *${sep == '*' ? '\\*' : sep} *){3,}$`).test(line))
         {
@@ -675,7 +675,7 @@ class Markdown
 
         if (this._checkHr(i))
         {
-            return this._indexOrLast('\n', i) - 1;
+            return this._indexOrParentEnd('\n', i) - 1;
         }
 
         // Unordered list. Returns true if we successfully parsed an unordered list item
@@ -698,7 +698,7 @@ class Markdown
         // First, check for HR
         if (this._checkHr(i))
         {
-            return this._indexOrLast('\n', i) - 1;
+            return this._indexOrParentEnd('\n', i) - 1;
         }
 
         // Only returns true if we added a bold run, indicating that we should
@@ -1596,7 +1596,7 @@ class Markdown
             bounds.blockEnd = this.text.length;
         }
 
-        bounds.defineEnd = this._indexOrLast('\n', bounds.headerEnd + 1);
+        bounds.defineEnd = this._indexOrParentEnd('\n', bounds.headerEnd + 1);
         bounds.valid = bounds.defineEnd <= bounds.blockEnd;
         return bounds;
     }
@@ -1667,7 +1667,7 @@ class Markdown
     {
         let newline = defineEnd;
         let end = newline;
-        let next = this._indexOrLast('\n', newline + 1);
+        let next = this._indexOrParentEnd('\n', newline + 1);
         let nextline = this.text.substring(newline + 1, next);
         while (true)
         {
@@ -1701,7 +1701,7 @@ class Markdown
 
             end = next;
             newline = next;
-            next = this._indexOrLast('\n', newline + 1);
+            next = this._indexOrParentEnd('\n', newline + 1);
             nextline = this.text.substring(newline + 1, next);
         }
 
@@ -1793,7 +1793,7 @@ class Markdown
             return -1;
         }
 
-        let lineEnd = this._indexOrLast('\n\n', start);
+        let lineEnd = this._indexOrParentEnd('\n\n', start);
         let end = this.text.indexOf(findStr, start + 1);
 
         if (end == -1)
@@ -2116,17 +2116,6 @@ class Markdown
     /// <summary>
     /// Helper method that returns the first occurrence of str in the
     /// current text, starting at `start`. If not found, returns the
-    /// length of the text.
-    /// </summary>
-    _indexOrLast(str, start)
-    {
-        let i = this.text.indexOf(str, start);
-        return i == -1 ? this.text.length : i;
-    }
-
-    /// <summary>
-    /// Helper method that returns the first occurrence of str in the
-    /// current text, starting at `start`. If not found, returns the
     /// end of the containing run.
     /// </summary>
     _indexOrParentEnd(str, start)
@@ -2340,7 +2329,7 @@ class Markdown
     /// </return>
     _testUrl(start)
     {
-        let end = this._indexOrLast('\n', start);
+        let end = this._indexOrParentEnd('\n', start);
         if (end - start < 5)
         {
             return false;
@@ -2553,7 +2542,7 @@ class Markdown
             return false;
         }
 
-        let urlEnd = this._indexOrLast('\n', urlParse.start);
+        let urlEnd = this._indexOrParentEnd('\n', urlParse.start);
         if (urlEnd - (i + 2) < 1)
         {
             return true;
