@@ -107,7 +107,7 @@ module.exports = {
         "max-depth" : "error",
         "max-len" : ["error", { "code" : 150 }],
         "max-lines" : "off",
-        "max-lines-per-function" : "error",
+        "max-lines-per-function" : ["error", 60], // Make the limit a bit longer, since allman results in longer functions line-wise
         "max-nested-callbacks" : "error",
         "max-params" : "off",
         "max-statements" : "off",

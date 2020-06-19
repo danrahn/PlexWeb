@@ -6,7 +6,6 @@ basic scenarios.
 
 /* exported markdownHelp */
 
-/* eslint-disable max-lines-per-function */ // Will this ever get fixed? Probably not.
 /* eslint-disable complexity */ // I should fix this. Whether I actually get around to it, who knows!
 /* eslint-disable class-methods-use-this */ /* Inherited classes may use 'this', and making
                                                the base class method static breaks this */
@@ -1195,22 +1194,12 @@ class Markdown
             return;
         }
 
-        let nestLevel = 1;
+        let newNestLevel = this._parentBlockQuoteNestLevel() + 1;
 
         // Must be the beginning of the line, or nested in a list.
         // This will get more complicated once arbitrary nesting is supported
         let prevNewline = this.text.lastIndexOf('\n', start);
         let regex;
-        let run = this.currentRun;
-        while (run !== null)
-        {
-            if (run.state == State.BlockQuote)
-            {
-                ++nestLevel;
-            }
-
-            run = run.parent;
-        }
 
         regex = RegExp('^' + this._nestRegex() + '>$');
         if (!regex.test(this.text.substring(prevNewline + 1, start + 1).replace(/ /g, '')))
@@ -1219,28 +1208,37 @@ class Markdown
         }
 
         let parentState = this.currentRun.state;
-        if (nestLevel > 1 && parentState != State.BlockQuote && parentState != State.ListItem)
+        if (newNestLevel > 1 && parentState != State.BlockQuote && parentState != State.ListItem)
         {
             logError('Something went wrong! ' +
                 'Nested blockquotes should have a blockquote parent or be nested in a list, found ' + stateToStr(parentState));
             return;
         }
 
-        if (parentState == State.BlockQuote && this.currentRun.nestLevel >= nestLevel)
+        if (parentState == State.BlockQuote && this.currentRun.nestLevel >= newNestLevel)
         {
             // Same or less nesting than parent, don't add another one
             return;
         }
 
-        // Now find where the blockquote ends.
-        // Some parsers allow things like
-        //
-        //    > Text
-        //    More text
-        //
-        // I don't feel like supporting that right now, so require the proper number of
-        // '>' on all lines.
+        let end = this._blockQuoteEnd(start, newNestLevel);
+        let blockquote = new BlockQuote(start, end, newNestLevel, this.currentRun);
+        this.currentRun = blockquote;
+    }
 
+    /// <summary>
+    /// Find where the blockquote ends.
+    ///
+    /// Some parsers allow things like
+    ///
+    ///    > Text
+    ///    More text
+    ///
+    /// I don't feel like supporting that right now, so require the proper number of
+    /// '>' on all lines.
+    /// </summary>
+    _blockQuoteEnd(start, nestLevel)
+    {
         let lineEnd = this.text.indexOf('\n', start);
         let end = this.currentRun.end;
         while (lineEnd != -1 && lineEnd != this.text.length - 1)
@@ -1252,8 +1250,7 @@ class Markdown
                 // Note that we might want to change this for listitems, which
                 // allows additional newlines if the next non-blank line is indented
                 // 2+ spaces.
-                end = lineEnd;
-                break;
+                return lineEnd;
             }
 
             let nextNest = 0;
@@ -1272,15 +1269,13 @@ class Markdown
             if (nextNest < nestLevel)
             {
                 // Less indentation, we're done.
-                end = lineEnd;
-                break;
+                return lineEnd;
             }
 
             lineEnd = this.text.indexOf('\n', lineEnd + 1);
         }
 
-        let blockquote = new BlockQuote(start, end, nestLevel, this.currentRun);
-        this.currentRun = blockquote;
+        return end;
     }
 
     /// <summary>
@@ -1292,6 +1287,13 @@ class Markdown
     ///    must be indented 5 spaces from the bullet start ('* ' plus four spaces')
     /// 3. If in a list and _not_ on the same line as the start of a listitem, must be indented
     ///    4 spaces plus (2 * (nestLevel + 1))
+    ///
+    /// To account for nesting:
+    ///   Go backwards in the tree, stopping as soon as we find a quote.
+    ///   Take the quote's nest level to have a base regex of ^([^>]*>){nestLevel}
+    ///   Along the way to the first quote, also build up the list regex, both for the
+    ///   first line (which can contain multiple list indicators, e.g. '* > * 1.     Block')
+    ///   and subsequent lines, which will be our base regex plus our list's nest level * 2 + 2
     /// </summary>
     /// <returns>The end index of the code block, or -1 if none was found</returns>
     _checkIndentCodeBlock(start)
@@ -1301,109 +1303,20 @@ class Markdown
             return -1;
         }
 
-        // To account for nesting:
-        // Go backwards in the tree, stopping as soon as we find a quote.
-        // Take the quote's nest level to have a base regex of ^([^>]*>){nestLevel}
-        // Along the way to the first quote, also build up the list regex, both for the
-        // first line (which can contain multiple list indicators, e.g. '* > * 1.     Block')
-        // and subsequent lines, which will be our base regex plus our list's nest level * 2 + 2
-
-        let quoteNest = this._parentBlockQuoteNestLevel();
-        let quoteRegex = '^';
-        if (quoteNest != 0)
-        {
-            quoteRegex = `^(?:[^>]*>){${quoteNest}}`;
-        }
-
-        let listNestLevel = -1; // -1 ensures we don't add additional spaces in nextLineRegex further below
-        let firstLineRegex = '';
-        let run = this.currentRun;
         let lastNewline = this.text.lastIndexOf('\n', start);
-        while (run !== null)
-        {
-            if (run.state == State.BlockQuote)
-            {
-                break;
-            }
-
-            if (run.state == State.ListItem)
-            {
-                if (listNestLevel == -1)
-                {
-                    listNestLevel = run.parent.nestLevel;
-                }
-
-                // If our last newline is beyond the start of this run, then
-                // it won't be in our line and we should expect two spaces
-                if (lastNewline > run.start)
-                {
-                    firstLineRegex = '  ' + firstLineRegex;
-                }
-                else
-                {
-                    firstLineRegex = `${run.parent.state == State.OrderedList ? '\\d+\\.' : '\\*'} {1,4}` + firstLineRegex;
-                }
-            }
-
-            run = run.parent;
-        }
-
-        if (listNestLevel != -1 && quoteNest != 0)
-        {
-            // If we're nested in both lists and quotes, we need
-            // to allow for some space between the quote and the start of the list
-            firstLineRegex = quoteRegex + ' {1,3}' + firstLineRegex + '    $';
-        }
-        else
-        {
-            firstLineRegex = quoteRegex + firstLineRegex + '    $';
-        }
+        let codeBlockParams = this._getIndentCodeBlockPrefixData(lastNewline);
 
         let context = this.text.substring(lastNewline + 1, start + 1);
-        if (!RegExp(firstLineRegex).test(context))
+        if (!RegExp(codeBlockParams.firstLineRegex).test(context))
         {
             return -1;
         }
 
-        let blankLineRegex = RegExp(`${quoteRegex} *\\n`);
-        let nextLineString = `${quoteRegex} {${(listNestLevel + 1) * 2}}    `;
+        let blankLineRegex = RegExp(`${codeBlockParams.quoteRegex} *\\n`);
+        let nextLineString = `${codeBlockParams.quoteRegex} {${(codeBlockParams.listNestLevel + 1) * 2}}    `;
         let nextLineRegex = RegExp(nextLineString);
 
-        let newline = this._indexOrParentEnd('\n', start);
-        let end = newline;
-        let next = this._indexOrParentEnd('\n', newline + 1);
-        let nextline = this.text.substring(newline + 1, next + 1);
-
-        while (true)
-        {
-            if (nextline.length == 0)
-            {
-                break;
-            }
-
-            while (blankLineRegex.test(nextline))
-            {
-                newline = next;
-                next = this._indexOrParentEnd('\n', next + 1);
-                nextline = this.text.substring(newline + 1, next + 1);
-                if (nextline.length == 0)
-                {
-                    break;
-                }
-            }
-
-            // If we're here, nextline actually has content
-            if (!nextLineRegex.test(nextline))
-            {
-                break;
-            }
-
-            end = next;
-            newline = next;
-            next = this._indexOrParentEnd('\n', next + 1);
-            nextline = this.text.substring(newline + 1, next + 1);
-        }
-
+        let end = this._getIndentCodeBlockEnd(start, blankLineRegex, nextLineRegex);
         let blockStart = start - 3;
 
         // Hacky, but if we're in a list and have an indented code block, remove any preceding line
@@ -1421,6 +1334,9 @@ class Markdown
         return end;
     }
 
+    /// <summary>
+    /// Do some preliminary checks to see if we might have a valid indented code block
+    /// </summary>
     _indentCodeBlockPrecheck(start)
     {
         if (this._inlineOnly)
@@ -1438,6 +1354,118 @@ class Markdown
         }
 
         return true;
+    }
+
+    /// <summary>
+    /// Return relevant nesting data for the current code block
+    /// </summary>
+    _getIndentCodeBlockPrefixData(lastNewline)
+    {
+        let params =
+        {
+            quoteNest : 0,
+            listNestLevel : 0, // -1 ensures we don't add additional spaces in nextLineRegex
+            firstLineRegex : ''
+        };
+
+        params.quoteNest = this._parentBlockQuoteNestLevel();
+        let quoteRegex = '^';
+        if (params.quoteNest != 0)
+        {
+            quoteRegex = `^(?:[^>]*>){${params.quoteNest}}`;
+        }
+
+        params.listNestLevel = -1;
+        this._buildIndentCodeBlockPrefixRegex(params, lastNewline);
+
+        let doubleNest = params.listNestLevel != -1 && params.quoteNest != 0;
+
+        // If we're nested in both lists and quotes, we need
+        // to allow for some space between the quote and the start of the list
+        params.firstLineRegex = quoteRegex + (doubleNest ? ' {1,3}' : '') + params.firstLineRegex + '    $';
+    }
+
+    /// <summary>
+    /// Build the prefix regex strings and set the list nest level
+    /// for the code block currently being parsed
+    /// </summary>
+    _buildIndentCodeBlockPrefixRegex(params, lastNewline)
+    {
+        let run = this.currentRun;
+        while (run !== null)
+        {
+            if (run.state == State.BlockQuote)
+            {
+                break;
+            }
+
+            if (run.state == State.ListItem)
+            {
+                if (params.listNestLevel == -1)
+                {
+                    params.listNestLevel = run.parent.nestLevel;
+                }
+
+                // If our last newline is beyond the start of this run, then
+                // it won't be in our line and we should expect two spaces
+                if (lastNewline > run.start)
+                {
+                    params.firstLineRegex = '  ' + params.firstLineRegex;
+                }
+                else
+                {
+                    params.firstLineRegex = `${run.parent.state == State.OrderedList ? '\\d+\\.' : '\\*'} {1,4}` + params.firstLineRegex;
+                }
+            }
+
+            run = run.parent;
+        }
+    }
+
+    /// <summary>
+    /// Find and return the end of the indented code block
+    /// </summary>
+    /// <param name="blankLineRegex">The RegExp that defines what a "blank" line looks like for this code block</param>
+    /// <param name="nextLineRegex">
+    /// The RegExp that defines what prefix is necessary
+    /// for a given line to belong to this code block
+    /// </param>
+    _getIndentCodeBlockEnd(start, blankLineRegex, nextLineRegex)
+    {
+        let newline = this._indexOrParentEnd('\n', start);
+        let end = newline;
+        let next = this._indexOrParentEnd('\n', newline + 1);
+        let nextline = this.text.substring(newline + 1, next + 1);
+
+        while (true)
+        {
+            if (nextline.length == 0)
+            {
+                return end;
+            }
+
+            while (blankLineRegex.test(nextline))
+            {
+                newline = next;
+                next = this._indexOrParentEnd('\n', next + 1);
+                nextline = this.text.substring(newline + 1, next + 1);
+                if (nextline.length == 0)
+                {
+                    break;
+                }
+            }
+
+            // If we're here, nextline actually has content
+            if (!nextLineRegex.test(nextline))
+            {
+                return end;
+            }
+
+            end = next;
+            newline = next;
+            next = this._indexOrParentEnd('\n', next + 1);
+            nextline = this.text.substring(newline + 1, next + 1);
+        }
     }
 
     /// <summary>
@@ -1900,9 +1928,9 @@ class Markdown
 
         // Each subsequent line must have at least minspaces before it, otherwise it's an invalid block
         let validLine = RegExp('^' + params.regexStr);
-
         let validEnd = RegExp('^' + params.regexStr + params.markers + '\\n?$');
         let blankLine = RegExp('^' + params.regexStr + '\\n$');
+
         while (true)
         {
             if (nextline.length == 0)
@@ -1996,8 +2024,48 @@ class Markdown
     /// </summary>
     _checkList(start, ordered)
     {
-        // Check if we're starting a list. This will definitely get tricky when mixing nested levels of blockquotes
-        // and additional lists
+        if (!this._listPrecheck(start, ordered))
+        {
+            return false;
+        }
+
+        let nestLevel = 0;
+        while (start - nestLevel > 0 && this.text[start - nestLevel - 1] == ' ')
+        {
+            ++nestLevel;
+        }
+
+        nestLevel = Math.floor(nestLevel / 2);
+
+        // First need to determine if this is a new list. If so, create the ol/ul
+        if (this.currentRun.state != (ordered ? State.OrderedList : State.UnorderedList) || nestLevel > this.currentRun.nestLevel)
+        {
+            this._createList(start, nestLevel, ordered);
+        }
+
+        let liEnd = Math.min(this.currentRun.end, this._listEnd(start, nestLevel, ordered, false /*wholeList*/));
+        let startContext = 2;
+        if (ordered)
+        {
+            let liText = this.text.substring(start, liEnd);
+            let match = liText.match(/^\d+\. /);
+            if (match)
+            {
+                startContext = match[0].length;
+            }
+        }
+
+        let li = new ListItem(start, liEnd, startContext, this.currentRun);
+        this.currentRun = li;
+        logTmi(`Added ListItem: start=${start}, end=${liEnd}, nestLevel=${nestLevel}`);
+        return true;
+    }
+
+    /// <summary>
+    /// Does some initial tests on our surroundings to see if we have the valid start to a list/list item
+    /// </summary>
+    _listPrecheck(start, ordered)
+    {
         if (this._inlineOnly || this._isEscaped(start) || start == this.text.length - 1)
         {
             return false;
@@ -2019,49 +2087,28 @@ class Markdown
             return false;
         }
 
-        let nestLevel = 0;
-        while (start - nestLevel > 0 && this.text[start - nestLevel - 1] == ' ')
-        {
-            ++nestLevel;
-        }
+        return true;
+    }
 
-        nestLevel = Math.floor(nestLevel / 2);
-
-        // First need to determine if this is a new list. If so, create the ol/ul
-        if (this.currentRun.state != (ordered ? State.OrderedList : State.UnorderedList) || nestLevel > this.currentRun.nestLevel)
-        {
-            let listEnd = this._listEnd(start, nestLevel, ordered, true /*wholeList*/);
-            let list;
-            if (ordered)
-            {
-                list = new OrderedList(start, listEnd, nestLevel, this.text.substring(start).match(/\d+/)[0] /*listStart*/, this.currentRun);
-                logTmi(`Adding Ordered List: start=${start}, end=${listEnd}, listStart=${list.listStart}, nestLevel=${nestLevel}`);
-            }
-            else
-            {
-                list = new UnorderedList(start, listEnd, nestLevel, this.currentRun);
-                logTmi(`Adding Unordered List: start=${start}, end=${listEnd}, nestLevel=${nestLevel}`);
-            }
-
-            this.currentRun = list;
-        }
-
-        let liEnd = Math.min(this.currentRun.end, this._listEnd(start, nestLevel, ordered, false /*wholeList*/));
-        let startContext = 2;
+    /// <summary>
+    /// Finds the bounds and adds a list to the run list
+    /// </summary>
+    _createList(start, nestLevel, ordered)
+    {
+        let listEnd = this._listEnd(start, nestLevel, ordered, true /*wholeList*/);
+        let list;
         if (ordered)
         {
-            let liText = this.text.substring(start, liEnd);
-            let match = liText.match(/^\d+\. /);
-            if (match)
-            {
-                startContext = match[0].length;
-            }
+            list = new OrderedList(start, listEnd, nestLevel, this.text.substring(start).match(/\d+/)[0] /*listStart*/, this.currentRun);
+            logTmi(`Adding Ordered List: start=${start}, end=${listEnd}, listStart=${list.listStart}, nestLevel=${nestLevel}`);
+        }
+        else
+        {
+            list = new UnorderedList(start, listEnd, nestLevel, this.currentRun);
+            logTmi(`Adding Unordered List: start=${start}, end=${listEnd}, nestLevel=${nestLevel}`);
         }
 
-        let li = new ListItem(start, liEnd, startContext, this.currentRun);
-        this.currentRun = li;
-        logTmi(`Added ListItem: start=${start}, end=${liEnd}, nestLevel=${nestLevel}`);
-        return true;
+        this.currentRun = list;
     }
 
     /// <summary>
@@ -2111,6 +2158,8 @@ class Markdown
     /// TODO: Remove differences between quote-nested lists and "regular" ones to avoid
     /// the messy logic strewn throughout this method.
     /// </summary>
+    // This is the last long function, and breaking it down really doesn't make much sense
+    /* eslint-disable max-lines-per-function */
     _listEnd(start, nestLevel, ordered, wholeList)
     {
         let quoteNest = this._parentBlockQuoteNestLevel();
@@ -2225,6 +2274,7 @@ class Markdown
             nextline = this.text.substring(newline + 1, next + 1);
         }
     }
+    /* eslint-enable max-lines-per-function */
 
     /// <summary>
     /// Returns whether the current run is or is nested in a Run of the given state
@@ -2594,11 +2644,8 @@ class Run
         if (this.innerRuns.length == 0)
         {
             this.cached += this.transform(initialText.substring(startWithContext, endWithContext), RunSide.Full);
-            if (shouldLogTmi)
-            {
-                logTmi(`${ident}Returning '${this.cached + this.tag(true)}'`);
-            }
 
+            // Don't directly += this, because Headers do hacky things to this.cached when grabbing the end tag
             let endTag = this.tag(true /*end*/);
             this.cached += endTag;
             return this.cached;
@@ -2610,17 +2657,7 @@ class Run
         }
 
         // Recurse through children
-        for (let i = 0; i < this.innerRuns.length; ++i)
-        {
-            this.cached += this.innerRuns[i].convert(initialText, inlineOnly);
-            if (i != this.innerRuns.length - 1 && this.innerRuns[i].end < this.innerRuns[i + 1].start)
-            {
-                this.cached += this.transform(
-                    initialText.substring(this.innerRuns[i].end, this.innerRuns[i + 1].start),
-                    RunSide.Middle,
-                    this.innerRuns[i]);
-            }
-        }
+        this._convertChildren(initialText, inlineOnly);
 
         if (this.innerRuns[this.innerRuns.length - 1].end < endWithContext)
         {
@@ -2634,6 +2671,24 @@ class Run
         let endTag = this.tag(true /*end*/);
         this.cached += endTag;
         return this.cached;
+    }
+
+    /// <summary>
+    /// Iterate through and convert child runs to HTML
+    /// </summary>
+    _convertChildren(initialText, inlineOnly)
+    {
+        for (let i = 0; i < this.innerRuns.length; ++i)
+        {
+            this.cached += this.innerRuns[i].convert(initialText, inlineOnly);
+            if (i != this.innerRuns.length - 1 && this.innerRuns[i].end < this.innerRuns[i + 1].start)
+            {
+                this.cached += this.transform(
+                    initialText.substring(this.innerRuns[i].end, this.innerRuns[i + 1].start),
+                    RunSide.Middle,
+                    this.innerRuns[i]);
+            }
+        }
     }
 
     /// <summary>
