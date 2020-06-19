@@ -29,6 +29,7 @@ const _logErrorId = 27;
 /// </summary>
 const g_levelColors =
 [
+    // Light Title, Dark Title, Light Text, Dark Text
     ["#00CC00", "#00AA00", "#AAA", "#888"],
     ["#c661e8", "#c661e8", _inherit, _inherit],
     ["blue", "#88C", _inherit, _inherit],
@@ -246,15 +247,9 @@ function log(obj, description, freeze, level, textOnly, ...more)
 
     if (level > LOG.Warn)
     {
-        // Don't worry about the result, just try to log the error
         freeze = true;
-        let http = new XMLHttpRequest();
-        http.open("POST", "process_request.php", true);
-        http.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
         let encode = encodeURIComponent;
-
-        // Note: Keep type in sync with ProcessRequest enum in common.js. It's not accessible here
-        http.send(`&type=${_logErrorId}&error=${encode(curState(obj, 1))}&stack=${encode(Error().stack)}`);
+        fetch(`process_request.php?type=${_logErrorId}&error=${encode(curState(obj, 1))}&stack=${encode(Error().stack)}`);
     }
 }
 
