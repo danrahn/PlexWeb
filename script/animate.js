@@ -12,7 +12,7 @@
 /// <summary>
 /// The main animation class, responsible for synchronous execution
 /// </summary>
-let A = function()
+let Animation = new function()
 {
     /// <summary>
     /// Queue an animation of the given element
@@ -289,9 +289,7 @@ let A = function()
     /// Helps with the basic minification I run this script through
     /// </summary>
     let getStyle = (element) => getComputedStyle(element);
-};
-
-let Animation = new A();
+}();
 
 /// <summary>
 /// Simple class to represent an rgba color. Takes either rgba value or a valid hex string (#AAA, #C1D1E1)

@@ -4,13 +4,15 @@
 
 /* exported DateUtil */
 
-let DateUtil =
+/* eslint-disable max-lines-per-function */
+let DateUtil = new function()
+/* eslint-enable max-lines-per-function */
 {
     /// <summary>
     /// Determine how long ago a date is from the current time.
     /// Returns a string of the form "X [time units] ago"
     /// </summary>
-    getDisplayDate : function(date)
+    this.getDisplayDate = function(date)
     {
         if (typeof(date) == "string")
         {
@@ -24,10 +26,10 @@ let DateUtil =
             return "Just Now";
         }
 
-        let underOneWeek = this._checkDate(dateDiff /= 1000, 60, "second") ||
-            this._checkDate(dateDiff /= 60, 60, "minute") ||
-            this._checkDate(dateDiff /= 60, 24, "hour") ||
-            this._checkDate(dateDiff /= 24, 7, "day");
+        let underOneWeek = _checkDate(dateDiff /= 1000, 60, "second") ||
+            _checkDate(dateDiff /= 60, 60, "minute") ||
+            _checkDate(dateDiff /= 60, 24, "hour") ||
+            _checkDate(dateDiff /= 24, 7, "day");
 
         if (underOneWeek)
         {
@@ -50,12 +52,12 @@ let DateUtil =
 
         let yearDiff = now.getFullYear() - date.getFullYear();
         return `${yearDiff == 0 ? 1 : yearDiff} year${yearDiff == 1 ? "" : "s"} ago`;
-    },
+    };
 
     /// <summary>
     /// Returns the full date, 'Month d, yyyy, h:mm [AM|PM]'
     /// </summary>
-    getFullDate : function(date)
+    this.getFullDate = function(date)
     {
         if (typeof(date) == "string")
         {
@@ -72,12 +74,12 @@ let DateUtil =
         };
 
         return date.toLocaleDateString("en-US", tooltipDateOptions);
-    },
+    };
 
     /// <summary>
     /// Helper that returns the 'xyz ago' string if it's below the cutoff
     /// </summary>
-    _checkDate : function(value, cutoff, stringVal)
+    let _checkDate = function(value, cutoff, stringVal)
     {
         if (value < cutoff)
         {
@@ -86,5 +88,5 @@ let DateUtil =
         }
 
         return "";
-    }
-};
+    };
+}();

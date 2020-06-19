@@ -475,8 +475,9 @@ def minify(babel, quiet):
         'ecma=8',
         'keep_fargs=false',
         'passes=3',
-        'unsafe',
+        'unsafe=true',
         'unsafe_math',
+        'unsafe_methods=true',
         'warnings',
         'arguments',
         'hoist_funs'
