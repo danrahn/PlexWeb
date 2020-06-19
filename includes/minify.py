@@ -203,8 +203,9 @@ def get_includes(lines):
     if start == -1:
         return [] # no build_js, nothing to do
 
-    includes = lines[start + 9:lines.find(')', start)].split(', ')
-    includes = [include.replace('"', '') for include in includes]
+    includes = lines[start + 9:lines.find(')', start)]
+    includes = re.findall(r'"([^"]+)"', includes)
+    # includes = [include.replace('"', '') for include in includes]
 
     # The main script is first, but we want to include it last
     tmp = includes[0]

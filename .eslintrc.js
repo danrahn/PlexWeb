@@ -384,7 +384,8 @@ module.exports = {
         "DateUtil" : "readonly",
         // Markdown.js
         "Markdown" : "readonly",
-        "markdownHelp" : "readonly",
+        // markdownHelp.js
+        "MarkdownHelp" : "readonly",
         // markdownEditor.js
         "MarkdownEditor" : "readonly",
         // eslintrc

@@ -419,7 +419,7 @@ function parseMarkdown()
 /// </summary>
 function showMarkdownHelp()
 {
-    markdownHelp(function(response)
+    MarkdownHelp.getHelp(function(response)
     {
         overlay('<div class="mdHelp">' + response.data + "</div>", "Got It", overlayDismiss, true /*dismissible*/);
     });

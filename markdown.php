@@ -56,7 +56,12 @@ verify_loggedin(true, "markdown.php");
             <br>
             <input type="button" value="Test" id="markdownSubmit" />
             <input type="button" value="Run Test Suite" id="markdownTestSuite" />
-            <div id="info" style="text-align: center; margin: auto"><div class="formInput" style="color: #c1c1c1; text-align: center; width: 150px; margin: auto"><label for="liveupdate">Live updates: </label><input type="checkbox" name="liveupdate" id="liveupdate" checked="checked"></div></form>
+            <div id="info" style="text-align: center; margin: auto">
+                <div class="formInput" style="color: #c1c1c1; text-align: center; width: 150px; margin: auto">
+                    <label for="liveupdate">Live updates: </label>
+                    <input type="checkbox" name="liveupdate" id="liveupdate" checked="checked">
+                </div>
+            </form>
         </div>
     </div>
     <div id="mdHolder">
@@ -68,6 +73,7 @@ verify_loggedin(true, "markdown.php");
 <script><?php echo file_get_contents("script/consolelog.js"); ?></script>
 <script><?php echo file_get_contents("script/common.js"); ?></script>
 <script><?php echo file_get_contents("script/markdown.js"); ?></script>
+<script><?php echo file_get_contents("script/markdownHelp.js"); ?></script>
 <script><?php echo file_get_contents("script/markdownTest.js"); ?></script>
 <script><?php echo file_get_contents("script/markdownEditor.js"); ?></script>
 <?php if (UserLevel::is_admin()) { ?>
@@ -131,7 +137,7 @@ $('#markdownTestSuite').addEventListener('click', function()
     alert(`Test Results: Passed ${testResults.passed} of ${totalTests} tests (${passRate}%)${auxText}`);
  });
 
-markdownHelp(function(response)
+MarkdownHelp.getHelp(function(response)
 {
     $('#query').value = response.data;
     parseMarkdown();

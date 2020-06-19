@@ -4,7 +4,7 @@ online. That means that this will probably be hot garbage, but hopefully will wo
 basic scenarios.
 */
 
-/* exported markdownHelp */
+/* exported Markdown */
 
 /* eslint-disable class-methods-use-this */ /* Inherited classes may use 'this', and making
                                                the base class method static breaks this */
@@ -4199,34 +4199,4 @@ class HtmlComment extends Run
         // Leave exactly as-is, we want it to be parsed as an HTML comment
         return newText;
     }
-}
-
-
-// Cache markdown help document so we don't ping the server every time
-let _helpMarkdown = new Markdown();
-let _mdHelpHTML = '';
-
-/// <summary>
-/// Passes the markdown help text to the given callback
-/// </summary>
-/// <param name="callback">Function to call once we have the markdown text</param>
-/// <param name="raw">
-/// If true, passes the raw markdown text to the callback.
-/// If false, passes the converted HTML to the callback.
-/// </param>
-function markdownHelp(callback, raw=false)
-{
-    if (_mdHelpHTML.length != 0)
-    {
-        callback({ data : raw ? _helpMarkdown.text : _mdHelpHTML });
-        return;
-    }
-
-    let successFunc = function(response, request)
-    {
-        _mdHelpHTML = `<div class="md">${_helpMarkdown.parse(response.data)}</div>`;
-        callback({ data : request.raw ? _helpMarkdown.text : _mdHelpHTML });
-    };
-
-    sendHtmlJsonRequest('process_request.php', { type : ProcessRequest.MarkdownText }, successFunc, undefined, { raw : raw });
 }
