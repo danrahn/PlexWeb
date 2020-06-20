@@ -31,7 +31,7 @@ Note that this Markdown parser was written from scratch without looking at other
 
 2. **`Code Snippets`** - To create a code snippet, surround text with backticks. This will render the text in a fixed-width font, and ignore all formatting - `` `**Code Snippet**` `` will not render as bold, but exactly as written: `**Code Snippet**`.
 
-3. [**Links**](markdown.php) - To insert a link, type the display text in square brackets, and the link itself in parentheses: `[Display Text](https://danrahn.com)`.
+3. [**Links**](markdown.php) - To insert a link, type the display text in square brackets, and the link itself in parentheses: `[Display Text](https://danrahn.com)`. Links will also be inserted implicitly. If I type `danrahn.com` without additional formatting, a link will be created: danrahn.com.
 
 4. **Images** - Very similar to links, but prefix the opening square bracket with an exclamation point: `![Alt Text](https://link/to/image.png)`.
 

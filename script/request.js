@@ -288,9 +288,7 @@ function buildMarkdownImageDimensionsInput()
 
     let dimensions = buildNode("div", { class : "formInput", style : "text-align: center" });
     let dimenContainer = buildNode("div", { style : "float: right; overflow: auto; width: 100%; margin: auto" });
-    dimenContainer.appendChild(width);
-    dimenContainer.appendChild(span);
-    dimenContainer.appendChild(height);
+    dimenContainer.appendChildren(width, span, height);
     dimensions.appendChild(dimenContainer);
     return dimensions;
 }
@@ -340,15 +338,12 @@ function addLinkOrPhoto(isPhoto)
         });
 
     let container = buildNode("div", { id : "mdInsertOverlay" });
-    container.appendChild(title);
-    container.appendChild(linkText);
-    container.appendChild(linkInput);
-    container.appendChild(displayText);
-    container.appendChild(displayInput);
+    container.appendChildren(title, linkText, linkInput, displayText, displayInput);
     if (isPhoto)
     {
-        container.appendChild(buildNode("div", {}, "Width and Height (optional)"));
-        container.appendChild(buildMarkdownImageDimensionsInput());
+        container.appendChildren(
+            buildNode("div", {}, "Width and Height (optional)"),
+            buildMarkdownImageDimensionsInput());
     }
 
     container.appendChild(getOkCancelButtons("addLinkOk", insertLinkInComment, { isPhoto : isPhoto ? 1 : 0 }));
@@ -1044,10 +1039,7 @@ function buildLegacyMatch(match)
         { click : goToImdb });
 
     div.appendChild(href);
-    item.appendChild(img);
-    item.appendChild(div);
-
-    return item;
+    return item.appendChildren(img, div);
 }
 
 /// <summary>
@@ -1231,15 +1223,14 @@ function getStatusSpan(status)
 /// </summary>
 function getNonMediaInfo()
 {
-    let outerContainer = buildNode("div", { id : "innerInfoContainer" });
-    let container = buildNode("div", { id : "mediaDetails" });
+    let outerContainer = buildNode("div", { id : "innerInfoContainer" }).appendChildren(
+        buildNode("div", { id : "mediaDetails" }).appendChildren(
+            buildNode("div", { id : "mediaTitle" }, `Request: ${attr("requestName")} - `).appendChildren(
+                getStatusSpan(attrInt("requestStatus"))
+            )
+        )
+    );
 
-    let title = buildNode("div", { id : "mediaTitle" }, `Request: ${attr("requestName")} - `);
-    let status = attrInt("requestStatus");
-    title.appendChild(getStatusSpan(status));
-    container.appendChild(title);
-
-    outerContainer.appendChild(container);
     $("#infoContainer").innerHTML = "";
     $("#infoContainer").appendChild(outerContainer);
 }
@@ -1331,14 +1322,9 @@ function buildPage(data)
 
     let desc = buildNode("div", { id : "mediaOverview" }, data.overview);
 
-    details.appendChild(title);
-    details.appendChild(year);
-    if (imdb) details.appendChild(imdb);
-    details.appendChild(buildNode("hr"));
-    details.appendChild(desc);
+    details.appendChildren(title, year, imdb ? imdb : 0, buildNode("hr"), desc);
 
-    innerContainer.appendChild(poster);
-    innerContainer.appendChild(details);
+    innerContainer.appendChildren(poster, details);
 
     if (backdrop)
     {
@@ -1536,15 +1522,12 @@ function promptForNotifications()
         },
         "Don't ask again");
 
-    checkHolder.appendChild(check);
-    checkHolder.appendChild(checkLabel);
+    checkHolder.appendChildren(check, checkLabel);
 
     let buttons = getYesNoOverlayButtons();
     let outerButtonContainer = buildNode("div", { class : "formInput", style : "text-align: center" });
     let buttonContainer = buildNode("div", { style : "float: right; overflow: auto; width: 100%; margin: auto" });
-    buttonContainer.appendChild(buttons.yes);
-    buttonContainer.appendChild(buttons.no);
-    outerButtonContainer.appendChild(buttonContainer);
+    outerButtonContainer.appendChildren(buttonContainer.appendChildren(buttons.yes, buttons.no));
 
     buildOverlay(true, title, prompt, checkHolder, outerButtonContainer);
 }
@@ -1798,19 +1781,17 @@ function buildComments(comments)
 
         let content = buildNode("div", { class : "commentContent md" }, fixedupContent);
 
-        info.appendChild(name);
-        info.appendChild(date);
+        info.appendChildren(name, date);
 
-        holder.appendChild(info);
-        holder.appendChild(content);
+        holder.appendChildren(info, content);
 
         if (parseInt(comment.editable) == 1)
         {
             let editTools = buildNode("div", { class : "commentEdit", commentId : comment.id });
-
-            editTools.appendChild(commentAction("Edit", editComment));
-            editTools.appendChild(commentAction("Delete", confirmDeleteComment));
-            holder.appendChild(editTools);
+            holder.appendChild(editTools.appendChildren(
+                commentAction("Edit", editComment),
+                commentAction("Delete", confirmDeleteComment)
+            ));
         }
 
         container.appendChild(holder);
@@ -1842,8 +1823,7 @@ function editComment()
     let cancel = commentAction("Cancel", function() { dismissEdit(this.getAttribute("commentId")); });
     okay.setAttribute("commentId", commentId);
     cancel.setAttribute("commentId", commentId);
-    buttonHolder.appendChild(okay);
-    buttonHolder.appendChild(cancel);
+    buttonHolder.appendChildren(okay, cancel);
     holder.insertBefore(buildNode(
         "hr",
         {
@@ -1959,10 +1939,7 @@ function confirmDeleteComment(e)
     let confirmMiddle = buildNode("span",{},"&nbsp;/&nbsp;");
     let confirmCancel = buildNode("span", { class : "deleteCancel", commentId : commentId }, "Cancel", { click : cancelDelete });
 
-    confirmHolder.appendChild(confirm);
-    confirmHolder.appendChild(confirmYes);
-    confirmHolder.appendChild(confirmMiddle);
-    confirmHolder.appendChild(confirmCancel);
+    confirmHolder.appendChildren(confirm, confirmYes, confirmMiddle, confirmCancel);
     this.appendChild(confirmHolder);
 }
 
@@ -2014,7 +1991,5 @@ function commentAction(action, fn)
     // Thanks to css.gg for the 'pen' and 'trash' svg icons
     let img = buildNode("img", { src : icons[action.toUpperCase()], title : actionString, alt : actionString });
     let text = buildNode("span", {}, action);
-    holder.appendChild(img);
-    holder.appendChild(text);
-    return holder;
+    return holder.appendChildren(img, text);
 }

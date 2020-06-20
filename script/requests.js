@@ -127,8 +127,7 @@ function buildRequestPoster(request)
             error : onFailedPoster
         });
     imgA.appendChild(img);
-    imgHolder.appendChild(imgA);
-    return imgHolder;
+    return imgHolder.appendChildren(imgA);
 }
 
 /// <summary>
@@ -201,19 +200,14 @@ function buildRequestBody(request, sortOrder, requestHolder)
     textHolder.appendChild(requestTitle);
     if (sortOrder == "ud" || sortOrder == "ua")
     {
-        textHolder.appendChild(updateDate);
-        textHolder.appendChild(requestDate);
+        textHolder.appendChildren(updateDate, requestDate);
     }
     else
     {
-        textHolder.appendChild(requestDate);
-        textHolder.appendChild(updateDate);
+        textHolder.appendChildren(requestDate, updateDate);
     }
 
-    textHolder.appendChild(requester);
-    textHolder.appendChild(status);
-    textHolder.appendChild(comments);
-    return textHolder;
+    return textHolder.appendChildren(requester, status, comments);
 }
 
 /// <summary>
@@ -227,8 +221,7 @@ function buildRequest(request, sortOrder)
     let imgHolder = buildRequestPoster(request);
     let textHolder = buildRequestBody(request, sortOrder, holder);
 
-    holder.appendChild(imgHolder);
-    holder.appendChild(textHolder);
+    holder.appendChildren(imgHolder, textHolder);
     logTmi(holder, "Built Item", false);
     return holder;
 }

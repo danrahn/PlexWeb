@@ -369,9 +369,11 @@ function _buildAndAttachFilterOverlay()
 /// </summary>
 function filterHtmlCommon(options)
 {
-    let container = buildNode("div", { id : "filterContainer" });
-    container.appendChild(buildNode("h3", {}, "Filter Options"));
-    container.appendChild(buildNode("hr"));
+    let container = buildNode("div", { id : "filterContainer" }).appendChildren(
+        buildNode("h3", {}, "Filter Options"),
+        buildNode("hr")
+    );
+
     options.forEach(function(option)
     {
         container.appendChild(option);
@@ -379,30 +381,22 @@ function filterHtmlCommon(options)
 
     _checkPerPageInFilter(container);
 
+    const buildButton = (text, id, style="") => buildNode("input", {
+        type : "button",
+        value : text,
+        id : id,
+        style : style
+    });
+
     let buttonHolder = buildNode("div", { class : "formInput" });
     let innerButtonHolder = buildNode("div", { class : "filterButtons" });
-    innerButtonHolder.appendChild(buildNode("input", {
-        type : "button",
-        value : "Cancel",
-        id : "cancelFilter",
-        style : "margin-right: 10px"
-    }));
-    innerButtonHolder.appendChild(buildNode("input", {
-        type : "button",
-        value : "Reset",
-        id : "resetFilter",
-        style : "margin-right: 10px"
-    }));
-    innerButtonHolder.appendChild(buildNode("input", {
-        type : "button",
-        value : "Apply",
-        id : "applyFilter"
-    }));
+    innerButtonHolder.appendChildren(
+        buildButton("Cancel", "cancelFilter", "margin-right: 10px"),
+        buildButton("Reset", "resetFilter", "margin-right: 10px"),
+        buildButton("Apply", "applyFilter")
+    );
 
-    buttonHolder.appendChild(innerButtonHolder);
-    container.appendChild(buttonHolder);
-
-    return container;
+    return container.appendChildren(buttonHolder.appendChildren(innerButtonHolder));
 }
 
 /// <summary>
@@ -452,17 +446,17 @@ function buildTableFilterCheckbox(label, name)
             }
         }
     );
-    div.appendChild(buildNode("label", { for : name }, label + ": "));
-    div.appendChild(buildNode(
-        "input",
-        {
-            type : "checkbox",
-            name : name,
-            id : name
-        })
+    return div.appendChildren(
+        buildNode("label", { for : name }, label + ": "),
+        buildNode(
+            "input",
+            {
+                type : "checkbox",
+                name : name,
+                id : name
+            }
+        )
     );
-
-    return div;
 }
 
 /// <summary>
@@ -490,8 +484,7 @@ function buildTableFilterDropdown(title, options, addId=false)
         select.appendChild(option);
     }
 
-    container.appendChild(select);
-    return container;
+    return container.appendChildren(select);
 }
 
 /// <summary>

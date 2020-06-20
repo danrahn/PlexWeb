@@ -334,8 +334,7 @@ function buildSuggestionBody(match)
     // For TV shows, give the option to get information about what seasons are available
     if (match.tvChildPath)
     {
-        div.appendChild(buildNode("hr"));
-        div.appendChild(buildSeasonDetailsHandler(match));
+        div.appendChildren(buildNode("hr"), buildSeasonDetailsHandler(match));
     }
 
     return div;
@@ -377,9 +376,7 @@ function buildItem(match, external)
         )
     });
 
-    item.appendChild(img);
-    item.appendChild(buildSuggestionBody(match));
-    return item;
+    return item.appendChildren(img, buildSuggestionBody(match));
 }
 
 /// <summary>
@@ -642,11 +639,12 @@ function showAlreadyExistsAlert(response)
             click : overlayDismiss
         });
 
-    let outerButtonContainer = buildNode("div", { class : "formInput", style : "text-align: center" });
-    let buttonContainer = buildNode("div", { style : "float: right; overflow: auto; width: 100%; margin: auto" });
-    buttonContainer.appendChild(button1);
-    buttonContainer.appendChild(button2);
-    outerButtonContainer.appendChild(buttonContainer);
+    let outerButtonContainer = buildNode("div", { class : "formInput", style : "text-align: center" }).appendChildren(
+        buildNode("div", { style : "float: right; overflow: auto; width: 100%; margin: auto" }).appendChildren(
+            button1,
+            button2
+        )
+    );
 
     buildOverlay(true /*dismissible*/, message, outerButtonContainer);
 }

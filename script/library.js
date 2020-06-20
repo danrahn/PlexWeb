@@ -37,10 +37,7 @@ function buildSection(section)
         list.appendChild(listItem(key, value, value instanceof Date));
     }
 
-    list.appendChild(getRefreshNode(section.key));
-
-    div.appendChild(list);
-    return div;
+    return div.appendChildren(list.appendChildren(getRefreshNode(section.key)));
 }
 
 /// <summary>

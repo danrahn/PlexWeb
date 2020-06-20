@@ -156,11 +156,7 @@ function buildActivity(activity, newActivity)
     let activityTime = buildNode("span", {}, DateUtil.getDisplayDate(activity.timestamp));
     setTooltip(activityTime, DateUtil.getFullDate(activity.timestamp));
 
-    textHolder.appendChild(span);
-    textHolder.appendChild(activityTime);
-
-    holder.appendChild(imgHolder);
-    holder.appendChild(textHolder);
+    holder.appendChildren(imgHolder, textHolder.appendChildren(span, activityTime));
     return holder;
 }
 

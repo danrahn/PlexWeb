@@ -783,11 +783,7 @@ function buildActivityProgress(sesh)
 
     let time = buildNode("div", { class : "time" }, `${msToHms(sesh.progress)}/${msToHms(sesh.duration)}`);
 
-    progressHolder.appendChild(progress);
-    progressHolder.appendChild(transcodeDiff);
-    progressHolder.appendChild(remaining);
-    progressHolder.appendChild(time);
-    return progressHolder;
+    return progressHolder.appendChildren(progress, transcodeDiff, remaining, time);
 }
 
 /// <summary>
@@ -832,9 +828,10 @@ function buildActiveStreamDetailsList(sesh, title)
 
     if (sesh.video)
     {
-        list.appendChild(getListItem("Video", getVideoString(sesh.video)));
-        list.appendChild(getListItem("Audio", getAudioString(sesh.audio)));
+        list.appendChildren(getListItem("Video", getVideoString(sesh.video)));
     }
+
+    list.appendChild(getListItem("Audio", getAudioString(sesh.audio)));
 
     if (sesh.video)
     {
@@ -853,9 +850,7 @@ function buildActiveStreamDetails(sesh)
 {
     let details = buildNode("div", { class : "details" });
     let title = buildActiveStreamTitle(sesh);
-    details.appendChild(title);
-    details.appendChild(buildActiveStreamDetailsList(sesh, title));
-    return details;
+    return details.appendChildren(title, buildActiveStreamDetailsList(sesh, title));
 }
 
 /// <summary>
@@ -889,8 +884,7 @@ function buildActiveStreamPoster(sesh)
             mouseenter : () => {},
             mouseleave : () => {}
         });
-    externalLink.appendChild(poster);
-    return externalLink;
+    return externalLink.appendChildren(poster);
 }
 
 /// <summary>
@@ -935,10 +929,10 @@ function buildMediaInfo(sesh)
 /// </summary>
 function getListItem(key, value, id)
 {
-    let item = buildNode("li", id ? { id : id } : {});
-    item.appendChild(buildNode("strong", {}, `${key}: `));
-    item.appendChild(buildNode("span", {}, value));
-    return item;
+    return buildNode("li", id ? { id : id } : {}).appendChildren(
+        buildNode("strong", {}, `${key}: `),
+        buildNode("span", {}, value)
+    );
 }
 
 /// <summary>
@@ -992,9 +986,11 @@ function getHoverText(element)
     tcString.appendChild(buildNode("br"));
     if (tcprogress > 0)
     {
-        tcString.appendChild(hoverFormat("Transcoded", tcprogress + "%"));
-        tcString.appendChild(buildNode("br"));
-        tcString.appendChild(hoverFormat("Buffer", (tcprogress - parseFloat(progress)).toFixed(2) + "%"));
+        tcString.appendChildren(
+            hoverFormat("Transcoded", tcprogress + "%"),
+            buildNode("br"),
+            hoverFormat("Buffer", (tcprogress - parseFloat(progress)).toFixed(2) + "%")
+        );
     }
     else
     {
@@ -1009,7 +1005,7 @@ function getHoverText(element)
 /// </summary>
 function hoverFormat(title, data)
 {
-    return buildNode("span", {}, `${title}: `).appendChild(buildNode("span", { class : "tooltipProgress" }, data)).parentNode;
+    return buildNode("span", {}, `${title}: `).appendChildren(buildNode("span", { class : "tooltipProgress" }, data));
 }
 
 /// <summary>

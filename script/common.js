@@ -51,7 +51,10 @@ Element.prototype.appendChildren = function(...elements)
 {
     for (let element of elements)
     {
-        this.appendChild(element);
+        if (element)
+        {
+            this.appendChild(element);
+        }
     }
 
     return this;

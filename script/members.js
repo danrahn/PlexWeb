@@ -121,11 +121,12 @@ function buildMember(member)
         list.appendChild(li("Phone", phone));
     }
 
-    list.appendChild(buildNode("li", {}, `ID: ${member.id}`));
-    list.appendChild(buildNode("li", {}, `Level: ${member.level}`));
-
-    holder.appendChild(list);
-    return holder;
+    return holder.appendChildren(
+        list.appendChildren(
+            buildNode("li", {}, `ID: ${member.id}`),
+            buildNode("li", {}, `Level: ${member.level}`)
+        )
+    );
 }
 
 /// <summary>
