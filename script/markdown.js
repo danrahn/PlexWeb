@@ -230,6 +230,13 @@ class Markdown
             }
         }
 
+        // In some cases inserted text is the bridge that connects two runs that are currently distinct.
+        // To get around this, be on the safe side and also remove the previous run from the cache
+        if (i != 0)
+        {
+            --i;
+        }
+
         this.topRun.cached = '';
         if (i != this.topRun.innerRuns.length)
         {

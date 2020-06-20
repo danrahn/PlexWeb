@@ -61,6 +61,10 @@ verify_loggedin(true, "markdown.php");
                     <label for="liveupdate">Live updates: </label>
                     <input type="checkbox" name="liveupdate" id="liveupdate" checked="checked">
                 </div>
+                <div class="formInput" style="color: #c1c1c1; text-align: center; width: 150px; margin: auto">
+                    <label for="testcache">Test Cache: </label>
+                    <input type="checkbox" name="testcache" id="testcache">
+                </div>
             </form>
         </div>
     </div>
@@ -130,11 +134,12 @@ MarkdownEditor.addTabHandler($('#query'));
 
 $('#markdownTestSuite').addEventListener('click', function()
 {
-    let testResults = MarkdownTestSuite.runSuite();
+    let testCache = $('#testcache').checked;
+    let testResults = MarkdownTestSuite.runSuite(testCache);
     let totalTests = testResults.passed + testResults.failed;
     let passRate = ((testResults.passed / totalTests) * 100).toFixed(2);
     let auxText = (totalTests == testResults.passed ? '. Yay!' : '') + '\n\nSee the console (F12) for more details';
-    alert(`Test Results: Passed ${testResults.passed} of ${totalTests} tests (${passRate}%)${auxText}`);
+    alert(`Test Results${testCache ? ' (with cache)' : ''}: Passed ${testResults.passed} of ${totalTests} tests (${passRate}%)${auxText}`);
  });
 
 MarkdownHelp.getHelp(function(response)

@@ -12,8 +12,9 @@ class MarkdownTestSuite
     /// <summary>
     /// Runs all available tests
     /// </summary>
-    static runSuite()
+    static runSuite(testCache = false)
     {
+        MarkdownTestSuite.testCache = testCache;
         let overallResults = { passed : 0, failed : 0 };
         const addResult = (suiteResults) =>
         {
@@ -857,32 +858,71 @@ class MarkdownTestSuite
         g_logLevel = LOG.Info;
         let colors = this._consoleColors(g_darkConsole);
 
-        tests.forEach(function(str)
+        tests.forEach(function(test)
         {
-            let result = new Markdown().parse(str.input);
-            let displayInput = MarkdownTestSuite._escapeTestString(str.input);
-            let displayExpected = MarkdownTestSuite._escapeTestString(str.expected);
-            if (result == str.expected)
+            if (MarkdownTestSuite.testCache)
             {
-                let logString = `    %cPassed!%c [%c${displayInput}%c]%c => %c[%c${displayExpected}%c]`;
-                logFormattedText(LOG.Info, logString, ...colors.success);
-                ++stats.passed;
+                MarkdownTestSuite._testCache(test, colors, stats);
             }
             else
             {
-                let fixedIndent = ' '.repeat(36); // Indent from the consolelog header
-                let logString = `   %cFAIL!\n` +
-                    `${fixedIndent}%cInput:    %c[%c${displayInput}%c]%c\n` +
-                    `${fixedIndent}Expected: %c[%c${MarkdownTestSuite._escapeTestString(displayExpected)}%c]%c\n` +
-                    `${fixedIndent}Actual:   %c[%c${MarkdownTestSuite._escapeTestString(result)}%c]`;
-                logFormattedText(LOG.Warn, logString, ...colors.failure);
-                ++stats.failed;
+                MarkdownTestSuite._validateTest(test, new Markdown().parse(test.input), colors, stats);
             }
         });
 
         g_logLevel = logSav;
         logInfo(`Ran ${stats.passed + stats.failed} Tests: Passed: ${stats.passed}  -  Failed: ${stats.failed}`);
         return stats;
+    }
+
+    /// <summary>
+    /// Tests the Markdown caching mechanism by consecutively parsing each test
+    /// character by character until finally parsing the entire input, then
+    /// comparing it against the expected output
+    /// </summary>
+    static _testCache(test, colors, stats)
+    {
+        let cacheSav = localStorage.getItem('mdCache');
+        localStorage.setItem('mdCache', 1);
+        let md = new Markdown();
+
+        // Enter each character one by one, parsing after every step
+        let run = '';
+        for (let i = 0; i < test.input.length - 1; ++i)
+        {
+            run += test.input[i];
+            md.parse(run);
+        }
+
+        let result = md.parse(test.input);
+        MarkdownTestSuite._validateTest(test, result, colors, stats);
+        localStorage.setItem('mdCache', cacheSav);
+    }
+
+    /// <summary>
+    /// Compares the given test result with the expected result, printing
+    /// out a message indicating whether the test passed or failed
+    /// </summary>
+    static _validateTest(test, result, colors, stats)
+    {
+        let displayInput = MarkdownTestSuite._escapeTestString(test.input);
+        let displayExpected = MarkdownTestSuite._escapeTestString(test.expected);
+        if (result == test.expected)
+        {
+            let logString = `    %cPassed!%c [%c${displayInput}%c]%c => %c[%c${displayExpected}%c]`;
+            logFormattedText(LOG.Info, logString, ...colors.success);
+            ++stats.passed;
+        }
+        else
+        {
+            let fixedIndent = ' '.repeat(36); // Indent from the consolelog header
+            let logString = `   %cFAIL!\n` +
+                `${fixedIndent}%cInput:    %c[%c${displayInput}%c]%c\n` +
+                `${fixedIndent}Expected: %c[%c${MarkdownTestSuite._escapeTestString(displayExpected)}%c]%c\n` +
+                `${fixedIndent}Actual:   %c[%c${MarkdownTestSuite._escapeTestString(result)}%c]`;
+            logFormattedText(LOG.Warn, logString, ...colors.failure);
+            ++stats.failed;
+        }
     }
 
     /// <summary>
