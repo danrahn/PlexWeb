@@ -791,7 +791,8 @@ class Markdown
             tentativeCount : 0,
             tentativeIndex : 0,
             separator : '',
-            allowSingle : allowSingle
+            allowSingle : allowSingle,
+            foundAlpha : false
         };
 
         if (!this._formatPrecheck(start, sepInfo))
@@ -920,7 +921,11 @@ class Markdown
 
             sepInfo.tentativeCount = 1;
             let foundMatch = false;
-            if (!isAlphanumeric(this.text[sepInfo.index - 1]))
+            if (isAlphanumeric(this.text[sepInfo.index - 1]))
+            {
+                sepInfo.foundAlpha = true;
+            }
+            else
             {
                 foundMatch = this._checkFormattingOpening(sepInfo, blockEnd);
                 if (foundMatch == -1)
@@ -983,6 +988,7 @@ class Markdown
 
         if (this.text[sepInfo.index] != sepInfo.separator || this._isEscaped(sepInfo.index))
         {
+            sepInfo.foundAlpha = sepInfo.foundAlpha || isAlphanumeric(this.text[sepInfo.index]);
             return 0;
         }
 
@@ -1007,7 +1013,9 @@ class Markdown
             ++sepInfo.tentativeIndex;
         }
 
-        if (sepInfo.tentativeIndex == blockEnd || isWhitespace(this.text[sepInfo.tentativeIndex]))
+        if (sepInfo.tentativeIndex == blockEnd ||
+            isWhitespace(this.text[sepInfo.tentativeIndex]) ||
+            (sepInfo.foundAlpha && this._isFormatChar(sepInfo.tentativeIndex)))
         {
             // BI doesn't have single sep check
             if ((!sepInfo.allowSingle && sepInfo.tentativeCount == 1) || isWhitespace(this.text[sepInfo.tentativeIndex - 1]))
@@ -1019,7 +1027,7 @@ class Markdown
             // Non alphanumeric + separators + whitespace. This might actually be an end
             sepInfo.tentativeCount = 1;
         }
-        else if (isWhitespace(this.text[sepInfo.index - 1]))
+        else if (isWhitespace(this.text[sepInfo.index - 1]) || (!sepInfo.foundAlpha && this._isFormatChar(sepInfo.index - 1)))
         {
             // Found an actual group of opening separators. Add it to our collection
             // Note that these separators must be in pairs of two, so if we have an
@@ -1037,6 +1045,17 @@ class Markdown
         }
 
         return foundMatch;
+    }
+
+    /// <summary>
+    /// Returns whether the given character is a potential format character
+    ///
+    /// Used to help determine what should/shouldn't be counted when looking for formatting bounds
+    /// </summary>
+    _isFormatChar(index)
+    {
+        let ch = this.text[index];
+        return (ch == '*' || ch == '_' || ch == '+' || ch == '~') && !this._isEscaped(index);
     }
 
     /// <summary>

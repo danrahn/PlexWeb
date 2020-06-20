@@ -935,6 +935,14 @@ class MarkdownTestSuite
             [
                 '> ```\n>\n> ```',
                 `<blockquote><pre>${this._preWrap('')}</pre></blockquote>`
+            ],
+            [
+                '_**_A_**_',
+                this._divWrap('<em><strong><em>A</em></strong></em>')
+            ],
+            [
+                '++_++_A_++_++',
+                this._divWrap('<ins><em><ins><em>A</em></ins></em></ins>')
             ]
         );
 
