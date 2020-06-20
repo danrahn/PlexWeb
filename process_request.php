@@ -63,6 +63,7 @@ switch ($type)
     case ProcessRequest::Register:
     case ProcessRequest::RequestPasswordReset:
     case ProcessRequest::ResetPassword:
+    case ProcessRequest::MarkdownText:
         break;
     default:
         session_start();

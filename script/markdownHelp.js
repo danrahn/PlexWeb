@@ -31,7 +31,14 @@ let MarkdownHelp = new function()
             callback({ data : request.raw ? _helpMarkdown.text : _mdHtmlWrap() });
         };
 
-        sendHtmlJsonRequest("process_request.php", { type : ProcessRequest.MarkdownText }, successFunc, undefined, { raw : raw });
+        // On failure, return the error, but don't cache anything
+        let errorFunc = function(response, request)
+        {
+            let error = "Failed to get help document: " + response.Error;
+            callback({ data : request.raw ? error : `<div class="md">${error}</div>` });
+        };
+
+        sendHtmlJsonRequest("process_request.php", { type : ProcessRequest.MarkdownText }, successFunc, errorFunc, { raw : raw });
 
     };
 }();

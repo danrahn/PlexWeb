@@ -1,7 +1,6 @@
 <?php
 require_once "includes/common.php";
 session_start();
-verify_loggedin(true, "markdown.php");
 ?>
 
 <!-- Page to allow easy testing of markdown -->

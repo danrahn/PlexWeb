@@ -8,7 +8,6 @@ session_start();
 
 require_once "includes/common.php";
 require_once "includes/config.php";
-verify_loggedin();
 
 $img_path = param_or_die("path");
 $type = get_type();
@@ -17,6 +16,12 @@ if (!validate_path($img_path, $type))
 {
     header('HTTP/1.1 400 Bad Request', true, 400);
     error_and_exit(400);
+}
+
+// Don't need to be logged in to get the *default.svg posters
+if (substr(strtolower($img_path), strlen($img_path) - 11) != "default.svg")
+{
+    verify_loggedin();
 }
 
 $isThumb = $type == ImgType::Thumb;
@@ -146,7 +151,7 @@ function serve_new_image($img_path, $filename, $type, $large)
     header('HTTP/1.1 200 OK');
     file_put_contents($filename, $img->getImageBlob());
     header('Content-Length: '. filesize($filename));
-    header("Content-Type: image/jpeg");
+    header("Content-Type: " . mime_content_type($filename));
     header('Etag: ' . md5_file($filename));
     echo $img->getImageBlob();
 }
