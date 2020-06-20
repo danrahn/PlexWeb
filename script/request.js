@@ -83,10 +83,12 @@ function reqId()
 /// </summary>
 function setupMarkdown()
 {
-    $("#newComment").addEventListener("change", parseMarkdown);
-    $("#newComment").addEventListener("keyup", parseMarkdown);
+    let comment = $("#newComment");
+    comment.addEventListener("change", parseMarkdown);
+    comment.addEventListener("keyup", parseMarkdown);
     $("#mdhelp").addEventListener("click", showMarkdownHelp);
-    MarkdownEditor.addTabHandler($("#newComment"));
+    MarkdownEditor.addTabHandler(comment);
+    MarkdownEditor.addFormatHandler(comment);
 }
 
 /// <summary>
@@ -112,16 +114,16 @@ function mdDispatch()
     switch (this.id)
     {
         case "addBold":
-            mdSurround("**");
+            MarkdownEditor.addFormat($("#newcomment"), "**");
             break;
         case "addUnderline":
-            mdSurround("++");
+            MarkdownEditor.addFormat($("#newcomment"), "++");
             break;
         case "addItalic":
-            mdSurround("_");
+            MarkdownEditor.addFormat($("#newcomment"), "_");
             break;
         case "addStrikethrough":
-            mdSurround("~~");
+            MarkdownEditor.addFormat($("#newcomment"), "~~");
             break;
         default:
             break;
@@ -796,34 +798,6 @@ function insertMdTable()
     }
 
     overlayDismiss();
-    parseMarkdown();
-}
-
-/// <summary>
-/// Surrounds the currently highlighted text with the specific pattern. If nothing is highlighted,
-/// add a placeholder value and highlight that.
-/// </summary>
-function mdSurround(ch)
-{
-    let comment = $("#newComment");
-    let start = comment.selectionStart;
-    let end = comment.selectionEnd;
-    comment.focus();
-    let surround = (start == end) ? "Text" : comment.value.substring(comment.selectionStart, comment.selectionEnd);
-
-    if (document.queryCommandSupported("insertText"))
-    {
-        // This is deprecated, but it's the only way I've found to do it that supports undo.
-        document.execCommand("insertText", false, ch + surround + ch);
-    }
-    else
-    {
-        let newText = ch + surround + ch;
-        comment.setRangeText(newText);
-    }
-
-    comment.setSelectionRange(start + ch.length, start + surround.length + ch.length);
-
     parseMarkdown();
 }
 
@@ -1841,6 +1815,7 @@ function editComment()
         });
 
     MarkdownEditor.addTabHandler(editor);
+    MarkdownEditor.addFormatHandler(editor);
     holder.insertBefore(editor, holder.children[1]);
 
     editor.style.height = Math.min((editor.scrollHeight + 20), 350) + "px";

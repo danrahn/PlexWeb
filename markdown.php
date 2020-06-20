@@ -130,6 +130,7 @@ $('#query').addEventListener('keyup', parseMarkdown);
 
 $('#query').addEventListener('keydown', parseShortcuts);
 MarkdownEditor.addTabHandler($('#query'));
+MarkdownEditor.addFormatHandler($('#query'));
 
 $('#markdownTestSuite').addEventListener('click', function()
 {

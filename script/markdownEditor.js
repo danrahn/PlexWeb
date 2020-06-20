@@ -97,10 +97,79 @@ let MarkdownEditor = new function()
     };
 
     /// <summary>
+    /// Listens for keyboard shortcuts that insert markdown formatting
+    /// </summary>
+    let formatHandler = function(e)
+    {
+        if (!e.ctrlKey || e.altKey || e.shiftKey)
+        {
+            return;
+        }
+
+        switch (e.keyCode)
+        {
+            case KEY.B:
+                addMarkdownFormat('**', this);
+                break;
+            case KEY.U:
+                addMarkdownFormat('++', this);
+                break;
+            case KEY.S:
+                addMarkdownFormat('~~', this);
+                break;
+            case KEY.I:
+                addMarkdownFormat('_', this);
+                break;
+            default:
+                return;
+        }
+
+        e.preventDefault();
+    };
+
+    /// <summary>
+    /// Surrounds the currently highlighted text with the specific pattern. If nothing is highlighted,
+    /// add a placeholder value and highlight that.
+    /// </summary>
+    let addMarkdownFormat = function(ch, comment)
+    {
+        let start = comment.selectionStart;
+        let end = comment.selectionEnd;
+        comment.focus();
+        let surround = (start == end) ? 'Text' : comment.value.substring(comment.selectionStart, comment.selectionEnd);
+
+        if (document.queryCommandSupported('insertText'))
+        {
+            // This is deprecated, but it's the only way I've found to do it that supports undo.
+            document.execCommand('insertText', false, ch + surround + ch);
+        }
+        else
+        {
+            let newText = ch + surround + ch;
+            comment.setRangeText(newText);
+        }
+
+        comment.setSelectionRange(start + ch.length, start + surround.length + ch.length);
+    };
+
+    /// <summary>
     /// Adds the tab handler to the given text input
     /// </summary>
     this.addTabHandler = function(element)
     {
         element.addEventListener('keydown', captureTab);
     };
+
+    /// <summary>
+    /// Adds a format handler to the given text input
+    /// </summary>
+    this.addFormatHandler = function(element)
+    {
+        element.addEventListener('keydown', formatHandler);
+    };
+
+    /// <summary>
+    /// Adds the given formatting to the given textarea element
+    /// </summary>
+    this.addFormat = (element, ch) => addMarkdownFormat(ch, element);
 }();
