@@ -2613,14 +2613,16 @@ class Markdown
             return start;
         }
 
-        let linkStart = this._implicitUrlStart(start);
-        if (linkStart == -1)
+        // Check for a valid end first, as it's slightly
+        // better at exiting early when necessary
+        let linkEnd = this._implicitUrlEnd(start);
+        if (linkEnd == -1)
         {
             return start;
         }
 
-        let linkEnd = this._implicitUrlEnd(start);
-        if (linkEnd == -1)
+        let linkStart = this._implicitUrlStart(start);
+        if (linkStart == -1)
         {
             return start;
         }
