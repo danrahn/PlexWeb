@@ -44,6 +44,20 @@ Element.prototype.$$ = function(selector)
 };
 
 /// <summary>
+/// Helper to append multiple children to a single element at once
+/// <summary>
+/// <returns>The element to facilitate chained calls</returns>
+Element.prototype.appendChildren = function(...elements)
+{
+    for (let element of elements)
+    {
+        this.appendChild(element);
+    }
+
+    return this;
+};
+
+/// <summary>
 /// Helper method to create DOM elements.
 /// </summary>
 function buildNode(type, attrs, content, events)

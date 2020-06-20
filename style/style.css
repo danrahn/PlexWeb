@@ -124,6 +124,12 @@ input:hover, select:hover, textarea:hover {
     background-color: rgb(83, 86, 89);
 }
 
+input:disabled, select:disabled,
+input:disabled:hover, select:disabled:hover {
+    color: #808080;
+    background: rgb(43, 46, 49);
+}
+
 input[type=checkbox]:checked:hover {
     background-color: rgb(143, 146, 149);
 }

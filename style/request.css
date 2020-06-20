@@ -409,6 +409,58 @@ a:hover {
     font-size: smaller;
 }
 
+#mdtHolder {
+    margin: auto !important;
+    overflow-y: scroll;
+}
+
+#mdt {
+    background-color: rgba(0,0,0,0.3);
+    color: #c1c1c1;
+    max-width: 100%;
+}
+
+#mdt, #mdt thead, #mdt td {
+    border-collapse: collapse;
+    padding: 3px;
+}
+
+#mdt thead, #mdt td {
+    border: 2px solid #808080;
+    width: auto;
+}
+
+#mdt thead {
+    background-color: rgba(0,100,0,0.3);
+}
+
+#mdt td textarea {
+    font-family: monospace;
+    border: 1px solid #808080;
+    background: rgba(0,0,0,0.2);
+    width: 7ch;
+    height: 1rem;
+    min-width: 7ch;
+    min-height: 1rem;
+    line-height: 1rem;
+    color: white;
+}
+
+#mdt td textarea::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+}
+
+#mdtButtons input[type="button"] {
+    padding: 2px;
+    font-size: smaller;
+    width: 4rem;
+}
+
+#mdtRowButtons, #mdtColButtons {
+    display: inline-block;
+}
+
 
 @media (orientation: landscape), (min-width: 767px) {
     #innerInfoContainer {
@@ -499,6 +551,21 @@ a:hover {
     .commentAction {
         font-size: 10pt;
     }
+    
+    #mdtHolder {
+        max-width: 80%;
+    }
+
+    #mdtHolder::-webkit-scrollbar {
+        width: 0;
+        height: 6px;
+    }
+
+    #mdtHolder::-webkit-scrollbar-track {
+        background: transparent;
+        width: 0;
+        height: 5px;
+    }
 }
 
 @media all and (orientation: portrait) and (max-width: 767px) {
@@ -568,6 +635,7 @@ a:hover {
         float: left;
         height: 50px;
         width: 80%;
+        min-width: 210px;
         resize: both;
         margin-top: 30px;
         background-color: rgba(63, 66, 69, 0.7);
@@ -593,5 +661,21 @@ a:hover {
 
     .commentAction {
         font-size: 8pt;
+    }
+
+    #mdtHolder {
+        max-width: 90%;
+    }
+
+    #mdtHolder::-webkit-scrollbar {
+        width: 2px;
+        height: 2px;
+    }
+
+    /* Track */
+    #mdtHolder::-webkit-scrollbar-track {
+        background: transparent;
+        width: 0;
+        height: 2px;
     }
 }
