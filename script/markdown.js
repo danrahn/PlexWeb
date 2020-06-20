@@ -3458,7 +3458,7 @@ class Run
         // strip escapes -
         if (this.state != State.InlineCode && this.state != State.CodeBlock)
         {
-            newText = this.escapeChars(newText, '\\*`_+~<>');
+            newText = this.escapeChars(newText, '\\*`_+~<>|');
         }
 
         // Other classes might want to keep newlines around for extra

@@ -759,7 +759,7 @@ function insertMdTable()
     let definitionText = "";
     header.forEach(function(cell)
     {
-        headerText += " | " + cell.value.replace(/\n/g, "<br>");
+        headerText += " | " + fixupTableCell(cell.value);
         definitionText += " | ---";
     });
 
@@ -773,7 +773,7 @@ function insertMdTable()
         let rowText = "";
         cells.forEach(function(cell)
         {
-            rowText += " | " + cell.value.replace(/\n/g, "<br>");
+            rowText += " | " + fixupTableCell(cell.value);
         });
 
         tableText += rowText.substring(1) + " |\n";
@@ -799,6 +799,54 @@ function insertMdTable()
 
     overlayDismiss();
     parseMarkdown();
+}
+
+/// <summary>
+/// Cleans up and returns a table cell's contents to ensure it doesn't escape its bounds
+/// </summary>
+function fixupTableCell(text)
+{
+    let inline = false; // Note, need to handle multiple-backtick blocks
+    const isEscaped = (index) =>
+    {
+        let bs = 0;
+        while (index - bs > 0 && text[index - 1 - bs] == "\\")
+        {
+            ++bs;
+        }
+
+        return bs % 2 == 1;
+    };
+
+    let finalText = "";
+    for (let i = 0; i < text.length; ++i)
+    {
+        if (text[i] == "`")
+        {
+            inline = !inline;
+        }
+
+        if (inline)
+        {
+            finalText += text[i] == "\n" ? " " : text[i];
+            continue;
+        }
+
+        if (text[i] == "|" && !isEscaped(i))
+        {
+            finalText += "\\";
+        }
+
+        finalText += text[i];
+    }
+
+    if (inline)
+    {
+        // Close out the inline block for the user
+        finalText += "`"; // Note, need to handle multiple-backtick blocks
+    }
+
+    return finalText.replace(/\n/g, "<br>");
 }
 
 // Global markdown object so we can cache parsed markdown
