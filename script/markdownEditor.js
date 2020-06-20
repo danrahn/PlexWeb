@@ -25,12 +25,12 @@ let MarkdownEditor = new function()
         let startSav = start;
         let currentSelection = comment.value.substring(start, comment.selectionEnd);
         let hasSelection = currentSelection.length != 0;
-        let lastNewline = comment.value.lastIndexOf('\n', start - 1);
+        let lineStart = comment.value.lastIndexOf('\n', start - 1) + 1;
 
         if (!hasSelection && !event.shiftKey)
         {
             // In the case of no selection and a regular tab, indent from the cursor position
-            let add = 4 - ((start - lastNewline) % 4);
+            let add = 4 - ((start - lineStart) % 4);
             if (document.queryCommandSupported('insertText'))
             {
                 document.execCommand('insertText', false, ' '.repeat(add));
@@ -46,7 +46,7 @@ let MarkdownEditor = new function()
         }
 
         let prefixedSpaces = 0;
-        for (let i = lastNewline + 1; i < comment.selectionEnd; ++i, ++prefixedSpaces)
+        for (let i = lineStart; i < comment.selectionEnd; ++i, ++prefixedSpaces)
         {
             if (comment.value[i] != ' ')
             {
@@ -57,10 +57,10 @@ let MarkdownEditor = new function()
         // Always select full lines just to make things easier. Ideally if we aren't selecting
         // multiple lines and are not at the beginning of the line (or at least at the first
         // non-whitespace character), we should do a replacement of the current selection instead
-        if (start != lastNewline + 1)
+        if (start != lineStart)
         {
-            currentSelection = comment.value.substring(lastNewline + 1, start) + currentSelection;
-            start = lastNewline + 1;
+            currentSelection = comment.value.substring(lineStart, start) + currentSelection;
+            start = lineStart;
             comment.selectionStart = start;
         }
 
