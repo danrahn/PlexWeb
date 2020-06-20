@@ -25,6 +25,8 @@ class MarkdownTestSuite
         // Simple tests for non-nested scenarios
         addResult(this.testHeaders());
         addResult(this.testUrl());
+        addResult(this.testReferenceUrl());
+        addResult(this.testImplicitUrl());
         addResult(this.testInline());
         addResult(this.testBold());
         addResult(this.testItalic());
@@ -103,6 +105,115 @@ class MarkdownTestSuite
         );
 
         return this._runSingleSuite(tests, 'Basic Url Functionality');
+    }
+
+    static testReferenceUrl()
+    {
+        // Real sparse testing. Needs to be expanded
+        let tests = this._buildTests(
+            [
+                '[A][1]\n[1]: b.com',
+                '<a href="b.com">A</a><!-- [1]: b.com -->' // This should be divWrapped. Bug?
+            ],
+            [
+                '[1]: b.com\n[A][1]',
+                `<!-- [1]: b.com -->${this._divWrap('<a href="b.com">A</a>')}`
+            ]
+        );
+
+        return this._runSingleSuite(tests, 'Reference Urls');
+    }
+
+    static testImplicitUrl()
+    {
+        let tests = this._buildTests(
+            [
+                'danrahn.com',
+                this._divWrap('<a href="https://danrahn.com">danrahn.com</a>')
+            ],
+            [
+                'Welcome to danrahn.com!',
+                this._divWrap('Welcome to <a href="https://danrahn.com">danrahn.com</a>!')
+            ],
+            [
+                'Welcome to danrahn.com.',
+                this._divWrap('Welcome to <a href="https://danrahn.com">danrahn.com</a>.')
+            ],
+            [
+                'Welcome to danrahn.org!',
+                this._divWrap('Welcome to <a href="https://danrahn.org">danrahn.org</a>!')
+            ],
+            [
+                'Welcome to danrahn.net!',
+                this._divWrap('Welcome to <a href="https://danrahn.net">danrahn.net</a>!')
+            ],
+            [
+                'Welcome to danrahn.de!',
+                this._divWrap('Welcome to <a href="https://danrahn.de">danrahn.de</a>!')
+            ],
+            [
+                'Welcome to danrahn.bad!',
+                this._divWrap('Welcome to danrahn.bad!')
+            ],
+            [
+                'Welcome to https://danrahn.com!',
+                this._divWrap('Welcome to <a href="https://danrahn.com">https:&#x2f;&#x2f;danrahn.com</a>!')
+            ],
+            [
+                'Welcome to http://danrahn.com!',
+                this._divWrap('Welcome to <a href="http://danrahn.com">http:&#x2f;&#x2f;danrahn.com</a>!')
+            ],
+            [
+                'Welcome to file://danrahn.com!',
+                this._divWrap('Welcome to <a href="file://danrahn.com">file:&#x2f;&#x2f;danrahn.com</a>!')
+            ],
+            [
+                'Welcome to ftp://danrahn.com!',
+                this._divWrap('Welcome to <a href="ftp://danrahn.com">ftp:&#x2f;&#x2f;danrahn.com</a>!')
+            ],
+            [
+                'Welcome to ht://danrahn.com!',
+                this._divWrap('Welcome to ht:&#x2f;&#x2f;<a href="https://danrahn.com">danrahn.com</a>!')
+            ],
+            [
+                'Welcome to HTTTPS://danrahn.com!',
+                this._divWrap('Welcome to HTTTPS:&#x2f;&#x2f;<a href="https://danrahn.com">danrahn.com</a>!')
+            ],
+            [
+                '[link.com](danrahn.com)',
+                this._divWrap('<a href="danrahn.com">link.com</a>')
+            ],
+            [
+                'danrahn.com/plex',
+                this._divWrap('<a href="https://danrahn.com/plex">danrahn.com&#x2f;plex</a>')
+            ],
+            [
+                'danrahn.com/plex/',
+                this._divWrap('<a href="https://danrahn.com/plex/">danrahn.com&#x2f;plex&#x2f;</a>')
+            ],
+            [
+                'danrahn.com/plex/requests.php',
+                this._divWrap('<a href="https://danrahn.com/plex/requests.php">danrahn.com&#x2f;plex&#x2f;requests.php</a>')
+            ],
+            [
+                'danrahn.com!A',
+                this._divWrap('<a href="https://danrahn.com">danrahn.com</a>!A')
+            ],
+            [
+                'plex.danrahn.com',
+                this._divWrap('<a href="https://plex.danrahn.com">plex.danrahn.com</a>')
+            ],
+            [
+                '.danrahn.com',
+                this._divWrap('.<a href="https://danrahn.com">danrahn.com</a>')
+            ],
+            [
+                '--danrahn.com',
+                this._divWrap('--<a href="https://danrahn.com">danrahn.com</a>')
+            ]
+        );
+
+        return this._runSingleSuite(tests, 'Implicit Urls');
     }
 
     static testInline()

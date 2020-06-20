@@ -410,6 +410,8 @@ class Markdown
                 return this._checkLessThan(index);
             case '|':
                 return this._checkPipe(index);
+            case '.':
+                return this._checkImplicitUrl(index);
             default:
                 return index;
         }
@@ -2374,7 +2376,7 @@ class Markdown
     /// </return>
     _testUrl(start)
     {
-        let end = this._indexOrParentEnd('\n', start);
+        let end = this._indexOrParentEnd('\n\n', start);
         if (end - start < 5)
         {
             return false;
@@ -2597,6 +2599,204 @@ class Markdown
         urlParse.ret.type = 2;
         urlParse.ret.end = urlEnd;
         return true;
+    }
+
+    /// <summary>
+    /// Checks for an implicit link, i.e. unformatted text that looks like it could be a URL
+    /// </summary>
+    _checkImplicitUrl(start)
+    {
+        if (this._isEscaped(start) ||
+            this._inSpecialContext(start) ||
+            this.currentRun.state == State.Url)
+        {
+            return start;
+        }
+
+        let linkStart = this._implicitUrlStart(start);
+        if (linkStart == -1)
+        {
+            return start;
+        }
+
+        let linkEnd = this._implicitUrlEnd(start);
+        if (linkEnd == -1)
+        {
+            return start;
+        }
+
+        new ImplicitUrl(linkStart, linkEnd, this.text.substring(linkStart, linkEnd), this.currentRun);
+        return linkEnd - 1;
+    }
+
+    /// <summary>
+    /// Find the probably start of a potential implicit link
+    /// </summary>
+    /// <returns>The start of the url, or -1 if a valid url start is not found</summary>
+    _implicitUrlStart(start)
+    {
+        let min = this.currentRun.start;
+        let innerLength = this.currentRun.innerRuns.length;
+        if (innerLength != 0)
+        {
+            min = this.currentRun.innerRuns[innerLength - 1].end;
+        }
+
+        let validChar = /[a-z0-9-.]/i;
+        while (start >= min)
+        {
+            // Domain names can include numbers, letters, and hyphens.
+            // Also allow '.' for subdomains. Once/if we hit a '/', check
+            // to see if we have a valid (ish) protocol. If we do, return the
+            // full thing, otherwise return the index directly to the right of '/'
+            if (validChar.test(this.text[start]))
+            {
+                --start;
+                continue;
+            }
+
+            if (this.text[start] != '/')
+            {
+                return this._trimImplicitUrlStart(start + 1);
+            }
+
+            if (start - min < 5)
+            {
+                return this._trimImplicitUrlStart(start + 1);
+            }
+
+            if (this.text[start - 1] != '/' ||
+                this.text[start - 2] != ':' ||
+                !/[a-z]{3}/i.test(this.text.substring(start - 5, start - 2)))
+            {
+                return this._trimImplicitUrlStart(start + 1);
+            }
+
+            for (let idx = 6; idx <= 8; ++idx)
+            {
+                if (start - idx < min || !/[a-z]/i.test(this.text[start - idx]))
+                {
+                    return start - idx + 1;
+                }
+            }
+
+            return this._trimImplicitUrlStart(start + 1);
+        }
+
+        return this._trimImplicitUrlStart(start + 1);
+    }
+
+    /// <summary>
+    /// Trims excess '.' and '-' that might be at the front of our
+    /// URL after the initial parse
+    /// </summary>
+    _trimImplicitUrlStart(start)
+    {
+        while (this.text[start] == '.' || this.text[start] == '-')
+        {
+            ++start;
+        }
+
+        return start;
+    }
+
+    /// <summary>
+    /// Find the probably end to a potential implicit url
+    /// </summary>
+    /// <returns>The end of the url, or -1 if a valid url end is not found</summary>
+    _implicitUrlEnd(start)
+    {
+        let max = this.currentRun.end - this.currentRun.endContextLength();
+        if (this.currentRun.end == this.text.length)
+        {
+            --max;
+        }
+
+        let domainEnd = this._validImplicitUrlDomainEnd(start, max);
+        if (domainEnd == -1)
+        {
+            return -1;
+        }
+
+        // Only way we can continue a website from here is to have a '/'
+        if (domainEnd > max || this.text[domainEnd] != '/')
+        {
+            return domainEnd;
+        }
+
+        return this._implicitUrlContinuationEnd(domainEnd + 1, max);
+    }
+
+    /// <summary>
+    /// Checks for a valid domain end (e.g. '.com') starting at the given start
+    /// If a valid end is found, return the end of it, otherwise return -1
+    /// </summary>
+    _validImplicitUrlDomainEnd(start, max)
+    {
+        // First, find the end of the domain
+        let domainEnd = start + 1;
+        while (domainEnd <= max && /[a-z]/i.test(this.text[domainEnd]))
+        {
+            ++domainEnd;
+        }
+
+        let domain = this.text.substring(start + 1, domainEnd);
+        if (!/^(?:com|org|net|edu|gov|de|ru|uk|jp|it|fr|nl|ca|au|es|ch|se|us|no|mil)$/.test(domain))
+        {
+            return -1;
+        }
+
+        return domainEnd;
+    }
+
+    /// <summary>
+    /// Returns the final end index of an implicit URL
+    /// </summary>
+    _implicitUrlContinuationEnd(start, max)
+    {
+        let initial = start;
+        let maybe = false;
+        while (start <= max)
+        {
+            // Not an exact science, as a URL can contain a lot of things after the domain, especially
+            // when things aren't always escaped. Because of that, there are three categories:
+            // 1. Allowed - characters we always allow to be in URLs
+            // 2. Disallowed - characters that always terminate a URL
+            // 3. Grey - characters that might terminate a URL. If the next character is grey or disallowed,
+            //    don't include this one in the URL. Otherwise if the next character is allowed, include this as well.
+            switch (this.text[start])
+            {
+                case ' ':
+                case ',':
+                case '\n':
+                case '"':
+                case "'":
+                    return start - (maybe ? 1 : 0);
+                case ':':
+                case ';':
+                case '.':
+                case '!':
+                case ')':
+                case '(':
+                case '[':
+                case ']':
+                case '\\':
+                    maybe = true;
+                    break;
+                default:
+                    maybe = false;
+                    break;
+            }
+
+            ++start;
+        }
+
+        if (maybe)
+        {
+            return start - 1;
+        }
+
+        return start == this.text.length ? start : initial;
     }
 
     /// <summary>
@@ -3818,6 +4018,49 @@ class ReferenceUrlDefinition extends Run
     transform(newText, /*side*/)
     {
         return newText;
+    }
+}
+
+/// <summary>
+/// Implicit URLs that capture raw links the user provides
+/// </summary>
+class ImplicitUrl extends Run
+{
+    constructor(start, end, url, parent)
+    {
+        super(State.Url, start, end, parent);
+        this.url = url;
+    }
+
+    tag(end)
+    {
+        if (end)
+        {
+            return '</a>';
+        }
+
+        let fullLink;
+        // If there's something protocol-like, leave it alone
+        if (/^[a-zA-Z]{3,5}:\/\//.test(this.url))
+        {
+            fullLink = this.url;
+        }
+        // Otherwise default to https
+        else
+        {
+            fullLink = 'https://' + this.url;
+        }
+
+        return `<a href="${fullLink}">${super.transform(this.url)}`;
+    }
+
+    /// <summary>
+    /// We don't allow extra formatting inside of raw URL's, so
+    /// we handle all display text in this.tag
+    /// </summary>
+    transform()
+    {
+        return '';
     }
 }
 
