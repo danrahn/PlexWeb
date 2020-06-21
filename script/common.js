@@ -45,7 +45,7 @@ Element.prototype.$$ = function(selector)
 
 /// <summary>
 /// Helper to append multiple children to a single element at once
-/// <summary>
+/// </summary>
 /// <returns>The element to facilitate chained calls</returns>
 Element.prototype.appendChildren = function(...elements)
 {

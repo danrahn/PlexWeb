@@ -38,8 +38,6 @@ const State =
     HtmlComment : 18
 };
 
-const stateError = (state) => console.error('Unknown state: ' + state);
-
 /// <summary>
 /// Maps a given State to its string representation. Used for logging only
 /// </summary>
@@ -129,7 +127,7 @@ const stateAllowedInState = function(state, current, index)
         case State.OrderedList:
             return state == State.ListItem; // Lists can only have listitems.
         default:
-            stateError(state);
+            logError('Unknown state: ' + state);
             return false;
     }
 };
@@ -151,23 +149,6 @@ const blockMarkdown = function(state)
 };
 
 /// <summary>
-/// Returns true if the given character is a whitespace character
-/// </summary>
-const isWhitespace = function(ch)
-{
-    return /\s/.test(ch);
-};
-
-/// <summary>
-/// Returns true if the given character is alphanumeric.
-/// That is, [\w], without the underscore
-/// </summary>
-const isAlphanumeric = function(ch)
-{
-    return /[a-zA-Z0-9]/.test(ch);
-};
-
-/// <summary>
 /// The core parser
 /// </summary>
 class Markdown
@@ -176,6 +157,23 @@ class Markdown
     {
         this.topRun = null;
         this._reset('', false);
+    }
+
+    /// <summary>
+    /// Returns true if the given character is a whitespace character
+    /// </summary>
+    static _isWhitespace(ch)
+    {
+        return /\s/.test(ch);
+    }
+
+    /// <summary>
+    /// Returns true if the given character is alphanumeric.
+    /// That is, [\w], without the underscore
+    /// </summary>
+    static _isAlphanumeric(ch)
+    {
+        return /[a-zA-Z0-9]/.test(ch);
     }
 
     /// <summary>
@@ -446,7 +444,7 @@ class Markdown
     {
         let sep = this.text[index];
         let linebreak = this._indexOrParentEnd('\n', index);
-        let line = this.text.substring(this.text.lastIndexOf('\n', index) + 1, linebreak);
+        let line = this.text.substring(this._lastNewline(index) + 1, linebreak);
         if (!RegExp(`^( *${sep == '*' ? '\\*' : sep} *){3,}$`).test(line))
         {
             return false;
@@ -473,7 +471,7 @@ class Markdown
     {
         // Headers need to be at the start of a line (or at least the first non-whitespace character)
         // Nested within a ListItem is still fine though, as long as they're at the beginning
-        let newline = this.text.lastIndexOf('\n', start);
+        let newline = this._lastNewline(start);
 
         let between = this.text.substring(newline + 1, start);
         if (!RegExp('^' + this._nestRegex() + '$').test(between))
@@ -817,7 +815,7 @@ class Markdown
     {
         // A non-alphanumeric number should precede this.
         // Might want to tweak this a bit more by digging into surrounding/parent runs.
-        if (start != 0 && (isAlphanumeric(this.text[start - 1]) || this._isEscaped(start)))
+        if (start != 0 && (Markdown._isAlphanumeric(this.text[start - 1]) || this._isEscaped(start)))
         {
             return false;
         }
@@ -843,7 +841,7 @@ class Markdown
         }
 
         // Next character in run must not be whitespace
-        if (isWhitespace(this.text[sepInfo.index]))
+        if (Markdown._isWhitespace(this.text[sepInfo.index]))
         {
             return false;
         }
@@ -921,7 +919,7 @@ class Markdown
 
             sepInfo.tentativeCount = 1;
             let foundMatch = false;
-            if (isAlphanumeric(this.text[sepInfo.index - 1]))
+            if (Markdown._isAlphanumeric(this.text[sepInfo.index - 1]))
             {
                 sepInfo.foundAlpha = true;
             }
@@ -988,7 +986,7 @@ class Markdown
 
         if (this.text[sepInfo.index] != sepInfo.separator || this._isEscaped(sepInfo.index))
         {
-            sepInfo.foundAlpha = sepInfo.foundAlpha || isAlphanumeric(this.text[sepInfo.index]);
+            sepInfo.foundAlpha = sepInfo.foundAlpha || Markdown._isAlphanumeric(this.text[sepInfo.index]);
             return 0;
         }
 
@@ -1014,11 +1012,12 @@ class Markdown
         }
 
         if (sepInfo.tentativeIndex == blockEnd ||
-            isWhitespace(this.text[sepInfo.tentativeIndex]) ||
+            Markdown._isWhitespace(this.text[sepInfo.tentativeIndex]) ||
             (sepInfo.foundAlpha && this._isFormatChar(sepInfo.tentativeIndex)))
         {
             // BI doesn't have single sep check
-            if ((!sepInfo.allowSingle && sepInfo.tentativeCount == 1) || isWhitespace(this.text[sepInfo.tentativeIndex - 1]))
+            if ((!sepInfo.allowSingle && sepInfo.tentativeCount == 1) ||
+                Markdown._isWhitespace(this.text[sepInfo.tentativeIndex - 1]))
             {
                 sepInfo.index = sepInfo.tentativeIndex;
                 return -1;
@@ -1027,7 +1026,8 @@ class Markdown
             // Non alphanumeric + separators + whitespace. This might actually be an end
             sepInfo.tentativeCount = 1;
         }
-        else if (isWhitespace(this.text[sepInfo.index - 1]) || (!sepInfo.foundAlpha && this._isFormatChar(sepInfo.index - 1)))
+        else if (Markdown._isWhitespace(this.text[sepInfo.index - 1]) ||
+            (!sepInfo.foundAlpha && this._isFormatChar(sepInfo.index - 1)))
         {
             // Found an actual group of opening separators. Add it to our collection
             // Note that these separators must be in pairs of two, so if we have an
@@ -1072,7 +1072,7 @@ class Markdown
             ++sepInfo.tentativeIndex;
         }
 
-        if (sepInfo.tentativeIndex != blockEnd && isAlphanumeric(this.text[sepInfo.tentativeIndex]))
+        if (sepInfo.tentativeIndex != blockEnd && Markdown._isAlphanumeric(this.text[sepInfo.tentativeIndex]))
         {
             // Group of separators with alphanumeric on either end, skip over it
             sepInfo.index = sepInfo.tentativeIndex;
@@ -1242,7 +1242,7 @@ class Markdown
 
         // Must be the beginning of the line, or nested in a list.
         // This will get more complicated once arbitrary nesting is supported
-        let prevNewline = this.text.lastIndexOf('\n', start);
+        let prevNewline = this._lastNewline(start);
         let regex;
 
         regex = RegExp('^' + this._nestRegex() + '>$');
@@ -1347,7 +1347,7 @@ class Markdown
             return -1;
         }
 
-        let lastNewline = this.text.lastIndexOf('\n', start);
+        let lastNewline = this._lastNewline(start);
         let codeBlockParams = this._getIndentCodeBlockPrefixData(lastNewline);
 
         let context = this.text.substring(lastNewline + 1, start + 1);
@@ -1625,7 +1625,7 @@ class Markdown
             return bounds;
         }
 
-        bounds.tableStart = this.text.lastIndexOf('\n', start) + 1;
+        bounds.tableStart = this._lastNewline(start) + 1;
         bounds.blockEnd = this.text.length;
 
         // Watch out for nests. We can be nested in either a listitem or blockquote. Maybe both
@@ -1854,7 +1854,7 @@ class Markdown
         return inlineEnd;
     }
 
-    /// </summary>
+    /// <summary>
     /// Returns the number of consecutive backticks
     /// </summary>
     _getInlineCodeMarkers(start)
@@ -1922,13 +1922,13 @@ class Markdown
     /// </summary>
     _validBacktickCodeBlockStart(start, params)
     {
-        let context = this.text.substring(this.text.lastIndexOf('\n', start) + 1, start);
+        let context = this.text.substring(this._lastNewline(start) + 1, start);
 
         // If our direct parent is a list, find its indentation level; we need to be indented two more than that
         if (this.currentRun.state == State.ListItem)
         {
             let listStart = this.currentRun.parent.start;
-            params.minIndent = this.text.substring(this.text.lastIndexOf('\n', listStart) + 1, listStart).length + 2;
+            params.minIndent = this.text.substring(this._lastNewline(listStart) + 1, listStart).length + 2;
             if (context.length < params.minIndent)
             {
                 return false;
@@ -1953,7 +1953,7 @@ class Markdown
 
     /// <summary>
     /// Looks for the end of a backtick/tilde code block
-    /// <summary>
+    /// </summary>
     /// <returns>The end index of the code block, or -2 if we did not have a valid code block</returns>
     _findBacktickCodeBlockEnd(start, params)
     {
@@ -2112,7 +2112,7 @@ class Markdown
         }
 
         // Two spaces adds a nesting level
-        let prevNewline = this.text.lastIndexOf('\n', start);
+        let prevNewline = this._lastNewline(start);
         let prefix = this.text.substring(prevNewline + 1, start);
 
         let regexString = this._nestRegex();
@@ -2155,6 +2155,14 @@ class Markdown
     {
         let i = this.text.indexOf(str, start);
         return i == -1 || i > this.currentRun.end ? this.currentRun.end : i;
+    }
+
+    /// <summary>
+    /// Helper that returns the index of the last linebreak before the given index
+    /// </summary>
+    _lastNewline(index)
+    {
+        return this.text.lastIndexOf('\n', index);
     }
 
     /// <summary>

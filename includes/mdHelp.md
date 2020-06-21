@@ -249,19 +249,18 @@ If code blocks are nested inside of a list, they must be indented two additional
     This is nested
     ```
   ~~~
-  1. Here's a code block:
-    ```
-    This is nested
-    ```
+  > 1. Here's a code block:
+  >   ```
+  >   This is nested
+  >   ```
 2. 
   ~~~
   1. Here's a code block:
 
         This is nested too
   ~~~
-  1. Here's a code block:
-
-        This is nested too
+  > 1. Here's a code block:
+  >       This is nested too
 
 
 <br>
@@ -344,6 +343,7 @@ Pipes at the start | and end | are optional
 
 ## Issues
 1. No major issues/deficiencies are currently known, but many smaller bugs/quirks exist that are too trivial transient to list here.
+2. Support for superscript via '^' would be nice.
 
 
 <br>
