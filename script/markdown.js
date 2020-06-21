@@ -59,6 +59,8 @@ const stateToStr = function(state)
             return 'Image';
         case State.InlineCode:
             return 'InlineCode';
+        case State.CodeBlock:
+            return 'CodeBlock';
         case State.BlockQuote:
             return 'BlockQuote';
         case State.Bold:
@@ -510,7 +512,6 @@ class Markdown
         if (end == -1) { end = this.text.length; }
         let header = new Header(start - headingLevel + 1, end, this.text, headingLevel, this.currentRun);
         this.currentRun = header;
-        logTmi(`Added header: start=${header.start}, end=${header.end}, level=${header.headerLevel}`);
         return start;
     }
 
@@ -649,7 +650,6 @@ class Markdown
         }
 
         this.currentRun = url;
-        logTmi(`Added url: start=${url.start}, end=${url.end}, text=${url.text}, url=${url.url}`);
         return i;
     }
 
@@ -871,23 +871,19 @@ class Markdown
             case '_':
                 if (this.text[start + 1] == sepInfo.separator && this.text[sepInfo.index - 2] == sepInfo.separator)
                 {
-                    logTmi(`Adding bold run: start=${start}, end=${sepInfo.index}`);
                     format = new Bold(start, sepInfo.index, this.currentRun);
                     isSingle = true;
                 }
                 else
                 {
-                    logTmi(`Adding italic run: start=${start}, end=${sepInfo.index}`);
                     format = new Italic(start, sepInfo.index, this.currentRun);
                     isSingle = true;
                 }
                 break;
             case '+':
-                logTmi(`Adding underline run: start=${start}, end=${sepInfo.index}`);
                 format = new Underline(start, sepInfo.index, this.currentRun);
                 break;
             case '~':
-                logTmi(`Adding strikethrough run: start-${start}, end=${sepInfo.index}`);
                 format = new Strikethrough(start, sepInfo.index, this.currentRun);
                 break;
             default:
@@ -1189,9 +1185,9 @@ class Markdown
     _checkLessThan(i)
     {
         // Allow two things. Line breaks and comments
-        if (!this._isEscaped(i) && /<br ?\/?>/.test(this.text.substring(i, i + 5)))
+        if (!this._isEscaped(i) && /^<br ?\/?>/.test(this.text.substring(i, i + 6)))
         {
-            let br = new Break(i, this.currentRun);
+            let br = new Break(i, this.text.indexOf('>') + 1, this.currentRun, true /*needsInsert*/);
             br.end = this.text.indexOf('>', i) + 1;
             return i;
         }
@@ -1615,7 +1611,6 @@ class Markdown
         this._parseTableCells(table);
 
         new Table(bounds.tableStart, end, table, this.currentRun);
-        logTmi(`Added Table: start=${bounds.tableStart}, end=${end}, $rows=${table.rows.length}, cols=${table.header.length}`);
         return end;
     }
 
@@ -1868,7 +1863,6 @@ class Markdown
 
         let inline = new InlineCodeRun(start, inlineEnd, this.text, this.currentRun);
         this.currentRun = inline;
-        logTmi(`Added inline code block: codeStart=${inline.codeStart}, end=${inline.end}`);
 
         // Can't add anything to an inline block, so increment the cursor
         return inlineEnd;
@@ -2112,7 +2106,6 @@ class Markdown
 
         let li = new ListItem(start, liEnd, startContext, this.currentRun);
         this.currentRun = li;
-        logTmi(`Added ListItem: start=${start}, end=${liEnd}, nestLevel=${nestLevel}`);
         return true;
     }
 
@@ -2155,12 +2148,10 @@ class Markdown
         if (ordered)
         {
             list = new OrderedList(start, listEnd, nestLevel, this.text.substring(start).match(/\d+/)[0] /*listStart*/, this.currentRun);
-            logTmi(`Adding Ordered List: start=${start}, end=${listEnd}, listStart=${list.listStart}, nestLevel=${nestLevel}`);
         }
         else
         {
             list = new UnorderedList(start, listEnd, nestLevel, this.currentRun);
-            logTmi(`Adding Unordered List: start=${start}, end=${listEnd}, nestLevel=${nestLevel}`);
         }
 
         this.currentRun = list;
@@ -2938,6 +2929,8 @@ class Run
 
         // HTML representation of this Run, generated after the run is `convert`ed.
         this.cached = '';
+
+        logTmi(`Added ${stateToStr(state)}: start=${start}, end=${end}`);
     }
 
     /// <summary>
@@ -2963,7 +2956,7 @@ class Run
         // Even the setup for logging can get expensive when 'convert' is called hundreds/thousands
         // of times. Do some faster short-circuiting before setting anything up.
         const shouldLogTmi = g_logLevel < LOG.Verbose;
-        let ident = shouldLogTmi ? ' '.repeat(this._nestLevel * 3) : ''; // Indent logging to indicate nest level
+        let ident = shouldLogTmi ? ' '.repeat((this._nestLevel() + (inlineOnly ? 1 : 0)) * 3) : ''; // Indent logging to indicate nest level
         if (shouldLogTmi)
         {
             logTmi(`${ident}Converting State.${stateToStr(this.state)} : ${this.start}-${this.end}. ${this.innerRuns.length} children.`);
@@ -3414,7 +3407,7 @@ class Run
     {
         if (this.innerRuns.length == 0 || end < this.innerRuns[0].start)
         {
-            let div = new Div(start, end, text, null /*parent*/);
+            let div = new Div(start, end, text, this);
             this.innerRuns.splice(0, 0, div);
             return 1;
         }
@@ -3441,7 +3434,7 @@ class Run
             }
         }
 
-        let div = new Div(start, end, text, null /*parent*/);
+        let div = new Div(start, end, text, this);
         div.innerRuns = this.innerRuns.splice(insert, splice, div);
         div.parent = this;
         return 1 - splice;
@@ -3454,13 +3447,13 @@ class Run
     {
         if (this.innerRuns.length == 0 || this.innerRuns[0].start >= index)
         {
-            this.innerRuns.splice(0, 0, new Break(index));
+            this.innerRuns.splice(0, 0, new ImplicitBreak(index, this));
             return 1;
         }
 
         if (index >= this.innerRuns[this.innerRuns.length - 1].end)
         {
-            this.innerRuns.push(new Break(index));
+            this.innerRuns.push(new ImplicitBreak(index, this));
             return 1;
         }
 
@@ -3481,7 +3474,7 @@ class Run
                     return 0;
                 }
 
-                this.innerRuns.splice(i, 0, new Break(index));
+                this.innerRuns.splice(i, 0, new ImplicitBreak(index, this));
                 return 1;
             }
         }
@@ -3543,15 +3536,31 @@ class Run
 /// </summary>
 class Break extends Run
 {
-    constructor(start, parent)
+    constructor(start, end, parent)
     {
-        super(State.LineBreak, start, start + 1, parent);
+        super(State.LineBreak, start, end, parent);
     }
 
     tag(end) { return end ? '' : '<br />'; }
 
     // Override parent transform and return an empty string, as a break has no content
     transform(/*newText*/) { return ''; }
+}
+
+/// <summary>
+/// Extension of Break used for breaks automatically inserted
+/// into the document based on whitespace
+/// </summary>
+class ImplicitBreak extends Break
+{
+    constructor(start, parent)
+    {
+        // Don't pass in parent to super, because that
+        // will cause us to add ourselves to our parent's
+        // inn runs, which we've already done
+        super(start, start + 1, null /*parent*/);
+        this.parent = parent;
+    }
 }
 
 /// <summary>
@@ -3577,8 +3586,11 @@ class Div extends Run
 {
     constructor(start, end, text, parent)
     {
-        super(State.Div, start, end, parent);
+        // Don't pass in parent here, because if we do we'll
+        // add ourselves to its innerRuns, but we've already done that
+        super(State.Div, start, end, null /*parent*/);
         this.text = text.substring(start, end);
+        this.parent = parent;
     }
 
     /// <summary>

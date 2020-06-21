@@ -356,7 +356,12 @@ class MarkdownTestSuite
         let tests = this._buildTests(
             ['A\nB', this._divWrap('A<br />B')],
             ['A\n\nB', this._divWrap('A') + this._divWrap('B')],
-            ['A\nB\nC', this._divWrap('A<br />B<br />C')]
+            ['A\nB\nC', this._divWrap('A<br />B<br />C')],
+            ['A<br>B', this._divWrap('A<br />B')],
+            ['A<br/>B', this._divWrap('A<br />B')],
+            ['A<br />B', this._divWrap('A<br />B')],
+            ['A<br  />B', this._divWrap('A&lt;br  &#x2f;&gt;B')]
+
         );
 
         return this._runSingleSuite(tests, 'Basic Line Break Functionality');
