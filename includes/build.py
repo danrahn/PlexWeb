@@ -30,6 +30,7 @@ def process():
     onlyicon = '-icononly' in args_lower
     nocss = '-nocss' in args_lower
     onlycss = '-cssonly' in args_lower
+    cleancss = '-cleancss' in args_lower
     compare = '-cmp' in args_lower
     rem_log = 1 if '-notmi' in args_lower else 0
     if '-nolog' in args_lower:
@@ -49,7 +50,7 @@ def process():
         return
     
     if not nocss and not onlyicon:
-        process_css(files, force, quiet)
+        process_css(files, force, quiet, not cleancss)
     if onlycss:
         return
 
@@ -141,7 +142,7 @@ def process_svg_icons(force, quiet):
             js_icon_file.write(js_icon_map)
         print('Done processing icons\n')
 
-def process_css(files, force, quiet):
+def process_css(files, force, quiet, csso):
     '''
     Processes css includes for each page, bundles them into a temp
     file, and runs clean-css-cli on it.
@@ -171,7 +172,7 @@ def process_css(files, force, quiet):
         write_temp(file, combined, 'css')
         tmp_file = 'tmp' + os.sep + file[:file.rfind('.')] + '.tmp.css'
         base_file = file[file.find(os.sep) + 1:file.find('.')]
-        for existing in glob.glob('css' + os.sep + base_file + '.*.min.css'):
+        for existing in glob.glob('style' + os.sep + base_file + '.*.min.css'):
             os.remove(existing)
         file_hash = get_hash(tmp_file)
         clean_file = base_file + '.' + file_hash + '.min.css'
@@ -179,10 +180,13 @@ def process_css(files, force, quiet):
         modified_any = True
         if system == 'Windows':
             print('Minifying', clean_file)
-            cmd_params = ' -O 2 -o style\\' + clean_file + ' ' + tmp_file
-            cmd = 'node.exe ' + os.environ['APPDATA'] + r'\npm\node_modules\clean-css-cli\bin\cleancss '
+            cmd_params = (' ' + tmp_file + ' -o style\\' + clean_file) if csso else (' -O2 -o style\\' + clean_file + ' ' + tmp_file)
+            cmd = 'node.exe ' + os.environ['APPDATA'] + r'\npm\node_modules'
+            cmd += r'\csso-cli\bin\csso ' if csso else r'\clean-css-cli\bin\cleancss '
             cmd += cmd_params
-            print(subprocess.check_output(cmd, stderr=subprocess.STDOUT).decode('utf-8'))
+            output = subprocess.check_output(cmd, stderr=subprocess.STDOUT).decode('utf-8')
+            if len(output) != 0:
+                print('   ', output)
         else:
             print('Copying', clean_file, 'to main directory')
             shutil.copyfile(tmp_file, 'style' + os.sep + clean_file)
