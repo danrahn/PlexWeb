@@ -6,7 +6,7 @@
 
 window.addEventListener("load", function()
 {
-    sendHtmlJsonRequest("administration.php", { type : "sections" }, buildSections);
+    updateTable();
 });
 
 /// <summary>
