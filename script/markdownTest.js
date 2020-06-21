@@ -398,6 +398,17 @@ class MarkdownTestSuite
                     '<tr><td><strong>D</strong></td><td><code>E</code></td><td><a href="markdown.php">F</a></td></tr>' +
                     '</tbody>' +
                 '</table>'
+            ],
+            [
+                '| `` A ` | `` \\| ` B | C |\n| --- | --- |\n`D|E',
+                '<table>' +
+                    '<thead>' +
+                        '<tr><td><code> A ` | </code> | ` B</td><td>C</td></tr>' +
+                    '</thead>' +
+                    '<tbody>' +
+                        '<tr><td>`D</td><td>E</td></tr>' +
+                    '</tbody>' +
+                '</table>'
             ]
         );
 
@@ -554,6 +565,17 @@ class MarkdownTestSuite
                 // Allow tick within tilde
                 '~~~\n```\nA\n```\n~~~',
                 `<pre>${this._preWrap('```', 'A', '```')}</pre>`
+            ],
+            [
+                // We still think we're part of B, and our indentation is incorrect. This will be
+                // interpreted as an inline code block
+                '* A\n  * B\n  ```\n  C\n  ```',
+                `<ul><li>A<br /><ul><li>B<br /><code>\n  C\n  </code></li></ul></li></ul>`
+            ],
+            [
+                // Same as above, but with tildes. Since we don't have inline tilde blocks, they should remain as they are
+                `* A\n  * B\n  ~~~\n  C\n  ~~~`,
+                `<ul><li>A<br /><ul><li>B<br />~~~<br />C<br />~~~</li></ul></li></ul>`
             ]
         );
 
@@ -578,11 +600,6 @@ class MarkdownTestSuite
             [
                 `* A\n  * B\n    ${marker}cpp\n    C\n    D\n    ${marker}`,
                 `<ul><li>A<br /><ul><li>B<pre>${this._preWrap('C', 'D')}</pre></li></ul></li></ul>`
-            ],
-            [
-                // We still think we're part of B, and our indentation is incorrect
-                `* A\n  * B\n  ${marker}\n  C\n  ${marker}`,
-                `<ul><li>A<br /><ul><li>B<br />${marker}<br />C<br />${marker}</li></ul></li></ul>`
             ],
             [
                 // The extra line break between B and the block means we can successfully be a part of A
@@ -943,6 +960,15 @@ class MarkdownTestSuite
             [
                 '++_++_A_++_++',
                 this._divWrap('<ins><em><ins><em>A</em></ins></em></ins>')
+            ],
+            [
+                '**`` ** ``**',
+                this._divWrap('<strong><code> ** </code></strong>')
+            ],
+            [
+                // Need to properly account for inline code runs within tables
+                '| `` A ` | `` \\| ` B ` | C |\n| --- | --- |',
+                '<table><thead><tr><td><code> A ` | </code> | <code> B </code></td><td>C</td></tr></thead><tbody></tbody></table>'
             ]
         );
 

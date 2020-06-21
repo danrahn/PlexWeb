@@ -806,7 +806,6 @@ function insertMdTable()
 /// </summary>
 function fixupTableCell(text)
 {
-    let inline = false; // Note, need to handle multiple-backtick blocks
     const isEscaped = (index) =>
     {
         let bs = 0;
@@ -819,16 +818,24 @@ function fixupTableCell(text)
     };
 
     let finalText = "";
+    let fixInline = 0;
     for (let i = 0; i < text.length; ++i)
     {
-        if (text[i] == "`")
+        if (text[i] == "`" && !isEscaped(i))
         {
-            inline = !inline;
-        }
+            let end = _inlineEnd(i, text);
+            if (end < 0)
+            {
+                fixInline = -end;
+                end = text.length;
+            }
 
-        if (inline)
-        {
-            finalText += text[i] == "\n" ? " " : text[i];
+            while (i < end)
+            {
+                finalText += text[i] == "\n" ? " " : text[i++];
+            }
+
+            --i;
             continue;
         }
 
@@ -840,13 +847,32 @@ function fixupTableCell(text)
         finalText += text[i];
     }
 
-    if (inline)
+    if (fixInline)
     {
         // Close out the inline block for the user
-        finalText += "`"; // Note, need to handle multiple-backtick blocks
+        finalText += (finalText.endsWith("`") ? " " : "") + "`".repeat(fixInline);
     }
 
     return finalText.replace(/\n/g, "<br>");
+}
+
+// See Markdown::_inlineEnd
+function _inlineEnd(index, text)
+{
+    let inline = 1;
+    while (index + inline < text.length && text[index + inline] == "`")
+    {
+        ++inline;
+    }
+
+    let doubleNewline = text.indexOf("\n\n", index);
+    let endInline = text.indexOf("`".repeat(inline), index + inline);
+    if (endInline == -1 || (doubleNewline != -1 && endInline > doubleNewline))
+    {
+        return -inline;
+    }
+
+    return endInline + inline;
 }
 
 // Global markdown object so we can cache parsed markdown

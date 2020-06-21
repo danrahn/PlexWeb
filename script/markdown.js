@@ -963,12 +963,12 @@ class Markdown
     {
         if (this.text[sepInfo.index] == '`' && !this._isEscaped(sepInfo.index))
         {
-            loopInfo.inline = !loopInfo.inline;
-        }
-
-        if (this._isInline(loopInfo.inline, sepInfo.index, blockEnd))
-        {
-            return 0;
+            let endInline = this._inlineEnd(sepInfo.index, blockEnd);
+            if (endInline != -1)
+            {
+                sepInfo.index = endInline - 1;
+                return 0;
+            }
         }
 
         if (this.text[sepInfo.index] == '\n')
@@ -1780,6 +1780,17 @@ class Markdown
         let span = '';
         for (let i = 0; i < line.length; ++i)
         {
+            if (line[i] == '`' && !this._isEscaped(i))
+            {
+                let inlineEnd = this._inlineEndCore(line, i, line.length);
+                if (inlineEnd != -1)
+                {
+                    span += line.substring(i, inlineEnd);
+                    i = inlineEnd - 1;
+                    continue;
+                }
+            }
+
             if (line[i] == '|' && !this._isEscaped(i))
             {
                 arr.push(span);
@@ -1829,40 +1840,18 @@ class Markdown
             return -1;
         }
 
-        let findStr = '`'.repeat(this._getInlineCodeMarkers(start));
-        if (start + (findStr.length * 2) - 1 >= this.text.length)
-        {
-            // Impossible for us to find a match. Need at least (2 * findStr) -1 beyond start
-            return -1;
-        }
-
-        let lineEnd = this._indexOrParentEnd('\n\n', start);
-        let end = this.text.indexOf(findStr, start + 1);
-
-        if (end == -1)
-        {
-            return end;
-        }
-
-        end += findStr.length;
-        if (end > lineEnd || end > this.currentRun.end)
+        let inlineEnd = this._inlineEnd(start, this.currentRun.end);
+        if (inlineEnd == -1)
         {
             return -1;
         }
 
-        // To distinguish from potential multiline backtick blocks, ensure
-        // that if we do have newlines, there is some content before the end
-        if (/\n *$/.test(this.text.substring(start, end - findStr.length)))
-        {
-            return -1;
-        }
-
-        let inline = new InlineCodeRun(start, end, this.text, this.currentRun);
+        let inline = new InlineCodeRun(start, inlineEnd, this.text, this.currentRun);
         this.currentRun = inline;
         logTmi(`Added inline code block: codeStart=${inline.codeStart}, end=${inline.end}`);
 
         // Can't add anything to an inline block, so increment the cursor
-        return end;
+        return inlineEnd;
     }
 
     /// </summary>
@@ -2459,7 +2448,7 @@ class Markdown
 
                     break;
                 case '`':
-                    this._parseUrlBacktick(urlParse, i);
+                    i = this._parseUrlBacktick(urlParse, i);
                     break;
                 case ':':
                     if (!this._parseUrlColon(urlParse, i))
@@ -2522,7 +2511,7 @@ class Markdown
     /// <returns>True if we should continue parsing. False if we reached the end of our reference link</returns>
     _parseUrlCloseBracket(urlParse, i)
     {
-        if (urlParse.toFind() != ']' || this._isInline(urlParse.inline, i, urlParse.end) || this._isEscaped(i))
+        if (urlParse.toFind() != ']' || this._isEscaped(i))
         {
             return true;
         }
@@ -2584,10 +2573,16 @@ class Markdown
     {
         if (this._isEscaped(i))
         {
-            return;
+            return i;
         }
 
-        urlParse.inline = !urlParse.inline;
+        let inlineEnd = this._inlineEnd(i, urlParse.end);
+        if (inlineEnd == -1)
+        {
+            return i;
+        }
+
+        return inlineEnd - 1;
     }
 
     /// <summary>
@@ -2822,17 +2817,33 @@ class Markdown
 
     /// <summary>
     /// Helper that determines if we're currently in an inline code block.
-    /// If we are, we should ignore the current index when parsing.
+    /// If we are, return the end index of the inline run
     /// </summary>
-    _isInline(inline, i, end)
+    _inlineEnd(i, end)
     {
-        if (!inline)
+        return this._inlineEndCore(this.text, i, end);
+    }
+
+    /// <summary>
+    /// Core inlineEnd routine that takes an arbitrary string
+    /// Special use by table parse to detect inline runs within a cell
+    /// </summary>
+    _inlineEndCore(text, i, end)
+    {
+        let inline = 1;
+        while (i + inline < end && text[i + inline] == '`')
         {
-            return false;
+            ++inline;
         }
 
-        let endInline = this.text.indexOf('`', i);
-        return endInline != -1 && endInline < end;
+        let doubleNewline = text.indexOf('\n\n', i);
+        let endInline = text.indexOf('`'.repeat(inline), i + inline);
+        if (endInline == -1 || endInline >= end || (doubleNewline != -1 && endInline > doubleNewline))
+        {
+            return -1;
+        }
+
+        return endInline + inline;
     }
 
     /// <summary>
