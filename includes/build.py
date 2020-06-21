@@ -1,9 +1,9 @@
 '''
-This script goes through all the php files in the plex directory looking for
-build_js statements. When it find one, it creates a temporary js file that combines
-all the necessary includes, then runs terser on it.
-
-This allows for maximally minized javascript that's contained to a single file per page
+Checks source files (js, css, svg) for changes and copies them to their respective
+directories. Also bundles and minifies javascript files by going through all the php
+files in the plex directory looking for build_js statements. When it find one, it
+creates a temporary js file that combines all the necessary includes, then runs terser
+on it. This allows for maximally minized javascript that's contained to a single file per page
 '''
 
 import glob
@@ -28,6 +28,8 @@ def process():
     quiet = '-quiet' in args_lower or '-q' in args_lower
     noicon = '-noicon' in args_lower
     onlyicon = '-icononly' in args_lower
+    nocss = '-nocss' in args_lower
+    onlycss = '-cssonly' in args_lower
     compare = '-cmp' in args_lower
     rem_log = 1 if '-notmi' in args_lower else 0
     if '-nolog' in args_lower:
@@ -41,17 +43,22 @@ def process():
         files = glob.glob("*.php")
 
     # First, check for changes to svg icons
-    if not noicon:
+    if not noicon and not onlycss:
         process_svg_icons(force, quiet)
     if onlyicon:
         return
+    
+    if not nocss and not onlyicon:
+        process_css(files, force, quiet)
+    if onlycss:
+        return
 
-    modified_dates = script_modified_dates()
+    modified_dates = get_modified_dates('script/*.js')
 
     comparisons = {}
     if ultra and compare:
         for file in files:
-            process_file(file, modified_dates, force, 0, False)
+            process_file(file, modified_dates, force, 0, False, quiet)
 
         print('Generating non-ultra for comparison')
         minify(babel, True)
@@ -64,8 +71,12 @@ def process():
         print()
         print('Generating ultra minified files')
 
+    print('Looking for updated javascript...')
+    any_modified_js = False
     for file in files:
-        process_file(file, modified_dates, force, rem_log, ultra)
+        any_modified_js = process_file(file, modified_dates, force, rem_log, ultra, quiet) or any_modified_js
+    if not any_modified_js and quiet:
+        print('Javascript up to date!')
 
     minify(babel, quiet)
     if ultra and compare:
@@ -130,6 +141,57 @@ def process_svg_icons(force, quiet):
             js_icon_file.write(js_icon_map)
         print('Done processing icons\n')
 
+def process_css(files, force, quiet):
+    '''
+    Processes css includes for each page, bundles them into a temp
+    file, and runs clean-css-cli on it.
+    '''
+    print('Looking for updated CSS...')
+    modified_dates = get_modified_dates('style/base/*.css')
+    modified_any = False
+    for file in files:
+        lines = get_lines(file)
+        if len(lines) == 0:
+            continue
+        start = lines.find('build_css')
+        if start == -1:
+            continue
+        includes = lines[start + 10:lines.find(')', start)]
+        includes = re.findall(r'"([^"]+)"', includes)
+        if len(includes) == 0:
+            continue
+        if not force and not needs_parse(file, includes, modified_dates, 'style/' + file[:file.rfind('.')] + '.*.min.css'):
+            if not quiet:
+                print(file, 'up to date')
+            continue
+        combined = ''
+        for include in includes:
+            include_file = 'style/base/' + include + '.css'
+            combined += '/* ' + include + '.css */\n' + get_lines(include_file) + '\n\n'
+        write_temp(file, combined, 'css')
+        tmp_file = 'tmp' + os.sep + file[:file.rfind('.')] + '.tmp.css'
+        base_file = file[file.find(os.sep) + 1:file.find('.')]
+        for existing in glob.glob('css' + os.sep + base_file + '.*.min.css'):
+            os.remove(existing)
+        file_hash = get_hash(tmp_file)
+        clean_file = base_file + '.' + file_hash + '.min.css'
+        system = platform.system()
+        modified_any = True
+        if system == 'Windows':
+            print('Minifying', clean_file)
+            cmd_params = ' -O 2 -o style\\' + clean_file + ' ' + tmp_file
+            cmd = 'node.exe ' + os.environ['APPDATA'] + r'\npm\node_modules\clean-css-cli\bin\cleancss '
+            cmd += cmd_params
+            print(subprocess.check_output(cmd, stderr=subprocess.STDOUT).decode('utf-8'))
+        else:
+            print('Copying', clean_file, 'to main directory')
+            shutil.copyfile(tmp_file, 'style' + os.sep + clean_file)
+    clean_tmp()
+    if not modified_any and quiet:
+        print('CSS up to date!')
+    print()
+
+
 def cmp_sizes(comp):
     for file in comp:
         noultra = comp[file]['noultra']
@@ -160,23 +222,25 @@ def check_long_words(min_letters):
             break
 
 
-def process_file(file, modified_dates, force, rem_log, ultra):
+def process_file(file, modified_dates, force, rem_log, ultra, quiet):
     '''Process a single file (if needed)'''
 
     lines = get_lines(file)
     if len(lines) == 0:
-        return
+        return False
 
     includes = get_includes(lines)
     if len(includes) == 0:
-        return # File has no build_js, so don't build anything
+        return False # File has no build_js, so don't build anything
 
-    if not force and not needs_parse(file, includes, modified_dates):
-        print(file, "up to date")
-        return
+    if not force and not needs_parse(file, includes, modified_dates, 'min/' + file[:file.rfind('.')] + '.*.min.js'):
+        if not quiet:
+            print(file, "up to date")
+        return False
 
     combined = create_temp(includes, rem_log, ultra)
-    write_temp(file, combined)
+    write_temp(file, combined, 'js')
+    return True
 
 
 def get_lines(file):
@@ -214,13 +278,12 @@ def get_includes(lines):
     return includes
 
 
-def needs_parse(file, includes, modified_dates):
+def needs_parse(file, includes, modified_dates, min_file):
     ''' Determine if we should re-minify the file given it's desired includes
 
     We only need to parse if last modified date of the minified file is older
     than the PHP file or any of the scripts it includes
     '''
-    min_file = 'min/' + file[:file.rfind('.')] + '.*.min.js'
     fileglob = glob.glob(min_file)
     min_mod = 0 if len(fileglob) == 0 else os.stat(fileglob[0]).st_mtime
     # min_mod = 0 if not os.path.exists(min_file) else os.stat(min_file).st_mtime
@@ -229,12 +292,12 @@ def needs_parse(file, includes, modified_dates):
     if php_mod > min_mod:
         return True
 
-    needs_parse = False
+    should_parse = False
     for include in includes:
         if not include in modified_dates or modified_dates[include] > min_mod:
-            needs_parse = True
+            should_parse = True
             break
-    return needs_parse
+    return should_parse
 
 
 def create_temp(includes, rem_log, ultra):
@@ -334,20 +397,20 @@ def minify_keycodes(combined):
     return combined
 
 
-def write_temp(file, combined):
+def write_temp(file, combined, ext):
     '''
     Writes the given combined contents to the given file name in a temporary directory
     '''
     if not os.path.exists('tmp'):
         os.makedirs('tmp')
-    with open('tmp/' + file[:file.rfind('.')] + '.tmp.js', 'w+') as temp_file:
+    with open('tmp/' + file[:file.rfind('.')] + '.tmp.' + ext, 'w+') as temp_file:
         temp_file.write(combined)
 
 
-def script_modified_dates():
+def get_modified_dates(filter):
     '''return a dictionary of the last modified time for all files in script/'''
     last_modified = {}
-    files = glob.glob('script/*.js')
+    files = glob.glob(filter)
     for file in files:
         last_modified[file[file.find(os.sep) + 1:file.rfind('.')]] = os.stat(file).st_mtime
     return last_modified
@@ -468,7 +531,6 @@ def next_var():
 def minify(babel, quiet):
     '''Invoke terser to minify our build js files'''
     if not os.path.exists('tmp'):
-        print("Nothing changed!")
         return
 
     options = [

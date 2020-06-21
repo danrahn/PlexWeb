@@ -17,7 +17,7 @@ requireSSL();
     <meta name="theme-color" content="#3C5260">
     <title>Activity</title>
 
-    <?php get_css("style", "nav", "overlay", "table", "tooltip") ?>
+    <?php build_css("style", "nav", "overlay", "table", "tooltip") ?>
     <style>
 .newActivity {
     background-color: rgba(63, 100, 69, 0.3);

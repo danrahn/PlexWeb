@@ -14,7 +14,7 @@ session_start();
     <meta name="theme-color" content="#3C5260" />
     <title>Markdown Test</title>
 <style>
-    <?php get_css("nav", "style", "markdown"); ?>
+    <?php build_css("nav", "style", "markdown"); ?>
     <style>
         #queryContainer {
             text-align: center;

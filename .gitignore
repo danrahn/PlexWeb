@@ -20,6 +20,9 @@ icon/*.svg
 icon/png/*
 icon/raw/*
 
+# Generated css
+style/*.css
+
 # Generated
 script/iconMap.js
 

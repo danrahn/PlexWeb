@@ -197,7 +197,7 @@ else
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#3C5260" />
     <title>Administration</title>
-    <?php get_css("style", "nav", "actions") ?>
+    <?php build_css("style", "nav", "actions") ?>
 </head>
 <body>
 

@@ -221,13 +221,24 @@ function build_js($file, ...$includes)
 }
 
 /// <summary>
-/// Echos the given css files as separate <style>s
+/// Adds the necessary stylesheet for the current page
+///
+/// If nomin is set, echoes each base stylesheet individually.
+/// If nomin is not set, links the consolidated minified file.
 /// </summary>
-function get_css(...$files)
+function build_css(...$includes)
 {
-    foreach ($files as $file)
+    if (try_get("nomin"))
     {
-        echo "<style>\n" . file_get_contents("style/" . $file . ".css") . "</style>\n";
+        foreach ($includes as $include)
+        {
+            echo "<style>/* $include.css */\n" . file_get_contents("style/base/$include.css") . "</style>\n";
+        }
+    }
+    else
+    {
+        $self = pathinfo($_SERVER['PHP_SELF'])['filename'];
+        echo '<link rel="stylesheet" href="' . glob("style/$self.*.min.css")[0] . '">';
     }
 }
 

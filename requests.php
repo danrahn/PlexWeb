@@ -17,8 +17,7 @@ verify_loggedin(TRUE /*redirect*/, "requests.php");
     <meta name="theme-color" content="#3C5260">
     <title>Plex Requests</title>
 
-    <!-- Inline stylesheets to reduce network roundtrip costs -->
-    <?php get_css("style", "nav", "table", "overlay", "tooltip", "requests"); ?>
+    <?php build_css("style", "nav", "table", "overlay", "tooltip", "requests"); ?>
 </head>
 
 <body isAdmin="<?= (UserLevel::is_admin()) ? 1 : 0 ?>">
