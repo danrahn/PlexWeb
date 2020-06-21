@@ -86,6 +86,7 @@ function setupMarkdown()
     let comment = $("#newComment");
     comment.addEventListener("change", parseMarkdown);
     comment.addEventListener("keyup", parseMarkdown);
+    comment.addEventListener("keydown", shortcutListener);
     $("#mdhelp").addEventListener("click", showMarkdownHelp);
     MarkdownEditor.addTabHandler(comment);
     MarkdownEditor.addFormatHandler(comment);
@@ -114,20 +115,51 @@ function mdDispatch()
     switch (this.id)
     {
         case "addBold":
-            MarkdownEditor.addFormat($("#newcomment"), "**");
+            MarkdownEditor.addFormat($("#newComment"), "**");
             break;
         case "addUnderline":
-            MarkdownEditor.addFormat($("#newcomment"), "++");
+            MarkdownEditor.addFormat($("#newComment"), "++");
             break;
         case "addItalic":
-            MarkdownEditor.addFormat($("#newcomment"), "_");
+            MarkdownEditor.addFormat($("#newComment"), "_");
             break;
         case "addStrikethrough":
-            MarkdownEditor.addFormat($("#newcomment"), "~~");
+            MarkdownEditor.addFormat($("#newComment"), "~~");
             break;
         default:
-            break;
+            return;
     }
+
+    parseMarkdown();
+}
+
+/// <summary>
+/// When the comment box is focused, listens for keyboard shortcuts
+/// to launch link/image/table dialogs
+/// </summary>
+function shortcutListener(e)
+{
+    if (!e.ctrlKey || e.altKey || e.shiftKey)
+    {
+        return;
+    }
+
+    switch (e.keyCode)
+    {
+        case KEY.K:
+            addLink();
+            break;
+        case KEY.M:
+            addPhoto();
+            break;
+        case KEY.L:
+            addTable();
+            break;
+        default:
+            return;
+    }
+
+    e.preventDefault();
 }
 
 /// <summary>

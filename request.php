@@ -77,13 +77,13 @@ function get_details($req_id)
                     
                 </div>
                 <div id="mdHelper">
-                    <input type="button" class="mdButton" id="addBold" value="B" title="Bold" style="border-left: none" />
-                    <input type="button" class="mdButton" id="addUnderline" value="U" title="Underline" />
-                    <input type="button" class="mdButton" id="addItalic" value="I" title="Italic" />
-                    <input type="button" class="mdButton" id="addStrikethrough" value="S" title="Strikethrough" />
-                    <button class="mdButton" id="addLink" title="Insert Link"><img src="<?php icon('mdLink') ?>" altText="Insert Link" /></button>
-                    <button class="mdButton" id="addImage" title="Insert Image"><img src="<?php icon('mdImage') ?>" altText="Insert Image" /></button>
-                    <button class="mdButton" id="addTable" title="Insert Table"><img src="<?php icon('mdTable') ?>" altText="Insert Table" /></button>
+                    <input type="button" class="mdButton" id="addBold" value="B" title="Bold (Ctrl + B)" style="border-left: none" />
+                    <input type="button" class="mdButton" id="addUnderline" value="U" title="Underline (Ctrl + U)" />
+                    <input type="button" class="mdButton" id="addItalic" value="I" title="Italic (Ctrl + I)" />
+                    <input type="button" class="mdButton" id="addStrikethrough" value="S" title="Strikethrough (Ctrl + S)" />
+                    <button class="mdButton" id="addLink" title="Insert Link (Ctrl + K)"><img src="<?php icon('mdLink') ?>" altText="Insert Link" /></button>
+                    <button class="mdButton" id="addImage" title="Insert Image (Ctrl + M)"><img src="<?php icon('mdImage') ?>" altText="Insert Image" /></button>
+                    <button class="mdButton" id="addTable" title="Insert Table (Ctrl + L)"><img src="<?php icon('mdTable') ?>" altText="Insert Table" /></button>
                     <input type="button" class="mdButton" id="showMdHelp" value="?" title="Help" />
                 </div>
                 <textarea id="newComment" placeholder="Add comment..."></textarea>
