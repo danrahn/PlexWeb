@@ -2,13 +2,13 @@
 /// Logic to display notification/activities relevant to the current user. Implements tableCommon
 /// </summary>
 
-/* exported populateFilter, getNewFilter, filterHtml, tableSearch, tableIdentifier, tableUpdateFunc  */
+/* exported populateFilter, getNewFilter, filterHtml, supportsSearch, tableIdentifier, tableUpdateFunc  */
 
 window.addEventListener("load", function()
 {
     // For activities, reset the filter on page load
     setFilter(defaultFilter(), false /*update*/);
-    getActivities();
+    updateTable();
 });
 
 /// <summary>
@@ -46,11 +46,11 @@ function getActivities(searchValue="")
 }
 
 /// <summary>
-/// TableCommon's entrypoint into initiating a search
+/// Returns whether we support table search. We do for activities
 /// </summary>
-function tableSearch(value)
+function supportsSearch()
 {
-    getActivities(value);
+    return true;
 }
 
 /// <summary>

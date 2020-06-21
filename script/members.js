@@ -2,11 +2,11 @@
 /// Logic to display the list of registered users. Implements tableCommon
 /// </summary>
 
-/* exported populateFilter, getNewFilter, filterHtml, tableSearch, tableIdentifier, tableUpdateFunc  */
+/* exported populateFilter, getNewFilter, filterHtml, supportsSearch, tableIdentifier, tableUpdateFunc  */
 
 window.addEventListener("load", function()
 {
-    getMembers();
+    updateTable();
 });
 
 /// <summary>
@@ -342,9 +342,9 @@ function defaultFilter()
 }
 
 /// <summary>
-/// TableCommon's entrypoint into initiating a search
+/// Returns whether we support table search. We do for members
 /// </summary>
-function tableSearch(value)
+function supportsSearch()
 {
-    getMembers(value);
+    return true;
 }

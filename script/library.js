@@ -2,7 +2,7 @@
 /// Displays information about libraries on the plex server. Implements tableCommon
 /// </summary>
 
-/* exported populateFilter, getNewFilter, filterHtml, tableSearch, tableIdentifier, tableUpdateFunc  */
+/* exported populateFilter, getNewFilter, filterHtml, supportsSearch, tableIdentifier, tableUpdateFunc  */
 
 window.addEventListener("load", function()
 {
@@ -127,4 +127,12 @@ function tableIdentifier()
 function tableUpdateFunc()
 {
     return () => sendHtmlJsonRequest("administration.php", { type : "sections" }, buildSections);
+}
+
+/// <summary>
+/// Returns whether we support table search. We don't for libraries
+/// </summary>
+function supportsSearch()
+{
+    return false;
 }

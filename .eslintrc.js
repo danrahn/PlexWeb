@@ -373,8 +373,9 @@ module.exports = {
         "populateUserFilter" : "readonly",
         "filterHtmlCommon" : "readonly",
         "clearElement" : "readonly",
+        "updateTable" : "readonly",
         // tableCommon.js implementors
-        "tableSearch" : "readonly",
+        "supportsSearch" : "readonly",
         "filterHtml" : "readonly",
         "populateFilter" : "readonly",
         "getNewFilter" : "readonly",

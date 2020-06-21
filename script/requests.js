@@ -2,17 +2,13 @@
 /// Builds a table of current requests. Implements tableCommon
 /// </summary>
 
-/* exported populateFilter, getNewFilter, filterHtml, tableSearch, tableIdentifier, tableUpdateFunc  */
+/* exported populateFilter, getNewFilter, filterHtml, supportsSearch, tableIdentifier, tableUpdateFunc  */
 
 window.addEventListener("load", function()
 {
     setPage(0);
+    updateTable();
     getRequests();
-    $("#clearSearch").addEventListener("click", function()
-    {
-        $(".searchInput").forEach(function() { this.value = ""; });
-        getRequests();
-    });
 });
 
 
@@ -31,16 +27,6 @@ function getRequests(searchValue="")
     };
 
     displayInfoMessage("Loading...");
-    let header = $("#requestSearch");
-    if (searchValue.length == 0)
-    {
-        header.style.display = "none";
-    }
-    else
-    {
-        header.style.display = "block";
-        $("#searchTerm").innerHTML = searchValue;
-    }
 
     let successFunc = function(response)
     {
@@ -346,7 +332,7 @@ function updateStatusSuccess(response, request)
     setTimeout(function()
     {
         clearTable();
-        getRequests();
+        updateTable();
     }, 2000);
 }
 
@@ -530,11 +516,11 @@ function filterHtml()
 }
 
 /// <summary>
-/// Invoke a search for a specific request
+/// Returns whether we support table search. We do for requests
 /// </summary>
-function tableSearch(value)
+function supportsSearch()
 {
-    getRequests(value);
+    return true;
 }
 
 /// <summary>

@@ -4,7 +4,7 @@
 /// Users of this interface should implement the following:
 /// 1. tableIdentifier() - Returns a string that identifies this table (required)
 /// 2. tableUpdateFunc() - Returns a function to call when updating the table (required)
-/// 3. tableSearch() - Invoked when the user initiates a search (optional)
+/// 3. supportsSearch() - Returns whether searching the table is supported (optional, default=false)
 /// 4. Filter - optional
 ///    a. filterHtml() - The filter dialog UI
 ///    b. populateFilter() - Populate the filter dialog with the current values
@@ -177,7 +177,7 @@ function setupTableSearch()
 {
     // If the table does not have a search function,
     // don't show anything. Might mess up CSS
-    if (typeof(tableSearch) == "undefined")
+    if (typeof(supportsSearch) == "undefined" || !supportsSearch())
     {
         $(".searchBtn").forEach(function(btn)
         {
@@ -236,6 +236,12 @@ function _setupSearchListeners()
             this.parentNode.parentNode.$$(".searchBtn").click();
         });
     });
+
+    $("#clearSearch").addEventListener("click", function()
+    {
+        $(".searchInput").forEach(function() { this.value = ""; });
+        updateTable();
+    });
 }
 
 /// <summary>
@@ -268,7 +274,7 @@ function startTableSearch()
 {
     try
     {
-        tableSearch(this.parentNode.$$(".searchInput").value);
+        updateTable(this.parentNode.$$(".searchInput").value);
     }
     catch (e)
     {
@@ -557,7 +563,7 @@ function setPage(page, update)
     if (update)
     {
         clearElement("tableEntries");
-        tableUpdateFunc()();
+        updateTable();
     }
 
     if (page == 0)
@@ -634,7 +640,7 @@ function setPerPage(newPerPage, update)
     if (update)
     {
         clearElement("tableEntries");
-        tableUpdateFunc()();
+        updateTable();
     }
 }
 
@@ -699,7 +705,7 @@ function setFilter(filter, update)
     if (update)
     {
         clearElement("tableEntries");
-        tableUpdateFunc()();
+        updateTable();
     }
 }
 
@@ -746,6 +752,25 @@ function populateUserFilter()
     };
 
     sendHtmlJsonRequest("process_request.php", params, successFunc, failureFunc);
+}
+
+/// <summary>
+/// Invokes the table update callback and sets the search string header visibility
+/// </summary>
+function updateTable(searchValue="")
+{
+    let header = $("#requestSearch");
+    if (searchValue.length == 0)
+    {
+        header.style.display = "none";
+    }
+    else
+    {
+        header.style.display = "block";
+        $("#searchTerm").innerHTML = searchValue;
+    }
+
+    tableUpdateFunc()(searchValue);
 }
 
 // Store tableEntries outside of addTableItem so we don't
