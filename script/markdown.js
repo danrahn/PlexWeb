@@ -194,6 +194,17 @@ class Markdown
         return text.replace(/\t/g, '    ');
     }
 
+    _resetCore(text, inlineOnly)
+    {
+        this.text = text;
+        this.sameText = false;
+        this._inlineOnly = inlineOnly;
+        this._cachedParse = '';
+        this._parseTime = 0;
+        this._inParse = false;
+        this._codeSpanCache = [];
+    }
+
     /// <summary>
     /// Resets the parser. If caching is enabled, only resets
     /// the internal state starting at the first difference we found
@@ -202,13 +213,7 @@ class Markdown
     /// <returns>The index to start parsing at</returns>
     _reset(text, inlineOnly, diffStart)
     {
-        this.text = text;
-        this.sameText = false;
-        this._inlineOnly = inlineOnly;
-        this._cachedParse = '';
-        this._parseTime = 0;
-        this._inParse = false;
-
+        this._resetCore(text, inlineOnly);
         if (diffStart == 0 || this.topRun === null || parseInt(localStorage.getItem('mdCache')) == 0)
         {
             this.topRun = new Run(State.None, 0, null);
@@ -281,6 +286,7 @@ class Markdown
         let i;
         if (inlineOnly)
         {
+            this._resetCore(text, inlineOnly);
             this.text = text;
             this.topRun = new Run(State.None, 0 /*start*/, this.text.length, null /*parent*/);
             this.currentRun = this.topRun;
@@ -961,7 +967,7 @@ class Markdown
     {
         if (this.text[sepInfo.index] == '`' && !this._isEscaped(sepInfo.index))
         {
-            let endInline = this._inlineEnd(sepInfo.index, blockEnd);
+            let endInline = this._inlineEnd(sepInfo.index, blockEnd, true /*cache*/);
             if (endInline != -1)
             {
                 sepInfo.index = endInline - 1;
@@ -1782,7 +1788,7 @@ class Markdown
         {
             if (line[i] == '`' && !this._isEscaped(i))
             {
-                let inlineEnd = this._inlineEndCore(line, i, line.length);
+                let inlineEnd = this._inlineEndCore(line, i, line.length, false /*cache*/);
                 if (inlineEnd != -1)
                 {
                     span += line.substring(i, inlineEnd);
@@ -1840,10 +1846,24 @@ class Markdown
             return -1;
         }
 
-        let inlineEnd = this._inlineEnd(start, this.currentRun.end);
-        if (inlineEnd == -1)
+        while (this._codeSpanCache.length != 0 && this._codeSpanCache[0].start < start)
         {
-            return -1;
+            logWarn(this._codeSpanCache[0], 'Skipped cached code span, currently at ' + start);
+            this._codeSpanCache.splice(0, 1);
+        }
+
+        let inlineEnd;
+        if (this._codeSpanCache.length != 0 && this._codeSpanCache[0].start == start)
+        {
+            inlineEnd = this._codeSpanCache.splice(0, 1)[0].end;
+        }
+        else
+        {
+            inlineEnd = this._inlineEnd(start, this.currentRun.end, false /*cache*/);
+            if (inlineEnd == -1)
+            {
+                return -1;
+            }
         }
 
         let inline = new InlineCodeRun(start, inlineEnd, this.text, this.currentRun);
@@ -2584,7 +2604,7 @@ class Markdown
             return i;
         }
 
-        let inlineEnd = this._inlineEnd(i, urlParse.end);
+        let inlineEnd = this._inlineEnd(i, urlParse.end, true /*cache*/);
         if (inlineEnd == -1)
         {
             return i;
@@ -2827,16 +2847,16 @@ class Markdown
     /// Helper that determines if we're currently in an inline code block.
     /// If we are, return the end index of the inline run
     /// </summary>
-    _inlineEnd(i, end)
+    _inlineEnd(i, end, cache)
     {
-        return this._inlineEndCore(this.text, i, end);
+        return this._inlineEndCore(this.text, i, end, cache);
     }
 
     /// <summary>
     /// Core inlineEnd routine that takes an arbitrary string
     /// Special use by table parse to detect inline runs within a cell
     /// </summary>
-    _inlineEndCore(text, i, end)
+    _inlineEndCore(text, i, end, cache)
     {
         let inline = 1;
         while (i + inline < end && text[i + inline] == '`')
@@ -2849,6 +2869,11 @@ class Markdown
         if (endInline == -1 || endInline >= end || (doubleNewline != -1 && endInline > doubleNewline))
         {
             return -1;
+        }
+
+        if (cache)
+        {
+            this._codeSpanCache.push({ start : i, end : endInline + inline });
         }
 
         return endInline + inline;
