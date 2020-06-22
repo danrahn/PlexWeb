@@ -29,6 +29,7 @@ Note that this Markdown parser was written from scratch without looking at other
   * ++Underline++: Add two plus signs around the text: `++Underline++`
   * ~~Strikethrough~~: To strike through text, surround text with two tildes - `~~Strikethrough~~`
   * Super^script: To superscript text, use a caret, and optionally wrap the contents in parentheses - `Super^(script)`
+  * Sub~(script): To subscript text, use a single tilde followed by parentheses. Unlike superscripts, subscripts must surround their content with parentheses - `Sub~(script)`
 
 2. **`Code Snippets`** - To create a code snippet, surround text with backticks. This will render the text in a fixed-width font, and ignore all formatting - `` `**Code Snippet**` `` will not render as bold, but exactly as written: `**Code Snippet**`.
 
@@ -352,7 +353,6 @@ Pipes at the start | and end | are optional
 
 ## Issues
 1. No major issues/deficiencies are currently known, but many smaller bugs/quirks exist that are too trivial transient to list here.
-2. Support for subscript would be nice (maybe via a single `~`?).
 
 
 <br>

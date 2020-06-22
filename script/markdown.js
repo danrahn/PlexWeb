@@ -37,6 +37,7 @@ const State =
     Strikethrough : 17,
     HtmlComment : 18,
     Superscript : 19,
+    Subscript : 20,
 };
 
 /// <summary>
@@ -87,6 +88,8 @@ const stateToStr = function(state)
             return 'Table';
         case State.Superscript:
             return 'Superscript';
+        case State.Subscript:
+            return 'Subscript';
         default:
             return 'Unknown state: ' + state;
     }
@@ -970,12 +973,13 @@ class Markdown
             }
         }
 
-        if (nextChar == '^')
+        if (nextChar == '^' || nextChar == '~')
         {
-            let endCaret = this._checkSuperscript(sepInfo.index, { cache : true });
-            if (endCaret != -1)
+            let params = { cache : true, state : nextChar == '^' ? State.Superscript : State.Subscript };
+            let endSuperSub = this._superSubscriptEnd(sepInfo.index, params);
+            if (endSuperSub != -1)
             {
-                sepInfo.index = endCaret - 1;
+                sepInfo.index = endSuperSub - 1;
                 return 0;
             }
         }
@@ -1111,7 +1115,8 @@ class Markdown
     }
 
     /// <summary>
-    /// Processes a tilde character, which could be the start of a code block or strikethrough formatting
+    /// Processes a tilde character, which could be the start of a code block,
+    /// strikethrough formatting, or subscript
     /// </summary>
     /// <returns>The position we should continue parsing from</returns>
     _checkTilde(i)
@@ -1119,6 +1124,13 @@ class Markdown
         if (this._isEscaped(i))
         {
             return i;
+        }
+
+        // Subscript if we have a single tilde followed immediately by an open paren
+        let subscriptEnd = this._checkSuperSubscript(i);
+        if (subscriptEnd != -1)
+        {
+            return subscriptEnd;
         }
 
         // Multiline code block if there are three of these in a row
@@ -2844,9 +2856,25 @@ class Markdown
     /// <returns>The position we should continue parsing from</returns>
     _checkCaret(start)
     {
+        let end = this._checkSuperSubscript(start);
+        if (end == -1)
+        {
+            return start;
+        }
+
+        return end;
+    }
+
+    /// <summary>
+    /// Checks for either a superscript or subscript, depending on the character at the given index
+    /// </summary>
+    /// <returns>The position we should continue parsing from, or -1 if we did not find a valid run</returns>
+    _checkSuperSubscript(start)
+    {
         let end = 0;
         let parens = false;
-        let cached = this._checkRunCache(start, State.Superscript);
+        let state = this.text[start] == '^' ? State.Superscript : State.Subscript;
+        let cached = this._checkRunCache(start, state);
         if (cached)
         {
             end = cached.end;
@@ -2854,18 +2882,27 @@ class Markdown
         }
         else
         {
-            let params = { parens : false };
-            end = this._checkSuperscript(start, params);
+            let params = { parens : false, state : state };
+            end = this._superSubscriptEnd(start, params);
             if (end == -1)
             {
-                return start;
+                return end;
             }
 
             parens = params.parens;
         }
 
-        let sup = new Superscript(start, end, parens, this.currentRun);
-        this.currentRun = sup;
+        let supsub;
+        if (state == State.Superscript)
+        {
+            supsub = new Superscript(start, end, parens, this.currentRun);
+        }
+        else
+        {
+            supsub = new Subscript(start, end, parens, this.currentRun);
+        }
+
+        this.currentRun = supsub;
 
         return start + (parens ? 1 : 0);
     }
@@ -2885,11 +2922,10 @@ class Markdown
     ///  cache  : true if we should cache a valid superscript in our run cache for later use
     /// </param>
     /// <returns>The end index of the superscript, or -1 if it is not valid</returns>
-    _checkSuperscript(start, params)
+    _superSubscriptEnd(start, params)
     {
         let max = this.currentRun.end;
         if (this._isEscaped(start) ||
-            start == 0 ||
             start == max ||
             Markdown._isWhitespace(this.text[start + 1]))
         {
@@ -2906,13 +2942,18 @@ class Markdown
 
         if (!match)
         {
+            if (params.state == State.Subscript)
+            {
+                return -1;
+            }
+
             end = Math.min(this._indexOrParentEnd(' ', start), this._indexOrParentEnd('\n', start));
         }
 
         params.parens = match;
-        if (params.cache && !this._hasCachedRun(start, State.Superscript))
+        if (params.cache && !this._hasCachedRun(start, params.state))
         {
-            this._runCache.push({ start : start, end : end, state : State.Superscript, parens : match });
+            this._runCache.push({ start : start, end : end, state : params.state, parens : match });
         }
 
         return end;
@@ -3021,7 +3062,7 @@ class Markdown
             return -1;
         }
 
-        if (cache && !this._hasCachedRun(i, State.Superscript))
+        if (cache && !this._hasCachedRun(i, State.InlineCode))
         {
             this._runCache.push({ start : i, end : endInline + inline, state : State.InlineCode });
         }
@@ -3314,6 +3355,7 @@ class Run
             case State.Table:
             case State.CodeBlock:
             case State.Superscript:
+            case State.Subscript:
                 return false;
             default:
                 logWarn('Unknown state: ' + this.state);
@@ -4768,9 +4810,9 @@ class Strikethrough extends InlineFormat
 }
 
 /// <summary>
-/// Superscript - <sup>Content</sup>
+/// Common base for superscript and subscript functionality
 /// </summary>
-class Superscript extends InlineFormat
+class SuperSub extends InlineFormat
 {
     constructor(start, end, paren, parent)
     {
@@ -4780,8 +4822,34 @@ class Superscript extends InlineFormat
 
     startContextLength() { return this.paren ? 2 : 1; }
     endContextLength() { return this.paren ? 1 : 0; }
+}
+
+/// <summary>
+/// Superscript - <sup>Content</sup>
+/// </summary>
+class Superscript extends SuperSub
+{
+    constructor(start, end, paren, parent)
+    {
+        super(start, end, paren, parent);
+        this.paren = paren;
+    }
 
     tag(end) { return Run.basicTag('sup', end); }
+}
+
+/// <summary>
+/// Subscript - <sub>Content</sub>
+/// </summary>
+class Subscript extends SuperSub
+{
+    constructor(start, end, paren, parent)
+    {
+        super(start, end, paren, parent);
+        this.paren = paren;
+    }
+
+    tag(end) { return Run.basicTag('sub', end); }
 }
 
 /// <summary>

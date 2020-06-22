@@ -33,6 +33,7 @@ class MarkdownTestSuite
         addResult(this.testStrikethrough());
         addResult(this.testUnderline());
         addResult(this.testSuperscript());
+        addResult(this.testSubscript());
         addResult(this.testHr());
         addResult(this.testBr());
         addResult(this.testTable());
@@ -338,6 +339,35 @@ class MarkdownTestSuite
         );
 
         return this._runSingleSuite(tests, 'Superscript Functionality');
+    }
+
+    static testSubscript()
+    {
+        let tests = this._buildTests(
+            ['A~(B)', this._divWrap('A<sub>B</sub>')],
+            ['A~B', this._divWrap('A~B')],
+            ['A ~(B)', this._divWrap('A <sub>B</sub>')],
+            ['A~ (B)', this._divWrap('A~ (B)')],
+            ['A~( B)', this._divWrap('A<sub> B</sub>')],
+            ['A\\~B', this._divWrap('A~B')],
+            ['A~(B) C', this._divWrap('A<sub>B</sub> C')],
+            ['A~(B C)', this._divWrap('A<sub>B C</sub>')],
+            ['A~(B~(C))', this._divWrap('A<sub>B<sub>C</sub></sub>')],
+            ['A~(~(B))', this._divWrap('A<sub><sub>B</sub></sub>')],
+            ['A~(B~(CD))', this._divWrap('A<sub>B<sub>CD</sub></sub>')],
+            ['A~(B~(C)D)', this._divWrap('A<sub>B<sub>C</sub>D</sub>')],
+            ['A~(B~(C)) D', this._divWrap('A<sub>B<sub>C</sub></sub> D')],
+            ['A~(B C', this._divWrap('A~(B C')],
+            ['A~(B C\\)', this._divWrap('A~(B C)')],
+            ['A~(B(C)', this._divWrap('A~(B(C)')],
+            // Subscript can split formatting
+            ['*A~(B*)', this._divWrap('*A<sub>B*</sub>')],
+            ['*A~(B)*', this._divWrap('<em>A<sub>B</sub></em>')],
+            ['*A~(**B)*', this._divWrap('<em>A<sub>**B</sub></em>')],
+            ['*A~(**B**)*', this._divWrap('<em>A<sub><strong>B</strong></sub></em>')]
+        );
+
+        return this._runSingleSuite(tests, 'Subscript Functionality');
     }
 
     static testItalic()
