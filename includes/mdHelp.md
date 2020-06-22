@@ -28,6 +28,7 @@ Note that this Markdown parser was written from scratch without looking at other
   * *Italic*: Similar to bold, but only add a single asterisk/underscore: `*Italic*` or `_Italic_`
   * ++Underline++: Add two plus signs around the text: `++Underline++`
   * ~~Strikethrough~~: To strike through text, surround text with two tildes - `~~Strikethrough~~`
+  * Super^script: To superscript text, use a caret, and optionally wrap the contents in parentheses - `Super^(script)`
 
 2. **`Code Snippets`** - To create a code snippet, surround text with backticks. This will render the text in a fixed-width font, and ignore all formatting - `` `**Code Snippet**` `` will not render as bold, but exactly as written: `**Code Snippet**`.
 
@@ -138,11 +139,19 @@ For more details on block elements, see [Block Element Details](#block-element-d
 ---
 
   1. Formatting elements can be nested to combine multiple formatting options, but must be in the correct order:
-    * **Correct**: `***++~~All Four~~++***` - ***++~~All Four~~++***
     * **Incorrect**: `***++~~All Four***++~~` - ***++~~All Four***++~~
+    * **Correct**: `***++~~All Four~~++***` - ***++~~All Four~~++***
   2. To escape a formatting character, prepend a backslash:
     * `\*This won't be italicized\*` - \*This won't be italicized\*
     * `*\*\*This is italic, but not bold\*\**` - *\*\*This is italic, but not bold\*\**
+  3. Superscripting - If parentheses are not used, text will be superscripted until whitespace is found:
+    * * `Only^one word` - Only^one word
+      * `Captures^(both words)` - Captures^(both words)
+      * `Nothing^ Superscripted` - Nothing^ superscripted
+      * `Needs^( parens)` - Needs^( parens)
+    * This can also cause issues when combining formatting:
+      * **Incorrect**: `**Bold^Superscript**?` - **Bold^Superscript**?
+      * **Correct**: `**Bold^(Superscript)**?` - **Bold^(Superscript)**?
 
 <br>
 ### Code Snippets
@@ -343,7 +352,7 @@ Pipes at the start | and end | are optional
 
 ## Issues
 1. No major issues/deficiencies are currently known, but many smaller bugs/quirks exist that are too trivial transient to list here.
-2. Support for superscript via '^' would be nice.
+2. Support for subscript would be nice (maybe via a single `~`?).
 
 
 <br>

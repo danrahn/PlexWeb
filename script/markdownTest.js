@@ -32,6 +32,7 @@ class MarkdownTestSuite
         addResult(this.testItalic());
         addResult(this.testStrikethrough());
         addResult(this.testUnderline());
+        addResult(this.testSuperscript());
         addResult(this.testHr());
         addResult(this.testBr());
         addResult(this.testTable());
@@ -258,7 +259,7 @@ class MarkdownTestSuite
                 '____Different__ __Nest__ Patterns__',
                 this._divWrap('<strong><strong>Different</strong> <strong>Nest</strong> Patterns</strong>')
             ],
-            ['__**Bold^2**__', this._divWrap('<strong><strong>Bold^2</strong></strong>')],
+            ['__**BoldSquared**__', this._divWrap('<strong><strong>BoldSquared</strong></strong>')],
             ['__**Bold?__**', this._divWrap('<strong>**Bold?</strong>**')],
             ['**Multiline\nSupport**', this._divWrap('<strong>Multiline<br>Support</strong>')],
             ['**More\nThan\nTwo**', this._divWrap('<strong>More<br>Than<br>Two</strong>')],
@@ -310,6 +311,35 @@ class MarkdownTestSuite
         return this._runSingleSuite(tests, 'Basic Strikethrough Functionality');
     }
 
+    static testSuperscript()
+    {
+        let tests = this._buildTests(
+            ['A^B', this._divWrap('A<sup>B</sup>')],
+            ['A^(B)', this._divWrap('A<sup>B</sup>')],
+            ['A ^B', this._divWrap('A <sup>B</sup>')],
+            ['A^ B', this._divWrap('A^ B')],
+            ['A^( B)', this._divWrap('A<sup> B</sup>')],
+            ['A\\^B', this._divWrap('A^B')],
+            ['A^B C', this._divWrap('A<sup>B</sup> C')],
+            ['A^(B C)', this._divWrap('A<sup>B C</sup>')],
+            ['A^B^C', this._divWrap('A<sup>B<sup>C</sup></sup>')],
+            ['A^^B', this._divWrap('A<sup><sup>B</sup></sup>')],
+            ['A^B^CD', this._divWrap('A<sup>B<sup>CD</sup></sup>')],
+            ['A^B^(C)D', this._divWrap('A<sup>B<sup>C</sup>D</sup>')],
+            ['A^B^(C) D', this._divWrap('A<sup>B<sup>C</sup></sup> D')],
+            ['A^(B C', this._divWrap('A<sup>(B</sup> C')],
+            ['A^(B C\\)', this._divWrap('A<sup>(B</sup> C)')],
+            ['A^(B(C)', this._divWrap('A<sup>(B(C)</sup>')],
+            // Superscript breaks formatting if not properly scoped
+            ['*A^B*', this._divWrap('*A<sup>B*</sup>')],
+            ['*A^(B)*', this._divWrap('<em>A<sup>B</sup></em>')],
+            ['*A^(**B)*', this._divWrap('<em>A<sup>**B</sup></em>')],
+            ['*A^(**B**)*', this._divWrap('<em>A<sup><strong>B</strong></sup></em>')]
+        );
+
+        return this._runSingleSuite(tests, 'Superscript Functionality');
+    }
+
     static testItalic()
     {
         let tests = this._buildTests(
@@ -327,7 +357,7 @@ class MarkdownTestSuite
                 '__Different_ _Nest_ Patterns_',
                 this._divWrap('<em><em>Different</em> <em>Nest</em> Patterns</em>')
             ],
-            ['_*italic^2*_', this._divWrap('<em><em>italic^2</em></em>')],
+            ['_*italicSquared*_', this._divWrap('<em><em>italicSquared</em></em>')],
             ['_*italic?_*', this._divWrap('<em>*italic?</em>*')],
             ['_Multiline\nSupport_', this._divWrap('<em>Multiline<br>Support</em>')],
             ['_More\nThan\nTwo_', this._divWrap('<em>More<br>Than<br>Two</em>')],

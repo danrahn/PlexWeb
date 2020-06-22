@@ -35,12 +35,14 @@ const State =
     Underline : 15,
     Italic : 16,
     Strikethrough : 17,
-    HtmlComment : 18
+    HtmlComment : 18,
+    Superscript : 19,
 };
 
 /// <summary>
 /// Maps a given State to its string representation. Used for logging only
 /// </summary>
+/* eslint-disable-next-line complexity */ // Breaking up a switch is pointless
 const stateToStr = function(state)
 {
     switch (state)
@@ -83,6 +85,8 @@ const stateToStr = function(state)
             return 'HTMLComment';
         case State.Table:
             return 'Table';
+        case State.Superscript:
+            return 'Superscript';
         default:
             return 'Unknown state: ' + state;
     }
@@ -204,7 +208,7 @@ class Markdown
         this._cachedParse = '';
         this._parseTime = 0;
         this._inParse = false;
-        this._codeSpanCache = [];
+        this._runCache = [];
     }
 
     /// <summary>
@@ -398,16 +402,8 @@ class Markdown
             case '>':
                 this._checkBlockQuote(index);
                 return index;
-            case '0':
-            case '1':
-            case '2':
-            case '3':
-            case '4':
-            case '5':
-            case '6':
-            case '7':
-            case '8':
-            case '9':
+            case '0': case '1': case '2': case '3': case '4':
+            case '5': case '6': case '7': case '8': case '9':
                 this._checkList(index, true /*ordered*/);
                 return index;
             case ' ':
@@ -418,6 +414,8 @@ class Markdown
                 return this._checkPipe(index);
             case '.':
                 return this._checkImplicitUrl(index);
+            case '^':
+                return this._checkCaret(index);
             default:
                 return index;
         }
@@ -961,7 +959,8 @@ class Markdown
     /// </returns>
     _formatLoopPrecheck(loopInfo, sepInfo, blockEnd)
     {
-        if (this.text[sepInfo.index] == '`' && !this._isEscaped(sepInfo.index))
+        let nextChar = this.text[sepInfo.index];
+        if (nextChar == '`' && !this._isEscaped(sepInfo.index))
         {
             let endInline = this._inlineEnd(sepInfo.index, blockEnd, true /*cache*/);
             if (endInline != -1)
@@ -971,7 +970,17 @@ class Markdown
             }
         }
 
-        if (this.text[sepInfo.index] == '\n')
+        if (nextChar == '^')
+        {
+            let endCaret = this._checkSuperscript(sepInfo.index, { cache : true });
+            if (endCaret != -1)
+            {
+                sepInfo.index = endCaret - 1;
+                return 0;
+            }
+        }
+
+        if (nextChar == '\n')
         {
             if (loopInfo.newline)
             {
@@ -986,9 +995,9 @@ class Markdown
 
         loopInfo.newline = false;
 
-        if (this.text[sepInfo.index] != sepInfo.separator || this._isEscaped(sepInfo.index))
+        if (nextChar != sepInfo.separator || this._isEscaped(sepInfo.index))
         {
-            sepInfo.foundAlpha = sepInfo.foundAlpha || Markdown._isAlphanumeric(this.text[sepInfo.index]);
+            sepInfo.foundAlpha = sepInfo.foundAlpha || Markdown._isAlphanumeric(nextChar);
             return 0;
         }
 
@@ -1841,16 +1850,11 @@ class Markdown
             return -1;
         }
 
-        while (this._codeSpanCache.length != 0 && this._codeSpanCache[0].start < start)
-        {
-            logWarn(this._codeSpanCache[0], 'Skipped cached code span, currently at ' + start);
-            this._codeSpanCache.splice(0, 1);
-        }
-
         let inlineEnd;
-        if (this._codeSpanCache.length != 0 && this._codeSpanCache[0].start == start)
+        let cached = this._checkRunCache(start, State.InlineCode);
+        if (cached)
         {
-            inlineEnd = this._codeSpanCache.splice(0, 1)[0].end;
+            inlineEnd = cached.end;
         }
         else
         {
@@ -2835,6 +2839,161 @@ class Markdown
     }
 
     /// <summary>
+    /// Parses a caret ('^'), which may be the start of a superscripted run
+    /// </summary>
+    /// <returns>The position we should continue parsing from</returns>
+    _checkCaret(start)
+    {
+        let end = 0;
+        let parens = false;
+        let cached = this._checkRunCache(start, State.Superscript);
+        if (cached)
+        {
+            end = cached.end;
+            parens = cached.parens;
+        }
+        else
+        {
+            let params = { parens : false };
+            end = this._checkSuperscript(start, params);
+            if (end == -1)
+            {
+                return start;
+            }
+
+            parens = params.parens;
+        }
+
+        let sup = new Superscript(start, end, parens, this.currentRun);
+        this.currentRun = sup;
+
+        return start + (parens ? 1 : 0);
+    }
+
+    /// <summary>
+    /// Checks if there's a valid superscript at the given start index
+    ///
+    /// Rules:
+    ///   1. A superscript must be proceeded by a non-whitespace character
+    ///   2. If an open paren is the first character after the caret, the superscript continues until the matching close paren is found
+    ///     * If no matching paren is found, rule #3 applies
+    ///   3. If no paren is provided, the superscript continues until whitespace is found
+    /// </summary>
+    /// <param name="params">
+    /// Object containing
+    ///  parens : out parameter to let the caller know whether this superscript is wrapped with parens
+    ///  cache  : true if we should cache a valid superscript in our run cache for later use
+    /// </param>
+    /// <returns>The end index of the superscript, or -1 if it is not valid</returns>
+    _checkSuperscript(start, params)
+    {
+        let max = this.currentRun.end;
+        if (this._isEscaped(start) ||
+            start == 0 ||
+            start == max ||
+            Markdown._isWhitespace(this.text[start + 1]))
+        {
+            return -1;
+        }
+
+        let end = -1;
+        let match = false;
+        if (this.text[start + 1] == '(')
+        {
+            end = this._findMatchingParen(start + 1, max);
+            match = end != -1;
+        }
+
+        if (!match)
+        {
+            end = Math.min(this._indexOrParentEnd(' ', start), this._indexOrParentEnd('\n', start));
+        }
+
+        params.parens = match;
+        if (params.cache && !this._hasCachedRun(start, State.Superscript))
+        {
+            this._runCache.push({ start : start, end : end, state : State.Superscript, parens : match });
+        }
+
+        return end;
+    }
+
+    /// <summary>
+    /// Find close paren that matches the open paren at the given start index
+    /// </summary>
+    /// <returns>The index of the matching close paren, or -1 if it could not be found before the given max</returns>
+    _findMatchingParen(start, max)
+    {
+        let parens = 1;
+        let end = start + 1;
+        while (end < max)
+        {
+            if (this._isEscaped(end))
+            {
+                ++end;
+                continue;
+            }
+
+            if (this.text[end] == ')')
+            {
+                if (--parens == 0)
+                {
+                    return end + 1;
+                }
+            }
+            else if (this.text[end] == '(')
+            {
+                ++parens;
+            }
+
+            ++end;
+        }
+
+        return -1;
+    }
+
+    /// <summary>
+    /// Checks whether our run cache contains a run of the given state that starts
+    /// at the given index
+    /// <summary>
+    /// <returns>The cached run info if found, false if not found</returns>
+    _checkRunCache(start, state)
+    {
+        while (this._runCache.length != 0 && this._runCache[0].start < start)
+        {
+            logWarn(this._runCache[0], 'Skipped cached run, currently at ' + start);
+            this._runCache.splice(0, 1);
+        }
+
+        if (this._runCache.length != 0 && this._runCache[0].start == start && this._runCache[0].state == state)
+        {
+            return this._runCache.splice(0, 1)[0];
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Returns whether a cached run of the given state exists at the given start
+    /// </summary>
+    /// <remarks>
+    /// TODO: This should probably be removed in place of better initial detection.
+    /// Right now this is only checked after we've already re-parsed the run
+    /// </remarks>
+    _hasCachedRun(start, state)
+    {
+        for (let i = 0; i < this._runCache.length && this._runCache[i].start <= start; ++i)
+        {
+            if (this._runCache[i].start == start && this._runCache[i].state == state)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>
     /// Helper that determines if we're currently in an inline code block.
     /// If we are, return the end index of the inline run
     /// </summary>
@@ -2862,9 +3021,9 @@ class Markdown
             return -1;
         }
 
-        if (cache)
+        if (cache && !this._hasCachedRun(i, State.Superscript))
         {
-            this._codeSpanCache.push({ start : i, end : endInline + inline });
+            this._runCache.push({ start : i, end : endInline + inline, state : State.InlineCode });
         }
 
         return endInline + inline;
@@ -3128,6 +3287,7 @@ class Run
     /// Currently, we only process newlines in our top-level Run a nd
     /// within lists and blockquotes
     /// </summary>
+    /* eslint-disable-next-line complexity */ // No need to break up a switch
     shouldProcessNewlines()
     {
         switch (this.state)
@@ -3153,6 +3313,7 @@ class Run
             case State.HtmlComment:
             case State.Table:
             case State.CodeBlock:
+            case State.Superscript:
                 return false;
             default:
                 logWarn('Unknown state: ' + this.state);
@@ -3495,7 +3656,7 @@ class Run
         // strip escapes -
         if (this.state != State.InlineCode && this.state != State.CodeBlock)
         {
-            newText = this.escapeChars(newText, '\\*`_+~<>|');
+            newText = this.escapeChars(newText, '\\*`_+~<>|^()');
         }
 
         // Other classes might want to keep newlines around for extra
@@ -4604,6 +4765,23 @@ class Strikethrough extends InlineFormat
     endContextLength() { return 2; }
 
     tag(end) { return Run.basicTag('s', end); }
+}
+
+/// <summary>
+/// Superscript - <sup>Content</sup>
+/// </summary>
+class Superscript extends InlineFormat
+{
+    constructor(start, end, paren, parent)
+    {
+        super(State.Superscript, start, end, parent);
+        this.paren = paren;
+    }
+
+    startContextLength() { return this.paren ? 2 : 1; }
+    endContextLength() { return this.paren ? 1 : 0; }
+
+    tag(end) { return Run.basicTag('sup', end); }
 }
 
 /// <summary>
