@@ -200,15 +200,16 @@ let Animation = new function()
                     {
                         if (animationQueue[element.id][0].canceled)
                         {
-
                             i = steps;
                         }
-
-                        element.style[prop] = new Color(
-                            oldColor.r + (((newColor.r - oldColor.r) / steps) * i),
-                            oldColor.g + (((newColor.g - oldColor.g) / steps) * i),
-                            oldColor.b + (((newColor.b - oldColor.b) / steps) * i),
-                            oldColor.a + (((newColor.a - oldColor.a) / steps) * i)).s();
+                        else
+                        {
+                            element.style[prop] = new Color(
+                                oldColor.r + (((newColor.r - oldColor.r) / steps) * i),
+                                oldColor.g + (((newColor.g - oldColor.g) / steps) * i),
+                                oldColor.b + (((newColor.b - oldColor.b) / steps) * i),
+                                oldColor.a + (((newColor.a - oldColor.a) / steps) * i)).s();
+                        }
 
                         if (i == steps)
                         {
@@ -231,6 +232,7 @@ let Animation = new function()
                 };
             case "opacity":
             case "left":
+            case "height":
                 return (element, prop, newValue, duration, deleteAfterTransition = false) =>
                 {
                     let steps = (duration / (50 / 3) + 0.5) | 0 || 1;
@@ -252,8 +254,11 @@ let Animation = new function()
                         {
                             i = steps;
                         }
+                        else
+                        {
+                            element.style[prop] = oldVal + (((newVal - oldVal) / steps) * i) + (percent ? "%" : px ? "px" : "");
+                        }
 
-                        element.style[prop] = oldVal + (((newVal - oldVal) / steps) * i) + (percent ? "%" : px ? "px" : "");
                         if (i == steps)
                         {
                             if (deleteAfterTransition)

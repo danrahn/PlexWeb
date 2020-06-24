@@ -94,6 +94,25 @@ function get_username()
     <h3 id="welcome">Welcome <?= get_username() ?></h3>
     <h1 id="header" class=<?= get_plex_status(true /*class*/) ?>><?= get_plex_status(false) ?></h1>
     <div id="container">
+        <div id="libStats" class="hideStats">
+            <div id="spaceStats" class="statSection">
+                <div id="spaceList" class="statList">
+                    <ul>
+                        <li id="spaceUsed"><strong>Library Size: </strong><span></span></li>
+                        <li id="spaceTotal"><strong>Total Space: </strong><span></span></li>
+                        <li id="spaceRemaining"><strong>Remaining Space: </strong><span></span></li>
+                    </ul>
+                </div>
+                <div id="spaceGraph" class="statGraph"></div>
+            </div>
+            <div id="libraryStats" class="statSection">
+                <div id="libraryList" class="statList">
+                    <ul>
+                    </ul>
+                </div>
+                <div id="libraryGraph" class="statGraph"></div>
+            </div>
+        </div>
         <h2 id="active"><span id="activeText">Active Streams: <span id="activeNum">loading...</span></span></h2>
         <div id="mediaentries">
         </div>
@@ -123,5 +142,5 @@ function get_username()
     </div>
 </div>
 </body>
-<?php build_js("index", "consolelog", "animate", "common", "nav", "overlay", "tooltip", "iconMap"); ?>
+<?php build_js("index", "consolelog", "animate", "common", "nav", "overlay", "tooltip", "iconMap", "chart"); ?>
 </html>

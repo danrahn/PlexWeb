@@ -327,6 +327,7 @@ module.exports = {
         // common.js
         "sendHtmlJsonRequest" : "readonly",
         "buildNode" : "readonly",
+        "buildNodeNS" : "readonly",
         "ProcessRequest" : "readonly",
         "KEY" : "readonly",
         "$" : "readonly",
@@ -391,6 +392,8 @@ module.exports = {
         "MarkdownHelp" : "readonly",
         // markdownEditor.js
         "MarkdownEditor" : "readonly",
+        // chart.js
+        "Chart" : "readonly",
         // eslintrc
         "module" : "readonly",
     },

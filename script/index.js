@@ -60,12 +60,209 @@ window.addEventListener("load", function()
         };
 
         sendHtmlJsonRequest("get_status.php", parameters, successFunc, getStatusFailure);
+        getCapacity();
+        window.addEventListener("resize", ensureStatHeight);
     }
     else
     {
         $("#activeNum").innerHTML = 0;
     }
 });
+
+/// <summary>
+/// Ensures the height of the stats div is adjusted properly
+/// after the browser window changes size
+/// </summary>
+function ensureStatHeight()
+{
+    let stats = $("#libStats");
+    if (stats.style.opacity < 1)
+    {
+        return;
+    }
+
+    stats.style.height = "unset";
+}
+
+/// <summary>
+/// Make a request to the server to see how much disk space we have left
+/// </summary>
+function getCapacity()
+{
+    let successFunc = function(response)
+    {
+        if (response.total == 0)
+        {
+            return;
+        }
+
+        let space = getFriendlySpace(response);
+        let setSpace = (ele, obj) =>
+        {
+            ele.innerHTML = obj.dec;
+            setTooltip(ele, obj.bin);
+        };
+
+        setSpace($$("#spaceUsed span"), space.used);
+        setSpace($$("#spaceTotal span"), space.total);
+        setSpace($$("#spaceRemaining span"), space.free);
+
+        let chartData =
+        {
+            radius : 70,
+            points : [
+                { value : response.free, label : "Free" },
+                { value : response.total - response.free, label : "Used" }
+            ],
+            colors : ["#2e832e", "#a33e3e"],
+            noSort : true
+        };
+
+        $("#spaceGraph").appendChild(Chart.pie(chartData));
+        getLibraryDetails();
+    };
+
+    sendHtmlJsonRequest("process_request.php", { type : ProcessRequest.FreeSpace }, successFunc);
+}
+
+/// <summary>
+/// Builds the library details section, indicating how many items are
+/// in each library, what what their makeup is
+/// </summary>
+function getLibraryDetails()
+{
+    let successFunc = function(response)
+    {
+        let movies = getMoviesSection(response); // V0.5, only look at movies
+
+        if (!movies)
+        {
+            return;
+        }
+
+        let piePoints = [];
+        let ul = buildNode("ul", { class : "innerStatList" });
+        for (let [resolution, count] of Object.entries(movies.resolutions))
+        {
+            piePoints.push({ value : parseInt(count), label : `${resolution} - ${count}` });
+            ul.appendChild(
+                buildNode("li").appendChildren(
+                    buildNode("strong", {}, `${resolution}: `),
+                    buildNode("span", {}, count)
+                ));
+        }
+
+        let list = $$("#libraryStats ul");
+        let noteText = "Duplicates of different resolutions mean that the<br> numbers below will not add up to this value";
+        let movieCount = buildNode("span", {}, movies.Movies + "*");
+        setTooltip(movieCount, noteText);
+        list.appendChildren(
+            buildNode("li").appendChildren(
+                buildNode("strong", {}, "Total Movies: "),
+                movieCount),
+            buildNode("li").appendChild(ul)
+        );
+
+        let chartData =
+        {
+            radius : 70,
+            points : piePoints
+        };
+
+        logInfo(chartData);
+
+        $("#libraryGraph").appendChild(Chart.pie(chartData));
+        showStatsIcon();
+    };
+
+    sendHtmlJsonRequest("process_request.php", { type : ProcessRequest.LibraryStats }, successFunc);
+}
+
+/// <summary>
+/// Searches for and returns the "movie" section of the plex library
+/// <summary>
+function getMoviesSection(sections)
+{
+    for (let section of sections)
+    {
+        if (section.title == "Movies")
+        {
+            return section;
+        }
+    }
+
+    return false;
+}
+
+/// <summary>
+/// Shows the stats icon after we have successfully gathered all required data
+/// </summary>
+function showStatsIcon()
+{
+    let stats = buildNode(
+        "img",
+        {
+            style : "width: 20px; cursor: pointer",
+            src : icons.STATS,
+            id : "showStatsBtn"
+        },
+        0,
+        { click : showHideStats }
+    );
+    setTooltip(stats, "Show Plex Stats", 250 /*delay*/, true /*static*/);
+    $("#header").appendChildren(stats);
+}
+
+/// <summary>
+/// Takes a list of byte sizes and returns an object containing
+/// nicer sizes in decimal and binary form
+/// </summary>
+function getFriendlySpace(response)
+{
+    let decimal = ["KB", "MB", "GB", "TB"];
+    let binary = ["KiB", "MiB", "GiB", "TiB"];
+    let reduceCore = (value, base, arr) =>
+    {
+        let idx = -1;
+        while (value >= base)
+        {
+            value /= base;
+            ++idx;
+        }
+
+        return value.toFixed(2) + (idx == -1 ? "" : arr[idx]);
+    };
+
+    let reduceSize = (value) => ({ dec : reduceCore(value, 1000, decimal), bin : reduceCore(value, 1024, binary) });
+
+    let space =
+    {
+        total : reduceSize(response.total),
+        free : reduceSize(response.free),
+        used : reduceSize(response.total - response.free)
+    };
+
+    return space;
+}
+
+/// <summary>
+/// Shows or hides the library stats table
+/// </summary>
+function showHideStats()
+{
+    let stats = $("#libStats");
+    let hidden = stats.classList.contains("hideStats");
+    stats.classList.add(hidden ? "showStats" : "hideStats");
+    stats.classList.remove(hidden ? "hideStats" : "showStats");
+    if (hidden)
+    {
+        Animation.fireNow({ opacity : 1, height : $("#libStats").scrollHeight + "px" }, $("#libStats"), 250, false);
+    }
+    else
+    {
+        Animation.fireNow({ opacity : 0, height : "0px" }, $("#libStats"), 250, false);
+    }
+}
 
 /// <summary>
 /// Function invoked when we fail to grab status information

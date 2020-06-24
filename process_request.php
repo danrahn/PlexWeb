@@ -53,6 +53,8 @@ abstract class ProcessRequest
     const CheckNotificationAlert = 29;
     const DisableNotificationAlert = 30;
     const MarkdownText = 31;
+    const FreeSpace = 32;
+    const LibraryStats = 33;
 }
 
 // For requests that are only made when not logged in, don't session_start or verify login state
@@ -194,6 +196,12 @@ function process_request($type)
             break;
         case ProcessRequest::MarkdownText:
             $message = get_markdown_text(try_get('mdType'));
+            break;
+        case ProcessRequest::FreeSpace:
+            $message = get_available_space();
+            break;
+        case ProcessRequest::LibraryStats:
+            $message = get_library_stats(try_get('force'));
             break;
         default:
             return json_error("Unknown request type: " . $type);
@@ -2515,6 +2523,176 @@ function get_markdown_text($type)
         // No other types defined yet
         return json_error("Invalid markdown text type");
     }
+}
+
+/// <summary>
+/// Get the amount of total and free disk space, in bytes
+/// </summary>
+function get_available_space()
+{
+    if (UserLevel::current() < UserLevel::Regular)
+    {
+        return '{ "total" : 0, "free" : 0}';
+    }
+
+    $total = 0;
+    $available = 0;
+    foreach (BACKING_STORAGE as $disk)
+    {
+        $total += disk_total_space($disk . ":");
+        $available += disk_free_space($disk . ":");
+    }
+
+    return "{ \"total\" : $total, \"free\" : $available }";
+}
+
+/// <summary>
+/// Gets the stats for each section of the Plex library
+///
+/// Results are cached for four hours, because it's not a cheap operation, and library
+/// contents don't change that often
+/// </summary>
+function get_library_stats($force)
+{
+    global $db;
+    $query = "SELECT data, CONVERT_TZ(timestamp, @@session.time_zone, '+00:00') AS `utc_timestamp` FROM `library_stats_cache` ORDER BY utc_timestamp DESC LIMIT 1";
+    $result = $db->query($query);
+    if (!$result)
+    {
+        return db_error();
+    }
+
+    $json = "";
+    if ($result->num_rows == 0)
+    {
+        return refresh_library_stats();
+    }
+
+    $row = $result->fetch_assoc();
+    $timestamp = new DateTime($row['utc_timestamp']);
+    $now = new DateTime(date("Y-m-d H:i:s"));
+    $diff = ($now->getTimestamp() - $timestamp->getTimestamp()) / 60 / 60;
+    if ($diff > 4)
+    {
+        return refresh_library_stats();
+    }
+
+    return $row['data'];
+}
+
+/// <summary>
+/// Refresh our cached library stats by querying the Plex server
+/// </summary>
+function refresh_library_stats()
+{
+    global $db;
+    $json_sections = array();
+    $sections = simplexml_load_string(curl(PLEX_SERVER . '/library/sections?' . PLEX_TOKEN));
+    foreach ($sections as $section)
+    {
+        array_push($json_sections, parse_section($section));
+    }
+
+    // Always add a new entry. Not really necessary, but could be nice to see the history of the
+    // library over time.
+    $data = json_encode($json_sections);
+    $db_data = $db->real_escape_string($data);
+    $query = "INSERT INTO `library_stats_cache` (`data`) VALUES ('$db_data')";
+    if (!$db->query($query))
+    {
+        return db_error();
+    }
+
+    return $data;
+}
+
+/// <summary>
+/// Parses a single section of a Plex library
+/// </summary>
+function parse_section($section)
+{
+    $types = [
+        "movie" => 1,
+        "show" => 2, "season" => 3, "episode" => 4,
+        "trailer" => 5, "comic" => 6, "person" => 7,
+        "artist" => 8, "album" => 9, "track" => 10,
+        "photoAlbum" => 11, "picture" => 12, "photo" => 13, "clip" => 14, "playlistItem" => 15
+    ];
+
+    $json = new \stdClass();
+    $json->title = (string)$section['title'];
+    process_section_items((int)$section['key'], $types[(string)$section['type']], $json);
+    return $json;
+
+}
+
+/// <summary>
+/// Processes the items of a given section, doing different operations
+/// based on the section type
+/// </summary>
+function process_section_items($key, $type, &$section)
+{
+    $type_start = $type;
+    $type_end = $type;
+    $labels = array("Movies");
+
+    if ($type > 1 && $type < 5)
+    {
+        // TV shows, 4 indicates number of episodes - get shows, seasons, and episodes
+        $type_start = 2;
+        $type_end = 4;
+        $labels = array("Shows", "Seasons", "Episodes");
+    }
+    else if ($type > 7 && $type < 11)
+    {
+        // Music, get artists, albums, and tracks
+        $type_start = 8;
+        $type_end = 10;
+        $labels = array("Artists", "Albums", "Tracks");
+    }
+
+    $items = array();
+    for ($iType = $type_start; $iType <= $type_end; ++$iType)
+    {
+        $xml = simplexml_load_string(curl(PLEX_SERVER . '/library/sections/' . $key . '/all?type=' . $iType . '&X-Plex-Container-Start=0&X-Plex-Container-Size=0&' . PLEX_TOKEN));
+        $section->{$labels[$iType - $type_start]} = (int)$xml['totalSize'];
+        array_push($items, (int)$xml['totalSize']);
+    }
+
+    switch ($type)
+    {
+        case 1:
+            addMovieDetails($key, $section);
+            break;
+        case 2:
+            // addTvDetails($key, $section); // TODO
+            break;
+        case 8:
+            // addAudioDetails($key, $section); // TODO
+            break;
+        default:
+            break;
+    }
+
+    return $items;
+}
+
+/// <summary>
+/// Adds details about the resolutions of movies in the Plex library
+/// </summary>
+function addMovieDetails($key, $section)
+{
+    $append = "&type=1&X-Plex-Container-Start=0&X-Plex-Container-Size=0";
+    $data = simplexml_load_string(curl(PLEX_SERVER . "/library/sections/$key/resolution?" . PLEX_TOKEN));
+    $resolutions = new \stdClass();
+    foreach ($data as $resolution)
+    {
+        $path = PLEX_SERVER . "/library/sections/$key/resolution/" . (string)$resolution["key"] . "?" . PLEX_TOKEN . $append;
+        $dict_key = (string)$resolution["title"];
+        $resolutions->$dict_key = (string)simplexml_load_string(curl($path))["totalSize"];
+    }
+
+    $section->resolutions = $resolutions;
 }
 
 /// <summary>

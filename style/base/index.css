@@ -135,6 +135,60 @@ a:hover .inlineIcon {
     padding-left: 5px;
 }
 
+#libStats {
+    display: block;
+    clear: both;
+    overflow: hidden;
+    opacity: 0;
+    height: 0;
+}
+
+#showStatsBtn {
+    margin-left: 10px;
+}
+
+#libStats {
+    width: 30%;
+    border: 2px solid #616161;
+    border-radius: 5px;
+    overflow: hidden;
+    text-align: center;
+    margin: auto;
+    background-color: rgba(0,0,0,0.2);
+}
+
+#libStats>div:hover {
+    background-color: rgba(0,0,0,0.3);
+}
+
+.statSection {
+    padding: 0;
+    margin: 0;
+    border-bottom: 2px solid #616161;
+    overflow: auto;
+}
+
+.statList {
+    color: #c1c1c1;
+    overflow: auto;
+    padding: 10px;
+}
+
+.statList span {
+    margin-left: 15px;
+}
+
+.statGraph {
+    overflow: hidden;
+    margin: auto;
+    padding: 10px 20px 10px 20px;
+}
+
+.innerStatList {
+    line-height: 1.2em;
+    font-size: smaller;
+}
+
 /* Desktop/Landscape */
 @media (orientation: landscape), (min-width: 767px) {
     .details {
@@ -155,6 +209,26 @@ a:hover .inlineIcon {
     .mediainfo ul {
         text-align: left;
         font-size: small;
+    }
+
+    #libStats {
+        min-width: 630px;
+    }
+    
+    .statList {
+        text-align: left;
+        line-height:2em;
+        float: left;
+        padding: 10px;
+    }
+
+    .statList span {
+        float: right;
+    }
+
+    .statGraph {
+        float: right;
+        border-left: 2px solid #616161;
     }
 }
 
@@ -183,5 +257,39 @@ a:hover .inlineIcon {
     .mediainfo li {
         list-style-type: none;
         margin: 0;
+    }
+
+    #libStats {
+        min-width: 80%;
+    }
+    
+    .statList {
+        text-align: middle;
+        color: #c1c1c1;
+        overflow: auto;
+        padding: 10px;
+    }
+
+    .statList li {
+        list-style-type: none;
+    }
+
+    .statList ul {
+        padding: 0;
+    }
+
+    .innerStatList {
+        width: 50%;
+        max-width: 150px;
+        margin: auto;
+    }
+
+    .innerStatList strong {
+        float: left;
+        clear: left;
+    }
+
+    .innerStatList span {
+        float: right;
     }
 }

@@ -25,6 +25,7 @@ define('GEOIP_TOKEN', 'ipgeolocationToken');
 define('GEOIP_URL', 'https://api.ipgeolocation.io/ipgeo?apiKey=' . GEOIP_TOKEN . '&ip=');
 define('TMDB_TOKEN', "?api_key=<KEY>");
 define('TMDB_URL', "https://api.themoviedb.org/3/");
+define('BACKING_STORAGE', []); // Location(s) on disk of the plex library, used for storage calculations
 
 $db = new mysqli(DB_SERVER, DB_USERNAME, DB_PASSWORD, DB_NAME);
 if ($db->connect_error)

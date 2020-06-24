@@ -2,7 +2,7 @@
 /// common.js contains functions that are used by most, if not all, pages on this site
 /// </summary>
 
-/* exported $, $$, buildNode, sendHtmlJsonRequest, ProcessRequest, KEY */
+/* exported $, $$, buildNode, buildNodeNS, sendHtmlJsonRequest, ProcessRequest, KEY */
 
 /// <summary>
 /// Custom jQuery-like selector method.
@@ -66,6 +66,20 @@ Element.prototype.appendChildren = function(...elements)
 function buildNode(type, attrs, content, events)
 {
     let ele = document.createElement(type);
+    return _buildNode(ele, attrs, content, events);
+}
+
+/// <summary>
+/// Helper method to create DOM elements with the given namespace.
+/// </summary>
+function buildNodeNS(ns, type, attrs, content, events)
+{
+    let ele = document.createElementNS(ns, type);
+    return _buildNode(ele, attrs, content, events);
+}
+
+function _buildNode(ele, attrs, content, events)
+{
     if (attrs)
     {
         for (let [key, value] of Object.entries(attrs))
@@ -254,6 +268,8 @@ const ProcessRequest =
     CheckNotificationAlert : 29,
     DisableNotificationAlert : 30,
     MarkdownText : 31,
+    FreeSpace : 32,
+    LibraryStats : 33,
 };
 
 console.assert(!_logErrorId || _logErrorId == ProcessRequest.LogError, "Update _logErrorId!");
