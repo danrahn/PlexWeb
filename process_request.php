@@ -2668,7 +2668,7 @@ function process_section_items($key, $type, &$section)
             addTvDetails($key, $section);
             break;
         case 8:
-            // addAudioDetails($key, $section); // TODO?
+            addAudioDetails($key, $section);
             break;
         default:
             break;
@@ -2691,6 +2691,41 @@ function addMovieDetails($key, $section)
 function addTvDetails($key, $section)
 {
     addSectionDetails(2, $key, "contentRating", $section);
+}
+
+/// <summary>
+/// Adds details about music sections, in this case how many tracks are from each decade
+/// </summary>
+function addAudioDetails($key, $section)
+{
+    $before = PLEX_SERVER . "/library/sections/$key/all?type=10&album.year%3C%3C=1900";
+    $append = "&" . PLEX_TOKEN . "&type=10&X-Plex-Container-Start=0&X-Plex-Container-Size=0";
+    
+    $items = new \stdClass();
+    $before_count = (int)simplexml_load_string(curl($before . $append))["totalSize"];
+    if ($before_count != 0)
+    {
+        $dc = "<1900";
+        $items->$dc = $before_count;
+    }
+
+    $max = (int)date("Y") / 10 * 10;
+    $decade = 1900;
+    $any = false;
+    while ($decade <= $max)
+    {
+        $decadePath = PLEX_SERVER . "/library/sections/$key/all?type=10&album.decade=$decade" . $append;
+        $count = (int)simplexml_load_string(curl($decadePath))["totalSize"];
+        if ($count != 0 || $any)
+        {
+            $any = TRUE;
+            $items->$decade = $count;
+        }
+
+        $decade += 10;
+    }
+
+    $section->decades = $items;
 }
 
 /// <summary>

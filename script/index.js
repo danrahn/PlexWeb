@@ -135,6 +135,7 @@ function getLibraryDetails()
     {
         addMovieStats(getStatSection("Movies", response));
         addTvStats(getStatSection("TV Shows", response));
+        addMusicStats(getStatSection("Music", response));
         showStatsIcon();
     };
 
@@ -151,6 +152,7 @@ function addMovieStats(movies)
         return;
     }
 
+    createStatSection("movie");
     let piePoints = [];
     let ul = buildNode("ul", { class : "innerStatList" });
     for (let [resolution, count] of Object.entries(movies.resolution))
@@ -193,6 +195,8 @@ function addTvStats(tv)
         return;
     }
 
+    createStatSection("tv");
+
     let barPoints = [];
     let ul = buildNode("ul", { class : "innerStatList" });
     for (let type of ["Shows", "Seasons", "Episodes"])
@@ -223,6 +227,65 @@ function addTvStats(tv)
     };
 
     $("#tvGraph").appendChild(Chart.bar(chartData));
+}
+
+/// <summary>
+/// Builds the stats section for Music
+/// </summary>
+function addMusicStats(music)
+{
+    if (!music)
+    {
+        return;
+    }
+
+    createStatSection("music");
+
+    let barPoints = [];
+    let ul = buildNode("ul", { class : "innerStatList" });
+    for (let type of ["Artists", "Albums", "Tracks"])
+    {
+        ul.appendChild(
+            buildNode("li").appendChildren(
+                buildNode("strong", {}, `${type}: `),
+                buildNode("span", {}, music[type])
+            ));
+    }
+    for (let [decade, count] of Object.entries(music.decades))
+    {
+        barPoints.push({ value : parseInt(count), label : decade });
+    }
+
+    let list = $$("#musicStats ul");
+    list.appendChildren(
+        buildNode("li").appendChildren(
+            buildNode("strong", {}, "Music")),
+        buildNode("li").appendChild(ul)
+    );
+
+    barPoints.sort((left, right) => right.label - left.label);
+
+    let chartData =
+    {
+        width : 140,
+        height : 100,
+        points : barPoints
+    };
+
+    $("#musicGraph").appendChild(Chart.bar(chartData));
+}
+
+/// <summary>
+/// Adds a stats div for a library section
+/// </summary>
+function createStatSection(name)
+{
+    $("#libStats").appendChildren(
+        buildNode("div", { id : `${name}Stats`, class : "statSection" }).appendChildren(
+            buildNode("div", { class : "statList" }).appendChildren(buildNode("ul")),
+            buildNode("div", { id : `${name}Graph`, class : "statGraph" })
+        )
+    );
 }
 
 /// <summary>

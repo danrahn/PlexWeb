@@ -88,7 +88,7 @@ let Chart = new function()
             "http://www.w3.org/2000/svg",
             "polyline",
             {
-                points : `${fp.x},${fp.y} ${fp.x},${data.height - fp.y} ${data.width - fp.x},${data.height - fp.y} `,
+                points : `${fp.x},0 ${fp.x},${data.height - fp.y} ${data.width},${data.height - fp.y} `,
                 stroke : "#616161",
                 "stroke-width" : axisWidth,
                 fill : "none"
@@ -107,26 +107,54 @@ let Chart = new function()
         for (let point of data.points)
         {
             let height = gridHeight * (point.value / max);
-            let bar = buildNodeNS(
-                "http://www.w3.org/2000/svg",
-                "rect",
-                {
-                    x : offsetX,
-                    y : gridHeight - height,
-                    width : barWidth,
-                    height : height,
-                    fill : "#4472C4"
-                }
-            );
-
+            let bar = buildRect(offsetX, gridHeight - height, barWidth, height, "#4472C4");
             addTooltip(bar, `${point.label}: ${point.value}`);
             svg.appendChild(bar);
+
+            // Also build a ghost bar for better tooltips, especially with small bars
+            if (gridHeight - height > 1)
+            {
+                let ghostBar = buildRect(offsetX, 0, barWidth, gridHeight, "none", { "pointer-events" : "all" });
+                addTooltip(ghostBar, `${point.label}: ${point.value}`);
+                ghostBar.addEventListener("mouseenter", function() { this.setAttribute("stroke", "#616161"); });
+                ghostBar.addEventListener("mouseleave", function() { this.setAttribute("stroke", "none"); });
+                svg.appendChild(ghostBar);
+            }
 
             offsetX += per;
         }
 
 
         return svg;
+    };
+
+    /// <summary>
+    /// Returns a rectangle with the given start coordinates, width, height, and fill color
+    /// </summary>
+    /// <param name="extra">Any extra attributes that that should be added outside of the named parameters</pram>
+    let buildRect = function(x, y, width, height, fill, extra)
+    {
+        let rect = buildNodeNS(
+            "http://www.w3.org/2000/svg",
+            "rect",
+            {
+                x : x,
+                y : y,
+                width : width,
+                height : height,
+                fill : fill
+            }
+        );
+
+        if (extra)
+        {
+            for (let [key, value] of Object.entries(extra))
+            {
+                rect.setAttribute(key, value);
+            }
+        }
+
+        return rect;
     };
 
     /// <summary>
