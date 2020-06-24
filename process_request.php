@@ -2555,7 +2555,7 @@ function get_available_space()
 function get_library_stats($force)
 {
     global $db;
-    $query = "SELECT data, CONVERT_TZ(timestamp, @@session.time_zone, '+00:00') AS `utc_timestamp` FROM `library_stats_cache` ORDER BY utc_timestamp DESC LIMIT 1";
+    $query = "SELECT id, data, CONVERT_TZ(timestamp, @@session.time_zone, '+00:00') AS `utc_timestamp` FROM `library_stats_cache` ORDER BY id DESC LIMIT 1";
     $result = $db->query($query);
     if (!$result)
     {
@@ -2665,10 +2665,10 @@ function process_section_items($key, $type, &$section)
             addMovieDetails($key, $section);
             break;
         case 2:
-            // addTvDetails($key, $section); // TODO
+            addTvDetails($key, $section);
             break;
         case 8:
-            // addAudioDetails($key, $section); // TODO
+            // addAudioDetails($key, $section); // TODO?
             break;
         default:
             break;
@@ -2682,17 +2682,34 @@ function process_section_items($key, $type, &$section)
 /// </summary>
 function addMovieDetails($key, $section)
 {
-    $append = "&type=1&X-Plex-Container-Start=0&X-Plex-Container-Size=0";
-    $data = simplexml_load_string(curl(PLEX_SERVER . "/library/sections/$key/resolution?" . PLEX_TOKEN));
-    $resolutions = new \stdClass();
-    foreach ($data as $resolution)
+    addSectionDetails(1, $key, "resolution", $section);
+}
+
+/// <summary>
+///  Adds details about the content rating of tv shows in the Plex library
+/// </summary>
+function addTvDetails($key, $section)
+{
+    addSectionDetails(2, $key, "contentRating", $section);
+}
+
+/// <summary>
+/// Retrieves details for the given section and adds it to the current section
+/// </summary>
+function addSectionDetails($type, $sectionKey, $detailKey, &$section)
+{
+    $append = "&type=$type&X-Plex-Container-Start=0&X-Plex-Container-Size=0";
+    $base = PLEX_SERVER . "/library/sections/$sectionKey/$detailKey";
+    $data = simplexml_load_string(curl($base . "?" . PLEX_TOKEN));
+    $items = new \stdClass();
+    foreach ($data as $item)
     {
-        $path = PLEX_SERVER . "/library/sections/$key/resolution/" . (string)$resolution["key"] . "?" . PLEX_TOKEN . $append;
-        $dict_key = (string)$resolution["title"];
-        $resolutions->$dict_key = (string)simplexml_load_string(curl($path))["totalSize"];
+        $path = $base . "/" . (string)$item["key"] . "?" . PLEX_TOKEN . $append;
+        $dict_key = (string)$item["title"];
+        $items->$dict_key = (string)simplexml_load_string(curl($path))["totalSize"];
     }
 
-    $section->resolutions = $resolutions;
+    $section->$detailKey = $items;
 }
 
 /// <summary>

@@ -133,45 +133,8 @@ function getLibraryDetails()
 {
     let successFunc = function(response)
     {
-        let movies = getMoviesSection(response); // V0.5, only look at movies
-
-        if (!movies)
-        {
-            return;
-        }
-
-        let piePoints = [];
-        let ul = buildNode("ul", { class : "innerStatList" });
-        for (let [resolution, count] of Object.entries(movies.resolutions))
-        {
-            piePoints.push({ value : parseInt(count), label : `${resolution} - ${count}` });
-            ul.appendChild(
-                buildNode("li").appendChildren(
-                    buildNode("strong", {}, `${resolution}: `),
-                    buildNode("span", {}, count)
-                ));
-        }
-
-        let list = $$("#libraryStats ul");
-        let noteText = "Duplicates of different resolutions mean that the<br> numbers below will not add up to this value";
-        let movieCount = buildNode("span", {}, movies.Movies + "*");
-        setTooltip(movieCount, noteText);
-        list.appendChildren(
-            buildNode("li").appendChildren(
-                buildNode("strong", {}, "Total Movies: "),
-                movieCount),
-            buildNode("li").appendChild(ul)
-        );
-
-        let chartData =
-        {
-            radius : 70,
-            points : piePoints
-        };
-
-        logInfo(chartData);
-
-        $("#libraryGraph").appendChild(Chart.pie(chartData));
+        addMovieStats(getStatSection("Movies", response));
+        addTvStats(getStatSection("TV Shows", response));
         showStatsIcon();
     };
 
@@ -179,13 +142,97 @@ function getLibraryDetails()
 }
 
 /// <summary>
-/// Searches for and returns the "movie" section of the plex library
+/// Builds the stats section for movies
+/// </summary>
+function addMovieStats(movies)
+{
+    if (!movies)
+    {
+        return;
+    }
+
+    let piePoints = [];
+    let ul = buildNode("ul", { class : "innerStatList" });
+    for (let [resolution, count] of Object.entries(movies.resolution))
+    {
+        piePoints.push({ value : parseInt(count), label : `${resolution} - ${count}` });
+        ul.appendChild(
+            buildNode("li").appendChildren(
+                buildNode("strong", {}, `${resolution}: `),
+                buildNode("span", {}, count)
+            ));
+    }
+
+    let list = $$("#movieStats ul");
+    let noteText = "Duplicates of different resolutions mean that the<br> numbers below will not add up to this value";
+    let movieCount = buildNode("span", {}, movies.Movies + "*");
+    setTooltip(movieCount, noteText);
+    list.appendChildren(
+        buildNode("li").appendChildren(
+            buildNode("strong", {}, "Total Movies: "),
+            movieCount),
+        buildNode("li").appendChild(ul)
+    );
+
+    let chartData =
+    {
+        radius : 70,
+        points : piePoints
+    };
+
+    $("#movieGraph").appendChild(Chart.pie(chartData));
+}
+
 /// <summary>
-function getMoviesSection(sections)
+/// Builds the stats section for TV shows
+/// </summary>
+function addTvStats(tv)
+{
+    if (!tv)
+    {
+        return;
+    }
+
+    let barPoints = [];
+    let ul = buildNode("ul", { class : "innerStatList" });
+    for (let type of ["Shows", "Seasons", "Episodes"])
+    {
+        ul.appendChild(
+            buildNode("li").appendChildren(
+                buildNode("strong", {}, `${type}: `),
+                buildNode("span", {}, tv[type])
+            ));
+    }
+    for (let [rating, count] of Object.entries(tv.contentRating))
+    {
+        barPoints.push({ value : parseInt(count), label : rating });
+    }
+
+    let list = $$("#tvStats ul");
+    list.appendChildren(
+        buildNode("li").appendChildren(
+            buildNode("strong", {}, "TV Shows")),
+        buildNode("li").appendChild(ul)
+    );
+
+    let chartData =
+    {
+        width : 140,
+        height : 100,
+        points : barPoints
+    };
+
+    $("#tvGraph").appendChild(Chart.bar(chartData));
+}
+
+/// <summary>
+/// Searches for and returns the desired section of the plex library
+/// <summary>
+function getStatSection(title, sections)
 {
     for (let section of sections)
     {
-        if (section.title == "Movies")
+        if (section.title == title)
         {
             return section;
         }

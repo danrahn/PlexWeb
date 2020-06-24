@@ -105,12 +105,19 @@ function get_username()
                 </div>
                 <div id="spaceGraph" class="statGraph"></div>
             </div>
-            <div id="libraryStats" class="statSection">
-                <div id="libraryList" class="statList">
+            <div id="movieStats" class="statSection">
+                <div class="statList">
                     <ul>
                     </ul>
                 </div>
-                <div id="libraryGraph" class="statGraph"></div>
+                <div id="movieGraph" class="statGraph"></div>
+            </div>
+            <div id="tvStats" class="statSection">
+                <div class="statList">
+                    <ul>
+                    </ul>
+                </div>
+                <div id="tvGraph" class="statGraph"></div>
             </div>
         </div>
         <h2 id="active"><span id="activeText">Active Streams: <span id="activeNum">loading...</span></span></h2>
