@@ -2078,7 +2078,27 @@ function commentAction(action, fn)
     let actionString = action + " Comment";
 
     // Thanks to css.gg for the 'pen' and 'trash' svg icons
-    let img = buildNode("img", { src : icons[action.toUpperCase()], title : actionString, alt : actionString });
+    let img = buildNode("img", { src : actionToIcon(action), title : actionString, alt : actionString });
     let text = buildNode("span", {}, action);
     return holder.appendChildren(img, text);
+}
+
+/// <summary>
+/// Maps an action string to its icon
+/// </summary>
+function actionToIcon(action)
+{
+    switch (action.toLowerCase())
+    {
+        case "edit":
+            return icons.EDIT;
+        case "delete":
+            return icons.DELETE;
+        case "save":
+            return icons.SAVE;
+        case "cancel":
+            return icons.CANCEL;
+        default:
+            return "";
+    }
 }

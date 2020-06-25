@@ -127,7 +127,7 @@ function buildRequestTitle(request)
     {
         requestTitle.appendChild(buildNode("img", {
             class : "inlineIcon",
-            src : icons[`${request.t == 1 ? "movie" : "tv"}icon`.toUpperCase()],
+            src : request.t == 1 ? icons.MOVIEICON : icons.TVICON,
             alt : request.t == 1 ? "Movie" : "TV Show"
         }));
     }
