@@ -30,7 +30,11 @@ function overlay(message, buttonText, buttonFunc, dismissible=true)
 /// <summary>
 /// Common method to fade out and delete an overlay
 /// </summary>
-const overlayDismiss = () => Animation.queue({ opacity : 0 }, $("#mainOverlay"), 250, true /*deleteAfterTransition*/);
+const overlayDismiss = function()
+{
+    Animation.queue({ opacity : 0 }, $("#mainOverlay"), 250, true /*deleteAfterTransition*/);
+    Tooltip.dismiss();
+};
 
 /// <summary>
 /// Generic overlay builder
@@ -80,11 +84,34 @@ function buildOverlay(dismissible, ...children)
     Animation.queue({ opacity : 1 }, overlayNode, 250);
     if (container.clientHeight / window.innerHeight > 0.7)
     {
-        container.classList.remove("defaultOverlay");
-        container.classList.add("fullOverlay");
+        addFullscreenOverlayElements(container);
     }
 
     window.addEventListener("keydown", _overlayKeyListener, false);
+}
+
+/// <summary>
+/// Sets different classes and adds a close button for overlays
+/// that take up more space
+/// </summary>
+function addFullscreenOverlayElements(container)
+{
+    container.classList.remove("defaultOverlay");
+    container.classList.add("fullOverlay");
+    let close = buildNode(
+        "img",
+        {
+            src : icons.EXIT,
+            style : "position: fixed; top: 10px; right: 20px; width: 25px"
+        },
+        0,
+        {
+            click : overlayDismiss,
+            mouseover : function() { this.src = icons.EXITHOVER; },
+            mouseout : function() { this.src = icons.EXIT; }
+        });
+    Tooltip.setTooltip(close, "Close");
+    $("#mainOverlay").appendChild(close);
 }
 
 /// <summary>

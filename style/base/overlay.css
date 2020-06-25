@@ -6,6 +6,7 @@
     height: 100vh;
     background-color: rgba(0,0,0,0.6);
     overflow: auto;
+    z-index: 3; /* Show over nav */
 }
 
 #overlayContainer {
