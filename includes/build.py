@@ -117,7 +117,10 @@ def process_svg_icons(force, quiet):
             newpath = 'icon' + os.sep + core + '.' + hashed + '.svg'
             if force or not os.path.exists(newpath):
                 print('  Copying', "'" + icon + "' to", "'" + newpath + "'")
-                shutil.copyfile(icon, newpath)
+
+                # Minify svg and place in new location
+                minify_svg(icon, newpath, quiet)
+                # shutil.copyfile(icon, newpath)
                 changed += 1
             elif not quiet:
                 print(' ', icon, 'up to date')
@@ -141,6 +144,19 @@ def process_svg_icons(force, quiet):
         with open('script/iconMap.js', 'w+') as js_icon_file:
             js_icon_file.write(js_icon_map)
         print('Done processing icons\n')
+
+def minify_svg(icon, newpath, quiet):
+    system = platform.system()
+    if system == 'Windows':
+        cmd = 'node.exe ' + os.environ['APPDATA'] + r'\npm\node_modules\svgo\bin\svgo ' + icon + ' -o ' + newpath
+    elif system == 'Linux':
+        cmd = ['svgo', icon, '-o', newpath]
+    else:
+        print('Unsupported OS:', os)
+    output = subprocess.check_output(cmd, stderr=subprocess.STDOUT).decode('utf-8')
+    if not quiet and len(output) != 0:
+        print(output)
+        print()
 
 def process_css(files, force, quiet, csso):
     '''
