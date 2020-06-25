@@ -75,15 +75,15 @@ function showTooltip(e, text, delay=250)
 function showTooltipCore(e, text)
 {
     showingTooltip = true;
-    let max = $("#plexFrame").clientWidth - 180;
-    const left = Math.min(e.clientX, max) + "px";
     const top = (e.clientY + 20) + "px";
     let tooltip = $("#tooltip");
-    tooltip.style.left = left;
     tooltip.style.top = top;
 
     tooltip.innerHTML = text;
     tooltip.style.display = "inline";
+
+    let max = $("#plexFrame").clientWidth - tooltip.clientWidth - 10;
+    tooltip.style.left = Math.min(e.clientX, max) + "px";
 }
 
 /// <summary>
