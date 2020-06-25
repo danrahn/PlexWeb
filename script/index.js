@@ -292,10 +292,18 @@ function appendChart(chartData, holderId, isPie)
     let holder = $(`#${holderId}`);
     holder.style.width = (isPie ? chartData.radius * 2 : chartData.width) + "px";
     holder.style.height = (isPie ? chartData.radius * 2 : chartData.height) + "px";
-    holder.appendChildren(
-        chart,
-        buildNode("img", { src : icons.EXPAND, class : "statGraphExpand" }, 0, { click : function() { buildChartOverlay(chartData); } })
-    );
+    let expandIcon = buildNode(
+        "img",
+        { src : icons.EXPAND, class : "statGraphExpand" },
+        0,
+        {
+            click : function() { buildChartOverlay(chartData); },
+            mouseover : function() { this.style.opacity = 1; },
+            mouseout : function() { this.style.opacity = 0.7; }
+        });
+    Tooltip.setTooltip(expandIcon, "View Larger");
+
+    holder.appendChildren(chart, expandIcon);
 }
 
 /// <summary>
