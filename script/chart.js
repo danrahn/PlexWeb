@@ -62,29 +62,22 @@ let Chart = new function()
             let sweep = (point.value > total / 2) ? "1" : "0";
             d += `A ${r} ${r} ${sweep} ${sweep} 0 ${endPoint.x} ${endPoint.y + titleOffset} `;
             d += `L ${endPoint.x} ${endPoint.y + titleOffset} ${r} ${r + titleOffset}`;
-            let arc = buildNodeNS("http://www.w3.org/2000/svg",
-                "path",
-                {
-                    d : d,
-                    fill : colors[colorIndex++ % colors.length],
-                    stroke : "#616161",
-                    "pointer-events" : "all",
-                    xmlns : "http://www.w3.org/2000/svg"
-                });
+            let slice = buildPieSlice(d, colors[colorIndex++ % colors.length]);
 
             let label = buildPieTooltip(point, total, data.labelOptions);
             if (label.length != 0)
             {
-                addTooltip(arc, label);
+                addTooltip(slice, label);
             }
 
-            svg.appendChild(arc);
+            svg.appendChild(slice);
         }
 
         if (hasTitle)
         {
             svg.appendChild(buildCenteredText(titleOffset - 20, data.title, 18));
         }
+
         return svg;
     };
 
@@ -206,6 +199,27 @@ let Chart = new function()
     };
 
     /// <summary>
+    /// Builds a slice of a pie chart
+    /// </summary>
+    let buildPieSlice = function(definition, fill)
+    {
+        return buildNodeNS("http://www.w3.org/2000/svg",
+            "path",
+            {
+                d : definition,
+                fill : fill,
+                stroke : "#616161",
+                "pointer-events" : "all",
+                xmlns : "http://www.w3.org/2000/svg"
+            },
+            0,
+            {
+                mouseenter : highlightPieSlice,
+                mouseleave : function() { this.setAttribute("stroke", "#616161"); }
+            });
+    };
+
+    /// <summary>
     /// Builds and returns the tooltip label for the given point, based on the given options
     /// </summary>
     let buildPieTooltip = function(point, total, labelOptions)
@@ -233,6 +247,19 @@ let Chart = new function()
         }
 
         return label;
+    };
+
+    /// <summary>
+    /// Highlights the edges of the hovered pie slice
+    /// </summary>
+    let highlightPieSlice = function()
+    {
+        // Setting this element to be the last will ensure that
+        // the full outline is drawn (i.e. not covered by another slice)
+        let parent = this.parentNode;
+        parent.removeChild(this);
+        parent.appendChild(this);
+        this.setAttribute("stroke", "#c1c1c1");
     };
 
     /// <summary>
