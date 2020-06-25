@@ -85,6 +85,12 @@ function ensureStatHeight()
 }
 
 /// <summary>
+/// Cache of chart information so we don't have to retrieve it again
+/// when building larger/more detailed charts
+/// </summary>
+let g_chartCache = {};
+
+/// <summary>
 /// Make a request to the server to see how much disk space we have left
 /// </summary>
 function getCapacity()
@@ -107,7 +113,7 @@ function getCapacity()
         setSpace($$("#spaceTotal span"), space.total);
         setSpace($$("#spaceRemaining span"), space.free);
 
-        let chartData =
+        g_chartCache.capacity =
         {
             radius : 70,
             points : [
@@ -118,7 +124,7 @@ function getCapacity()
             noSort : true
         };
 
-        $("#spaceGraph").appendChild(Chart.pie(chartData));
+        appendChart(g_chartCache.capacity, "spaceGraph", true /*isPie*/);
         getLibraryDetails();
     };
 
@@ -157,7 +163,7 @@ function addMovieStats(movies)
     let ul = buildNode("ul", { class : "innerStatList" });
     for (let [resolution, count] of Object.entries(movies.resolution))
     {
-        piePoints.push({ value : parseInt(count), label : `${resolution} - ${count}` });
+        piePoints.push({ value : parseInt(count), label : resolution });
         ul.appendChild(
             buildNode("li").appendChildren(
                 buildNode("strong", {}, `${resolution}: `),
@@ -176,13 +182,14 @@ function addMovieStats(movies)
         buildNode("li").appendChild(ul)
     );
 
-    let chartData =
+    g_chartCache.movies =
     {
         radius : 70,
-        points : piePoints
+        points : piePoints,
+        labelOptions : { count : true }
     };
 
-    $("#movieGraph").appendChild(Chart.pie(chartData));
+    appendChart(g_chartCache.movies, "movieGraph", true);
 }
 
 /// <summary>
@@ -219,14 +226,14 @@ function addTvStats(tv)
         buildNode("li").appendChild(ul)
     );
 
-    let chartData =
+    g_chartCache.tv =
     {
         width : 140,
         height : 100,
         points : barPoints
     };
 
-    $("#tvGraph").appendChild(Chart.bar(chartData));
+    appendChart(g_chartCache.tv, "tvGraph", false /*isPie*/);
 }
 
 /// <summary>
@@ -265,14 +272,79 @@ function addMusicStats(music)
 
     barPoints.sort((left, right) => right.label - left.label);
 
-    let chartData =
+    g_chartCache.music =
     {
         width : 140,
         height : 100,
         points : barPoints
     };
+    appendChart(g_chartCache.music, "musicGraph", false /*isPie*/);
+}
 
-    $("#musicGraph").appendChild(Chart.bar(chartData));
+/// <summary>
+/// Builds and appends a chart with the given chart data, also including
+/// an expansion icon to view a larger version of the chart
+/// </summary>
+function appendChart(chartData, holderId, isPie)
+{
+    let chart = isPie ? Chart.pie(chartData) : Chart.bar(chartData);
+    chart.classList.add("statGraphSvg");
+    let holder = $(`#${holderId}`);
+    holder.style.width = (isPie ? chartData.radius * 2 : chartData.width) + "px";
+    holder.style.height = (isPie ? chartData.radius * 2 : chartData.height) + "px";
+    holder.appendChildren(
+        chart,
+        buildNode("img", { src : icons.EXPAND, class : "statGraphExpand" }, 0, { click : function() { buildChartOverlay(chartData); } })
+    );
+}
+
+/// <summary>
+/// Builds an overlay with a larger version of the chart, scaled to its original bounds
+/// </summary>
+function buildChartOverlay(chartData)
+{
+    let radiusSav = -1;
+    let widthSav = -1;
+    let heightSav = -1;
+    if (chartData.radius)
+    {
+        radiusSav = chartData.radius;
+        chartData.radius = Math.min(radiusSav * 3, screen.width / 2 - 20);
+    }
+    else
+    {
+        widthSav = chartData.width;
+        heightSav = chartData.height;
+        let maxWidthScale = (screen.width - 20) / widthSav;
+        let maxHeightScale = (screen.height - 20) / heightSav;
+        let scale = Math.min(maxWidthScale, maxHeightScale, 3);
+        chartData.width = widthSav * scale;
+        chartData.height = heightSav * scale;
+    }
+
+    buildOverlay(true,
+        buildNode("div").appendChildren(chartData.radius ? Chart.pie(chartData) : Chart.bar(chartData)),
+        buildNode("input",
+            {
+                type : "button",
+                id : "overlayBtn",
+                value : "Close",
+                style : "width: 100px"
+            },
+            0,
+            {
+                click : overlayDismiss
+            }));
+
+    if (chartData.radius)
+    {
+        chartData.radius = radiusSav;
+    }
+    else
+    {
+        chartData.width = widthSav;
+        chartData.height = heightSav;
+    }
 }
 
 /// <summary>
@@ -340,7 +412,7 @@ function getFriendlySpace(response)
             ++idx;
         }
 
-        return value.toFixed(2) + (idx == -1 ? "" : arr[idx]);
+        return value.toFixed(2) + " " + (idx == -1 ? "" : arr[idx]);
     };
 
     let reduceSize = (value) => ({ dec : reduceCore(value, 1000, decimal), bin : reduceCore(value, 1024, binary) });

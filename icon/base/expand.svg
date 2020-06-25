@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+	 viewBox="0 0 128 128" style="enable-background:new 0 0 128 128;" xml:space="preserve">
+<style type="text/css">
+	.st0{fill:#C1C1C1;}
+	.st1{fill:none;stroke:#C1C1C1;stroke-width:12;stroke-miterlimit:10;}
+</style>
+<g>
+	<path class="st0" d="M109,19C109,19,109,19,109,19C109,19,109,19,109,19l0,90c0,0,0,0,0,0l-90,0c0,0,0,0,0,0c0,0,0,0,0,0l0-90
+		c0,0,0,0,0,0H109 M109,7H19C12.4,7,7,12.4,7,19v90c0,6.6,5.4,12,12,12h90c6.6,0,12-5.4,12-12V19C121,12.4,115.6,7,109,7L109,7z"/>
+</g>
+<g>
+	<line class="st1" x1="45" y1="41" x2="93" y2="41"/>
+</g>
+<g>
+	<line class="st1" x1="82.4" y1="45.1" x2="38.8" y2="88.8"/>
+</g>
+<g>
+	<line class="st1" x1="87" y1="83" x2="87" y2="35"/>
+</g>
+</svg>

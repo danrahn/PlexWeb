@@ -184,9 +184,24 @@ a:hover .inlineIcon {
 }
 
 .statGraph {
-    overflow: hidden;
+    overflow: auto;
     margin: auto;
     padding: 10px 20px 10px 20px;
+    position: relative;
+}
+
+.statGraphSvg {
+    position: absolute;
+    top: 10px;
+    right: 20px;
+}
+
+.statGraphExpand {
+    position: absolute;
+    top: 10px;
+    right: 20px;
+    width: 15px;
+    cursor: pointer;
 }
 
 .innerStatList {

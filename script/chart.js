@@ -24,6 +24,11 @@ let Chart = new function()
     ///    An array of colors to override the default choices
     ///  noSort:
     ///    If true, points will not be sorted before creating the chart
+    ///  labelOptions:
+    ///    A dictionary of flags that determine the label:
+    ///      percentage - show the percentage of the total (default = true)
+    ///      count - show the raw value (default = false)
+    ///      name - show the name of the data point (default = true)
     /// </returns>
     this.pie = function(data)
     {
@@ -36,6 +41,7 @@ let Chart = new function()
 
         let r = data.radius;
         let svg = makeSvg(r * 2, r * 2);
+        --r; // Need space for border
         let cumulative = 0;
         let colors = data.colors ? data.colors : ["#FFC000", "#5B9BD5", "#70AD47", "#4472C4", "#ED7D31", "#A5A5A5"];
         let colorIndex = 0;
@@ -60,7 +66,12 @@ let Chart = new function()
                     xmlns : "http://www.w3.org/2000/svg"
                 });
 
-            addTooltip(arc, `${point.label} (${(point.value / total * 100).toFixed(2)}%)`);
+            let label = buildPieTooltip(point, total, data.labelOptions);
+            if (label.length != 0)
+            {
+                addTooltip(arc, label);
+            }
+
             svg.appendChild(arc);
         }
         return svg;
@@ -158,6 +169,36 @@ let Chart = new function()
     };
 
     /// <summary>
+    /// Builds and returns the tooltip label for the given point, based on the given options
+    /// </summary>
+    let buildPieTooltip = function(point, total, labelOptions)
+    {
+        let label = "";
+        let percentage = (point.value / total * 100).toFixed(2);
+        if (!labelOptions)
+        {
+            return `${point.label} (${percentage}%)`;
+        }
+
+        if (labelOptions.name === undefined || labelOptions.name)
+        {
+            label += point.label;
+        }
+
+        if (labelOptions.count)
+        {
+            label += ` - ${point.value}`;
+        }
+
+        if (labelOptions.percentage === undefined || labelOptions.percentage)
+        {
+            label += ` (${percentage}%)`;
+        }
+
+        return label;
+    };
+
+    /// <summary>
     /// Adds hover tooltips to the given data point
     /// </summary>
     let addTooltip = function(element, label)
@@ -173,8 +214,8 @@ let Chart = new function()
     {
         // Need to translate coordinate systems
         let angle = (value / total) * Math.PI * 2;
-        let x = radius * Math.cos(angle) + radius;
-        let y = radius - radius * Math.sin(angle);
+        let x = radius * Math.cos(angle) + radius + 1; // + 1 to account for stroke border
+        let y = radius - radius * Math.sin(angle) + 1;
         return { x : x, y : y };
     };
 
@@ -189,6 +230,7 @@ let Chart = new function()
             {
                 width : width,
                 height : height,
+                viewBox : `0 0 ${width} ${height}`,
                 xmlns : "http://www.w3.org/2000/svg",
                 x : 0,
                 y : 0
