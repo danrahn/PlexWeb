@@ -29,6 +29,10 @@ let Chart = new function()
     ///      percentage - show the percentage of the total (default = true)
     ///      count - show the raw value (default = false)
     ///      name - show the name of the data point (default = true)
+    ///  title:
+    ///    The title for the graph
+    ///  noTitle:
+    ///    Flag indicating that we shouldn't add a title, even if it is set
     /// </returns>
     this.pie = function(data)
     {
@@ -40,7 +44,9 @@ let Chart = new function()
         let total = data.points.reduce((acc, cur) => acc + cur.value, 0);
 
         let r = data.radius;
-        let svg = makeSvg(r * 2, r * 2);
+        let hasTitle = data.title && !data.noTitle;
+        let titleOffset = hasTitle ? 40 : 0;
+        let svg = makeSvg(r * 2, r * 2 + titleOffset);
         --r; // Need space for border
         let cumulative = 0;
         let colors = data.colors ? data.colors : ["#FFC000", "#5B9BD5", "#70AD47", "#4472C4", "#ED7D31", "#A5A5A5"];
@@ -48,14 +54,14 @@ let Chart = new function()
         for (let point of data.points)
         {
             let startPoint = getPoint(r, cumulative, total);
-            let d = `M ${r} ${r} L ${startPoint.x} ${startPoint.y} `;
+            let d = `M ${r} ${r + titleOffset} L ${startPoint.x} ${startPoint.y + titleOffset} `;
 
             cumulative += point.value;
 
             let endPoint = getPoint(r, cumulative, total);
             let sweep = (point.value > total / 2) ? "1" : "0";
-            d += `A ${r} ${r} ${sweep} ${sweep} 0 ${endPoint.x} ${endPoint.y} `;
-            d += `L ${endPoint.x} ${endPoint.y} ${r} ${r}`;
+            d += `A ${r} ${r} ${sweep} ${sweep} 0 ${endPoint.x} ${endPoint.y + titleOffset} `;
+            d += `L ${endPoint.x} ${endPoint.y + titleOffset} ${r} ${r + titleOffset}`;
             let arc = buildNodeNS("http://www.w3.org/2000/svg",
                 "path",
                 {
@@ -74,6 +80,11 @@ let Chart = new function()
 
             svg.appendChild(arc);
         }
+
+        if (hasTitle)
+        {
+            svg.appendChild(buildCenteredText(titleOffset - 20, data.title, 18));
+        }
         return svg;
     };
 
@@ -90,7 +101,9 @@ let Chart = new function()
         // For now, don't bother with negative values and assume all charts start at 0
         let max = data.points.reduce((acc, cur) => acc < cur.value ? cur.value : acc, 0);
 
-        let svg = makeSvg(data.width, data.height);
+        let hasTitle = data.title && !data.noTitle;
+        let titleOffset = hasTitle ? 40 : 0;
+        let svg = makeSvg(data.width, data.height + titleOffset);
 
         // Give 5% for the left/bottom labels (even though they aren't implemented yet, and 5% probably isn't enough)
         let fp = { x : data.width * 0.05, y : data.height * 0.05 };
@@ -99,7 +112,7 @@ let Chart = new function()
             "http://www.w3.org/2000/svg",
             "polyline",
             {
-                points : `${fp.x},0 ${fp.x},${data.height - fp.y} ${data.width},${data.height - fp.y} `,
+                points : `${fp.x},${titleOffset} ${fp.x},${data.height - fp.y + titleOffset} ${data.width},${data.height - fp.y + titleOffset} `,
                 stroke : "#616161",
                 "stroke-width" : axisWidth,
                 fill : "none"
@@ -118,14 +131,14 @@ let Chart = new function()
         for (let point of data.points)
         {
             let height = gridHeight * (point.value / max);
-            let bar = buildRect(offsetX, gridHeight - height, barWidth, height, "#4472C4");
+            let bar = buildRect(offsetX, gridHeight - height + titleOffset, barWidth, height, "#4472C4");
             addTooltip(bar, `${point.label}: ${point.value}`);
             svg.appendChild(bar);
 
             // Also build a ghost bar for better tooltips, especially with small bars
             if (gridHeight - height > 1)
             {
-                let ghostBar = buildRect(offsetX, 0, barWidth, gridHeight, "none", { "pointer-events" : "all" });
+                let ghostBar = buildRect(offsetX, titleOffset, barWidth, gridHeight, "none", { "pointer-events" : "all" });
                 addTooltip(ghostBar, `${point.label}: ${point.value}`);
                 ghostBar.addEventListener("mouseenter", function() { this.setAttribute("stroke", "#616161"); });
                 ghostBar.addEventListener("mouseleave", function() { this.setAttribute("stroke", "none"); });
@@ -135,8 +148,32 @@ let Chart = new function()
             offsetX += per;
         }
 
+        if (hasTitle)
+        {
+            svg.appendChild(buildCenteredText(titleOffset - 20, data.title, 18));
+        }
 
         return svg;
+    };
+
+    /// <summary>
+    /// Adds a horizontally centered text node at the given y offset
+    /// </summary>
+    let buildCenteredText = function(y, text, size)
+    {
+        return buildNodeNS(
+            "http://www.w3.org/2000/svg",
+            "text",
+            {
+                x : "50%",
+                y : y,
+                fill : "#c1c1c1",
+                "text-anchor" : "middle",
+                "font-weight" : "bold",
+                "font-size" : size + "pt"
+            },
+            text
+        );
     };
 
     /// <summary>

@@ -121,7 +121,9 @@ function getCapacity()
                 { value : response.total - response.free, label : "Used" }
             ],
             colors : ["#2e832e", "#a33e3e"],
-            noSort : true
+            noSort : true,
+            title : "Plex Storage",
+            noTitle : true
         };
 
         appendChart(g_chartCache.capacity, "spaceGraph", true /*isPie*/);
@@ -186,7 +188,9 @@ function addMovieStats(movies)
     {
         radius : 70,
         points : piePoints,
-        labelOptions : { count : true }
+        labelOptions : { count : true },
+        title : "Movie Resolutions",
+        noTitle : true
     };
 
     appendChart(g_chartCache.movies, "movieGraph", true);
@@ -230,7 +234,9 @@ function addTvStats(tv)
     {
         width : 140,
         height : 100,
-        points : barPoints
+        points : barPoints,
+        title : "Content Rating",
+        noTitle : true
     };
 
     appendChart(g_chartCache.tv, "tvGraph", false /*isPie*/);
@@ -276,7 +282,9 @@ function addMusicStats(music)
     {
         width : 140,
         height : 100,
-        points : barPoints
+        points : barPoints,
+        title : "Decades",
+        noTitle : true
     };
     appendChart(g_chartCache.music, "musicGraph", false /*isPie*/);
 }
@@ -330,6 +338,8 @@ function buildChartOverlay(chartData)
         chartData.height = heightSav * scale;
     }
 
+    let titleSav = !!chartData.noTitle;
+    chartData.noTitle = false;
     buildOverlay(true,
         buildNode("div").appendChildren(chartData.radius ? Chart.pie(chartData) : Chart.bar(chartData)),
         buildNode("input",
@@ -343,6 +353,7 @@ function buildChartOverlay(chartData)
             {
                 click : overlayDismiss
             }));
+    chartData.noTitle = titleSav;
 
     if (chartData.radius)
     {
