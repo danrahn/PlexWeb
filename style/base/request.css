@@ -328,6 +328,7 @@ a:hover {
     padding: 4px;
     border: none;
     border-left: 1px solid #818181 !important;
+    color: #c1c1c1;
 }
 
 #mdHelper button:hover {
@@ -618,11 +619,11 @@ a:hover {
     #commentsHolder {
         overflow: auto;
         padding: 20px;
-        margin-left: 10%;
-        margin-right: 10%;
+        margin-left: 5%;
+        margin-right: 5%;
         margin-top: 30px;
         margin-bottom: 30px;
-        width: calc(80% - 40px);
+        width: calc(90% - 40px);
         margin-top: 20px;
         background-color: rgba(0,0,0,0.2);
         height: auto;
@@ -631,8 +632,9 @@ a:hover {
     #newComment {
         float: left;
         height: 50px;
-        width: 80%;
+        width: calc(100% - 6px);
         min-width: 210px;
+        max-width: calc(100% - 6px);
         resize: both;
         margin-top: 30px;
         background-color: rgba(63, 66, 69, 0.7);

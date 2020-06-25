@@ -397,7 +397,7 @@ def minify_keycodes(combined):
     combined = combined[:start] + combined[end + 2:]
     results = re.findall(r'([A-Z_]+) +: (\d+)', definition)
     for result in results:
-        combined = combined.replace('KEY.' + result[0], str(result[1]))
+        combined = re.sub(f'\\bKEY\\.{result[0]}\\b', str(result[1]), combined)
     return combined
 
 
@@ -445,8 +445,8 @@ def preminify_markdown(lines, rem_tmi):
     # currentRun is used quite a bit
     lines = re.sub(r'\bthis\.currentRun\b', 'this.' + next_var(), lines)
 
-    # State of a run
-    lines = re.sub(r'\.state\b', '.' + next_var(), lines)
+    # State of a run - Disabled because other classes use .state
+    # lines = re.sub(r'\.state\b', '.' + next_var(), lines)
 
     # Inner runs
     lines = re.sub(r'\binnerRuns\b', next_var(), lines)

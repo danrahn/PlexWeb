@@ -101,6 +101,8 @@ function setupMarkdownHelpers()
     $("#addUnderline").addEventListener("click", mdDispatch);
     $("#addItalic").addEventListener("click", mdDispatch);
     $("#addStrikethrough").addEventListener("click", mdDispatch);
+    $("#addSuperscript").addEventListener("click", mdDispatch);
+    $("#addSubscript").addEventListener("click", mdDispatch);
     $("#addLink").addEventListener("click", addLink);
     $("#addImage").addEventListener("click", addPhoto);
     $("#addTable").addEventListener("click", addTable);
@@ -125,6 +127,12 @@ function mdDispatch()
             break;
         case "addStrikethrough":
             MarkdownEditor.addFormat($("#newComment"), "~~");
+            break;
+        case "addSuperscript":
+            MarkdownEditor.addFormat($("#newComment"), "^(", ")");
+            break;
+        case "addSubscript":
+            MarkdownEditor.addFormat($("#newComment"), "~(", ")");
             break;
         default:
             return;

@@ -81,6 +81,8 @@ function get_details($req_id)
                     <input type="button" class="mdButton" id="addUnderline" value="U" title="Underline (Ctrl + U)" />
                     <input type="button" class="mdButton" id="addItalic" value="I" title="Italic (Ctrl + I)" />
                     <input type="button" class="mdButton" id="addStrikethrough" value="S" title="Strikethrough (Ctrl + S)" />
+                    <button class="mdButton" id="addSuperscript" title="Insert Superscript (Ctrl + Shift + ^)"><em>X<sup>2</sup></em></button>
+                    <button class="mdButton" id="addSubscript" title="Insert Subscript (Ctrl + Shift + ~)"><em>X<sub>2</sub></em></button>
                     <button class="mdButton" id="addLink" title="Insert Link (Ctrl + K)"><img src="<?php icon('mdLink') ?>" altText="Insert Link" /></button>
                     <button class="mdButton" id="addImage" title="Insert Image (Ctrl + M)"><img src="<?php icon('mdImage') ?>" altText="Insert Image" /></button>
                     <button class="mdButton" id="addTable" title="Insert Table (Ctrl + L)"><img src="<?php icon('mdTable') ?>" altText="Insert Table" /></button>

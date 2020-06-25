@@ -101,24 +101,39 @@ let MarkdownEditor = new function()
     /// </summary>
     let formatHandler = function(e)
     {
-        if (!e.ctrlKey || e.altKey || e.shiftKey)
+        if (!e.ctrlKey || e.altKey)
         {
             return;
+        }
+
+        if (e.shiftKey)
+        {
+            switch (e.keyCode)
+            {
+                case KEY.SIX:
+                    addMarkdownFormat(this, '^(', ')');
+                    break;
+                case KEY.BACKTICK:
+                    addMarkdownFormat(this, '~(', ')');
+                    break;
+                default:
+                    return;
+            }
         }
 
         switch (e.keyCode)
         {
             case KEY.B:
-                addMarkdownFormat('**', this);
+                addMarkdownFormat(this, '**');
                 break;
             case KEY.U:
-                addMarkdownFormat('++', this);
+                addMarkdownFormat(this, '++');
                 break;
             case KEY.S:
-                addMarkdownFormat('~~', this);
+                addMarkdownFormat(this, '~~');
                 break;
             case KEY.I:
-                addMarkdownFormat('_', this);
+                addMarkdownFormat(this, '_');
                 break;
             default:
                 return;
@@ -131,8 +146,13 @@ let MarkdownEditor = new function()
     /// Surrounds the currently highlighted text with the specific pattern. If nothing is highlighted,
     /// add a placeholder value and highlight that.
     /// </summary>
-    let addMarkdownFormat = function(ch, comment)
+    let addMarkdownFormat = function(comment, chStart, chEnd)
     {
+        if (!chEnd)
+        {
+            chEnd = chStart;
+        }
+
         let start = comment.selectionStart;
         let end = comment.selectionEnd;
         comment.focus();
@@ -141,15 +161,15 @@ let MarkdownEditor = new function()
         if (document.queryCommandSupported('insertText'))
         {
             // This is deprecated, but it's the only way I've found to do it that supports undo.
-            document.execCommand('insertText', false, ch + surround + ch);
+            document.execCommand('insertText', false, chStart + surround + chEnd);
         }
         else
         {
-            let newText = ch + surround + ch;
+            let newText = chStart + surround + chEnd;
             comment.setRangeText(newText);
         }
 
-        comment.setSelectionRange(start + ch.length, start + surround.length + ch.length);
+        comment.setSelectionRange(start + chStart.length, start + surround.length + chStart.length);
     };
 
     /// <summary>
@@ -171,5 +191,8 @@ let MarkdownEditor = new function()
     /// <summary>
     /// Adds the given formatting to the given textarea element
     /// </summary>
-    this.addFormat = (element, ch) => addMarkdownFormat(ch, element);
+    this.addFormat = function(element, chStart, chEnd)
+    {
+        addMarkdownFormat(element, chStart, chEnd);
+    };
 }();
