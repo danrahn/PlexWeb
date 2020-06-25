@@ -99,6 +99,7 @@ const stateToStr = function(state)
 /// Returns whether `state` is allowed given the `current` state
 /// </summary>
 /// <param name="index">The current parse location</param>
+// eslint-disable-next-line complexity
 const stateAllowedInState = function(state, current, index)
 {
     switch (current.state)
@@ -115,6 +116,8 @@ const stateAllowedInState = function(state, current, index)
         case State.Underline:
         case State.Italic:
         case State.Strikethrough:
+        case State.Superscript:
+        case State.Subscript:
         case State.Table:
             return !blockMarkdown(state); // Only inline features allowed
         case State.Url:
@@ -136,7 +139,7 @@ const stateAllowedInState = function(state, current, index)
         case State.OrderedList:
             return state == State.ListItem; // Lists can only have listitems.
         default:
-            logError('Unknown state: ' + state);
+            logError('Unknown state: ' + current.state);
             return false;
     }
 };

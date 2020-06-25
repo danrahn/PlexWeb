@@ -335,7 +335,10 @@ class MarkdownTestSuite
             ['*A^B*', this._divWrap('*A<sup>B*</sup>')],
             ['*A^(B)*', this._divWrap('<em>A<sup>B</sup></em>')],
             ['*A^(**B)*', this._divWrap('<em>A<sup>**B</sup></em>')],
-            ['*A^(**B**)*', this._divWrap('<em>A<sup><strong>B</strong></sup></em>')]
+            ['*A^(**B**)*', this._divWrap('<em>A<sup><strong>B</strong></sup></em>')],
+            // Inline elements can be nested
+            ['A^**B**', this._divWrap('A<sup><strong>B</strong></sup>')],
+            ['A^(~~_[B](url)_~~)', this._divWrap('A<sup><s><em><a href="url">B</a></em></s></sup>')]
         );
 
         return this._runSingleSuite(tests, 'Superscript Functionality');
@@ -364,7 +367,10 @@ class MarkdownTestSuite
             ['*A~(B*)', this._divWrap('*A<sub>B*</sub>')],
             ['*A~(B)*', this._divWrap('<em>A<sub>B</sub></em>')],
             ['*A~(**B)*', this._divWrap('<em>A<sub>**B</sub></em>')],
-            ['*A~(**B**)*', this._divWrap('<em>A<sub><strong>B</strong></sub></em>')]
+            ['*A~(**B**)*', this._divWrap('<em>A<sub><strong>B</strong></sub></em>')],
+            // Inline elements can be nested
+            ['A~(**B**)', this._divWrap('A<sub><strong>B</strong></sub>')],
+            ['A~(~~_[B](url)_~~)', this._divWrap('A<sub><s><em><a href="url">B</a></em></s></sub>')]
         );
 
         return this._runSingleSuite(tests, 'Subscript Functionality');
@@ -1034,6 +1040,11 @@ class MarkdownTestSuite
                 // Need to properly account for inline code runs within tables
                 '| `` A ` | `` \\| ` B ` | C |\n| --- | --- |',
                 '<table><thead><tr><td><code> A ` | </code> | <code> B </code></td><td>C</td></tr></thead><tbody></tbody></table>'
+            ],
+            [
+                // URLs nested inside of super/subscript
+                'A^[B](url)',
+                this._divWrap('A<sup><a href="url">B</a></sup>')
             ]
         );
 
