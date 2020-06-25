@@ -353,6 +353,7 @@ module.exports = {
         "overlayDismiss" : "readonly",
         // tooltip.js
         "setTooltip" : "readonly",
+        "setTooltipText" : "readonly",
         "showTooltip" : "readonly",
         "dismissTooltip" : "readonly",
         // iconMap.js

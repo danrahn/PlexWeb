@@ -32,7 +32,7 @@ window.addEventListener("load", function()
 /// </summary>
 function setTooltip(element, tooltip, delay=250)
 {
-    element.setAttribute("tt", tooltip);
+    setTooltipText(element, tooltip);
     element.setAttribute("ttDelay", delay);
     element.addEventListener("mousemove", function(e)
     {
@@ -45,9 +45,23 @@ function setTooltip(element, tooltip, delay=250)
     });
 }
 
+/// <summary>
+/// Sets the tooltip text for the given element
+/// If the tooltip for this element is currently showing, adjust that as well
+/// </summary>
+function setTooltipText(element, tooltip)
+{
+    element.setAttribute("tt", tooltip);
+    if (showingTooltip && ttElement == element)
+    {
+        $("#tooltip").innerHTML = tooltip;
+    }
+}
+
 
 let tooltipTimer;
 let showingTooltip = false;
+let ttElement = null;
 
 /// <summary>
 /// Show a tooltip with the given text at a position relative to clientX/Y in event e
@@ -74,6 +88,7 @@ function showTooltip(e, text, delay=250)
 /// </summary>
 function showTooltipCore(e, text)
 {
+    ttElement = e.target;
     showingTooltip = true;
     const top = (e.clientY + 20) + "px";
     let tooltip = $("#tooltip");

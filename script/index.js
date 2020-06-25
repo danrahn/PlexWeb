@@ -438,10 +438,12 @@ function showHideStats()
     stats.classList.remove(hidden ? "hideStats" : "showStats");
     if (hidden)
     {
+        setTooltipText($("#showStatsBtn"), "Hide Plex Stats");
         Animation.fireNow({ opacity : 1, height : $("#libStats").scrollHeight + "px" }, $("#libStats"), 250, false);
     }
     else
     {
+        setTooltipText($("#showStatsBtn"), "Show Plex Stats");
         Animation.fireNow({ opacity : 0, height : "0px" }, $("#libStats"), 250, false);
     }
 }
