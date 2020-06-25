@@ -367,6 +367,7 @@ def create_temp(includes, rem_log, ultra):
         combined = re.sub(r'\bparseInt\(', 'p_(', combined)
         combined = minify_process_request(combined)
         combined = minify_keycodes(combined)
+        combined = minify_icons(combined)
     if len(consolelog) > 0:
         # prepend this outside of our scope
         if ultra:
@@ -406,7 +407,7 @@ def minify_keycodes(combined):
     '''
     start = combined.find('\nconst KEY =')
     if start == -1:
-        return
+        return combined
 
     end = combined.find('}', start)
     definition = combined[start:end]
@@ -414,6 +415,24 @@ def minify_keycodes(combined):
     results = re.findall(r'([A-Z_]+) +: (\d+)', definition)
     for result in results:
         combined = re.sub(f'\\bKEY\\.{result[0]}\\b', str(result[1]), combined)
+    return combined
+
+
+def minify_icons(combined):
+    '''
+    Remove the icon map via direct substitution.
+    NOTE: Depending on how many icons are used, and how often, this could
+          result in a larger file.
+    '''
+    start = combined.find('\nconst icons =\n')
+    if start == -1:
+        return combined
+    end = combined.find('}', start)
+    definition = combined[start:end]
+    combined = combined[:start] + combined[end + 2:]
+    results = re.findall(r'([A-Z_]+) +: ("[^"]+")', definition)
+    for result in results:
+        combined = re.sub(f'\\bicons\\.{result[0]}\\b', str(result[1]), combined)
     return combined
 
 
