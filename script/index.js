@@ -106,7 +106,7 @@ function getCapacity()
         let setSpace = (ele, obj) =>
         {
             ele.innerHTML = obj.dec;
-            setTooltip(ele, obj.bin);
+            Tooltip.setTooltip(ele, obj.bin);
         };
 
         setSpace($$("#spaceUsed span"), space.used);
@@ -174,7 +174,7 @@ function addMovieStats(movies)
     let list = $$("#movieStats ul");
     let noteText = "Duplicates of different resolutions mean that the<br> numbers below will not add up to this value";
     let movieCount = buildNode("span", {}, movies.Movies + "*");
-    setTooltip(movieCount, noteText);
+    Tooltip.setTooltip(movieCount, noteText);
     list.appendChildren(
         buildNode("li").appendChildren(
             buildNode("strong", {}, "Total Movies: "),
@@ -391,7 +391,7 @@ function showStatsIcon()
         0,
         { click : showHideStats }
     );
-    setTooltip(stats, "Show Plex Stats", 250 /*delay*/, true /*static*/);
+    Tooltip.setTooltip(stats, "Show Plex Stats", 250 /*delay*/, true /*static*/);
     $("#header").appendChildren(stats);
 }
 
@@ -438,12 +438,12 @@ function showHideStats()
     stats.classList.remove(hidden ? "hideStats" : "showStats");
     if (hidden)
     {
-        setTooltipText($("#showStatsBtn"), "Hide Plex Stats");
+        Tooltip.setText($("#showStatsBtn"), "Hide Plex Stats");
         Animation.fireNow({ opacity : 1, height : $("#libStats").scrollHeight + "px" }, $("#libStats"), 250, false);
     }
     else
     {
-        setTooltipText($("#showStatsBtn"), "Show Plex Stats");
+        Tooltip.setText($("#showStatsBtn"), "Show Plex Stats");
         Animation.fireNow({ opacity : 0, height : "0px" }, $("#libStats"), 250, false);
     }
 }
@@ -602,7 +602,7 @@ function writeSessions(activeSessions)
     updateTotalBitrate();
     let active = $("#activeText");
     active.addEventListener("mousemove", showTotalBitrateTooltip);
-    active.addEventListener("mouseout", dismissTooltip);
+    active.addEventListener("mouseout", Tooltip.dismiss);
 }
 
 /// <summary>
@@ -937,7 +937,7 @@ function showTotalBitrateTooltip(e)
         return;
     }
 
-    showTooltip(e, `Total Bitrate: ${bitrate} kbps`);
+    Tooltip.showTooltip(e, `Total Bitrate: ${bitrate} kbps`);
 }
 
 /// <summary>
@@ -1146,7 +1146,7 @@ function buildActivityProgress(sesh)
             mouseleave : function()
             {
                 this.removeAttribute("hovered");
-                dismissTooltip();
+                Tooltip.dismiss();
             }
         });
 
@@ -1352,7 +1352,7 @@ function getIPInfo(ip, id)
 function progressHover(e)
 {
     this.setAttribute("hovered", true);
-    showTooltip(e, getHoverText(this));
+    Tooltip.showTooltip(e, getHoverText(this));
 }
 
 /// <summary>

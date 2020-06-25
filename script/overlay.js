@@ -75,7 +75,7 @@ function buildOverlay(dismissible, ...children)
     document.body.appendChild(overlayNode);
     if ($("#tooltip"))
     {
-        dismissTooltip();
+        Tooltip.dismiss();
     }
     Animation.queue({ opacity : 1 }, overlayNode, 250);
     if (container.clientHeight / window.innerHeight > 0.7)

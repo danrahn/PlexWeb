@@ -171,10 +171,10 @@ function buildRequestBody(request, sortOrder, requestHolder)
     let requestTitle = buildRequestTitle(request);
 
     let requestDate = buildNode("span", {}, `Requested: ${DateUtil.getDisplayDate(request.rd)}`);
-    setTooltip(requestDate, DateUtil.getFullDate(request.rd));
+    Tooltip.setTooltip(requestDate, DateUtil.getFullDate(request.rd));
 
     let updateDate = buildNode("span", {}, `Last Update: ${DateUtil.getDisplayDate(request.ad)}`);
-    setTooltip(updateDate, DateUtil.getFullDate(request.ad));
+    Tooltip.setTooltip(updateDate, DateUtil.getFullDate(request.ad));
 
     let requester = buildNode("span", {}, `Requested By: ${request.r}`);
 

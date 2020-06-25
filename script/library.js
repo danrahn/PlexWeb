@@ -50,7 +50,7 @@ function listItem(key, value, dateTooltip=false)
     if (dateTooltip)
     {
         let liDate = buildNode("span", {}, DateUtil.getDisplayDate(value));
-        setTooltip(liDate, DateUtil.getFullDate(value));
+        Tooltip.setTooltip(liDate, DateUtil.getFullDate(value));
         li.appendChild(liDate);
     }
     else

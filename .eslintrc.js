@@ -352,10 +352,7 @@ module.exports = {
         "buildOverlay" : "readonly",
         "overlayDismiss" : "readonly",
         // tooltip.js
-        "setTooltip" : "readonly",
-        "setTooltipText" : "readonly",
-        "showTooltip" : "readonly",
-        "dismissTooltip" : "readonly",
+        "Tooltip" : "readonly",
         // iconMap.js
         "icons" : "readonly",
         // tableCommon.js

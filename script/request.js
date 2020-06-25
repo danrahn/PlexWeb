@@ -1860,7 +1860,7 @@ function buildComments(comments)
         }
 
         let date = buildNode("span", {}, DateUtil.getDisplayDate(dateObj) + (editTitle ? "*" : ""));
-        setTooltip(date, DateUtil.getFullDate(dateObj) + editTitle);
+        Tooltip.setTooltip(date, DateUtil.getFullDate(dateObj) + editTitle);
 
         commentCache[comment.id] = comment.content;
 

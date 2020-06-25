@@ -203,7 +203,7 @@ let Chart = new function()
     /// </summary>
     let addTooltip = function(element, label)
     {
-        setTooltip(element, label, 50);
+        Tooltip.setTooltip(element, label, 50);
     };
 
     /// <summary>

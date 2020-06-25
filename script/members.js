@@ -102,7 +102,7 @@ function buildMember(member)
     let list = buildNode("ul", { class : "memberDetails" });
     const li = (label, value) => buildNode("li", {}, label + ": " + value);
     let lastSeen = li("Last Seen", DateUtil.getDisplayDate(member.last_seen));
-    setTooltip(lastSeen, DateUtil.getFullDate(member.last_seen));
+    Tooltip.setTooltip(lastSeen, DateUtil.getFullDate(member.last_seen));
     list.appendChild(lastSeen);
 
     if (member.name.trim().length > 0)
