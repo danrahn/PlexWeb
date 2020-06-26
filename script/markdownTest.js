@@ -93,8 +93,13 @@ class MarkdownTestSuite
                 '<div class="mdDiv"><a href="https://danrahn.com">Add some text here</a></div>'
             ],
             [
+                // Don't encode href
                 '[https://backwards.com](Uh oh!)',
-                '<div class="mdDiv"><a href="Uh%20oh!">https:&#x2f;&#x2f;backwards.com</a></div>'
+                '<div class="mdDiv"><a href="Uh oh!">https:&#x2f;&#x2f;backwards.com</a></div>'
+            ],
+            [
+                '[https://backwards.com](hello%20world)',
+                '<div class="mdDiv"><a href="hello%20world">https:&#x2f;&#x2f;backwards.com</a></div>'
             ],
             [
                 '[Link[](danrahn.com)',

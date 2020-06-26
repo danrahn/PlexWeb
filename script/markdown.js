@@ -4215,7 +4215,9 @@ class Url extends Run
             return '</a>';
         }
 
-        return `<a href="${encodeURI(this.url)}">`;
+        // Don't do any encoding on the URL, assume the user has done all necessary escaping,
+        // as otherwise we might accidentally double-encode something'
+        return `<a href="${this.url}">`;
     }
 
     /// <summary>
@@ -4832,12 +4834,6 @@ class SuperSub extends InlineFormat
 /// </summary>
 class Superscript extends SuperSub
 {
-    constructor(start, end, paren, parent)
-    {
-        super(start, end, paren, parent);
-        this.paren = paren;
-    }
-
     tag(end) { return Run.basicTag('sup', end); }
 }
 
@@ -4846,12 +4842,6 @@ class Superscript extends SuperSub
 /// </summary>
 class Subscript extends SuperSub
 {
-    constructor(start, end, paren, parent)
-    {
-        super(start, end, paren, parent);
-        this.paren = paren;
-    }
-
     tag(end) { return Run.basicTag('sub', end); }
 }
 
