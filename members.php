@@ -33,5 +33,5 @@ if (!UserLevel::is_admin())
     </div>
 </div>
 </body>
-<?php build_js("members", "common", "consolelog", "animate", "nav", "tableCommon", "tooltip", "DateUtil"); ?>
+<?php build_js("members", "common", "consolelog", "animate", "nav", "tableCommon", "tooltip", "DateUtil", "queryStatus"); ?>
 </html>
