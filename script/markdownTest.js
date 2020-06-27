@@ -1050,6 +1050,10 @@ class MarkdownTestSuite
                 // URLs nested inside of super/subscript
                 'A^[B](url)',
                 this._divWrap('A<sup><a href="url">B</a></sup>')
+            ],
+            [
+                '^(a\n\n)',
+                this._divWrap('<sup>(a</sup>') + this._divWrap(')')
             ]
         );
 

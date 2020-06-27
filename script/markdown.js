@@ -2970,8 +2970,23 @@ class Markdown
     {
         let parens = 1;
         let end = start + 1;
+        let newline = 0;
         while (end < max)
         {
+            if (this.text[end] == '\n')
+            {
+                ++newline;
+                if (newline == 2)
+                {
+                    // Double newline ends the run
+                    return -1;
+                }
+            }
+            else
+            {
+                newline = 0;
+            }
+
             if (this._isEscaped(end))
             {
                 ++end;
