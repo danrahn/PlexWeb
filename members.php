@@ -21,7 +21,7 @@ if (!UserLevel::is_admin())
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#3C5260" />
     <title>Plex Status: Members</title>
-    <?php build_css("members", "style", "nav", "table", "tooltip"); ?>
+    <?php build_css(); ?>
 </head>
 <body>
 

@@ -17,20 +17,7 @@ requireSSL();
     <meta name="theme-color" content="#3C5260">
     <title>Activity</title>
 
-    <?php build_css("style", "nav", "overlay", "table", "tooltip") ?>
-    <style>
-.newActivity {
-    background-color: rgba(63, 100, 69, 0.3);
-}
-.newActivity:hover {
-    background-color: rgba(63, 100, 69, 0.6);
-}
-#tooltip {
-    font-size: smaller;
-}
-
-
-    </style>
+    <?php build_css() ?>
 </head>
 <body
     uid="<?= $_SESSION['id']; ?>"

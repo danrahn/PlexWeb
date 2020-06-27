@@ -22,7 +22,7 @@ if (!UserLevel::is_admin())
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#3C5260" />
     <title>Library Management</title>
-    <?php build_css("style", "nav", "table", "tooltip") ?>
+    <?php build_css() ?>
     <style>
 #sections {
     margin-top: 50px;

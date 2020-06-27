@@ -13,47 +13,7 @@ session_start();
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#3C5260" />
     <title>Markdown Sandbox</title>
-    <?php build_css("nav", "style", "overlay", "markdownEditor", "tooltip", "markdown"); ?>
-<style>
-    #queryContainer {
-        text-align: center;
-    }
-
-    #queryContainer > textarea {
-        float: none;
-        width: 80%;
-        font-family: monospace;
-        -moz-tab-size : 4;
-        -o-tab-size : 4;
-        tab-size : 4;
-    }
-
-    #queryContainer > input {
-        float: none;
-        clear: both;
-        width: 100px;
-        height: 30px;
-    }
-
-    #mdHolder {
-        background: rgba(0, 0, 0, 0.2);
-        padding: 20px;
-        margin-left: 20px;
-        margin-right: 20px;
-    }
-
-    .mdToolbar {
-        margin-left: 10%;
-    }
-
-    table {
-        width: auto;
-        background-color: rgba(0,0,0,.3);
-        color: #C1C1C1;
-        margin: auto;
-        margin-top: 5px;
-    }
-</style>
+    <?php build_css(); ?>
 </head>
 <body>
 

@@ -55,7 +55,7 @@ function get_details($req_id)
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#3C5260" />
     <title>Plex Request</title>
-    <?php build_css("style", "nav", "overlay", "markdown", "tooltip", "request", "markdownEditor"); ?>
+    <?php build_css(); ?>
 </head>
 <body
     isAdmin="<?= (UserLevel::is_admin()) ? 1 : 0 ?>"

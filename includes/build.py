@@ -50,13 +50,14 @@ def process():
     if onlyicon:
         return
     
+    deps = json.loads(get_lines('includes' + os.sep + 'deps.json'))
+
     if not nocss and not onlyicon:
-        process_css(files, force, quiet, not cleancss)
+        process_css(files, deps, force, quiet, not cleancss)
     if onlycss:
         return
 
     modified_dates = get_modified_dates('script/*.js')
-    deps = json.loads(get_lines('includes' + os.sep + 'deps.json'))
 
     comparisons = {}
     if ultra and compare:
@@ -160,7 +161,7 @@ def minify_svg(icon, newpath, quiet):
         print(output)
         print()
 
-def process_css(files, force, quiet, csso):
+def process_css(files, deps, force, quiet, csso):
     '''
     Processes css includes for each page, bundles them into a temp
     file, and runs clean-css-cli on it.
@@ -169,14 +170,7 @@ def process_css(files, force, quiet, csso):
     modified_dates = get_modified_dates('style/base/*.css')
     modified_any = False
     for file in files:
-        lines = get_lines(file)
-        if len(lines) == 0:
-            continue
-        start = lines.find('build_css')
-        if start == -1:
-            continue
-        includes = lines[start + 10:lines.find(')', start)]
-        includes = re.findall(r'"([^"]+)"', includes)
+        includes = get_css_deps(file, deps)
         if len(includes) == 0:
             continue
         if not force and not needs_parse(file, includes, modified_dates, 'style/' + file[:file.rfind('.')] + '.*.min.css'):
@@ -212,6 +206,44 @@ def process_css(files, force, quiet, csso):
     if not modified_any and quiet:
         print('CSS up to date!')
     print()
+
+
+def get_css_deps(file, deps):
+    res = []
+    raw = file[:file.rfind('.')]
+    if not raw in deps:
+        return res
+
+    includes = deps[raw]['css']
+    if "style" in includes:
+        res.append("style")
+
+    get_css_deps_from_js(raw, deps, res)
+
+    for include in includes:
+        if include != "style" and include != raw:
+            res.append(include)
+
+    if raw in includes:
+        if raw in res:
+            res.remove(raw)
+        res.append(raw)
+    
+    return res
+
+
+def get_css_deps_from_js(dep, deps, res):
+    if not dep in deps:
+        return
+
+    for include in deps[dep]['js']:
+        if include in deps:
+            for css in deps[include]['css']:
+                if not css in res:
+                    res.append(css)
+                    get_css_deps_from_js(css, deps, res)
+            if not include in res:
+                get_css_deps_from_js(include, deps, res)
 
 
 def cmp_sizes(comp):
@@ -283,11 +315,24 @@ def get_deps(file, deps):
         return res
     get_deps_core(raw, deps, res)
     res.append(raw) # Always add the page's core js file last
+
+    # Order doesn't matter too much, but consolelog and common
+    # should be first
+    has_consolelog = "consolelog" in res
+    has_common = "common" in res
+    if has_consolelog and res[0] != "consolelog":
+        res.remove("consolelog")
+        res.insert(0, "consolelog")
+
+    if has_common and res[1 if has_consolelog else 0] != "common":
+        res.remove("common")
+        res.insert(1 if has_consolelog else 0, "common")
+    print(res)
     return res
 
 def get_deps_core(dep, deps, res):
     '''Recursively add dependencies if they're not already part of the result'''
-    for include in deps[dep]:
+    for include in deps[dep]['js']:
         if not include in res:
             res.append(include)
             get_deps_core(include, deps, res)

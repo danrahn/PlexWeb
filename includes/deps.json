@@ -1,195 +1,377 @@
 {
     "activity" :
-    [
-        "common",
-        "consolelog",
-        "DateUtil",
-        "nav",
-        "queryStatus",
-        "tableCommon",
-        "tooltip"
-    ],
+    {
+        "js" :
+        [
+            "common",
+            "consolelog",
+            "DateUtil",
+            "nav",
+            "queryStatus",
+            "tableCommon",
+            "tooltip"
+        ],
+        "css" :
+        [
+            "style",
+            "activity"
+        ]
+    },
     "administration" :
-    [
-        "nav",
-        "queryStatus"
-    ],
+    {
+        "js" :
+        [
+            "nav",
+            "queryStatus"
+        ],
+        "css" :
+        [
+            "style",
+            "actions"
+        ]
+    },
     "animate" :
-    [
-        "consolelog"
-    ],
+    {
+        "js" :
+        [
+            "consolelog"
+        ],
+        "css" : []
+    },
     "chart" :
-    [
-        "common",
-        "tooltip"
-    ],
+    {
+        "js" :
+        [
+            "common",
+            "tooltip"
+        ],
+        "css" : []
+    },
     "common" :
-    [
-        "consolelog"
-    ],
-    "consolelog" : [],
-    "DateUtil" : [],
+    {
+        "js" :
+        [
+            "consolelog"
+        ],
+        "css" : []
+    },
+    "consolelog" : { "js" : [], "css" : [] },
+    "DateUtil" : { "js" : [], "css" : [] },
     "forgot" :
-    [
-        "animate",
-        "common",
-        "overlay"
-    ],
-    "iconMap" : [],
+    {
+        "js" :
+        [
+            "animate",
+            "common",
+            "overlay"
+        ],
+        "css" :
+        [
+            "style"
+        ]
+    },
+    "iconMap" : { "js" : [], "css" : [] },
     "index" :
-    [
-        "animate",
-        "chart",
-        "common",
-        "consolelog",
-        "iconMap",
-        "nav",
-        "overlay",
-        "queryStatus",
-        "tooltip"
-    ],
+    {
+        "js" :
+        [
+            "animate",
+            "chart",
+            "common",
+            "consolelog",
+            "iconMap",
+            "nav",
+            "overlay",
+            "queryStatus",
+            "tooltip"
+        ],
+        "css" :
+        [
+            "style",
+            "actions",
+            "index"
+        ]
+    },
     "library" :
-    [
-        "common",
-        "consolelog",
-        "DateUtil",
-        "nav",
-        "queryStatus",
-        "tooltip"
-    ],
+    {
+        "js" :
+        [
+            "common",
+            "consolelog",
+            "DateUtil",
+            "nav",
+            "queryStatus",
+            "tableCommon",
+            "tooltip"
+        ],
+        "css" :
+        [
+            "style"
+        ]
+    },
     "login" :
-    [
-        "animate",
-        "common"
-    ],
+    {
+        "js" :
+        [
+            "animate",
+            "common"
+        ],
+        "css" :
+        [
+            "style"
+        ]
+    },
     "markdown" :
-    [
-        "consolelog"
-    ],
+    {
+        "js" :
+        [
+            "consolelog"
+        ],
+        "css" :
+        [
+            "markdown"
+        ]
+    },
     "markdownEditor" :
-    [
-        "common",
-        "consolelog",
-        "iconMap",
-        "markdownHelp",
-        "overlay"
-    ],
+    {
+        "js" :
+        [
+            "common",
+            "consolelog",
+            "iconMap",
+            "markdownHelp",
+            "overlay"
+        ],
+        "css" :
+        [
+            "markdownEditor"
+        ]
+    },
     "markdownHelp" :
-    [
-        "common",
-        "markdown"
-    ],
+    {
+        "js" :
+        [
+            "common",
+            "markdown"
+        ],
+        "css" : []
+    },
     "markdownTest" :
-    [
-        "consolelog",
-        "markdown"
-    ],
+    {
+        "js" :
+        [
+            "consolelog",
+            "markdown"
+        ],
+        "css" : []
+    },
     "markdown_sandbox" :
-    [
-        "common",
-        "markdown",
-        "markdownEditor",
-        "markdownHelp",
-        "markdownTest"
-    ],
+    {
+        "js" :
+        [
+            "common",
+            "markdown",
+            "markdownEditor",
+            "markdownHelp",
+            "markdownTest"
+        ],
+        "css" :
+        [
+            "style",
+            "markdown_sandbox"
+        ]
+    },
     "members" :
-    [
-        "common",
-        "consolelog",
-        "DateUtil",
-        "nav",
-        "queryStatus",
-        "tableCommon",
-        "tooltip"
-    ],
+    {
+        "js" :
+        [
+            "common",
+            "consolelog",
+            "DateUtil",
+            "nav",
+            "queryStatus",
+            "tableCommon",
+            "tooltip"
+        ],
+        "css" :
+        [
+            "style",
+            "members"
+        ]
+    },
     "nav" :
-    [
-        "animate",
-        "common",
-        "consolelog"
-    ],
+    {
+        "js" :
+        [
+            "animate",
+            "common",
+            "consolelog"
+        ],
+        "css" :
+        [
+            "nav"
+        ]
+    },
     "new_request" :
-    [
-        "animate",
-        "common",
-        "consolelog",
-        "nav",
-        "overlay",
-        "queryStatus"
-    ],
+    {
+        "js" :
+        [
+            "animate",
+            "common",
+            "consolelog",
+            "nav",
+            "overlay",
+            "queryStatus"
+        ],
+        "css" :
+        [
+            "style",
+            "new_request"
+        ]
+    },
     "overlay" :
-    [
-        "animate",
-        "common",
-        "iconMap",
-        "tooltip"
-    ],
+    {
+        "js" :
+        [
+            "animate",
+            "common",
+            "iconMap",
+            "tooltip"
+        ],
+        "css" :
+        [
+            "overlay"
+        ]
+    },
     "password_reset" :
-    [
-        "animate",
-        "common",
-        "nav",
-        "queryStatus"
-    ],
+    {
+        "js" :
+        [
+            "animate",
+            "common",
+            "nav",
+            "queryStatus"
+        ],
+        "css" :
+        [
+            "style"
+        ]
+    },
     "queryStatus" :
-    [
-        "common",
-        "consolelog"
-    ],
+    {
+        "js" :
+        [
+            "common",
+            "consolelog"
+        ],
+        "css" : []
+    },
     "register" :
-    [
-        "animate",
-        "common"
-    ],
+    {
+        "js" :
+        [
+            "animate",
+            "common"
+        ],
+        "css" :
+        [
+            "style"
+        ]
+    },
     "request" :
-    [
-        "animate",
-        "common",
-        "consolelog",
-        "DateUtil",
-        "iconMap",
-        "markdown",
-        "markdownEditor",
-        "nav",
-        "overlay",
-        "queryStatus",
-        "tooltip"
-    ],
+    {
+        "js" :
+        [
+            "animate",
+            "common",
+            "consolelog",
+            "DateUtil",
+            "iconMap",
+            "markdown",
+            "markdownEditor",
+            "nav",
+            "overlay",
+            "queryStatus",
+            "tooltip"
+        ],
+        "css" :
+        [
+            "style",
+            "request"
+        ]
+    },
     "requests" :
-    [
-        "animate",
-        "common",
-        "consolelog",
-        "DateUtil",
-        "iconMap",
-        "nav",
-        "queryStatus",
-        "tableCommon",
-        "tooltip"
-    ],
+    {
+        "js" :
+        [
+            "animate",
+            "common",
+            "consolelog",
+            "DateUtil",
+            "iconMap",
+            "nav",
+            "queryStatus",
+            "tableCommon",
+            "tooltip"
+        ],
+        "css" :
+        [
+            "style",
+            "requests"
+        ]
+    },
     "reset" :
-    [
-        "animate",
-        "common",
-        "overlay"
-    ],
+    {
+        "js" :
+        [
+            "animate",
+            "common",
+            "overlay"
+        ],
+        "css" :
+        [
+            "style"
+        ]
+    },
     "tableCommon" :
-    [
-        "animate",
-        "common",
-        "consolelog",
-        "overlay"
-    ],
+    {
+        "js" :
+        [
+            "animate",
+            "common",
+            "consolelog",
+            "overlay"
+        ],
+        "css" :
+        [
+            "table"
+        ]
+    },
     "tooltip" :
-    [
-        "common"
-    ],
+    {
+        "js" :
+        [
+            "common"
+        ],
+        "css" :
+        [
+            "tooltip"
+        ]
+    },
     "user_settings" :
-    [
-        "animate",
-        "common",
-        "consolelog",
-        "nav",
-        "queryStatus"
-    ]
+    {
+        "js" :
+        [
+            "animate",
+            "common",
+            "consolelog",
+            "nav",
+            "queryStatus"
+        ],
+        "css" :
+        [
+            "style",
+            "user_settings"
+        ]
+    }
 }

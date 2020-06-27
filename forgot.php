@@ -21,7 +21,7 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === TRUE)
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#3C5260" />
     <title>Reset Password</title>
-    <?php build_css("style", "overlay") ?>
+    <?php build_css() ?>
 </head>
 <body>
 

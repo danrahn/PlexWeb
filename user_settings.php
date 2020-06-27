@@ -13,54 +13,7 @@ requireSSL();
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#3C5260" />
     <title>User Settings</title>
-    <?php build_css("style", "nav"); ?>
-    <style>
-#formError {
-  background-color: rgb(100, 66, 69);
-  color: #c1c1c1;
-  border-radius: 5px;
-  text-align: center;
-  opacity: 0;
-  width: 30%;
-  max-width: 400px;
-  margin-top: 20px;
-  display: none;
-}
-
-#formStatus {
-    opacity: 0;
-}
-
-input[type=checkbox] {
-    appearance: none;
-    -webkit-appearance: none;
-    padding: 7px;
-    display: inline-block;
-    position: relative;
-}
-
-input[type=checkbox]:checked {
-    background-color: rgb(192, 189, 186);
-}
-
-input[type=checkbox]:focus {
-    outline: none;
-    border: 1px solid rgb(255, 127, 0);
-}
-
-input[type=button] {
-    padding: 10px;
-}
-
-.forNotify {
-    background: rgba(63, 100, 69, 0.5);
-}
-
-.forNotify:hover {
-    background: rgba(63, 100, 69, 0.8);
-}
-
-    </style>
+    <?php build_css(); ?>
 </head>
 <body fornotify="<?php echo try_get('fornotify') ?>">
 <div id="plexFrame">

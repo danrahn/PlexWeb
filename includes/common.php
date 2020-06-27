@@ -199,7 +199,7 @@ function include_js($file)
 /// </summary>
 function build_js()
 {
-    $file = basename($_SERVER["SCRIPT_FILENAME"], '.php');
+    $file = pathinfo($_SERVER['PHP_SELF'])['filename'];
     if (try_get("nomin"))
     {
         $includes = get_includes($file);
@@ -225,11 +225,26 @@ function build_js()
 /// </summary>
 function get_includes($file)
 {
-    $deps = json_decode(file_get_contents('includes/js_deps.json'));
+    $deps = json_decode(file_get_contents('includes/deps.json'));
     $result = [];
     get_includes_core($file, $deps, $result);
     array_push($result, $file);
-    error_log(implode(",", $result));
+
+    $has_consolelog = array_search("consolelog", $result);
+    
+    if ($has_consolelog != FALSE)
+    {
+        array_splice($result, $has_consolelog, 1);
+        array_splice($result, 0, 0, "consolelog");
+    }
+
+    $has_common = array_search("common", $result);
+    if ($has_common !== FALSE && $has_common != ($has_consolelog === FALSE ? 0 : 1))
+    {
+        array_splice($result, $has_common, 1);
+        array_splice($result, $has_consolelog === FALSE ? 0 : 1, 0, "common");
+    }
+
     return $result;
 }
 
@@ -238,7 +253,7 @@ function get_includes($file)
 /// </summary>
 function get_includes_core($dep, $deps, &$result)
 {
-    foreach ($deps->$dep as $include)
+    foreach ($deps->$dep->js as $include)
     {
         if (!in_array($include, $result))
         {
@@ -254,19 +269,96 @@ function get_includes_core($dep, $deps, &$result)
 /// If nomin is set, echoes each base stylesheet individually.
 /// If nomin is not set, links the consolidated minified file.
 /// </summary>
-function build_css(...$includes)
+function build_css()
 {
+    $self = pathinfo($_SERVER['PHP_SELF'])['filename'];
     if (try_get("nomin"))
     {
+        $includes = get_css_includes($self);
         foreach ($includes as $include)
         {
-            echo "<style>/* $include.css */\n" . file_get_contents("style/base/$include.css") . "</style>\n";
+            echo "<style>\n/* $include.css */\n" . file_get_contents("style/base/$include.css") . "</style>\n";
         }
     }
     else
     {
-        $self = pathinfo($_SERVER['PHP_SELF'])['filename'];
         echo '<link rel="stylesheet" href="' . glob("style/$self.*.min.css")[0] . '">';
+    }
+}
+
+/// <summary>
+/// Builds up a list of CSS dependencies for the given file
+/// </summary>
+function get_css_includes($file)
+{
+    $deps = json_decode(file_get_contents('includes/deps.json'));
+    $result = [];
+    if (!isset($deps->$file))
+    {
+        return $result;
+    }
+
+    $includes = $deps->$file->css;
+    if (in_array("style", $includes))
+    {
+        array_push($result, "style");
+    }
+
+    get_css_deps_from_js($file, $deps, $result);
+
+    foreach ($includes as $include)
+    {
+        if ($include != "style" && $include != $file)
+        {
+            array_push($result, $include);
+        }
+    }
+
+    if (in_array($file, $includes))
+    {
+        $idx = array_search($file, $result);
+        if ($idx !== FALSE)
+        {
+            array_splice($result, $idx, 1);
+        }
+        
+        array_push($result, $file);
+    }
+
+    return $result;
+}
+
+/// <summary>
+/// Iterates through the dependency tree for both JS and CSS,
+/// adding required CSS files to the result
+/// <summary>
+function get_css_deps_from_js($dep, $deps, &$result)
+{
+    if (!isset($deps->$dep))
+    {
+        return;
+    }
+
+    foreach ($deps->$dep->js as $include)
+    {
+        if (!isset($deps->$include))
+        {
+            continue;
+        }
+
+        foreach ($deps->$include->css as $css)
+        {
+            if (!in_array($css, $result))
+            {
+                array_push($result, $css);
+                get_css_deps_from_js($css, $deps, $result);
+            }
+        }
+
+        if (!in_array($include, $result))
+        {
+            get_css_deps_from_js($include, $deps, $result);
+        }
     }
 }
 
