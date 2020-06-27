@@ -106,5 +106,5 @@ input[type=button] {
     </div>
 </div>
 </body>
-<?php build_js("user_settings", "consolelog", "animate", "common", "queryStatus", "nav"); ?>
+<?php build_js(); ?>
 </html>

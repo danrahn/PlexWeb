@@ -1,5 +1,5 @@
 
-/* exported testConsolelog, setDarkConsole, setTrace, consoleHelp, _logErrorId */
+/* exported testConsolelog, getLogLevel, setDarkConsole, getDarkConsole, setTrace, consoleHelp, _logErrorId */
 /// <summary>
 /// Console logging class. Allows easy timestamped logging with various log levels
 ///
@@ -119,10 +119,20 @@ function setLogLevel(level)
     g_logLevel = level;
 }
 
+function getLogLevel()
+{
+    return g_logLevel;
+}
+
 function setDarkConsole(dark)
 {
     localStorage.setItem("darkconsole", dark);
     g_darkConsole = dark;
+}
+
+function getDarkConsole()
+{
+    return g_darkConsole;
 }
 
 /// <summary>

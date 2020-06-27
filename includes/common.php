@@ -197,16 +197,16 @@ function include_js($file)
 /// To ensure the most up-to-date contents are retrieved when nomin is not
 /// specified, make sure to run minify.py after modifying any javascript file
 /// </summary>
-function build_js($file, ...$includes)
+function build_js()
 {
+    $file = basename($_SERVER["SCRIPT_FILENAME"], '.php');
     if (try_get("nomin"))
     {
+        $includes = get_includes($file);
         foreach ($includes as $include)
         {
             echo "<script>\n" . include_js($include) . "</script>\n\n";
         }
-
-        echo "<script>\n" . include_js($file) . "</script>\n\n";
     }
     else
     {
@@ -217,6 +217,34 @@ function build_js($file, ...$includes)
         // and when the content doesn't change, clients can use the cached version
         // without pinging us.
         echo '<script src="' . glob("min/$file.*.min.js")[0] . '"></script>';
+    }
+}
+
+/// <summary>
+/// Parses the deps json to determine what js files should be included
+/// </summary>
+function get_includes($file)
+{
+    $deps = json_decode(file_get_contents('includes/js_deps.json'));
+    $result = [];
+    get_includes_core($file, $deps, $result);
+    array_push($result, $file);
+    error_log(implode(",", $result));
+    return $result;
+}
+
+/// <summary>
+/// Recursively add dependencies to the result list
+/// </summary>
+function get_includes_core($dep, $deps, &$result)
+{
+    foreach ($deps->$dep as $include)
+    {
+        if (!in_array($include, $result))
+        {
+            array_push($result, $include);
+            get_includes_core($include, $deps, $result);
+        }
     }
 }
 

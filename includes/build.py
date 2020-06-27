@@ -8,6 +8,7 @@ on it. This allows for maximally minized javascript that's contained to a single
 
 import glob
 import hashlib
+import json
 import os
 from pathlib import Path
 import platform
@@ -55,11 +56,12 @@ def process():
         return
 
     modified_dates = get_modified_dates('script/*.js')
+    deps = json.loads(get_lines('includes' + os.sep + 'deps.json'))
 
     comparisons = {}
     if ultra and compare:
         for file in files:
-            process_file(file, modified_dates, force, 0, False, quiet)
+            process_file(file, modified_dates, deps, force, 0, False, quiet)
 
         print('Generating non-ultra for comparison')
         minify(babel, True)
@@ -75,7 +77,7 @@ def process():
     print('Looking for updated javascript...')
     any_modified_js = False
     for file in files:
-        any_modified_js = process_file(file, modified_dates, force, rem_log, ultra, quiet) or any_modified_js
+        any_modified_js = process_file(file, modified_dates, deps, force, rem_log, ultra, quiet) or any_modified_js
     if not any_modified_js and quiet:
         print('Javascript up to date!')
 
@@ -242,14 +244,14 @@ def check_long_words(min_letters):
             break
 
 
-def process_file(file, modified_dates, force, rem_log, ultra, quiet):
+def process_file(file, modified_dates, deps, force, rem_log, ultra, quiet):
     '''Process a single file (if needed)'''
 
     lines = get_lines(file)
     if len(lines) == 0:
         return False
 
-    includes = get_includes(lines)
+    includes = get_deps(file, deps)
     if len(includes) == 0:
         return False # File has no build_js, so don't build anything
 
@@ -273,29 +275,23 @@ def get_lines(file):
             return ''
 
 
-def get_includes(lines):
-    ''' Get the list of includes for the file
+def get_deps(file, deps):
+    ''' Gets the dependencies for the given php file'''
+    res = []
+    raw = file[:file.rfind('.')]
+    if not raw in deps:
+        return res
+    get_deps_core(raw, deps, res)
+    res.append(raw) # Always add the page's core js file last
+    return res
 
-    Example:
-        If our php file contains the following:
-            <?php build_js("index", "consolelog", "animate") ?>
-        We will return
-            ["consolelog", "animate", "index"]
-    '''
+def get_deps_core(dep, deps, res):
+    '''Recursively add dependencies if they're not already part of the result'''
+    for include in deps[dep]:
+        if not include in res:
+            res.append(include)
+            get_deps_core(include, deps, res)
 
-    start = lines.find('build_js')
-    if start == -1:
-        return [] # no build_js, nothing to do
-
-    includes = lines[start + 9:lines.find(')', start)]
-    includes = re.findall(r'"([^"]+)"', includes)
-    # includes = [include.replace('"', '') for include in includes]
-
-    # The main script is first, but we want to include it last
-    tmp = includes[0]
-    includes.pop(0)
-    includes.append(tmp)
-    return includes
 
 
 def needs_parse(file, includes, modified_dates, min_file):

@@ -341,8 +341,9 @@ module.exports = {
         "logFormattedText" : "readonly",
         "log" : "readonly",
         "LOG" : "readonly",
-        "g_logLevel" : "writable",
-        "g_darkConsole" : "writable",
+        "getLogLevel" : "readonly",
+        "setLogLevel" : "readonly",
+        "getDarkConsole" : "readonly",
         "_logErrorId" : "readonly",
         // animation.js
         "Animation" : "readonly",
@@ -390,6 +391,8 @@ module.exports = {
         "MarkdownHelp" : "readonly",
         // markdownEditor.js
         "MarkdownEditor" : "readonly",
+        // MarkdownText.js
+        "MarkdownTestSuite" : "readonly",
         // chart.js
         "Chart" : "readonly",
         // eslintrc

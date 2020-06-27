@@ -135,5 +135,5 @@ function get_username()
     </div>
 </div>
 </body>
-<?php build_js("index", "consolelog", "animate", "common", "nav", "overlay", "tooltip", "iconMap", "chart"); ?>
+<?php build_js(); ?>
 </html>

@@ -472,7 +472,6 @@ let MarkdownEditor = new function()
 
         overlayDismiss();
         comment.dispatchEvent(new Event("change"));
-        // ! parseMarkdown();
     };
 
     /// <summary>
@@ -953,7 +952,6 @@ let MarkdownEditor = new function()
 
         overlayDismiss();
         comment.dispatchEvent(new Event("change"));
-        // ! parseMarkdown();
     };
 
     /// <summary>

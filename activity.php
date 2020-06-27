@@ -44,5 +44,5 @@ requireSSL();
         </div>
     </div>
 </body>
-<?php build_js("activity", "consolelog", "animate", "common", "queryStatus", "nav", "DateUtil", "overlay", "tableCommon", "tooltip"); ?>
+<?php build_js(); ?>
 </html>

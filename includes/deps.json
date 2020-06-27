@@ -1,0 +1,195 @@
+{
+    "activity" :
+    [
+        "common",
+        "consolelog",
+        "DateUtil",
+        "nav",
+        "queryStatus",
+        "tableCommon",
+        "tooltip"
+    ],
+    "administration" :
+    [
+        "nav",
+        "queryStatus"
+    ],
+    "animate" :
+    [
+        "consolelog"
+    ],
+    "chart" :
+    [
+        "common",
+        "tooltip"
+    ],
+    "common" :
+    [
+        "consolelog"
+    ],
+    "consolelog" : [],
+    "DateUtil" : [],
+    "forgot" :
+    [
+        "animate",
+        "common",
+        "overlay"
+    ],
+    "iconMap" : [],
+    "index" :
+    [
+        "animate",
+        "chart",
+        "common",
+        "consolelog",
+        "iconMap",
+        "nav",
+        "overlay",
+        "queryStatus",
+        "tooltip"
+    ],
+    "library" :
+    [
+        "common",
+        "consolelog",
+        "DateUtil",
+        "nav",
+        "queryStatus",
+        "tooltip"
+    ],
+    "login" :
+    [
+        "animate",
+        "common"
+    ],
+    "markdown" :
+    [
+        "consolelog"
+    ],
+    "markdownEditor" :
+    [
+        "common",
+        "consolelog",
+        "iconMap",
+        "markdownHelp",
+        "overlay"
+    ],
+    "markdownHelp" :
+    [
+        "common",
+        "markdown"
+    ],
+    "markdownTest" :
+    [
+        "consolelog",
+        "markdown"
+    ],
+    "markdown_sandbox" :
+    [
+        "common",
+        "markdown",
+        "markdownEditor",
+        "markdownHelp",
+        "markdownTest"
+    ],
+    "members" :
+    [
+        "common",
+        "consolelog",
+        "DateUtil",
+        "nav",
+        "queryStatus",
+        "tableCommon",
+        "tooltip"
+    ],
+    "nav" :
+    [
+        "animate",
+        "common",
+        "consolelog"
+    ],
+    "new_request" :
+    [
+        "animate",
+        "common",
+        "consolelog",
+        "nav",
+        "overlay",
+        "queryStatus"
+    ],
+    "overlay" :
+    [
+        "animate",
+        "common",
+        "iconMap",
+        "tooltip"
+    ],
+    "password_reset" :
+    [
+        "animate",
+        "common",
+        "nav",
+        "queryStatus"
+    ],
+    "queryStatus" :
+    [
+        "common",
+        "consolelog"
+    ],
+    "register" :
+    [
+        "animate",
+        "common"
+    ],
+    "request" :
+    [
+        "animate",
+        "common",
+        "consolelog",
+        "DateUtil",
+        "iconMap",
+        "markdown",
+        "markdownEditor",
+        "nav",
+        "overlay",
+        "queryStatus",
+        "tooltip"
+    ],
+    "requests" :
+    [
+        "animate",
+        "common",
+        "consolelog",
+        "DateUtil",
+        "iconMap",
+        "nav",
+        "queryStatus",
+        "tableCommon",
+        "tooltip"
+    ],
+    "reset" :
+    [
+        "animate",
+        "common",
+        "overlay"
+    ],
+    "tableCommon" :
+    [
+        "animate",
+        "common",
+        "consolelog",
+        "overlay"
+    ],
+    "tooltip" :
+    [
+        "common"
+    ],
+    "user_settings" :
+    [
+        "animate",
+        "common",
+        "consolelog",
+        "nav",
+        "queryStatus"
+    ]
+}

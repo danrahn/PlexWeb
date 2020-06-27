@@ -221,7 +221,7 @@ else
         </div>
     </div>
 </div>
-<?php build_js("administration", "common", "consolelog", "animate", "queryStatus", "nav"); ?>
+<?php build_js(); ?>
 </body>
 </html>
 <?php } ?>
