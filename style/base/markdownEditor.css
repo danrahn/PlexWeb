@@ -30,7 +30,6 @@
     border-right: none;
     border-top: none;
     border-bottom: none;
-    font-weight: bold;
     vertical-align: middle;
 }
 
@@ -45,6 +44,7 @@
 
 .addItalic {
     font-style: italic;
+    font-family: serif;
 }
 
 .addStrikethrough {
@@ -89,7 +89,8 @@
 
 #mdt td textarea {
     font-family: monospace;
-    border: 1px solid #808080;
+    border: 1px solid transparent;
+    border-radius: 0;
     background: rgba(0,0,0,0.2);
     width: 7ch;
     height: 1rem;
@@ -97,6 +98,14 @@
     min-height: 1rem;
     line-height: 1rem;
     color: white;
+}
+
+#mdt td textarea:focus {
+    border: 1px solid #ff7f00;
+}
+
+#mdt td {
+    padding: 0;
 }
 
 #mdt td textarea::-webkit-scrollbar {
