@@ -8,6 +8,7 @@ window.addEventListener("load", function()
 {
     // For activities, reset the filter on page load
     setFilter(defaultFilter(), false /*update*/);
+    setPage(0);
     updateTable();
 });
 
