@@ -104,9 +104,10 @@ option {
     background-color: rgba(0,0,0,.3);
     border: 2px solid rgba(145, 145, 145, 0.67); /* #919191AA; */
     border-top: none;
-    display: inline-block;
+    display: block;
     width: calc(100% - 4px);
     margin: 0;
+    overflow: hidden;
 }
 
 .tableEntryHolder:hover {
@@ -304,15 +305,10 @@ option {
         float: left;
         margin: 0;
         padding: 0;
-        margin-bottom: -4px;
     }
 
     .imgHolder img {
         height: 120px;
-    }
-
-    .tableEntryHolder {
-        margin-bottom: -4px;
     }
 
     .tableEntryHolder .textHolder {

@@ -7,3 +7,9 @@
 #tooltip {
     font-size: smaller;
 }
+
+@media (orientation: landscape), (min-width: 767px) {
+    .tableEntryHolder .imgHolder {
+        height: 80px;
+    }
+}
