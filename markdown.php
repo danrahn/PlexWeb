@@ -13,7 +13,7 @@ session_start();
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#3C5260" />
     <title>Markdown Test</title>
-    <?php build_css("nav", "style", "markdown"); ?>
+    <?php build_css("nav", "style", "markdown", "markdownEditor"); ?>
 <style>
     #queryContainer {
         text-align: center;
@@ -40,6 +40,10 @@ session_start();
         padding: 20px;
         margin-left: 20px;
         margin-right: 20px;
+    }
+
+    .mdToolbar {
+        margin-left: 10%;
     }
 </style>
 </head>
@@ -77,6 +81,7 @@ session_start();
 <script><?php echo file_get_contents("script/markdownHelp.js"); ?></script>
 <script><?php echo file_get_contents("script/markdownTest.js"); ?></script>
 <script><?php echo file_get_contents("script/markdownEditor.js"); ?></script>
+<script><?php echo file_get_contents("script/iconMap.js"); ?></script>
 <?php if (UserLevel::is_admin()) { ?>
 <script><?php echo file_get_contents("script/markdownSamples.js"); ?></script>
 <?php } ?>
@@ -129,6 +134,7 @@ $('#query').addEventListener('keyup', parseMarkdown);
 $('#query').addEventListener('keydown', parseShortcuts);
 MarkdownEditor.addTabHandler($('#query'));
 MarkdownEditor.addFormatHandler($('#query'));
+$('#query').parentNode.insertBefore(MarkdownEditor.getToolbar($('#query')),  $('#query'));
 
 $('#markdownTestSuite').addEventListener('click', function()
 {

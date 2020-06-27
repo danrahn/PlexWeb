@@ -272,79 +272,9 @@ a:hover {
     border: 1px solid #616161;
 }
 
-/* Markdown Help should have a darker background than the default overlay background */
-.mdHelp {
-    background: rgba(70, 70, 70, 0.75);
-    padding: 5px 10px 5px 10px;
-}
-
-.mdToolbar {
-    overflow: auto;
-}
-
 #newCommentHolder .mdToolbar {
     margin-top: 30px;
     margin-bottom: -30px;
-}
-
-.mdButton {
-    float: left;
-    display: inline;
-    margin: 0px;
-    text-align: center;
-    border-radius: 0px;
-    border-left: 1px solid #818181;
-    border-right: none;
-    border-top: none;
-    border-bottom: none;
-    font-weight: bold;
-    vertical-align: middle;
-}
-
-.addBold {
-    font-weight: 900;
-    border-left: none;
-}
-
-.addUnderline {
-    text-decoration: underline;
-}
-
-.addItalic {
-    font-style: italic;
-}
-
-.addStrikethrough {
-    text-decoration: line-through;
-}
-
-.mdToolbar button {
-    background-color: rgb(63, 66, 69);
-    padding: 4px;
-    border: none;
-    border-left: 1px solid #818181 !important;
-    color: #c1c1c1;
-}
-
-.mdToolbar button:hover {
-    background-color: rgb(83, 86, 89);
-    padding: 4px;
-}
-
-.mdToolbar button img {
-    vertical-align: middle;
-    line-height: 26px;
-}
-
-#mdInsertOverlay div {
-    padding: 0;
-    margin: 5px;
-}
-
-#mdInsertOverlay input[type=text] {
-    width: 250px;
-    max-width: 80%;
-    margin-bottom: 20px;
 }
 
 .commentEdit {
@@ -401,59 +331,6 @@ a:hover {
 #tooltip {
     font-size: smaller;
 }
-
-#mdtHolder {
-    margin: auto !important;
-    overflow-y: scroll;
-}
-
-#mdt {
-    background-color: rgba(0,0,0,0.3);
-    color: #c1c1c1;
-    max-width: 100%;
-}
-
-#mdt, #mdt thead, #mdt td {
-    border-collapse: collapse;
-    padding: 3px;
-}
-
-#mdt thead, #mdt td {
-    border: 2px solid #808080;
-    width: auto;
-}
-
-#mdt thead {
-    background-color: rgba(0,100,0,0.3);
-}
-
-#mdt td textarea {
-    font-family: monospace;
-    border: 1px solid #808080;
-    background: rgba(0,0,0,0.2);
-    width: 7ch;
-    height: 1rem;
-    min-width: 7ch;
-    min-height: 1rem;
-    line-height: 1rem;
-    color: white;
-}
-
-#mdt td textarea::-webkit-scrollbar {
-    width: 0;
-    height: 0;
-}
-
-#mdtButtons input[type="button"] {
-    padding: 2px;
-    font-size: smaller;
-    width: 4rem;
-}
-
-#mdtRowButtons, #mdtColButtons {
-    display: inline-block;
-}
-
 
 @media (orientation: landscape), (min-width: 767px) {
     #innerInfoContainer {
@@ -531,33 +408,8 @@ a:hover {
         background-color: rgba(63, 66, 69, 0.7);
     }
 
-    .mdButton {
-        width: 30px;
-        height: 30px;
-        font-size: 10pt;
-    }
-
-    .mdToolbar button img {
-        width: 18px;
-    }
-
     .commentAction {
         font-size: 10pt;
-    }
-    
-    #mdtHolder {
-        max-width: 80%;
-    }
-
-    #mdtHolder::-webkit-scrollbar {
-        width: 0;
-        height: 6px;
-    }
-
-    #mdtHolder::-webkit-scrollbar-track {
-        background: transparent;
-        width: 0;
-        height: 5px;
     }
 }
 
@@ -643,33 +495,7 @@ a:hover {
         font-size: smaller;
     }
 
-    .mdButton {
-        width: 26px;
-        height: 26px;
-        font-size: 9pt;
-    }
-
-    .mdToolbar button img {
-        width: 14px;
-    }
-
     .commentAction {
         font-size: 8pt;
-    }
-
-    #mdtHolder {
-        max-width: 90%;
-    }
-
-    #mdtHolder::-webkit-scrollbar {
-        width: 2px;
-        height: 2px;
-    }
-
-    /* Track */
-    #mdtHolder::-webkit-scrollbar-track {
-        background: transparent;
-        width: 0;
-        height: 2px;
     }
 }
