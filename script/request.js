@@ -761,6 +761,7 @@ function getYesNoOverlayButtons()
 /// </summary>
 function promptForNotifications()
 {
+    let promptHolder = buildNode("div", { style : "background-color: rgba(0,0,0,0.5)" }); // Darker background
     let title = buildNode("h4", {}, "Enable Notifications");
     let prompt = buildNode("div", {}, "Thanks for your request! Do you want to get notifications when the status of your requests are changed?");
     let checkHolder = buildNode("div", { class : "formInput" });
@@ -788,7 +789,8 @@ function promptForNotifications()
     let buttonContainer = buildNode("div", { style : "float: right; overflow: auto; width: 100%; margin: auto" });
     outerButtonContainer.appendChildren(buttonContainer.appendChildren(buttons.yes, buttons.no));
 
-    buildOverlay(true, title, prompt, checkHolder, outerButtonContainer);
+    promptHolder.appendChildren(title, prompt, checkHolder, outerButtonContainer);
+    buildOverlay(true, promptHolder);
 }
 
 /// <summary>
