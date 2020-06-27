@@ -13,7 +13,7 @@ session_start();
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#3C5260" />
     <title>Markdown Test</title>
-    <?php build_css("nav", "style", "markdown", "markdownEditor"); ?>
+    <?php build_css("nav", "style", "overlay", "markdownEditor", "tooltip", "markdown"); ?>
 <style>
     #queryContainer {
         text-align: center;
@@ -44,6 +44,14 @@ session_start();
 
     .mdToolbar {
         margin-left: 10%;
+    }
+
+    table {
+        width: auto;
+        background-color: rgba(0,0,0,.3);
+        color: #C1C1C1;
+        margin: auto;
+        margin-top: 5px;
     }
 </style>
 </head>
@@ -82,6 +90,9 @@ session_start();
 <script><?php echo file_get_contents("script/markdownTest.js"); ?></script>
 <script><?php echo file_get_contents("script/markdownEditor.js"); ?></script>
 <script><?php echo file_get_contents("script/iconMap.js"); ?></script>
+<script><?php echo file_get_contents("script/overlay.js"); ?></script>
+<script><?php echo file_get_contents("script/animate.js"); ?></script>
+<script><?php echo file_get_contents("script/tooltip.js"); ?></script>
 <?php if (UserLevel::is_admin()) { ?>
 <script><?php echo file_get_contents("script/markdownSamples.js"); ?></script>
 <?php } ?>
