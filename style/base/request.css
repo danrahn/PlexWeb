@@ -272,25 +272,19 @@ a:hover {
     border: 1px solid #616161;
 }
 
-#mdCallout {
-    clear: both;
-    float: left;
-    font-size: 10pt;
-    margin-top: 3px;
-    margin-bottom: 3px;
-    color: #919191;
-}
-
 /* Markdown Help should have a darker background than the default overlay background */
 .mdHelp {
     background: rgba(70, 70, 70, 0.75);
     padding: 5px 10px 5px 10px;
 }
 
-#mdHelper {
+.mdToolbar {
+    overflow: auto;
+}
+
+#newCommentHolder .mdToolbar {
     margin-top: 30px;
     margin-bottom: -30px;
-    overflow: auto;
 }
 
 .mdButton {
@@ -307,23 +301,24 @@ a:hover {
     vertical-align: middle;
 }
 
-#addBold {
+.addBold {
     font-weight: 900;
+    border-left: none;
 }
 
-#addUnderline {
+.addUnderline {
     text-decoration: underline;
 }
 
-#addItalic {
+.addItalic {
     font-style: italic;
 }
 
-#addStrikethrough {
+.addStrikethrough {
     text-decoration: line-through;
 }
 
-#mdHelper button {
+.mdToolbar button {
     background-color: rgb(63, 66, 69);
     padding: 4px;
     border: none;
@@ -331,12 +326,12 @@ a:hover {
     color: #c1c1c1;
 }
 
-#mdHelper button:hover {
+.mdToolbar button:hover {
     background-color: rgb(83, 86, 89);
     padding: 4px;
 }
 
-#mdHelper button img {
+.mdToolbar button img {
     vertical-align: middle;
     line-height: 26px;
 }
@@ -542,7 +537,7 @@ a:hover {
         font-size: 10pt;
     }
 
-    #mdHelper button img {
+    .mdToolbar button img {
         width: 18px;
     }
 
@@ -654,7 +649,7 @@ a:hover {
         font-size: 9pt;
     }
 
-    #mdHelper button img {
+    .mdToolbar button img {
         width: 14px;
     }
 
