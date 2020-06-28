@@ -93,7 +93,7 @@ def process():
 
 
     if '-checklong' in args_lower:
-        check_long_words(args_lower[args_lower.index('-checklong') + 1])
+        check_long_words(args_lower[args_lower.index('-checklong') + 1], files)
 
     if ultra and compare:
         cmp_sizes(comparisons)
@@ -283,14 +283,18 @@ def cmp_sizes(comp):
         print(file + ':', noultra, 'to', ultra, ':', str(round((1 - (ultra / noultra)) * 100, 2)) + '%')
 
 
-def check_long_words(min_letters):
+def check_long_words(min_letters, files):
     '''
     Checks minified files for tokens that take up the most bytes, gated on the passed in minimum word length
     '''
 
-    files = glob.glob("min/*.min.js")
+    to_parse = []
+    for f in files:
+        js = glob.glob("min/script/" + f[f.rfind('/') + 1:f.rfind('.')] + "*.min.js")
+        if len(js) != 0:
+            to_parse.append(js[0])
     words = {}
-    for file in files:
+    for file in to_parse:
         lines = get_lines(file)
         for match in re.findall(r'\b[$_a-zA-Z][\w]{' + str(int(min_letters) - 1) + r',}\b', lines):
             if not match in words:
@@ -309,6 +313,7 @@ def check_long_words(min_letters):
 def process_file(file, modified_dates, deps, force, rem_log, ultra, quiet):
     '''Process a single file (if needed)'''
 
+    reset_var()
     lines = get_lines(file)
     if len(lines) == 0:
         return False
@@ -435,6 +440,7 @@ def create_temp(includes, rem_log, ultra):
         combined = re.sub(r'\.appendChild\(', '.a(', combined)
         combined = re.sub(r'\.addEventListener\(', '.l(', combined)
         combined = re.sub(r'\bparseInt\(', 'p_(', combined)
+        combined = re.sub(r'\bappendChildren\b', next_var(), combined)
         combined = minify_process_request(combined)
         combined = minify_keycodes(combined)
     if len(consolelog) > 0:
@@ -446,6 +452,7 @@ def create_temp(includes, rem_log, ultra):
             consolelog = consolelog.replace('g_traceColors', 'g_t')
             consolelog = consolelog.replace('g_traceLogging', 'g_tl')
             consolelog = consolelog.replace('g_darkConsole', 'g_dc')
+            consolelog = consolelog.replace('g_logLevel', 'g_ll')
             consolelog = consolelog.replace('_inherit', '_i')
             consolelog = 'let l_ = localStorage; ' + consolelog.replace('localStorage', 'l_')
         combined = consolelog + combined
@@ -616,6 +623,10 @@ def next_var():
         cur = chr(ord(cur) + 1)
     g_var_cur = base + cur
     return g_var_cur
+
+def reset_var():
+    global g_var_cur
+    g_var_cur = 'a'
 
 
 def minify(babel, quiet):
