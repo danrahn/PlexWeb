@@ -20,7 +20,10 @@ icon/raw/*
 # Generated
 script/iconMap.js
 
-# Generated JS
+# Generated JS/CSS/SVG
 min/*
+
+# Just copies of favicon.png at different resolutions for Apple devices
+apple-touch-icon*.png
 
 package.json

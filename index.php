@@ -80,6 +80,10 @@ function get_username()
 <head>
     <meta http-equiv="Content-Type" content="text/html;charset=utf-8">
     <link rel="shortcut icon" href="favicon.png">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="apple-touch-icon-ipad.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon-iphone-retina.png">
+    <link rel="apple-touch-icon" sizes="167x167" href="apple-touch-icon-ipad-retina.png">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#3C5260" />
     <title>Plex Status</title>
