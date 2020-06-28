@@ -7,9 +7,9 @@
 window.addEventListener("load", function()
 {
     // For activities, reset the filter on page load
-    setFilter(defaultFilter(), false /*update*/);
-    setPage(0);
-    updateTable();
+    Table.Filter.set(defaultFilter(), false /*update*/);
+    Table.setPage(0);
+    Table.update();
 });
 
 /// <summary>
@@ -21,15 +21,15 @@ function getActivities(searchValue="")
     let parameters =
     {
         type : ProcessRequest.GetActivities,
-        num : getPerPage(),
-        page : getPage(),
+        num : Table.getPerPage(),
+        page : Table.getPage(),
         search : searchValue,
         filter : JSON.stringify(getFilter())
     };
 
     let successFunc = function(message)
     {
-        clearTable();
+        Table.clear();
         buildActivities(message);
 
         if (searchValue.length != 0)
@@ -40,7 +40,7 @@ function getActivities(searchValue="")
 
     let failureFunc = function()
     {
-        displayInfoMessage("Error loading activities. Pleases try again later. If this problem persists, contact the site administrator");
+        Table.displayInfoMessage("Error loading activities. Pleases try again later. If this problem persists, contact the site administrator");
     };
 
     sendHtmlJsonRequest("process_request.php", parameters, successFunc, failureFunc);
@@ -121,7 +121,7 @@ function getTitleText(activity)
 /// <param name="newActivity">True if the user has not seen this request yet</param>
 function buildActivity(activity, newActivity)
 {
-    let holder = tableItemHolder();
+    let holder = Table.itemHolder();
     if (newActivity)
     {
         holder.classList.add("newActivity");
@@ -169,7 +169,7 @@ function buildActivities(response)
     if (response.count == 0)
     {
         logWarn("No results, likely due to bad page index or filter");
-        displayInfoMessage("No requests found with the current filter");
+        Table.displayInfoMessage("No requests found with the current filter");
         return;
     }
 
@@ -181,10 +181,10 @@ function buildActivities(response)
 
     for (let i = 0; i < activities.length; ++i)
     {
-        addTableItem(buildActivity(activities[i], i < newActivities));
+        Table.addItem(buildActivity(activities[i], i < newActivities));
     }
 
-    setPageInfo(total);
+    Table.setPageInfo(total);
 }
 
 /// <summary>
@@ -223,16 +223,16 @@ function filterHtml()
 
     for (let [label, name] of Object.entries(checkboxes))
     {
-        options.push(buildTableFilterCheckbox(label, name));
+        options.push(Table.Filter.buildCheckbox(label, name));
     }
 
-    options.push(buildTableFilterDropdown(
+    options.push(Table.Filter.buildDropdown(
         "Sort By",
         {
             Date : "request"
         }));
 
-    options.push(buildTableFilterDropdown(
+    options.push(Table.Filter.buildDropdown(
         "Sort Order",
         {
             "Newest First" : "sortDesc",
@@ -244,7 +244,7 @@ function filterHtml()
 
     if (isAdmin())
     {
-        options.push(buildTableFilterDropdown(
+        options.push(Table.Filter.buildDropdown(
             "Filter To",
             {
                 All : -1
@@ -253,7 +253,7 @@ function filterHtml()
         options.push(buildNode("hr"));
     }
 
-    return filterHtmlCommon(options);
+    return Table.Filter.htmlCommon(options);
 }
 
 /// <summary>
@@ -271,7 +271,7 @@ function populateFilter()
 
     if (isAdmin())
     {
-        populateUserFilter();
+        Table.Filter.populateUserFilter();
     }
 }
 
@@ -318,7 +318,7 @@ function getFilter()
     let filter = null;
     try
     {
-        filter = JSON.parse(localStorage.getItem(tableIdCore() + "_filter"));
+        filter = JSON.parse(localStorage.getItem(Table.idCore() + "_filter"));
     }
     catch (exception)
     {
@@ -338,7 +338,7 @@ function getFilter()
         logError("Bad filter, resetting: ");
         logError(filter);
         filter = defaultFilter();
-        setFilter(filter, false);
+        Table.Filter.set(filter, false);
     }
 
     logVerbose(filter, "Got Filter");

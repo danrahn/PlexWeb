@@ -6,7 +6,7 @@
 
 window.addEventListener("load", function()
 {
-    updateTable();
+    Table.update();
 });
 
 /// <summary>
@@ -30,7 +30,7 @@ function buildSection(section)
     section.created = new Date(section.created * 1000);
     section.updated = new Date(section.updated * 1000);
     section.last_scanned = new Date(section.last_scanned * 1000);
-    let div = tableItemHolder();
+    let div = Table.itemHolder();
     let list = buildNode("ul");
     for (let [key, value] of Object.entries(section))
     {

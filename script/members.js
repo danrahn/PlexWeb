@@ -6,7 +6,7 @@
 
 window.addEventListener("load", function()
 {
-    updateTable();
+    Table.update();
 });
 
 /// <summary>
@@ -34,18 +34,18 @@ function getMembers(searchValue="")
     let parameters =
     {
         type : ProcessRequest.GetMembers,
-        num : getPerPage(),
-        page : getPage(),
+        num : Table.getPerPage(),
+        page : Table.getPage(),
         search : searchValue,
         filter : JSON.stringify(getFilter())
     };
 
-    displayInfoMessage("Loading...");
+    Table.displayInfoMessage("Loading...");
     let successFunc = function(response)
     {
 
         buildMembers(response.data);
-        setPageInfo(response.total);
+        Table.setPageInfo(response.total);
 
         if (searchValue.length != 0)
         {
@@ -55,7 +55,7 @@ function getMembers(searchValue="")
 
     let failureFunc = function()
     {
-        displayInfoMessage("Something went wrong :(");
+        Table.displayInfoMessage("Something went wrong :(");
     };
 
     sendHtmlJsonRequest("process_request.php", parameters, successFunc, failureFunc);
@@ -85,7 +85,7 @@ function getUsernameSpan(member)
 /// </summary>
 function buildMember(member)
 {
-    let holder = tableItemHolder();
+    let holder = Table.itemHolder();
     let title = buildNode("div", { class : "memberTitle" });
     title.appendChild(buildNode(
         "span",
@@ -134,16 +134,16 @@ function buildMember(member)
 /// </summary>
 function buildMembers(members)
 {
-    clearElement("tableEntries");
+    Table.clear();
     if (members.length == 0)
     {
-        displayInfoMessage("No members returned. That can't be right!");
+        Table.displayInfoMessage("No members returned. That can't be right!");
         return;
     }
 
     members.forEach(function(member)
     {
-        addTableItem(buildMember(member));
+        Table.addItem(buildMember(member));
     });
 }
 
@@ -243,12 +243,12 @@ function filterHtml()
 
     for (let [label, name] of Object.entries(checkboxes))
     {
-        options.push(buildTableFilterCheckbox(label, name));
+        options.push(Table.Filter.buildCheckbox(label, name));
     }
 
     options.push(buildNode("hr"));
 
-    options.push(buildTableFilterDropdown(
+    options.push(Table.Filter.buildDropdown(
         "Has PII",
         {
             All : "all",
@@ -257,7 +257,7 @@ function filterHtml()
         }));
     options.push(buildNode("hr"));
 
-    options.push(buildTableFilterDropdown(
+    options.push(Table.Filter.buildDropdown(
         "Sort By",
         {
             "Account Age" : "id",
@@ -266,7 +266,7 @@ function filterHtml()
             Level : "level",
         }));
 
-    options.push(buildTableFilterDropdown(
+    options.push(Table.Filter.buildDropdown(
         "Sort Order",
         {
             "Newest First" : "sortDesc",
@@ -275,7 +275,7 @@ function filterHtml()
         true /*addId*/));
     options.push(buildNode("hr"));
 
-    return filterHtmlCommon(options);
+    return Table.Filter.htmlCommon(options);
 }
 
 /// <summary>
@@ -294,7 +294,7 @@ function getFilter()
     let filter = null;
     try
     {
-        filter = JSON.parse(localStorage.getItem(tableIdCore() + "_filter"));
+        filter = JSON.parse(localStorage.getItem(Table.idCore() + "_filter"));
     }
     catch (e)
     {
@@ -316,7 +316,7 @@ function getFilter()
         }
 
         filter = defaultFilter();
-        setFilter(filter, false);
+        Table.Filter.set(filter, false);
     }
 
     logVerbose(filter, "Got Filter");

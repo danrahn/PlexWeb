@@ -6,8 +6,8 @@
 
 window.addEventListener("load", function()
 {
-    setPage(0);
-    updateTable();
+    Table.setPage(0);
+    Table.update();
     getRequests();
 });
 
@@ -20,17 +20,17 @@ function getRequests(searchValue="")
     let parameters =
     {
         type : ProcessRequest.GetRequests,
-        num : getPerPage(),
-        page : getPage(),
+        num : Table.getPerPage(),
+        page : Table.getPage(),
         search : searchValue,
         filter : JSON.stringify(getFilter())
     };
 
-    displayInfoMessage("Loading...");
+    Table.displayInfoMessage("Loading...");
 
     let successFunc = function(response)
     {
-        clearTable();
+        Table.clear();
         buildRequests(response);
         if (searchValue.length != 0)
         {
@@ -40,7 +40,7 @@ function getRequests(searchValue="")
 
     let failureFunc = function()
     {
-        displayInfoMessage("Error loading requests. Please try again later. If this problem persists, contact the site administrator");
+        Table.displayInfoMessage("Error loading requests. Please try again later. If this problem persists, contact the site administrator");
     };
 
     sendHtmlJsonRequest("process_request.php", parameters, successFunc, failureFunc);
@@ -64,7 +64,7 @@ function buildRequests(requests)
     if (requests.count == 0)
     {
         logWarn("No results, likely due to bad page index or filter");
-        displayInfoMessage("No requests found with the current filter");
+        Table.displayInfoMessage("No requests found with the current filter");
         return;
     }
 
@@ -73,7 +73,7 @@ function buildRequests(requests)
     for (let i = 0; i < requests.count; ++i)
     {
         const request = requests.entries[i];
-        addTableItem(buildRequest(request, sortOrder));
+        Table.addItem(buildRequest(request, sortOrder));
 
         if (isAdmin())
         {
@@ -82,7 +82,7 @@ function buildRequests(requests)
         }
     }
 
-    setPageInfo(requests.total);
+    Table.setPageInfo(requests.total);
 }
 
 /// <summary>
@@ -202,7 +202,7 @@ function buildRequestBody(request, sortOrder, requestHolder)
 /// </summary>
 function buildRequest(request, sortOrder)
 {
-    let holder = tableItemHolder();
+    let holder = Table.itemHolder();
 
     let imgHolder = buildRequestPoster(request);
     let textHolder = buildRequestBody(request, sortOrder, holder);
@@ -331,8 +331,8 @@ function updateStatusSuccess(response, request)
 
     setTimeout(function()
     {
-        clearTable();
-        updateTable();
+        Table.clear();
+        Table.update();
     }, 2000);
 }
 
@@ -398,7 +398,7 @@ function populateFilter()
 
     if (isAdmin())
     {
-        populateUserFilter();
+        Table.Filter.populateUserFilter();
     }
 
     setSortOrderValues();
@@ -468,7 +468,7 @@ function addFilterCheckboxes(options)
 
     for (let [label, name] of Object.entries(checkboxes))
     {
-        options.push(buildTableFilterCheckbox(label, name));
+        options.push(Table.Filter.buildCheckbox(label, name));
     }
 }
 
@@ -484,7 +484,7 @@ function filterHtml()
 
     options.push(buildNode("hr"));
 
-    options.push(buildTableFilterDropdown(
+    options.push(Table.Filter.buildDropdown(
         "Sort By",
         {
             "Request Date" : "request",
@@ -492,7 +492,7 @@ function filterHtml()
             Title : "title"
         }));
 
-    options.push(buildTableFilterDropdown(
+    options.push(Table.Filter.buildDropdown(
         "Sort Order",
         {
             "Newest First" : "sortDesc",
@@ -504,7 +504,7 @@ function filterHtml()
 
     if (isAdmin())
     {
-        options.push(buildTableFilterDropdown(
+        options.push(Table.Filter.buildDropdown(
             "Filter To",
             {
                 All : -1
@@ -512,7 +512,7 @@ function filterHtml()
         options.push(buildNode("hr"));
     }
 
-    return filterHtmlCommon(options);
+    return Table.Filter.htmlCommon(options);
 }
 
 /// <summary>
@@ -547,7 +547,7 @@ function getFilter()
     let filter = null;
     try
     {
-        filter = JSON.parse(localStorage.getItem(tableIdCore() + "_filter"));
+        filter = JSON.parse(localStorage.getItem(Table.idCore() + "_filter"));
     }
     catch (e)
     {
@@ -580,7 +580,7 @@ function getFilter()
         }
 
         filter = defaultFilter();
-        setFilter(filter, false);
+        Table.Filter.set(filter, false);
     }
 
     logVerbose(filter, "Got Filter");
