@@ -6,7 +6,6 @@ window.addEventListener("load", function()
 {
     Table.setPage(0);
     Table.update();
-    getRequests();
 });
 
 
