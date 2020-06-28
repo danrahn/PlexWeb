@@ -8,7 +8,6 @@ session_start();
 require_once "includes/common.php";
 require_once "includes/config.php";
 
-verify_loggedin(true);
 requireSSL();
 
 $icon = get("icon");
@@ -24,6 +23,11 @@ if ($color_len != 3 && $color_len != 6)
 if (substr($icon, strlen($icon) - 4) == ".svg")
 {
     $icon = substr($icon, 0, strlen($icon) - 4);
+}
+
+if (!free_icon($icon))
+{
+    verify_loggedin();
 }
 
 if (!preg_match("/^[a-fA-F0-9]+$/", $color))
@@ -67,5 +71,22 @@ else
     header('Etag: ' . md5_file($filename));
     
     echo $img;
+}
+
+/// <summary>
+/// Returns whether we're okay with serving this image
+/// if the requestor isn't signed in
+/// </summary>
+function free_icon($icon)
+{
+    switch ($icon)
+    {
+        case "mdlink":
+        case "mdimage":
+        case "mdtable":
+            return TRUE;
+        default:
+            return FALSE;
+    }
 }
 ?>

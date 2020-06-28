@@ -135,7 +135,7 @@ let MarkdownEditor = new function()
                 break;
             case KEY.K:
                 addLinkOrPhoto(this, false /*isPhoto*/);
-                return;
+                break;
             case KEY.M:
                 addLinkOrPhoto(this, true /*isPhoto*/);
                 break;
