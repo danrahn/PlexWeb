@@ -2,7 +2,7 @@
 <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
 	 viewBox="0 0 128 128" style="enable-background:new 0 0 128 128;" xml:space="preserve">
 <style type="text/css">
-	.st0{fill:none;stroke:#C1C1C1;stroke-width:15;stroke-linecap:round;stroke-miterlimit:10;}
+	.st0{fill:none;stroke:FILL_COLOR;stroke-width:15;stroke-linecap:round;stroke-miterlimit:10;}
 </style>
 <path class="st0" d="M58.2,93.5L47.6,104c-3.5,3.5-8.1,5.3-12.7,5.3s-9.2-1.8-12.7-5.3l-0.8-0.8l-0.8-0.8c-3.5-3.5-5.3-8.1-5.3-12.7
 	c0-4.6,1.8-9.2,5.3-12.7l10.5-10.5l10.5-10.5c3.5-3.5,8.1-5.3,12.7-5.3s9.2,1.8,12.7,5.3"/>

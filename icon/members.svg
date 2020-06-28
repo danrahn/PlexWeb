@@ -2,9 +2,9 @@
 <svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
 	 viewBox="0 0 128 128" style="enable-background:new 0 0 128 128;" xml:space="preserve">
 <style type="text/css">
-	.st0{fill:none;stroke:#C1C1C1;stroke-width:7;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10;}
-	.st1{fill:none;stroke:#C1C1C1;stroke-width:7;stroke-miterlimit:10;}
-	.st2{fill:none;stroke:#C1C1C1;stroke-width:7;stroke-linecap:round;stroke-miterlimit:10;}
+	.st0{fill:none;stroke:FILL_COLOR;stroke-width:7;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10;}
+	.st1{fill:none;stroke:FILL_COLOR;stroke-width:7;stroke-miterlimit:10;}
+	.st2{fill:none;stroke:FILL_COLOR;stroke-width:7;stroke-linecap:round;stroke-miterlimit:10;}
 </style>
 <path class="st0" d="M12.8,107.1c0-18.9,13.5-34.7,31.5-38.1C35,65.5,28.3,56.6,28.3,46.1c0-13.5,10.9-24.5,24.4-24.5
 	c13.5,0,24.5,11,24.5,24.5c0,10.8-7,20-16.8,23.2c3.7,0.9,7.1,2.5,10.4,4.1c2.8,1.4,14.3,6.6,14.8,21"/>

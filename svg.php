@@ -1,6 +1,6 @@
 <?php
 /// <summary>
-/// Retrieves an SVG icon with the default #c1c1c1 fill color replaced with the user-specified value
+/// Retrieves an SVG icon with the specified fill color
 /// </summary>
 
 session_start();
@@ -60,7 +60,7 @@ if (isset($headers['If-Modified-Since']) && (strtotime($headers['If-Modified-Sin
 else
 {
     $img = file_get_contents($filename);
-    $img = str_ireplace("#c1c1c1", "#$color", $img);
+    $img = str_ireplace("FILL_COLOR", "#$color", $img);
     header('HTTP/1.1 200 OK');
     header('Content-Length: ' . filesize($filename));
     header('Content-type: image/svg+xml');

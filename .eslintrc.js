@@ -355,7 +355,7 @@ module.exports = {
         // tooltip.js
         "Tooltip" : "readonly",
         // iconMap.js
-        "ICONS" : "readonly",
+        "Icons" : "readonly",
         // tableCommon.js
         "Table" : "readonly",
         // tableCommon.js implementors

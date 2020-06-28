@@ -111,7 +111,12 @@ def process_svg_icons(force, quiet):
     old_icons = glob.glob('min/icon/*.svg')
     new_icons = []
     icons = glob.glob('icon/*.svg')
-    js_icon_map = '/* exported ICONS */\nconst ICONS =\n{'
+    js_icon_map = '''/* exported Icons */
+/* eslint-disable camelcase */
+const Icons = new function()
+{
+    let _map =
+    {'''
     changed = 0
     for icon in icons:
         with open(icon, 'rb') as filebytes:
@@ -129,7 +134,7 @@ def process_svg_icons(force, quiet):
             elif not quiet:
                 print(' ', icon, 'up to date')
             new_icons.append(newpath)
-            js_icon_map += '\n' + '    ' + core.upper() + ' : { src : "' + newpath + '", hash : "' + hashed + '" },'
+            js_icon_map += '\n        ' + core.lower() + ' : "' + hashed + '",'
 
     for icon in old_icons:
         if not icon.replace('\\', '/') in new_icons:
@@ -143,7 +148,21 @@ def process_svg_icons(force, quiet):
             print('  Modified', changed, 'icon' + ('' if changed == 1 else 's'))
 
         print('  Writing icon map...')
-        js_icon_map += '\n};\n'
+        js_icon_map += '''
+    };
+
+    this.get = function(icon)
+    {
+        return `i/c1c1c1/${_map[icon]}/${icon}.svg`;
+    };
+
+    this.getColor = function(icon, color)
+    {
+        return `i/${color}/${_map[icon]}/${icon}.svg`;
+    };
+}();
+
+'''
         js_icon_map = js_icon_map.replace('\\', '/')
         with open('script/iconMap.js', 'w+') as js_icon_file:
             js_icon_file.write(js_icon_map)
@@ -418,7 +437,6 @@ def create_temp(includes, rem_log, ultra):
         combined = re.sub(r'\bparseInt\(', 'p_(', combined)
         combined = minify_process_request(combined)
         combined = minify_keycodes(combined)
-        combined = minify_icons(combined)
     if len(consolelog) > 0:
         # prepend this outside of our scope
         if ultra:
@@ -466,25 +484,6 @@ def minify_keycodes(combined):
     results = re.findall(r'([A-Z_]+) +: (\d+)', definition)
     for result in results:
         combined = re.sub(f'\\bKEY\\.{result[0]}\\b', str(result[1]), combined)
-    return combined
-
-
-def minify_icons(combined):
-    '''
-    Remove the icon map via direct substitution.
-    NOTE: Depending on how many icons are used, and how often, this could
-          result in a larger file.
-    '''
-    start = combined.find('\nconst ICONS =\n')
-    if start == -1:
-        return combined
-    end = combined.find('\n};', start) + 2
-    definition = combined[start:end]
-    combined = combined[:start] + combined[end + 2:]
-    results = re.findall(r'([A-Z_]+) +: +{ src : ("[^"]+"), hash : ("[^"]+")', definition)
-    for result in results:
-        combined = re.sub(f'\\bICONS\\.{result[0]}\\.src\\b', str(result[1]), combined)
-        combined = re.sub(f'\\bICONS\\.{result[0]}\\.hash\\b', str(result[2]), combined)
     return combined
 
 

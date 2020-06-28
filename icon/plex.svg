@@ -2,7 +2,7 @@
 <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
 	 viewBox="0 0 256 256" style="enable-background:new 0 0 256 256;" xml:space="preserve">
 <style type="text/css">
-	.st0{fill:none;stroke:#C1C1C1;stroke-width:16;stroke-miterlimit:10;}
+	.st0{fill:none;stroke:FILL_COLOR;stroke-width:16;stroke-miterlimit:10;}
 </style>
 <polygon class="st0" points="197.1,128 139.2,226.3 83.1,226.3 141,128 83.1,29.8 139.2,29.8 "/>
 </svg>

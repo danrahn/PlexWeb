@@ -1266,13 +1266,13 @@ function actionToIcon(action)
     switch (action.toLowerCase())
     {
         case "edit":
-            return `i/929292/${ICONS.EDIT.hash}/edit.svg`;
+            return Icons.getColor("edit", "929292");
         case "delete":
-            return `i/929292/${ICONS.DELETE.hash}/delete.svg`;
+            return Icons.getColor("delete", "929292");
         case "save":
-            return `i/929292/${ICONS.SAVE.hash}/save.svg`;
+            return Icons.getColor("save", "929292");
         case "cancel":
-            return `i/929292/${ICONS.CANCEL.hash}/cancel.svg`;
+            return Icons.getColor("cancel", "929292");
         default:
             return "";
     }

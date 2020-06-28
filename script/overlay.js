@@ -101,14 +101,14 @@ function addFullscreenOverlayElements(container)
     let close = buildNode(
         "img",
         {
-            src : ICONS.EXIT.src,
+            src : Icons.get("exit"),
             style : "position: fixed; top: 10px; right: 20px; width: 25px"
         },
         0,
         {
             click : overlayDismiss,
-            mouseover : function() { this.src = `i/e1e1e1/${ICONS.EXIT.hash}/exit.svg`; },
-            mouseout : function() { this.src = ICONS.EXIT.src; }
+            mouseover : function() { this.src = Icons.getColor("exit", "e1e1e1"); },
+            mouseout : function() { this.src = Icons.get("exit"); }
         });
     Tooltip.setTooltip(close, "Close");
     $("#mainOverlay").appendChild(close);

@@ -2,8 +2,8 @@
 <svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
 	 viewBox="0 0 128 128" style="enable-background:new 0 0 128 128;" xml:space="preserve">
 <style type="text/css">
-	.st0{fill:none;stroke:#C1C1C1;stroke-width:11;stroke-linecap:round;stroke-miterlimit:10;}
-	.st1{fill:#C1C1C1;}
+	.st0{fill:none;stroke:FILL_COLOR;stroke-width:11;stroke-linecap:round;stroke-miterlimit:10;}
+	.st1{fill:FILL_COLOR;}
 </style>
 <line class="st0" x1="77.8" y1="64.2" x2="20.1" y2="64.2"/>
 <path class="st1" d="M23.6,64l9.6,13.1c6.3,7.3-3.5,11.3-10.6,6.3L9.1,69.8C6,66.7,6,61.6,9.1,58.5l13.5-13.5

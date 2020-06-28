@@ -302,7 +302,7 @@ function appendChart(chartData, holderId, isPie)
     holder.style.height = (isPie ? chartData.radius * 2 : chartData.height) + "px";
     let expandIcon = buildNode(
         "img",
-        { src : ICONS.EXPAND.src, class : "statGraphExpand" },
+        { src : Icons.get("expand"), class : "statGraphExpand" },
         0,
         {
             click : function() { buildChartOverlay(chartData); },
@@ -404,14 +404,14 @@ function showStatsIcon()
         "img",
         {
             style : "width: 20px; cursor: pointer",
-            src : `i/2e832e/${ICONS.STATS.hash}/stats.svg`,
+            src : Icons.getColor("stats", "2e832e"),
             id : "showStatsBtn"
         },
         0,
         {
             click : showHideStats,
-            mouseover : function() { this.src = `i/80A020/${ICONS.STATS.hash}/stats.svg`; },
-            mouseout : function() { this.src = `i/2e832e/${ICONS.STATS.hash}/stats.svg`; },
+            mouseover : function() { this.src = Icons.getColor("stats", "80A020"); },
+            mouseout : function() { this.src = Icons.getColor("stats", "2e832e"); },
         }
     );
     Tooltip.setTooltip(stats, "Show Plex Stats", 250 /*delay*/, true /*static*/);
@@ -1062,13 +1062,13 @@ function getInlineIconForTitle(mediaType, hover)
     switch (mediaType)
     {
         case "TV Show":
-            return `i/${color}/${ICONS.TVICON.hash}/tvicon.svg`;
+            return Icons.getColor("tvicon", color);
         case "Movie":
-            return `i/${color}/${ICONS.MOVIEICON.hash}/movieicon.svg`;
+            return Icons.getColor("movieicon", color);
         case "Music":
-            return `i/${color}/${ICONS.MUSICICON.hash}/musicicon.svg`;
+            return Icons.getColor("musicicon", color);
         case "Audiobook":
-            return `i/${color}/${ICONS.AUDIOBOOKICON.hash}/audiobookicon.svg`;
+            return Icons.getColor("audiobookicon", color);
         default:
             return "";
     }
