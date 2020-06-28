@@ -182,7 +182,7 @@ function include_js($file)
 {
     if (!try_get("nomin"))
     {
-        return file_get_contents("min/" . $file . ".min.js");
+        return file_get_contents("min/script/" . $file . ".min.js");
     }
     else
     {
@@ -216,7 +216,7 @@ function build_js()
         // best of both worlds: clients get the latest bits as soon as they available,
         // and when the content doesn't change, clients can use the cached version
         // without pinging us.
-        echo '<script src="' . glob("min/$file.*.min.js")[0] . '"></script>';
+        echo '<script src="' . glob("min/script/$file.*.min.js")[0] . '"></script>';
     }
 }
 
@@ -277,12 +277,12 @@ function build_css()
         $includes = get_css_includes($self);
         foreach ($includes as $include)
         {
-            echo "<style>\n/* $include.css */\n" . file_get_contents("style/base/$include.css") . "</style>\n";
+            echo "<style>\n/* $include.css */\n" . file_get_contents("style/$include.css") . "</style>\n";
         }
     }
     else
     {
-        echo '<link rel="stylesheet" href="' . glob("style/$self.*.min.css")[0] . '">';
+        echo '<link rel="stylesheet" href="' . glob("min/style/$self.*.min.css")[0] . '">';
     }
 }
 
@@ -367,10 +367,10 @@ function get_css_deps_from_js($dep, $deps, &$result)
 /// </summary>
 function icon($name)
 {
-    $gl = glob("icon/$name.*.svg");
+    $gl = glob("min/icon/$name.*.svg");
     if (sizeof($gl) == 0)
     {
-        echo 'blank.svg';
+        echo 'min/icon/blank.svg';
         return;
     }
 

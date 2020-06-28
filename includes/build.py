@@ -107,9 +107,9 @@ def process_svg_icons(force, quiet):
     '''
 
     print('Looking for updated icons...')
-    old_icons = glob.glob('icon/*.svg')
+    old_icons = glob.glob('min/icon/*.svg')
     new_icons = []
-    icons = glob.glob('icon/base/*.svg')
+    icons = glob.glob('icon/*.svg')
     js_icon_map = '/* exported icons */\nconst icons =\n{'
     changed = 0
     for icon in icons:
@@ -117,7 +117,7 @@ def process_svg_icons(force, quiet):
             core = icon[icon.rfind(os.sep) + 1:]
             core = core[:core.find('.')]
             hashed = hashlib.md5(filebytes.read()).hexdigest()[:10]
-            newpath = 'icon' + os.sep + core + '.' + hashed + '.svg'
+            newpath = 'min/icon/' + core + '.' + hashed + '.svg'
             if force or not os.path.exists(newpath):
                 print('  Copying', "'" + icon + "' to", "'" + newpath + "'")
 
@@ -131,7 +131,7 @@ def process_svg_icons(force, quiet):
             js_icon_map += '\n' + '    ' + core.upper() + ' : "' + newpath + '",'
 
     for icon in old_icons:
-        if not icon in new_icons:
+        if not icon.replace('\\', '/') in new_icons:
             os.remove(icon)
             changed = -1
 
@@ -167,24 +167,24 @@ def process_css(files, deps, force, quiet, csso):
     file, and runs clean-css-cli on it.
     '''
     print('Looking for updated CSS...')
-    modified_dates = get_modified_dates('style/base/*.css')
+    modified_dates = get_modified_dates('style/*.css')
     modified_any = False
     for file in files:
         includes = get_css_deps(file, deps)
         if len(includes) == 0:
             continue
-        if not force and not needs_parse(file, includes, modified_dates, 'style/' + file[:file.rfind('.')] + '.*.min.css'):
+        if not force and not needs_parse(file, includes, modified_dates, 'min/style/' + file[:file.rfind('.')] + '.*.min.css'):
             if not quiet:
                 print(file, 'up to date')
             continue
         combined = ''
         for include in includes:
-            include_file = 'style/base/' + include + '.css'
+            include_file = 'style/' + include + '.css'
             combined += '/* ' + include + '.css */\n' + get_lines(include_file) + '\n\n'
         write_temp(file, combined, 'css')
         tmp_file = 'tmp' + os.sep + file[:file.rfind('.')] + '.tmp.css'
         base_file = file[file.find(os.sep) + 1:file.find('.')]
-        for existing in glob.glob('style' + os.sep + base_file + '.*.min.css'):
+        for existing in glob.glob('min/style/' + base_file + '.*.min.css'):
             os.remove(existing)
         file_hash = get_hash(tmp_file)
         clean_file = base_file + '.' + file_hash + '.min.css'
@@ -192,7 +192,7 @@ def process_css(files, deps, force, quiet, csso):
         modified_any = True
         if system == 'Windows':
             print('Minifying', clean_file)
-            cmd_params = (' ' + tmp_file + ' -o style\\' + clean_file) if csso else (' -O2 -o style\\' + clean_file + ' ' + tmp_file)
+            cmd_params = (' ' + tmp_file + ' -o min\\style\\' + clean_file) if csso else (' -O2 -o min\\style\\' + clean_file + ' ' + tmp_file)
             cmd = 'node.exe ' + os.environ['APPDATA'] + r'\npm\node_modules'
             cmd += r'\csso-cli\bin\csso ' if csso else r'\clean-css-cli\bin\cleancss '
             cmd += cmd_params
@@ -201,7 +201,7 @@ def process_css(files, deps, force, quiet, csso):
                 print('   ', output)
         else:
             print('Copying', clean_file, 'to main directory')
-            shutil.copyfile(tmp_file, 'style' + os.sep + clean_file)
+            shutil.copyfile(tmp_file, 'min/style/' + clean_file)
     clean_tmp()
     if not modified_any and quiet:
         print('CSS up to date!')
@@ -327,7 +327,6 @@ def get_deps(file, deps):
     if has_common and res[1 if has_consolelog else 0] != "common":
         res.remove("common")
         res.insert(1 if has_consolelog else 0, "common")
-    print(res)
     return res
 
 def get_deps_core(dep, deps, res):
@@ -662,13 +661,13 @@ def run_cmd(file, options, babel, quiet):
         if babel:
             cmd_params = ' --' + ' --'.join(options)
             cmd = 'node.exe ' + os.environ['APPDATA'] + r'\npm\node_modules\babel-minify\bin\minify.js '
-            cmd += file + cmd_params + ' --o min\\' + clean_file
+            cmd += file + cmd_params + ' --o min\\script\\' + clean_file
         else:
             cmd_params = ' -c ' + ','.join(options) + ' -m'
             cmd = 'node.exe ' + os.environ['APPDATA'] + r'\npm\node_modules\terser\bin\terser '
-            cmd += file + ' -o min\\' + clean_file + cmd_params
+            cmd += file + ' -o min\\script\\' + clean_file + cmd_params
     elif system == 'Linux':
-        cmd = ['terser', file, '-o', 'min/' + clean_file, '-c', ','.join(options), '-m']
+        cmd = ['terser', file, '-o', 'min/script/' + clean_file, '-c', ','.join(options), '-m']
     else:
         print('Unsupported OS:', os)
     output = subprocess.check_output(cmd, stderr=subprocess.STDOUT).decode('utf-8')
@@ -679,7 +678,7 @@ def run_cmd(file, options, babel, quiet):
 
 def remove_existing(base):
     '''Remove all minified files from the min directory'''
-    for file in glob.glob('min' + os.sep + base + '.*.min.js'):
+    for file in glob.glob('min/script' + os.sep + base + '.*.min.js'):
         os.remove(file)
 
 
