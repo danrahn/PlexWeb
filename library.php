@@ -18,7 +18,8 @@ if (!UserLevel::is_admin())
 <html lang="en-us">
 <head>
     <meta http-equiv="Content-Type" content="text/html;charset=utf-8">
-    <link rel="shortcut icon" href="favicon.png">
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="alternate icon" href="favicon.png">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#3C5260" />
     <title>Library Management</title>

@@ -79,7 +79,8 @@ function get_username()
 <html lang="en-us">
 <head>
     <meta http-equiv="Content-Type" content="text/html;charset=utf-8">
-    <link rel="shortcut icon" href="favicon.png">
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="alternate icon" href="favicon.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
     <link rel="apple-touch-icon" sizes="152x152" href="apple-touch-icon-ipad.png">
     <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon-iphone-retina.png">
