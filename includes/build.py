@@ -218,7 +218,17 @@ def get_css_deps(file, deps):
     if "style" in includes:
         res.append("style")
 
-    get_css_deps_from_js(raw, deps, res)
+    implicit = []
+    get_css_deps_from_js(raw, deps, implicit)
+
+    # Some "base" css files should go first to allow overriding by subsequent files
+    base = ["overlay", "nav", "table", "tooltip"]
+    for css in base:
+        if css in implicit:
+            res.append(css)
+    for css in implicit:
+        if css not in res:
+            res.append(css)
 
     for include in includes:
         if include != "style" and include != raw:
@@ -287,7 +297,7 @@ def process_file(file, modified_dates, deps, force, rem_log, ultra, quiet):
     if len(includes) == 0:
         return False # File has no build_js, so don't build anything
 
-    if not force and not needs_parse(file, includes, modified_dates, 'min/' + file[:file.rfind('.')] + '.*.min.js'):
+    if not force and not needs_parse(file, includes, modified_dates, 'min/script/' + file[:file.rfind('.')] + '.*.min.js'):
         if not quiet:
             print(file, "up to date")
         return False

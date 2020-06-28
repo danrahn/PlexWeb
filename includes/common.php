@@ -304,7 +304,26 @@ function get_css_includes($file)
         array_push($result, "style");
     }
 
-    get_css_deps_from_js($file, $deps, $result);
+    $implicit = [];
+    get_css_deps_from_js($file, $deps, $implicit);
+
+    // Some "base" css files should go first to allow overriding by subsequent files
+    $base = ["overlay", "nav", "table", "tooltip"];
+    foreach ($base as $css)
+    {
+        if (in_array($css, $implicit))
+        {
+            array_push($result, $css);
+        }
+    }
+
+    foreach ($implicit as $css)
+    {
+        if (!in_array($css, $result))
+        {
+            array_push($result, $css);
+        }
+    }
 
     foreach ($includes as $include)
     {
