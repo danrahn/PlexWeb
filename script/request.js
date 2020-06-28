@@ -445,8 +445,8 @@ function setInternalId()
 
     let successFunc = function()
     {
-        Animation.queue({ backgroundColor : "rgb(63, 100, 69)" }, $$(".matchContinue"), 500);
-        Animation.queueDelayed({ backgroundColor : "rgb(63, 66, 69)" }, $$(".matchContinue"), 1000, 500, true);
+        Animation.queue({ backgroundColor : "rgb(63, 100, 69)" }, $$(".matchContinue"), 250);
+        Animation.queueDelayed({ backgroundColor : "rgb(63, 66, 69)" }, $$(".matchContinue"), 500, 250, true);
 
         setTimeout(function() { window.location.reload(); }, 1000);
     };
@@ -779,18 +779,32 @@ function onStatusDoubleClick()
 /// </summary>
 function searchPlex()
 {
+    let query = attr("requestName");
+    if ($("#customSearchText"))
+    {
+        query = $("#customSearchText").value;
+    }
+
     let parameters =
     {
         type : ProcessRequest.SearchPlex,
         kind : attr("requestTypeStr"),
-        query : attr("requestName")
+        query : query
     };
 
     let successFunc = function(response)
     {
         if (response.length === 0)
         {
-            $("#completeRequestMatches").innerHTML = "No matches found. Are you sure this item is complete?";
+            if ($("#customSearchText"))
+            {
+                $("#completeRequestMatches").innerHTML = "No matches found.";
+            }
+            else
+            {
+                $("#completeRequestMatches").innerHTML = "No matches found. Maybe try a custom search instead.";
+                buildCustomSearch();
+            }
             return;
         }
 
@@ -803,6 +817,38 @@ function searchPlex()
     };
 
     sendHtmlJsonRequest("process_request.php", parameters, successFunc, failureFunc);
+}
+
+let internalSearchTimer;
+
+/// <summary>
+/// If no internal matches are found, let the admin search directly
+/// </summary>
+function buildCustomSearch()
+{
+    $("#searchForm").appendChild(buildNode(
+        "input",
+        { type : "text", id : "customSearchText", placeholder : "Custom search..." },
+        attr("requestName"),
+        { input : customSearchChanged }
+    ));
+}
+
+/// <summary>
+/// Triggered when the search input changes - initiates a search after 250ms of subsequent inactivity
+/// </summary>
+function customSearchChanged()
+{
+    let suggestion = $("#customSearchText").value;
+    clearTimeout(internalSearchTimer);
+    if (suggestion.length === 0)
+    {
+        $("#completeRequestMatches").style.display = "none";
+        return;
+    }
+
+    $("#completeRequestMatches").style.display = "block";
+    internalSearchTimer = setTimeout(searchPlex, 250);
 }
 
 /// <summary>

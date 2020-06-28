@@ -342,6 +342,11 @@ a:hover {
     font-size: 12pt;
 }
 
+#customSearchText {
+    margin-top: 10px !important;
+    width: 80%;
+}
+
 @media (orientation: landscape), (min-width: 767px) {
     #innerInfoContainer {
         float: left;
