@@ -215,9 +215,9 @@ let MarkdownEditor = new function()
             toolbarButton("addStrikethrough", "S", "Strikethrough (Ctrl + S)"),
             toolbarButton("addSuperscript", "X<sup>2</sup>", "Superscript (Ctrl + Shift + ^)", true /*realButton*/),
             toolbarButton("addSubscript", "X<sub>2</sub>", "Subscript (Ctrl + Shift + ~)", true /*realButton*/),
-            toolbarButton("addLink", `<img src="${icons.MDLINK}" alt="Insert Link" />`, "Insert Link (Ctrl + K)", true /*realButton*/),
-            toolbarButton("addImage", `<img src="${icons.MDIMAGE}" alt="Insert Image" />`, "Insert Image (Ctrl + M)", true /*realButton*/),
-            toolbarButton("addTable", `<img src="${icons.MDTABLE}" alt="Insert Table" />`, "Insert Table (Ctrl + L)", true /*realButton*/),
+            toolbarButton("addLink", `<img src="${ICONS.MDLINK.src}" alt="Insert Link" />`, "Insert Link (Ctrl + K)", true /*realButton*/),
+            toolbarButton("addImage", `<img src="${ICONS.MDIMAGE.src}" alt="Insert Image" />`, "Insert Image (Ctrl + M)", true /*realButton*/),
+            toolbarButton("addTable", `<img src="${ICONS.MDTABLE.src}" alt="Insert Table" />`, "Insert Table (Ctrl + L)", true /*realButton*/),
             toolbarButton("showMdHelp", "?", "Help"),
         );
     };

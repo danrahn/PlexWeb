@@ -302,7 +302,6 @@ a:hover {
 
 .commentAction img {
     width: 14px;
-    filter: invert(60%);
     margin: 5px 5px 0 0;
     vertical-align: text-bottom;
 }

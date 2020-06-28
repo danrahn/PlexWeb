@@ -123,11 +123,6 @@
     height: 18px;
     vertical-align: bottom;
     margin-left: 5px;
-    filter: invert(50%) sepia(96%) saturate(310%) hue-rotate(71deg) brightness(100%) contrast(82%);
-}
-
-a:hover .inlineIcon {
-    filter: invert(49%) sepia(94%) saturate(342%) hue-rotate(71deg) brightness(89%) contrast(87%);
 }
 
 .tooltipProgress {

@@ -1266,13 +1266,13 @@ function actionToIcon(action)
     switch (action.toLowerCase())
     {
         case "edit":
-            return icons.EDIT;
+            return `i/929292/${ICONS.EDIT.hash}/edit.svg`;
         case "delete":
-            return icons.DELETE;
+            return `i/929292/${ICONS.DELETE.hash}/delete.svg`;
         case "save":
-            return icons.SAVE;
+            return `i/929292/${ICONS.SAVE.hash}/save.svg`;
         case "cancel":
-            return icons.CANCEL;
+            return `i/929292/${ICONS.CANCEL.hash}/cancel.svg`;
         default:
             return "";
     }

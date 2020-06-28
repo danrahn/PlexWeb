@@ -302,7 +302,7 @@ function appendChart(chartData, holderId, isPie)
     holder.style.height = (isPie ? chartData.radius * 2 : chartData.height) + "px";
     let expandIcon = buildNode(
         "img",
-        { src : icons.EXPAND, class : "statGraphExpand" },
+        { src : ICONS.EXPAND.src, class : "statGraphExpand" },
         0,
         {
             click : function() { buildChartOverlay(chartData); },
@@ -404,11 +404,15 @@ function showStatsIcon()
         "img",
         {
             style : "width: 20px; cursor: pointer",
-            src : icons.STATS,
+            src : `i/2e832e/${ICONS.STATS.hash}/stats.svg`,
             id : "showStatsBtn"
         },
         0,
-        { click : showHideStats }
+        {
+            click : showHideStats,
+            mouseover : function() { this.src = `i/80A020/${ICONS.STATS.hash}/stats.svg`; },
+            mouseout : function() { this.src = `i/2e832e/${ICONS.STATS.hash}/stats.svg`; },
+        }
     );
     Tooltip.setTooltip(stats, "Show Plex Stats", 250 /*delay*/, true /*static*/);
     $("#header").appendChildren(stats);
@@ -1052,18 +1056,19 @@ function getContainerNode(sesh)
 /// Returns the path to the icon to display in the active stream's
 /// title, or an empty string if no relevant icon is found
 /// </summary>
-function getInlineIconForTitle(mediaType)
+function getInlineIconForTitle(mediaType, hover)
 {
+    let color = hover ? "40a040" : "50c050";
     switch (mediaType)
     {
         case "TV Show":
-            return icons.TVICON;
+            return `i/${color}/${ICONS.TVICON.hash}/tvicon.svg`;
         case "Movie":
-            return icons.MOVIEICON;
+            return `i/${color}/${ICONS.MOVIEICON.hash}/movieicon.svg`;
         case "Music":
-            return icons.MUSICICON;
+            return `i/${color}/${ICONS.MUSICICON.hash}/musicicon.svg`;
         case "Audiobook":
-            return icons.AUDIOBOOKICON;
+            return `i/${color}/${ICONS.AUDIOBOOKICON.hash}/audiobookicon.svg`;
         default:
             return "";
     }
@@ -1130,7 +1135,7 @@ function buildActiveStreamTitle(sesh)
 
     link.appendChild(buildNode("span", {}, `${sesh.title}`));
 
-    let inlineIconSrc = getInlineIconForTitle(sesh.media_type);
+    let inlineIconSrc = getInlineIconForTitle(sesh.media_type, false /*hover*/);
 
     if (inlineIconSrc)
     {
@@ -1139,9 +1144,22 @@ function buildActiveStreamTitle(sesh)
             src : inlineIconSrc,
             alt : sesh.media_type
         }));
+
+        link.addEventListener("mouseover", function() { inlineHover(this, true /*hovered*/); });
+        link.addEventListener("mouseout", function() { inlineHover(this, false /*hovered*/); });
     }
 
     return link;
+}
+
+/// <summary>
+/// Sets the svg icon source for the given link
+/// i.e. changes the color based on the hover state
+/// </summary>
+function inlineHover(link, hovered)
+{
+    let icon = link.$$("img");
+    icon.src = getInlineIconForTitle(icon.getAttribute("alt"), hovered);
 }
 
 /// <summary>

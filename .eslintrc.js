@@ -355,7 +355,7 @@ module.exports = {
         // tooltip.js
         "Tooltip" : "readonly",
         // iconMap.js
-        "icons" : "readonly",
+        "ICONS" : "readonly",
         // tableCommon.js
         "getPage" : "readonly",
         "setPage" : "readonly",

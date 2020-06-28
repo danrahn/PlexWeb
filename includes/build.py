@@ -33,19 +33,20 @@ def process():
     onlycss = '-cssonly' in args_lower
     cleancss = '-cleancss' in args_lower
     compare = '-cmp' in args_lower
+    single = '-s' in args_lower
     rem_log = 1 if '-notmi' in args_lower else 0
     if '-nolog' in args_lower:
         rem_log |= 2
     if '-nomdtmi' in args_lower:
         rem_log |= 4
 
-    if '-s' in args_lower:
+    if single:
         files = [args_lower[args_lower.index('-s') + 1]]
     else:
         files = glob.glob("*.php")
 
     # First, check for changes to svg icons
-    if not noicon and not onlycss:
+    if not noicon and not onlycss and not single:
         process_svg_icons(force, quiet)
     if onlyicon:
         return
@@ -110,7 +111,7 @@ def process_svg_icons(force, quiet):
     old_icons = glob.glob('min/icon/*.svg')
     new_icons = []
     icons = glob.glob('icon/*.svg')
-    js_icon_map = '/* exported icons */\nconst icons =\n{'
+    js_icon_map = '/* exported ICONS */\nconst ICONS =\n{'
     changed = 0
     for icon in icons:
         with open(icon, 'rb') as filebytes:
@@ -128,7 +129,7 @@ def process_svg_icons(force, quiet):
             elif not quiet:
                 print(' ', icon, 'up to date')
             new_icons.append(newpath)
-            js_icon_map += '\n' + '    ' + core.upper() + ' : "' + newpath + '",'
+            js_icon_map += '\n' + '    ' + core.upper() + ' : { src : "' + newpath + '", hash : "' + hashed + '" },'
 
     for icon in old_icons:
         if not icon.replace('\\', '/') in new_icons:
@@ -474,15 +475,16 @@ def minify_icons(combined):
     NOTE: Depending on how many icons are used, and how often, this could
           result in a larger file.
     '''
-    start = combined.find('\nconst icons =\n')
+    start = combined.find('\nconst ICONS =\n')
     if start == -1:
         return combined
-    end = combined.find('}', start)
+    end = combined.find('\n};', start) + 2
     definition = combined[start:end]
     combined = combined[:start] + combined[end + 2:]
-    results = re.findall(r'([A-Z_]+) +: ("[^"]+")', definition)
+    results = re.findall(r'([A-Z_]+) +: +{ src : ("[^"]+"), hash : ("[^"]+")', definition)
     for result in results:
-        combined = re.sub(f'\\bicons\\.{result[0]}\\b', str(result[1]), combined)
+        combined = re.sub(f'\\bICONS\\.{result[0]}\\.src\\b', str(result[1]), combined)
+        combined = re.sub(f'\\bICONS\\.{result[0]}\\.hash\\b', str(result[2]), combined)
     return combined
 
 

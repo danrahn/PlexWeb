@@ -138,10 +138,6 @@
     color: #a1a1a1;
 }
 
-.activityImg.hasNewActivity { /* https://codepen.io/sosuke/pen/Pjoqqp */
-    filter: invert(46%) sepia(93%) saturate(5265%) hue-rotate(10deg) brightness(95%) contrast(87%);
-}
-
 #activityIndicator {
     display: none;
     width: 10px;

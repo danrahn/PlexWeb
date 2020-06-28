@@ -74,7 +74,7 @@ function getNewActivities()
             $("#navActivity").title = `Notifications (${response.new} new, Shift + A)`;
             $(".activityImg").forEach(function(ele)
             {
-                ele.classList.add("hasNewActivity");
+                ele.src = `i/d15211/${ICONS.BELL.hash}/bell.svg`;
             });
 
             $("#activityIndicator").style.display = "block";
@@ -85,7 +85,7 @@ function getNewActivities()
             $("#navActivity").title = `Notifications (Shift + A)`;
             $(".activityImg").forEach(function(ele)
             {
-                ele.classList.remove("hasNewActivity");
+                ele.src = ICONS.BELL.src;
             });
 
             $("#activityIndicator").style.display = "none";

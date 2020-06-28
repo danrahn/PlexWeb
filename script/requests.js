@@ -127,7 +127,7 @@ function buildRequestTitle(request)
     {
         requestTitle.appendChild(buildNode("img", {
             class : "inlineIcon",
-            src : request.t == 1 ? icons.MOVIEICON : icons.TVICON,
+            src : `i/80A020/${request.t == 1 ? ICONS.MOVIEICON.hash + "/movieicon" : ICONS.TVICON.hash + "/tvicon"}.svg`,
             alt : request.t == 1 ? "Movie" : "TV Show"
         }));
     }
