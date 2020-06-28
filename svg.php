@@ -16,13 +16,24 @@ $color = get("color");
 $color_len = strlen($color);
 if ($color_len != 3 && $color_len != 6)
 {
-    header('HTTP/1.1 400 Bad Request', true, 400);
-    error_and_exit(400);
+    bad_request();
 }
 
 if (substr($icon, strlen($icon) - 4) == ".svg")
 {
     $icon = substr($icon, 0, strlen($icon) - 4);
+}
+
+// Only letters, numbers, and underscores allowed
+if (!preg_match("/^\w+$/", $icon))
+{
+    bad_request();
+}
+
+// The hash itself must be lowercase hex
+if (!preg_match("/^[a-f0-9]+$/", $hash))
+{
+    bad_request();
 }
 
 if (!free_icon($icon))
@@ -32,8 +43,7 @@ if (!free_icon($icon))
 
 if (!preg_match("/^[a-fA-F0-9]+$/", $color))
 {
-    header('HTTP/1.1 400 Bad Request', true, 400);
-    error_and_exit(400);
+    bad_request();
 }
 
 $gl = glob("min/icon/$icon.$hash.svg");
@@ -71,6 +81,12 @@ else
     header('Etag: ' . md5_file($filename));
     
     echo $img;
+}
+
+function bad_request()
+{
+    header('HTTP/1.1 400 Bad Request', true, 400);
+    error_and_exit(400);
 }
 
 /// <summary>

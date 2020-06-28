@@ -395,7 +395,7 @@ function icon($name)
 
     $icon = substr($gl[0], strrpos($gl[0], "/"));
     $icon = explode(".", $icon);
-    echo "i/c1c1c1/" . $icon[1] . "/" . $icon[0] . ".svg";
+    echo "i/c1c1c1/" . $icon[1] . $icon[0] . ".svg";
 }
 
 /// <summary>
