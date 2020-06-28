@@ -266,17 +266,23 @@ function process_request_update($requests)
 function update_req_status($req_id, $status, $requester, $admin_id, &$contact_info, &$request_name)
 {
     global $db;
-    $request_query = "SELECT * FROM user_requests WHERE id=$req_id";
+    $request_query = "SELECT request_type, request_name, satisfied FROM user_requests WHERE id=$req_id";
     $result = $db->query($request_query);
     if (!$result)
     {
         return FALSE;
     }
 
-    $row = $result->fetch_row();
+    $row = $result->fetch_assoc();
     $result->close();
-    $request_type = RequestType::get_type($row[2]);
-    $request_name = RequestType::get_str($request_type) . " " . $row[3];
+    $request_type = RequestType::get_type($row['request_type']);
+    $request_name = RequestType::get_str($request_type) . " " . $row['request_name'];
+    if ($status == $row['satisfied'])
+    {
+        // No change in status, return success.
+        return TRUE;
+    }
+
     if ($request_type == RequestType::StreamAccess)
     {
         // Need to adjust permissions

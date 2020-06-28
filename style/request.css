@@ -337,6 +337,11 @@ a:hover {
     font-size: smaller;
 }
 
+#internalId {
+    margin-top: 20px;
+    font-size: 12pt;
+}
+
 @media (orientation: landscape), (min-width: 767px) {
     #innerInfoContainer {
         float: left;
@@ -381,9 +386,13 @@ a:hover {
         text-shadow: -1px 0 #313131, 0 1px #313131, 1px 0 #313131, 0 -1px #313131;
     }
 
-    #mediaLink {
+    .mediaLink {
         font-size: 18pt;
         text-shadow: -1px 0 #313131, 0 1px #313131, 1px 0 #313131, 0 -1px #313131;
+    }
+
+    #internalId {
+        margin-bottom: -20px;
     }
 
     #mediaOverview {
@@ -456,7 +465,7 @@ a:hover {
         margin-bottom: 20px;
     }
 
-    #mediaLink {
+    .mediaLink {
         font-size: 18pt;
         text-shadow: -1px 0 #313131, 0 1px #313131, 1px 0 #313131, 0 -1px #313131;
     }

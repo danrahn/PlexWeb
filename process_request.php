@@ -55,6 +55,8 @@ abstract class ProcessRequest
     const MarkdownText = 31;
     const FreeSpace = 32;
     const LibraryStats = 33;
+    const SetInternalId = 34;
+    const GetInternalId = 35;
 }
 
 // For requests that are only made when not logged in, don't session_start or verify login state
@@ -202,6 +204,12 @@ function process_request($type)
             break;
         case ProcessRequest::LibraryStats:
             $message = get_library_stats(try_get('force'));
+            break;
+        case ProcessRequest::SetInternalId:
+            $message = set_internal_id((int)get("req_id"), (int)get("id"));
+            break;
+        case ProcessRequest::GetInternalId:
+            $message = get_internal_id((int)get("req_id"));
             break;
         default:
             return json_error("Unknown request type: " . $type);
@@ -2745,6 +2753,66 @@ function addSectionDetails($type, $sectionKey, $detailKey, &$section)
     }
 
     $section->$detailKey = $items;
+}
+
+/// <summary>
+/// Sets the internal Plex id for the given request
+/// </summary>
+function set_internal_id($req_id, $id)
+{
+    global $db;
+    if (!UserLevel::is_admin())
+    {
+        return json_error("Not Authorized");
+    }
+
+    $req = $db->query("SELECT * FROM `user_requests` WHERE `id`=$req_id");
+    if (!$req || $req->num_rows == 0)
+    {
+        return json_error("Invalid Request Id");
+    }
+
+    $result = $db->query("UPDATE `user_requests` SET `internal_id`=$id WHERE `id`=$req_id");
+    if (!$result)
+    {
+        return db_error();
+    }
+
+    return json_success();
+}
+
+/// <summary>
+/// Retrieves the internal Plex id for an item along with the server
+/// identifier, which combined can create a navigable link
+/// </summary>
+function get_internal_id($req_id)
+{
+    global $db;
+    if (UserLevel::current() < UserLevel::Regular)
+    {
+        return json_error("Not Authorized");
+    }
+
+    $result = $db->query("SELECT `internal_id` FROM `user_requests` WHERE `id`=$req_id");
+    if (!$result || $result->num_rows == 0)
+    {
+        return !$result ? db_error() : json_error("Invalid Request Id");
+    }
+
+    $json = new \stdClass();
+    $internal_id = $result->fetch_row()[0];
+    if (is_null($internal_id))
+    {
+        $json->internal_id = -1;
+    }
+    else
+    {
+        $json->internal_id = (int)$internal_id;
+    }
+    
+    $server_info = simplexml_load_string(curl(PLEX_SERVER . '?' . PLEX_TOKEN));
+    $json->machine_id = (string)$server_info['machineIdentifier'];
+    return json_encode($json);
 }
 
 /// <summary>

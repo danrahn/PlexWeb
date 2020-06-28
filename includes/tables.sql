@@ -27,7 +27,8 @@ CREATE TABLE `user_requests` (
  `satisfied_date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
  `admin_comment` varchar(1024) COLLATE utf8_unicode_ci DEFAULT NULL,
  `external_id` int(11) DEFAULT NULL,
- `poster_path` varchar(48) COLLATE utf8_unicode_ci NOT NULL,
+ `internal_id` int(11) DEFAULT NULL,
+ `poster_path` varchar(48) COLLATE utf8_unicode_ci DEFAULT NULL,
  `comment_count` int(11) NOT NULL DEFAULT '0',
  PRIMARY KEY (`id`),
  KEY `username_id` (`username_id`),
@@ -48,7 +49,7 @@ CREATE TABLE `user_info` (
  PRIMARY KEY (`id`),
  UNIQUE KEY `userid` (`userid`),
  CONSTRAINT `user_info_ibfk_1` FOREIGN KEY (`userid`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=34 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_c
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_c
 
 CREATE TABLE `request_comments` (
  `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -60,7 +61,7 @@ CREATE TABLE `request_comments` (
  PRIMARY KEY (`id`),
  KEY `req_id` (`req_id`),
  CONSTRAINT `request_comments_ibfk_1` FOREIGN KEY (`req_id`) REFERENCES `user_requests` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=143 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci
 
 CREATE TABLE `ip_cache` (
  `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -90,7 +91,7 @@ CREATE TABLE `tmdb_cache` (
  `imdb_id` varchar(32) COLLATE utf8_unicode_ci NOT NULL,
  `date_added` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
  PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci
 
 CREATE TABLE `logins` (
  `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -150,14 +151,14 @@ CREATE TABLE `password_reset` (
  `token` char(64) COLLATE utf8_unicode_ci NOT NULL,
  `used` tinyint(1) NOT NULL DEFAULT '0',
  PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci
 
 CREATE TABLE `library_stats_cache` (
  `id` int(11) NOT NULL AUTO_INCREMENT,
  `data` json NOT NULL,
  `timestamp` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
  PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci
 
 # Triggers
 CREATE TRIGGER `IncrementCommentCount` AFTER INSERT ON `request_comments`

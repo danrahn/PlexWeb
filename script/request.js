@@ -266,6 +266,11 @@ function buildLegacyMatch(match)
         0,
         { click : clickSuggestion });
 
+    if (match.thumb)
+    {
+        item.setAttribute("pid", match.thumb.substring(match.thumb.indexOf("metadata") + 9, match.thumb.indexOf("/thumb")));
+    }
+
     let type = attrInt("requestType");
     if (type != 2) { type = 1; }
     let img = buildNode("img", {
@@ -403,7 +408,7 @@ function chooseSelected()
 {
     if (!selectedSuggestion)
     {
-        let button = $("#matchContinue");
+        let button = $$(".matchContinue");
         let color = new Color(button.getComputedStyle.backgroundColor);
         Animation.queue({ backgroundColor : new Color(100, 66, 69) }, button, 500);
         Animation.queueDelayed({ backgroundColor : color }, button, 500, 500, true);
@@ -416,6 +421,44 @@ function chooseSelected()
         return;
     }
 
+    if (this.id == "matchContinue_completeRequestMatches")
+    {
+        setInternalId();
+    }
+    else
+    {
+        setExternalId();
+    }
+}
+
+/// <summary>
+/// Sets the internal id of the completed request based on the admin's selection
+/// </summary>
+function setInternalId()
+{
+    let params =
+    {
+        type : ProcessRequest.SetInternalId,
+        req_id : reqId(),
+        id : selectedSuggestion.getAttribute("pid")
+    };
+
+    let successFunc = function()
+    {
+        Animation.queue({ backgroundColor : "rgb(63, 100, 69)" }, $$(".matchContinue"), 500);
+        Animation.queueDelayed({ backgroundColor : "rgb(63, 66, 69)" }, $$(".matchContinue"), 1000, 500, true);
+
+        setTimeout(function() { window.location.reload(); }, 1000);
+    };
+
+    sendHtmlJsonRequest("process_request.php", params, successFunc);
+}
+
+/// <summary>
+/// Sets the external id for a legacy request that does not have one yet
+/// </summary>
+function setExternalId()
+{
     let params = { type : ProcessRequest.SetExternalId, req_id : reqId(), id : selectedSuggestion.getAttribute("tmdbid") };
 
     let successFunc = function(response)
@@ -444,12 +487,71 @@ function getMediaInfo()
     {
         logInfo(response);
         buildPage(response);
+        getInternalId();
     };
     let failureFunc = function()
     {
         $("#infoContainer").innerHTML = "Unable to query request information";
     };
     sendHtmlJsonRequest("media_search.php", parameters, successFunc, failureFunc);
+}
+
+/// <summary>
+/// Attempts to retrieve the internal id for a completed request
+///
+/// If one is not found and the current user is an admin, prompt them to select a match
+/// </summary>
+function getInternalId()
+{
+    if (attrInt("requestStatus") != 1)
+    {
+        return;
+    }
+
+    let params =
+    {
+        type : ProcessRequest.GetInternalId,
+        req_id : attrInt("reqId")
+    };
+
+    let successFunc = function(response)
+    {
+        if (response.internal_id == -1)
+        {
+            if (isAdmin())
+            {
+                searchForCompleteMatch();
+            }
+            return;
+        }
+
+        let hyperlink = `https://app.plex.tv/desktop#!/server/${response.machine_id}/details?`;
+        hyperlink += `key=${encodeURIComponent("/library/metadata/" + response.internal_id)}`;
+        $("#mediaDetails").insertBefore(
+            buildNode("div", { class : "mediaLink", id : "internalId" }).appendChildren(
+                buildNode("a", { href : hyperlink, target : "_blank" }, "View on Plex")
+            ),
+            $$("#mediaDetails hr")
+        );
+    };
+
+    sendHtmlJsonRequest("process_request.php", params, successFunc);
+}
+
+/// <summary>
+/// Searches Plex for a match, displaying all of them in an overlay
+/// </summary>
+function searchForCompleteMatch()
+{
+    let overlayNode = buildNode("div", { class : "formContainer" }).appendChildren(
+        buildNode("form", { id : "searchForm", style : "overflow: auto" }).appendChildren(
+            buildNode("div", { style : "margin-bottom: 10px" }, "Select the Matching Request"),
+            buildNode("hr"),
+            buildNode("div", { id : "completeRequestMatches" }, "Searching...")
+        )
+    );
+    buildOverlay(true, overlayNode);
+    searchPlex();
 }
 
 /// <summary>
@@ -528,7 +630,7 @@ function buildRequestExternalLink(request)
     let imdb;
     if (request.imdb_id)
     {
-        imdb = buildNode("div", { id : "mediaLink" });
+        imdb = buildNode("div", { class : "mediaLink" });
         imdb.appendChild(buildNode("a", {
             href : `https://imdb.com/title/${request.imdb_id}`,
             target : "_blank"
@@ -536,7 +638,7 @@ function buildRequestExternalLink(request)
     }
     else if (request.id)
     {
-        imdb = buildNode("div", { id : "mediaLink" });
+        imdb = buildNode("div", { class : "mediaLink" });
         imdb.appendChild(buildNode("a", {
             href : `https://www.themoviedb.org/${attr("requestTypeStr")}/${request.id}`,
             target : "_blank"
@@ -657,6 +759,11 @@ function onStatusDoubleClick()
             span.className = "statusSpan status" + status;
             span.innerHTML = ["Pending", "Approved", "Denied", "In Progress", "Waiting"][status];
         }
+
+        if (status == 1)
+        {
+            searchForCompleteMatch();
+        }
     };
 
     let failureFunc = function()
@@ -665,6 +772,37 @@ function onStatusDoubleClick()
     };
 
     sendHtmlJsonRequest("update_request.php", JSON.stringify(params), successFunc, failureFunc, null, true /*dataIsString*/);
+}
+
+/// <summary>
+/// Search plex for the current request title
+/// </summary>
+function searchPlex()
+{
+    let parameters =
+    {
+        type : ProcessRequest.SearchPlex,
+        kind : attr("requestTypeStr"),
+        query : attr("requestName")
+    };
+
+    let successFunc = function(response)
+    {
+        if (response.length === 0)
+        {
+            $("#completeRequestMatches").innerHTML = "No matches found. Are you sure this item is complete?";
+            return;
+        }
+
+        buildItems(response.top, "completeRequestMatches");
+    };
+
+    let failureFunc = function()
+    {
+        $("#completeRequestMatches").innerHTML = "Error searching for matches";
+    };
+
+    sendHtmlJsonRequest("process_request.php", parameters, successFunc, failureFunc);
 }
 
 /// <summary>

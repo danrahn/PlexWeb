@@ -270,6 +270,8 @@ const ProcessRequest =
     MarkdownText : 31,
     FreeSpace : 32,
     LibraryStats : 33,
+    SetInternalId : 34,
+    GetInternalId : 35,
 };
 
 console.assert(!_logErrorId || _logErrorId == ProcessRequest.LogError, "Update _logErrorId!");
