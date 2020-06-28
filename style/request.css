@@ -182,6 +182,12 @@ input[type=checkbox]:focus {
     background-color: rgba(0,0,0,0.5);
 }
 
+#noComments {
+    padding: 10px;
+    font-style: italic;
+    color: #919191;
+}
+
 .commentInfo {
     padding-top: 10px;
     padding-left: 10px;

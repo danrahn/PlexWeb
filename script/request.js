@@ -1018,6 +1018,12 @@ function buildComments(comments)
     let container = $("#comments");
     container.innerHTML = "";
 
+    if (comments.length == 0)
+    {
+        container.appendChild(buildNode("div", { id : "noComments", class : "commentHolder" }, "Nothing here yet. Add a new comment below."));
+        return;
+    }
+
     for (let i = 0; i < comments.length; ++i)
     {
         let comment = comments[i];
