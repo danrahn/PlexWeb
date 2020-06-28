@@ -68,6 +68,10 @@
     font-size: smaller;
 }
 
+.plexLink {
+    margin-left: 10px;
+}
+
 @media (orientation: landscape), (min-width: 767px) {
     .tableEntryHolder .imgHolder {
         height: 120px;

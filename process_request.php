@@ -1677,7 +1677,7 @@ function get_requests($num, $page, $search, $filter)
     $offset = $num == 0 ? 0 : $num * $page;
     $filter = json_decode($filter);
 
-    $query = "SELECT request_name, users.username, request_type, satisfied, request_date, satisfied_date, user_requests.id, users.id, external_id, poster_path, comment_count FROM user_requests INNER JOIN users ON user_requests.username_id=users.id ";
+    $query = "SELECT request_name, users.username, request_type, satisfied, request_date, satisfied_date, user_requests.id, users.id, external_id, internal_id, poster_path, comment_count FROM user_requests INNER JOIN users ON user_requests.username_id=users.id ";
 
     $filter_status = array();
     if ($filter->status->pending)
@@ -1806,6 +1806,7 @@ function get_requests($num, $page, $search, $filter)
     $requests = new \stdClass();
     $requests->count = $result->num_rows;
     $requests->entries = array();
+    $requests->machine_id = get_plex_server();
     while ($row = $result->fetch_row())
     {
         $request = new \stdClass();
@@ -1818,12 +1819,18 @@ function get_requests($num, $page, $search, $filter)
         $request->rid = $row[6]; // Request ID
         $request->uid = $row[7]; // Requester ID
         $request->eid = $row[8]; // External ID
-        $request->c = $row[10]; // Comment count
-        $poster_path = $row[9];
+        $request->pid = $row[9]; // Internal/Plex ID
+        $request->c = $row[11]; // Comment count
+        $poster_path = $row[10];
         if (!$row[9])
         {
             // If we don't have a poster path, get it
             $poster_path = get_poster_path($request);
+        }
+
+        if (is_null($request->pid))
+        {
+            $request->pid = -1;
         }
 
         if ($poster_path)
@@ -2810,9 +2817,22 @@ function get_internal_id($req_id)
         $json->internal_id = (int)$internal_id;
     }
     
-    $server_info = simplexml_load_string(curl(PLEX_SERVER . '?' . PLEX_TOKEN));
-    $json->machine_id = (string)$server_info['machineIdentifier'];
+    $json->machine_id = get_plex_server();
     return json_encode($json);
+}
+
+/// <summary>
+/// Returns the Plex server identifier, or an empty string if the user doesn't have the right permissions
+/// </summary>
+function get_plex_server()
+{
+    if (UserLevel::current() < UserLevel::Regular)
+    {
+        return "";
+    }
+
+    $server_info = simplexml_load_string(curl(PLEX_SERVER . '?' . PLEX_TOKEN));
+    return (string)$server_info['machineIdentifier'];
 }
 
 /// <summary>

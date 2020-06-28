@@ -68,6 +68,7 @@ function buildRequests(requests)
 
     logInfo(`Building ${requests.count} requests`);
     let sortOrder = Table.Filter.get().sort;
+    document.body.setAttribute("mid", requests.machine_id);
     for (let i = 0; i < requests.count; ++i)
     {
         const request = requests.entries[i];
@@ -180,6 +181,11 @@ function buildRequestBody(request, sortOrder, requestHolder)
 
     let comments = buildNode("span");
     comments.appendChild(buildNode("a", { href : `request.php?id=${request.rid}` }, `${request.c} comment${request.c == 1 ? "" : "s"}`));
+    if (parseInt(request.a) == 1 && request.pid != -1 && document.body.getAttribute("mid") != "")
+    {
+        comments.appendChild(buildNode("a", { href : "#", class : "plexLink", pid : request.pid }, "View on Plex", { click : navigateToPlex }));
+
+    }
 
     textHolder.appendChild(requestTitle);
     if (sortOrder == "ud" || sortOrder == "ua")
@@ -192,6 +198,18 @@ function buildRequestBody(request, sortOrder, requestHolder)
     }
 
     return textHolder.appendChildren(requester, status, comments);
+}
+
+/// <summary>
+/// Navigate to the Plex page for the specific request
+/// </summary>
+function navigateToPlex()
+{
+    let pid = parseInt(this.getAttribute("pid"));
+    let mid = document.body.getAttribute("mid");
+    window.open(
+        `https://app.plex.tv/desktop#!/server/${mid}/details?key=${encodeURIComponent("/library/metadata/" + pid)}`,
+        "_blank");
 }
 
 /// <summary>
