@@ -2,8 +2,6 @@
 /// Logic to display the list of registered users. Implements tableCommon
 /// </summary>
 
-/* exported populateFilter, getNewFilter, filterHtml, supportsSearch, tableIdentifier, tableUpdateFunc  */
-
 window.addEventListener("load", function()
 {
     Table.update();
@@ -12,18 +10,18 @@ window.addEventListener("load", function()
 /// <summary>
 /// Unique identifier for this table. Used by tableCommon
 /// </summary>
-function tableIdentifier()
+Table.identifier = function()
 {
     return "members";
-}
+};
 
 /// <summary>
 /// The function to call that will update this table. Used by tableCommon
 /// </summary>
-function tableUpdateFunc()
+Table.updateFunc = function()
 {
     return getMembers;
-}
+};
 
 /// <summary>
 /// Get list of members from the server, based on the current filter
@@ -37,7 +35,7 @@ function getMembers(searchValue="")
         num : Table.getPerPage(),
         page : Table.getPage(),
         search : searchValue,
-        filter : JSON.stringify(getFilter())
+        filter : JSON.stringify(Table.Filter.get())
     };
 
     Table.displayInfoMessage("Loading...");
@@ -167,9 +165,9 @@ function expandContractMember()
 /// <summary>
 /// Modifies the filter HTML to reflect the current filter settings
 /// </summary>
-function populateFilter()
+Table.Filter.populate = function()
 {
-    let filter = getFilter();
+    let filter = Table.Filter.get();
     $("#showNew").checked = filter.type.new;
     $("#showRegular").checked = filter.type.regular;
     $("#showAdmin").checked = filter.type.admin;
@@ -179,12 +177,12 @@ function populateFilter()
 
     setSortOrderValues();
     $("#sortBy").addEventListener("change", setSortOrderValues);
-}
+};
 
 /// <summary>
 /// Returns the new filter definition based on the state of the filter HTML
 /// </summary>
-function getNewFilter()
+Table.Filter.getFromDialog = function()
 {
     return {
         type :
@@ -197,7 +195,7 @@ function getNewFilter()
         sort : $("#sortBy").value,
         order : $("#sortOrder").value == "sortDesc" ? "desc" : "asc"
     };
-}
+};
 
 /// <summary>
 /// Handler that modifies the sort order strings based on the sort criteria
@@ -230,7 +228,7 @@ function setSortOrderValues()
 /// <summary>
 /// Builds and returns the HTML for the filter dialog
 /// </summary>
-function filterHtml()
+Table.Filter.html = function()
 {
     let options = [];
 
@@ -276,7 +274,7 @@ function filterHtml()
     options.push(buildNode("hr"));
 
     return Table.Filter.htmlCommon(options);
-}
+};
 
 /// <summary>
 /// Shorthand for the verbose Object's hasOwnProperty call
@@ -289,7 +287,7 @@ function hasProp(item, property)
 /// <summary>
 /// Retrieves the stored user filter (persists across page navigation, for better or worse)
 /// </summary>
-function getFilter()
+Table.Filter.get = function()
 {
     let filter = null;
     try
@@ -315,18 +313,18 @@ function getFilter()
             logError(filter, "Bad filter, resetting");
         }
 
-        filter = defaultFilter();
+        filter = Table.Filter.default();
         Table.Filter.set(filter, false);
     }
 
     logVerbose(filter, "Got Filter");
     return filter;
-}
+};
 
 /// <summary>
 /// Returns the default filter for the member table (i.e. nothing filtered)
 /// </summary>
-function defaultFilter()
+Table.Filter.default = function()
 {
     return {
         type :
@@ -339,12 +337,12 @@ function defaultFilter()
         sort : "id",
         order : "asc"
     };
-}
+};
 
 /// <summary>
 /// Returns whether we support table search. We do for members
 /// </summary>
-function supportsSearch()
+Table.supportsSearch = function()
 {
     return true;
-}
+};

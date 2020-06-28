@@ -2,13 +2,15 @@
 /// Common table implementation, including interfaces for custom sorting, filtering, and searching.
 ///
 /// Users of this interface should implement the following:
-/// 1. tableIdentifier() - Returns a string that identifies this table (required)
-/// 2. tableUpdateFunc() - Returns a function to call when updating the table (required)
+/// 1. identifier() - Returns a string that identifies this table (required)
+/// 2. updateFunc() - Returns a function to call when updating the table (required)
 /// 3. supportsSearch() - Returns whether searching the table is supported (optional, default=false)
 /// 4. Filter - optional
-///    a. filterHtml() - The filter dialog UI
-///    b. populateFilter() - Populate the filter dialog with the current values
-///    b. getNewFilter() - Returns the new filter based on the current state of the filter dialog
+///    a. html() - The filter dialog UI
+///    b. populate() - Populate the filter dialog with the current values
+///    c. get() - Retrieves the current filter from localStorage
+///    d. default() - Returns the default filter state
+///    b. getFromDialog() - Returns the new filter based on the current state of the filter dialog
 /// </summary>
 
 /* exported Table */
@@ -143,7 +145,7 @@ let Table = new function()
     {
         // If the table does not have a search function,
         // don't show anything. Might mess up CSS
-        if (typeof(supportsSearch) == "undefined" || !supportsSearch())
+        if (typeof(Table.supportsSearch) == "undefined" || !Table.supportsSearch())
         {
             $(".searchBtn").forEach(function(btn)
             {
@@ -275,7 +277,7 @@ let Table = new function()
         /// </summary>
         this.setup = function()
         {
-            if (typeof(filterHtml) == "undefined")
+            if (typeof(Table.Filter.html) == "undefined")
             {
                 $(".filterBtn").forEach(function(filter)
                 {
@@ -384,12 +386,12 @@ let Table = new function()
                 perPage.value = Table.getPerPage();
             }
 
-            populateFilter();
+            Table.Filter.populate();
             $("#applyFilter").addEventListener("click", function()
             {
                 Table.setPage(0);
                 let applyPerPage = !!$("#showPerPage");
-                Table.Filter.set(getNewFilter(), !applyPerPage /*update*/);
+                Table.Filter.set(Table.Filter.getFromDialog(), !applyPerPage /*update*/);
                 if (applyPerPage)
                 {
                     setPerPage($("#showPerPage").value, true /*update*/);
@@ -402,7 +404,7 @@ let Table = new function()
             $("#resetFilter").addEventListener("click", function()
             {
                 Table.setPage(0);
-                Table.Filter.set(defaultFilter(), true);
+                Table.Filter.set(Table.Filter.default(), true);
                 dismiss();
             });
 
@@ -432,7 +434,7 @@ let Table = new function()
             let overlay = buildNode(
                 "div",
                 { id : "filterOverlay", style : "opacity: 0" },
-                filterHtml().outerHTML,
+                Table.Filter.html().outerHTML,
                 {
                     click : function(e)
                     {
@@ -463,7 +465,7 @@ let Table = new function()
                     select.appendChild(buildNode("option", { value : user.id }, user.username));
                 });
 
-                select.value = getFilter().user;
+                select.value = Table.Filter.get().user;
             };
 
             let failureFunc = function()
@@ -578,12 +580,12 @@ let Table = new function()
     /// </summary>
     this.idCore = function()
     {
-        if (typeof(tableIdentifier) == "undefined")
+        if (typeof(Table.identifier) == "undefined")
         {
             return "table_shared";
         }
 
-        return "table_" + tableIdentifier();
+        return "table_" + Table.identifier();
     };
 
     /// <summary>
@@ -764,7 +766,7 @@ let Table = new function()
             $("#searchTerm").innerHTML = searchValue;
         }
 
-        tableUpdateFunc()(searchValue);
+        Table.updateFunc()(searchValue);
     };
 
     // Store tableEntries outside of addItem so we don't

@@ -358,15 +358,6 @@ module.exports = {
         "Icons" : "readonly",
         // tableCommon.js
         "Table" : "readonly",
-        // tableCommon.js implementors
-        "supportsSearch" : "readonly",
-        "filterHtml" : "readonly",
-        "populateFilter" : "readonly",
-        "getNewFilter" : "readonly",
-        "defaultFilter" : "readonly",
-        "tableIdentifier" : "readonly",
-        "tableUpdateFunc" : "readonly",
-        "getFilter" : "readonly",
         // DateUtil.js
         "DateUtil" : "readonly",
         // Markdown.js

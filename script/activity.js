@@ -2,12 +2,10 @@
 /// Logic to display notification/activities relevant to the current user. Implements tableCommon
 /// </summary>
 
-/* exported populateFilter, getNewFilter, filterHtml, supportsSearch, tableIdentifier, tableUpdateFunc  */
-
 window.addEventListener("load", function()
 {
     // For activities, reset the filter on page load
-    Table.Filter.set(defaultFilter(), false /*update*/);
+    Table.Filter.set(Table.Filter.default(), false /*update*/);
     Table.setPage(0);
     Table.update();
 });
@@ -24,7 +22,7 @@ function getActivities(searchValue="")
         num : Table.getPerPage(),
         page : Table.getPage(),
         search : searchValue,
-        filter : JSON.stringify(getFilter())
+        filter : JSON.stringify(Table.Filter.get())
     };
 
     let successFunc = function(message)
@@ -49,10 +47,10 @@ function getActivities(searchValue="")
 /// <summary>
 /// Returns whether we support table search. We do for activities
 /// </summary>
-function supportsSearch()
+Table.supportsSearch = function()
 {
     return true;
-}
+};
 
 /// <summary>
 /// Types of activities that are shown
@@ -208,7 +206,7 @@ function isAdmin()
 /// <summary>
 /// HTML for the filter overlay/dialog
 /// </summary>
-function filterHtml()
+Table.Filter.html = function()
 {
     let options = [];
 
@@ -254,14 +252,14 @@ function filterHtml()
     }
 
     return Table.Filter.htmlCommon(options);
-}
+};
 
 /// <summary>
 /// Modifies the filter HTML to reflect the current filter settings
 /// </summary>
-function populateFilter()
+Table.Filter.populate = function()
 {
-    let filter = getFilter();
+    let filter = Table.Filter.get();
     $("#showNew").checked = filter.type.new;
     $("#showComment").checked = filter.type.comment;
     $("#showStatus").checked = filter.type.status;
@@ -273,12 +271,12 @@ function populateFilter()
     {
         Table.Filter.populateUserFilter();
     }
-}
+};
 
 /// <summary>
 /// Returns the new filter definition based on the state of the filter HTML
 /// </summary>
-function getNewFilter()
+Table.Filter.getFromDialog = function()
 {
     return {
         type :
@@ -292,28 +290,28 @@ function getNewFilter()
         order : $("#sortOrder").value == "sortDesc" ? "desc" : "asc",
         user : isAdmin() ? $("#filterTo").value : "-1"
     };
-}
+};
 
 /// <summary>
 /// Unique identifier for this table. Used by tableCommon
 /// </summary>
-function tableIdentifier()
+Table.identifier = function()
 {
     return "activity";
-}
+};
 
 /// <summary>
 /// The function to call that will update this table. Used by tableCommon
 /// </summary>
-function tableUpdateFunc()
+Table.updateFunc = function()
 {
     return getActivities;
-}
+};
 
 /// <summary>
 /// Retrieves the stored user filter (persists across page navigation, for better or worse)
 /// </summary>
-function getFilter()
+Table.Filter.get = function()
 {
     let filter = null;
     try
@@ -337,13 +335,13 @@ function getFilter()
     {
         logError("Bad filter, resetting: ");
         logError(filter);
-        filter = defaultFilter();
+        filter = Table.Filter.default();
         Table.Filter.set(filter, false);
     }
 
     logVerbose(filter, "Got Filter");
     return filter;
-}
+};
 
 /// <summary>
 /// Shorthand for the verbose Object's hasOwnProperty call
@@ -356,7 +354,7 @@ function hasProp(item, property)
 /// <summary>
 /// Returns the default filter for the activity table (i.e. nothing filtered)
 /// </summary>
-function defaultFilter()
+Table.Filter.default = function()
 {
     let filter =
     {
@@ -373,4 +371,4 @@ function defaultFilter()
     };
 
     return filter;
-}
+};

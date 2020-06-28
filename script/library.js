@@ -2,8 +2,6 @@
 /// Displays information about libraries on the plex server. Implements tableCommon
 /// </summary>
 
-/* exported populateFilter, getNewFilter, filterHtml, supportsSearch, tableIdentifier, tableUpdateFunc  */
-
 window.addEventListener("load", function()
 {
     Table.update();
@@ -116,23 +114,23 @@ function refreshNode()
 /// <summary>
 /// Unique identifier for this table. Used by tableCommon
 /// </summary>
-function tableIdentifier()
+Table.identifier = function()
 {
     return "library";
-}
+};
 
 /// <summary>
 /// Returns the function that will update this table. Used by tableCommon
 /// </summary>
-function tableUpdateFunc()
+Table.updateFunc = function()
 {
     return () => sendHtmlJsonRequest("administration.php", { type : "sections" }, buildSections);
-}
+};
 
 /// <summary>
 /// Returns whether we support table search. We don't for libraries
 /// </summary>
-function supportsSearch()
+Table.supportsSearch = function()
 {
     return false;
-}
+};

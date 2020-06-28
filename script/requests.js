@@ -2,8 +2,6 @@
 /// Builds a table of current requests. Implements tableCommon
 /// </summary>
 
-/* exported populateFilter, getNewFilter, filterHtml, supportsSearch, tableIdentifier, tableUpdateFunc  */
-
 window.addEventListener("load", function()
 {
     Table.setPage(0);
@@ -23,7 +21,7 @@ function getRequests(searchValue="")
         num : Table.getPerPage(),
         page : Table.getPage(),
         search : searchValue,
-        filter : JSON.stringify(getFilter())
+        filter : JSON.stringify(Table.Filter.get())
     };
 
     Table.displayInfoMessage("Loading...");
@@ -69,7 +67,7 @@ function buildRequests(requests)
     }
 
     logInfo(`Building ${requests.count} requests`);
-    let sortOrder = getFilter().sort;
+    let sortOrder = Table.Filter.get().sort;
     for (let i = 0; i < requests.count; ++i)
     {
         const request = requests.entries[i];
@@ -382,9 +380,9 @@ function updateStatus()
 /// <summary>
 /// Modifies the filter HTML to reflect the current filter settings
 /// </summary>
-function populateFilter()
+Table.Filter.populate = function()
 {
-    let filter = getFilter();
+    let filter = Table.Filter.get();
     $("#showPending").checked = filter.status.pending;
     $("#showComplete").checked = filter.status.complete;
     $("#showDeclined").checked = filter.status.declined;
@@ -403,12 +401,12 @@ function populateFilter()
 
     setSortOrderValues();
     $("#sortBy").addEventListener("change", setSortOrderValues);
-}
+};
 
 /// <summary>
 /// Returns the new filter definition based on the state of the filter HTML
 /// </summary>
-function getNewFilter()
+Table.Filter.getFromDialog = function()
 {
     return {
         status :
@@ -429,7 +427,7 @@ function getNewFilter()
         order : $("#sortOrder").value == "sortDesc" ? "desc" : "asc",
         user : isAdmin() ? $("#filterTo").value : "-1"
     };
-}
+};
 
 /// <summary>
 /// Adjusts the sort order text depending on the sort field
@@ -475,7 +473,7 @@ function addFilterCheckboxes(options)
 /// <summary>
 /// HTML for the filter overlay/dialog. Should probably be part of the initial DOM
 /// </summary>
-function filterHtml()
+Table.Filter.html = function()
 {
     let options = [];
 
@@ -513,36 +511,36 @@ function filterHtml()
     }
 
     return Table.Filter.htmlCommon(options);
-}
+};
 
 /// <summary>
 /// Returns whether we support table search. We do for requests
 /// </summary>
-function supportsSearch()
+Table.supportsSearch = function()
 {
     return true;
-}
+};
 
 /// <summary>
 /// Unique identifier for this table
 /// </summary>
-function tableIdentifier()
+Table.identifier = function()
 {
     return "requests";
-}
+};
 
 /// <summary>
 /// Function to invoke when updating the table
 /// </summary>
-function tableUpdateFunc()
+Table.updateFunc = function()
 {
     return getRequests;
-}
+};
 
 /// <summary>
 /// Retrieves the stored user filter (persists across page navigation, for better or worse)
 /// </summary>
-function getFilter()
+Table.Filter.get = function()
 {
     let filter = null;
     try
@@ -579,18 +577,18 @@ function getFilter()
             logError(filter);
         }
 
-        filter = defaultFilter();
+        filter = Table.Filter.default();
         Table.Filter.set(filter, false);
     }
 
     logVerbose(filter, "Got Filter");
     return filter;
-}
+};
 
 /// <summary>
 /// Returns the default filter for the requests table (i.e. nothing filtered)
 /// </summary>
-function defaultFilter()
+Table.Filter.default = function()
 {
     let filter =
     {
@@ -614,4 +612,4 @@ function defaultFilter()
     };
 
     return filter;
-}
+};
