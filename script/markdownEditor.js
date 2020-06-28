@@ -29,7 +29,7 @@ let MarkdownEditor = new function()
         {
             // In the case of no selection and a regular tab, indent from the cursor position
             let add = 4 - ((start - lineStart) % 4);
-            if (document.queryCommandSupported("insertText"))
+            if (_supportsInsertText())
             {
                 document.execCommand("insertText", false, " ".repeat(add));
             }
@@ -80,7 +80,7 @@ let MarkdownEditor = new function()
 
         // We get undo support with insertText. If it's not available, we can still
         // insert the spaces, but undo will break.
-        if (document.queryCommandSupported("insertText"))
+        if (_supportsInsertText())
         {
             document.execCommand("insertText", false, newText);
         }
@@ -165,7 +165,7 @@ let MarkdownEditor = new function()
         comment.focus();
         let surround = (start == end) ? "Text" : comment.value.substring(comment.selectionStart, comment.selectionEnd);
 
-        if (document.queryCommandSupported("insertText"))
+        if (_supportsInsertText())
         {
             // This is deprecated, but it's the only way I've found to do it that supports undo.
             document.execCommand("insertText", false, chStart + surround + chEnd);
@@ -458,7 +458,7 @@ let MarkdownEditor = new function()
         }
 
         comment.focus();
-        if (document.queryCommandSupported("insertText"))
+        if (_supportsInsertText())
         {
             // This is deprecated, but it's the only way I've found to do it that supports undo.
             let start = comment.selectionStart;
@@ -934,7 +934,7 @@ let MarkdownEditor = new function()
 
         let comment = $("#" + this.getAttribute("targetTextarea"));
         comment.focus();
-        if (document.queryCommandSupported("insertText"))
+        if (_supportsInsertText())
         {
             // This is deprecated, but it's the only way I've found that supports undo
             let start = comment.selectionStart;
@@ -1026,5 +1026,13 @@ let MarkdownEditor = new function()
         }
 
         return endInline + inline;
+    };
+
+    /// <summary>
+    /// Firefox _says_ they support "insertText", but it doesn't actually work for textareas
+    /// </summary>
+    let _supportsInsertText = function()
+    {
+        return document.queryCommandSupported("insertText") && navigator.userAgent.indexOf("Firefox") == -1;
     };
 }();
