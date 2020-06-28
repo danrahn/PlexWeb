@@ -27,3 +27,9 @@ min/*
 apple-touch-icon*.png
 
 package.json
+
+# Random files not ready for primetime
+query.*
+
+# Personal file for markdown testing
+script/markdownSamples.js
