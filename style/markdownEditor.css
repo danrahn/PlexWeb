@@ -10,8 +10,13 @@
     color: #c1c1c1;
 }
 
-.mdToolbar button:hover {
-    background-color: rgb(83, 86, 89);
+.mdToolbar button, .mdToolbar input[type="button"] {
+    background-color: rgba(0,0,0,0.3);
+}
+
+.mdToolbar button:hover, .mdToolbar input[type="button"]:hover {
+    background-color: rgba(100,100,100,0.3);
+    color: white;
     padding: 4px;
 }
 

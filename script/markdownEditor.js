@@ -215,9 +215,9 @@ let MarkdownEditor = new function()
             toolbarButton("addStrikethrough", "S", "Strikethrough (Ctrl + S)"),
             toolbarButton("addSuperscript", "X<sup>2</sup>", "Superscript (Ctrl + Shift + ^)", true /*realButton*/),
             toolbarButton("addSubscript", "X<sub>2</sub>", "Subscript (Ctrl + Shift + ~)", true /*realButton*/),
-            toolbarButton("addLink", `<img src="${Icons.get("mdlink")}" alt="Insert Link" />`, "Insert Link (Ctrl + K)", true /*realButton*/),
-            toolbarButton("addImage", `<img src="${Icons.get("mdimage")}" alt="Insert Image" />`, "Insert Image (Ctrl + M)", true /*realButton*/),
-            toolbarButton("addTable", `<img src="${Icons.get("mdtable")}" alt="Insert Table" />`, "Insert Table (Ctrl + L)", true /*realButton*/),
+            toolbarButton("addLink", "", "Insert Link (Ctrl + K)", true /*realButton*/, "mdlink"),
+            toolbarButton("addImage", "", "Insert Image (Ctrl + M)", true /*realButton*/, "mdimage"),
+            toolbarButton("addTable", "", "Insert Table (Ctrl + L)", true /*realButton*/, "mdtable"),
             toolbarButton("showMdHelp", "?", "Help"),
         );
     };
@@ -226,10 +226,24 @@ let MarkdownEditor = new function()
     /// Creates and returns a button for the markdown toolbar
     /// </summary>
     /// <param name="realButton">True if we want a <button>, not an <input type="button">
-    let toolbarButton = function(cssClass, value, title, realButton)
+    let toolbarButton = function(cssClass, value, title, realButton, icon)
     {
         if (realButton)
         {
+            if (icon)
+            {
+                return buildNode(
+                    "button",
+                    { class : "mdButton " + cssClass, title : title, mdAction : cssClass, iconSrc : icon },
+                    0,
+                    {
+                        click : mdToolbarDispatch,
+                        mouseover : toolbarButtonHover,
+                        mouseout : toolbarButtonHover
+                    }
+                ).appendChildren(buildNode("img", { src : Icons.get(icon), alt : title }));
+            }
+
             return buildNode(
                 "button",
                 { class : "mdButton " + cssClass, title : title, mdAction : cssClass },
@@ -244,6 +258,23 @@ let MarkdownEditor = new function()
             0,
             { click : mdToolbarDispatch }
         );
+    };
+
+    /// <summary>
+    /// Adjust the toolbar button's image color based on its hover state
+    /// </summary>
+    let toolbarButtonHover = function(e)
+    {
+        let img = this.$$("img");
+        let icon = this.getAttribute("iconSrc");
+        if (e.type.toLowerCase() == "mouseout")
+        {
+            img.src = Icons.get(icon);
+        }
+        else
+        {
+            img.src = Icons.getColor(icon, "FFF");
+        }
     };
 
     /// <summary>

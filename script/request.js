@@ -23,8 +23,6 @@ window.addEventListener("load", function()
             getNonMediaInfo();
         }
 
-        $("#newComment").addEventListener("focus", function() { this.className = "newCommentFocus"; });
-        $("#newComment").addEventListener("blur", function() { this.className = ""; });
         $("#newComment").addEventListener("keydown", function(e)
         {
             if (e.ctrlKey && e.which === 13 /*enter*/)
@@ -1285,7 +1283,7 @@ function editComment()
     let editorHolder = buildNode("div");
     let editor = buildNode(
         "textarea",
-        { id : "editor" + commentId, class : "commentEditor", placeholder : "Edit comment..." },
+        { id : "editor" + commentId, class : "commentEditor editComment", placeholder : "Edit comment..." },
         raw,
         {
             change : parseEditMarkdown,

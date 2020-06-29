@@ -78,7 +78,7 @@ function get_details($req_id)
                     
                 </div>
                 <div id="newCommentHolder">
-                    <textarea id="newComment" placeholder="Add comment..."></textarea>
+                    <textarea id="newComment" placeholder="Add comment..." class="commentEditor"></textarea>
                 </div>
                 <div id="mdHolder" style="display: none">
                     <div id="mdHeader" class="commentInfo">Comment Preview:</div>

@@ -320,9 +320,12 @@ a:hover {
     color: #c1c1c1;
 }
 
+.editComment {
+    width: calc(100% - 6px);
+}
+
 .commentEditor {
     float: none;
-    width: calc(100% - 6px);
     border: 1px solid rgba(0,0,0,0);
     padding: 2px;
     display: block;
@@ -424,7 +427,6 @@ a:hover {
         max-width: 100%;
         resize: both;
         margin-top: 30px;
-        background-color: rgba(63, 66, 69, 0.7);
     }
 
     .commentAction {
@@ -503,7 +505,6 @@ a:hover {
         max-width: calc(100% - 6px);
         resize: both;
         margin-top: 30px;
-        background-color: rgba(63, 66, 69, 0.7);
     }
 
     .commentHolder {
