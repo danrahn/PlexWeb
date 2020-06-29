@@ -1821,8 +1821,8 @@ function get_requests($num, $page, $search, $filter)
         $request->eid = $row[8]; // External ID
         $request->pid = $row[9]; // Internal/Plex ID
         $request->c = $row[11]; // Comment count
-        $poster_path = $row[10];
-        if (!$row[9])
+        $poster_path = $row[10]; // Poster
+        if (!$poster_path)
         {
             // If we don't have a poster path, get it
             $poster_path = get_poster_path($request);
