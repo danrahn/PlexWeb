@@ -325,7 +325,8 @@ function buildChartOverlay(chartData)
     if (chartData.radius)
     {
         radiusSav = chartData.radius;
-        chartData.radius = Math.min(radiusSav * 3, screen.width / 2 - 20);
+        let newRadius = Math.min(radiusSav * 4, screen.width / 2 - 40);
+        chartData.radius = Math.min(newRadius, screen.height / 2 - 200);
     }
     else
     {
@@ -340,7 +341,7 @@ function buildChartOverlay(chartData)
 
     let titleSav = !!chartData.noTitle;
     chartData.noTitle = false;
-    buildOverlay(true,
+    buildOverlay({ dismissible : true, centered : true },
         buildNode("div").appendChildren(chartData.radius ? Chart.pie(chartData) : Chart.bar(chartData)),
         buildNode("input",
             {
@@ -578,7 +579,7 @@ function showStreamAccessOverlay()
             click : requestStreamAccess
         });
 
-    buildOverlay(true /*dismissible*/, message, textbox, button);
+    buildOverlay({ dismissible : true, centered : false }, message, textbox, button);
 }
 
 /// <summary>
@@ -711,7 +712,7 @@ function showRestartSessionOverlay()
         {
             click : () => { window.location = "login.php"; }
         });
-    buildOverlay(false /*dismissible*/, message, button);
+    buildOverlay({ dismissible : false, centered : false }, message, button);
     $("#goToLogin").focus();
 }
 

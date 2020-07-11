@@ -50,6 +50,12 @@
 
 }
 
+.centeredOverlay {
+    position: relative;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
 /* Desktop/Landscape */
 @media (orientation: landscape), (min-width: 767px) {
     .fullOverlay {

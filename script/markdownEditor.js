@@ -369,7 +369,7 @@ let MarkdownEditor = new function()
 
         container.appendChild(getOkCancelButtons("addLinkOk", insertLinkInComment, comment, { isPhoto : isPhoto ? 1 : 0 }));
 
-        buildOverlay(true, container);
+        buildOverlay({ dismissible : true, centered : false }, container);
         $("#addLinkLink").focus();
     };
 
@@ -560,7 +560,13 @@ let MarkdownEditor = new function()
         let header = buildNode("h2", {}, "Insert Table");
         let resizeButtons = getBuildTableButtons();
         let table = defaultInsertTable();
-        buildOverlay(true, container.appendChildren(header, resizeButtons, table, getOkCancelButtons("mdtInsert", insertMdTable, comment)));
+        buildOverlay({ dismissible : true, centered : false },
+            container.appendChildren(
+                header,
+                resizeButtons,
+                table,
+                getOkCancelButtons("mdtInsert", insertMdTable, comment))
+        );
         table.$$("thead textarea").focus();
 
         // Force area calculation to get row widths in alignment

@@ -89,7 +89,7 @@ function setupForgotForm()
     $("#forgotUser").addEventListener("click", function()
     {
         // From for phone# or email. If none, pop this
-        buildOverlay(true /*dismissible*/,
+        buildOverlay({ dismissible : true, centered : false },
             buildNode("div", {}, "Please reach out to the administrator to get help recovering your account."),
             buildNode(
                 "input",

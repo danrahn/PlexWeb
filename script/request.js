@@ -548,7 +548,7 @@ function searchForCompleteMatch()
             buildNode("div", { id : "completeRequestMatches" }, "Searching...")
         )
     );
-    buildOverlay(true, overlayNode);
+    buildOverlay({ dismissible : true, centered : false }, overlayNode);
     searchPlex();
 }
 
@@ -972,7 +972,7 @@ function promptForNotifications()
     outerButtonContainer.appendChildren(buttonContainer.appendChildren(buttons.yes, buttons.no));
 
     promptHolder.appendChildren(title, prompt, checkHolder, outerButtonContainer);
-    buildOverlay(true, promptHolder);
+    buildOverlay({ dismissible : true, centered : false }, promptHolder);
 }
 
 /// <summary>

@@ -646,7 +646,7 @@ function showAlreadyExistsAlert(response)
         )
     );
 
-    buildOverlay(true /*dismissible*/, message, outerButtonContainer);
+    buildOverlay({ dismissible : true, centered : false }, message, outerButtonContainer);
 }
 
 /// <summary>

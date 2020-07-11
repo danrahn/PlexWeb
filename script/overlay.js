@@ -9,7 +9,7 @@
 /// </summary>
 function overlay(message, buttonText, buttonFunc, dismissible=true)
 {
-    buildOverlay(dismissible,
+    buildOverlay({ dismissible : dismissible, centered : false },
         buildNode("div", {}, message),
         buildNode(
             "input",
@@ -39,9 +39,13 @@ const overlayDismiss = function()
 /// <summary>
 /// Generic overlay builder
 /// </summary>
-/// <param name="dismissible">Determines whether the overlay can be dismissed</param>
+/// <param name="options">
+/// Options that define how the overlay is shown:
+///   Dismissible : Determines whether the overlay can be dismissed
+///   Centered : Determines whether the overlay is centered in the screen (versus closer to the top)
+/// </param>
 /// <param name="...children">The list of nodes to append to the overlay.</param>
-function buildOverlay(dismissible, ...children)
+function buildOverlay(options, ...children)
 {
     if ($("#mainOverlay") && $("#mainOverlay").style.opacity != "0")
     {
@@ -52,7 +56,7 @@ function buildOverlay(dismissible, ...children)
         {
             id : "mainOverlay",
             style : "opacity: 0",
-            dismissible : dismissible
+            dismissible : options.dismissible
         },
         0,
         {
@@ -69,7 +73,7 @@ function buildOverlay(dismissible, ...children)
             }
         });
 
-    let container = buildNode("div", { id : "overlayContainer", class : "defaultOverlay" });
+    let container = buildNode("div", { id : "overlayContainer", class : options.centered ? "centeredOverlay" : "defaultOverlay" });
     children.forEach(function(element)
     {
         container.appendChild(element);
