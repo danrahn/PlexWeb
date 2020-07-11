@@ -475,11 +475,18 @@ function showHideStats()
 /// Function invoked when we fail to grab status information
 /// due to permission issues
 /// </summary>
-function getStatusFailure()
+function getStatusFailure(response)
 {
-    // User doesn't have access to active streams
-    let requestLink = buildNode("a", { href : "#", id : "streamAccess" }, "No Access");
-    getStreamAccessString();
+    let httpError = response.Error == "HTTPError";
+
+    // User doesn't have access to active streams, or something went wrong when getting the stream status
+    let requestText = httpError ? "Error getting activity" : "No Access";
+    let requestLink = buildNode("a", { href : "#", id : "streamAccess" }, requestText);
+
+    if (!httpError)
+    {
+        getStreamAccessString();
+    }
 
     let active = $("#activeNum");
     active.innerHTML = "";

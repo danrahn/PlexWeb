@@ -119,8 +119,19 @@ function sendHtmlJsonRequest(url, parameters, successFunc, failFunc, additionalP
     let sanitized = dataIsString ? queryString : sanitize(parameters);
     http.onreadystatechange = function()
     {
-        if (this.readyState != 4 || this.status != 200)
+        if (this.readyState != 4)
         {
+            return;
+        }
+
+        if (this.status != 200)
+        {
+            let status = Math.floor(this.status / 100);
+            if (failFunc && (status == 4 || status == 5))
+            {
+                failFunc({ Error : "HTTPError", value : this.status });
+            }
+
             return;
         }
 

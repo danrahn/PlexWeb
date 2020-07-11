@@ -412,11 +412,47 @@ function error_and_exit($status, $message='')
         $db->close();
     }
 
+    // For post requests, don't load the error page, create the actual error header
+    if ($_SERVER['REQUEST_METHOD'] === 'POST')
+    {
+        header(HTTPStatusHeader($status), TRUE, $status);
+        exit;
+    }
+
     $_GET['r'] = $status;
     $_GET['m'] = $message;
     $_SERVER['REDIRECT_URL'] = "plex/get_status.php";
-    include "C:/wamp64/www/error.php";
+    include $_SERVER['DOCUMENT_ROOT'] . "/plex/error.php";
     exit;
+}
+
+/// <summary>
+/// Returns the HTTP header string for the given error status.
+/// Not complete, just covers the most common error status
+/// </summary>
+function HTTPStatusHeader($status)
+{
+    $header = "HTTP/1.1 $status ";
+    switch ($status)
+    {
+        case 400:
+            return $header . "Bad Request";
+        case 401:
+            return $header . "Unauthorized";
+        case 403:
+            return $header . "Forbidden";
+        case 404:
+            return $header . "Not Found";
+        case 500:
+            return $header . "Internal Server Error";
+        case 503:
+            return $header . "Service Unavailable";
+        case 504:
+            return $header . "Gateway Time-out";
+
+        default:
+            return $header;
+    }
 }
 
 /// <summary>
