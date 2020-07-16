@@ -671,6 +671,7 @@ function writeTitle(streams)
     $("title")[0].innerHTML = prepend + "Plex Status";
 }
 
+let requestInProgress = false;
 /// <summary>
 /// Starts our timer to update sessions every 10 seconds
 /// </summary>
@@ -678,8 +679,23 @@ function startUpdates()
 {
     contentUpdater = setInterval(function()
     {
+        // If we have a request already in progress, wait for it to return.
+        // Slow connections can cause two or more responses that both say
+        // "add this session", and if the timing is right we add multiple
+        // entries for the same session
+        if (requestInProgress)
+        {
+            return;
+        }
+
+        requestInProgress = true;
         let parameters = { type : QueryType.Progress };
-        let successFunc = function(response) { processUpdate(response); };
+        let successFunc = function(response)
+        {
+            processUpdate(response);
+            requestInProgress = false;
+        };
+
         let failureFunc = function(response)
         {
             if (response.Error == "Not Authorized" && !$("#goToLogin"))
@@ -687,6 +703,7 @@ function startUpdates()
                 clearInterval(contentUpdater);
                 showRestartSessionOverlay();
             }
+            requestInProgress = false;
         };
 
         sendHtmlJsonRequest("get_status.php", parameters, successFunc, failureFunc);
