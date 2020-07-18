@@ -92,7 +92,10 @@ if (isNaN(g_traceLogging))
 let g_darkConsole = parseInt(localStorage.getItem("darkconsole"));
 if (isNaN(g_darkConsole))
 {
-    g_darkConsole = 0;
+    // Default to system browser theme (if available)
+    let mediaMatch = window.matchMedia("(prefers-color-scheme: dark)");
+    mediaMatch = mediaMatch != "not all" && mediaMatch.matches;
+    g_darkConsole = mediaMatch ? 1 : 0;
 }
 
 logInfo("Welcome to the console! For debugging help, call consoleHelp()");
