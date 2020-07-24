@@ -97,7 +97,8 @@ let Tooltip = new function()
         let tooltip = $("#tooltip");
         tooltip.style.top = top;
 
-        tooltip.innerHTML = text;
+        let ttUpdated = ttElement && ttElement.getAttribute("tt");
+        tooltip.innerHTML = ttUpdated || text;
         tooltip.style.display = "inline";
 
         let max = $("#plexFrame").clientWidth - tooltip.clientWidth - 10;
