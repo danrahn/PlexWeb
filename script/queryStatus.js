@@ -22,6 +22,7 @@ function processQueryStatus(response)
             $$("title").innerHTML = baseTitle;
         }
 
+        previous.pl = previous.pa = 0;
         return;
     }
 
