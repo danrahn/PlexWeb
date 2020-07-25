@@ -127,7 +127,7 @@ function sendHtmlJsonRequest(url, parameters, successFunc, failFunc, additionalP
         if (this.status != 200)
         {
             let status = Math.floor(this.status / 100);
-            if (failFunc && (status == 4 || status == 5))
+            if (failFunc && (status == 4 || status == 5 || status == 0))
             {
                 failFunc({ Error : "HTTPError", value : this.status });
             }
