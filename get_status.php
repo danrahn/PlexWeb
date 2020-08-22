@@ -435,7 +435,7 @@ function build_sesh($sesh, $library_names)
     }
 
     $slim_sesh->title = get_title($sesh, $sesh_type);
-    $slim_sesh->hyperlink = get_hyperlink($sesh['guid'], $sesh_type);
+    $slim_sesh->hyperlink = get_hyperlink($sesh, $sesh_type);
 
     $slim_sesh->session_id = get_sesh_id($sesh);
 
@@ -556,7 +556,7 @@ function get_title($sesh, $type)
 // Audiobooks - audible
 // Music - none (#)
 /// </summary>
-function get_hyperlink($guid, $type)
+function get_hyperlink_core($guid, $type)
 {
     $imdb_start = 'https://imdb.com/title/';
     switch ($type)
@@ -578,6 +578,38 @@ function get_hyperlink($guid, $type)
         default:
             return '#'; // No link for music/unknown type
     }
+}
+
+/// <summary>
+/// Gets the hyperlink for the specific MediaType, taking into account the new
+/// media agent that stores the actual external id elsewhere
+/// Movies - imdb
+// TV Shows - imdb (via TVDB API)
+// Audiobooks - audible
+// Music - none (#)
+/// </summary>
+function get_hyperlink($sesh, $type)
+{
+    // The new plex movie agent is denoted by a guid of plex://XYZ.
+    // If we don't see it, it has the external id information already
+    // and can be parsed directly
+    if (substr($sesh['guid'], 0, 5) != 'plex:')
+    {
+        return get_hyperlink_core($sesh['guid'], $type);
+    }
+
+    // Otherwise we have to go to the metadata for the item, looking for the right Guid
+    $media_info = simplexml_load_string(curl(PLEX_SERVER . $sesh['key'] . '?' . PLEX_TOKEN));
+    $guids = $media_info->xpath("//Guid");
+    foreach ($guids as $guid)
+    {
+        if (substr($guid['id'], 0, 5) == 'imdb:')
+        {
+            return get_hyperlink_core($guid['id'], $type);
+        }
+    }
+
+    return '#';
 }
 
 /// <summary>
