@@ -56,7 +56,7 @@ function buildOverlay(options, ...children)
         {
             id : "mainOverlay",
             style : "opacity: 0",
-            dismissible : options.dismissible
+            dismissible : options.dismissible ? "1" : "0"
         },
         0,
         {
@@ -64,7 +64,7 @@ function buildOverlay(options, ...children)
             {
                 let overlayElement = $("#mainOverlay");
                 if (overlayElement &&
-                    !!overlayElement.getAttribute("dismissible") &&
+                    overlayElement.getAttribute("dismissible") == "1" &&
                     e.target.id == "mainOverlay" &&
                     e.target.style.opacity == 1)
                 {
