@@ -1195,7 +1195,10 @@ function search($query, $kind)
     {
         $item = new \stdClass();
         $item->title = (string)$result['title'];
-        $item->thumb = 'thumb' . $result['thumb'];
+        if ($result['thumb'])
+        {
+            $item->thumb = 'thumb' . $result['thumb'];
+        }
         $item->year = (string)$result['year'];
         $item->imdbid = get_imdb_link_from_guid((string)$result['guid'], $type);
         if (RequestType::is_audio($type))
@@ -2749,12 +2752,12 @@ function addAudioDetails($key, $section)
 function addSectionDetails($type, $sectionKey, $detailKey, &$section)
 {
     $append = "&type=$type&X-Plex-Container-Start=0&X-Plex-Container-Size=0";
-    $base = PLEX_SERVER . "/library/sections/$sectionKey/$detailKey";
-    $data = simplexml_load_string(curl($base . "?" . PLEX_TOKEN));
+    $base = PLEX_SERVER . "/library/sections/$sectionKey";
+    $data = simplexml_load_string(curl($base . "/$detailKey?" . PLEX_TOKEN));
     $items = new \stdClass();
     foreach ($data as $item)
     {
-        $path = $base . "/" . (string)$item["key"] . "?" . PLEX_TOKEN . $append;
+        $path = $base . "/all?type=$type&$detailKey=" . (string)$item["key"] . "&" . PLEX_TOKEN . $append;
         $dict_key = (string)$item["title"];
         $items->$dict_key = (string)simplexml_load_string(curl($path))["totalSize"];
     }
