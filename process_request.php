@@ -1353,7 +1353,7 @@ function get_season_details($path)
             $seasonGuid = substr($seasonGuid, 0, strpos($seasonGuid, '/'));
             if (!$tvdb_client->ready())
             {
-                $tvdb->login();
+                $tvdb_client->login();
             }
 
             if ($totalSeasons == 0)
@@ -2085,7 +2085,7 @@ function get_activities($num, $page, $search, $filter)
         $activity->poster = $row['poster_path'];
 
         $admin_id = $row['admin_id'];
-        $inner_query;
+        $inner_query = "";
         if ($admin_id == 0)
         {
             $inner_query = "SELECT id, username FROM users WHERE id=$activity->uid";

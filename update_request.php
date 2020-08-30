@@ -41,6 +41,25 @@ switch ($type)
         json_error_and_exit("Unknown request type");
 }
 
+function get_status_string($status)
+{
+    switch ($status)
+    {
+        case 0:
+            return "Pending";
+        case 1:
+            return "Complete";
+        case 2:
+            return "Denied";
+        case 3:
+            return "In Progress";
+        case 4:
+            return "Waiting";
+        default:
+            return "Unknown";
+    }
+}
+
 /// <summary>
 /// High level method that processes multiple request updates
 /// </summary>
@@ -134,28 +153,7 @@ function process_request_update($requests)
                         }
                         break;
                     case "status":
-                        $status;
-                        switch ((int)$message->content)
-                        {
-                            case 0:
-                                $status = "Pending";
-                                break;
-                            case 1:
-                                $status = "Complete";
-                                break;
-                            case 2:
-                                $status = "Denied";
-                                break;
-                            case 3:
-                                $status = "In Progress";
-                                break;
-                            case 4:
-                                $status = "Waiting";
-                                break;
-                            default:
-                                $status = "Unknown";
-                                break;
-                        }
+                        $status = get_status_string((int)$message->content);
 
                         $text = "The status of your request for " . $message->request . " has changed to " . $status . ". See it here: https://plex.danrahn.com/r/" . $message->request_id;
                         if (strlen($text) > $max)
@@ -176,55 +174,54 @@ function process_request_update($requests)
             $text = '';
             $multi = count($data->messages) > 1;
             // For actual email addresses, add some additional styling. Largely copied from send_notifications_if_needed
-                $style_noise = 'url("https://danrahn.com/plex/res/noise.8b05ce45d0df59343e206bc9ae78d85d.png")';
-                $email_style = '<style>.markdownEmailContent { background: rgba(0,0,0,0) ' . $style_noise . ' repeat scroll 0% 0%; ';
-                $email_style .= 'color: #c1c1c1 !important; border: 5px solid #919191; } ';
-                $email_style .= '.md { color: #c1c1c1 !important; } ';
-                $email_style .= '.h1Title { margin-top: 0; padding: 20px; border-bottom: 5px solid #919191; } ';
-                $email_style .= '</style>';
+            $style_noise = 'url("https://danrahn.com/plex/res/noise.8b05ce45d0df59343e206bc9ae78d85d.png")';
+            $email_style = '<style>.markdownEmailContent { background: rgba(0,0,0,0) ' . $style_noise . ' repeat scroll 0% 0%; ';
+            $email_style .= 'color: #c1c1c1 !important; border: 5px solid #919191; } ';
+            $email_style .= '.md { color: #c1c1c1 !important; } ';
+            $email_style .= '.h1Title { margin-top: 0; padding: 20px; border-bottom: 5px solid #919191; } ';
+            $email_style .= '</style>';
 
-                $body_background = "url('https://danrahn.com/plex/res/preset-light.770a0981b66e038d3ffffbcc4f5a26a4.png')";
-    
-                $subheader = '';
-                $content = '';
-                $email = '<html><head><style>' . file_get_contents("style/markdown.css") . '</style>';
-                $email .= $email_style;
-                $email .= '</head><body style="background-image: ' . $body_background . '; background-size: cover;">';
-                $email .=   '<div class="markdownEmailContent">';
-                $email .=     '<h1 class="h1Title">Request Update</h1>';
-                if ($multi)
+            $body_background = "url('https://danrahn.com/plex/res/preset-light.770a0981b66e038d3ffffbcc4f5a26a4.png')";
+
+            $content = '';
+            $email = '<html><head><style>' . file_get_contents("style/markdown.css") . '</style>';
+            $email .= $email_style;
+            $email .= '</head><body style="background-image: ' . $body_background . '; background-size: cover;">';
+            $email .=   '<div class="markdownEmailContent">';
+            $email .=     '<h1 class="h1Title">Request Update</h1>';
+            if ($multi)
+            {
+                $email .= '<div class="md" style="margin-left: 10px"><h3 style-"padding: 0 20px 0 20px;">The status of multiple requests has changed:</h3>';
+                $email .= '<ul>';
+                foreach ($alerts[$contact]->messages as $message)
                 {
-                    $email .= '<div class="md" style="margin-left: 10px"><h3 style-"padding: 0 20px 0 20px;">The status of multiple requests has changed:</h3>';
-                    $email .= '<ul>';
-                    foreach ($alerts[$contact]->messages as $message)
+                    if ($message->kind != "status")
                     {
-                        if ($message->kind != "status")
-                        {
-                            // We shouldn't get here
-                            continue;
-                        }
-
-                        $status = ($status < 0 || $status > 4) ? "Unknown" : ["Pending", "Complete", "Denied", "In Progress", "Waiting"][(int)$message->content];
-                        $link = '<a href="https://plex.danrahn.com/r/' . $message->request_id . '">' . $message->request . '</a>';
-                        $email .= '<li>The status of ' . $link . ' has changed to <em>' . $status . '</em></li>';
+                        // We shouldn't get here
+                        continue;
                     }
 
-                    $email .= '</ul><br></div>';
-                }
-                else
-                {
-                    $message = $alerts[$contact]->messages[0];
-                    $status = ($status < 0 || $status > 4) ? "Unknown" : ["Pending", "Complete", "Denied", "In Progress", "Waiting"][(int)$message->content];
-                    $email .= '<div class="md" style="margin-left: 10px">';
-                    $email .= '<div style="padding: 0 20px 0 20px;">';
-                    $email .= 'The status of your request for <strong>' . $message->request . '</strong> has changed to <em>' . $status . '</em>, ';
-                    $email .= 'view it <a href="https://plex.danrahn.com/r/' . $message->request_id . '">here</a>.</div>';
-                    $email .= '<br></div>';
+                    $status = get_status_string((int)$message->content);
+                    $link = '<a href="https://plex.danrahn.com/r/' . $message->request_id . '">' . $message->request . '</a>';
+                    $email .= '<li>The status of ' . $link . ' has changed to <em>' . $status . '</em></li>';
                 }
 
-                $email .=   '</div>';
-                $email .= '</div></body></html>';
-                $text = $email;
+                $email .= '</ul><br></div>';
+            }
+            else
+            {
+                $message = $alerts[$contact]->messages[0];
+                $status = get_status_string((int)$message->content);
+                $email .= '<div class="md" style="margin-left: 10px">';
+                $email .= '<div style="padding: 0 20px 0 20px;">';
+                $email .= 'The status of your request for <strong>' . $message->request . '</strong> has changed to <em>' . $status . '</em>, ';
+                $email .= 'view it <a href="https://plex.danrahn.com/r/' . $message->request_id . '">here</a>.</div>';
+                $email .= '<br></div>';
+            }
+
+            $email .=   '</div>';
+            $email .= '</div></body></html>';
+            $text = $email;
             $subject = "Plex Request Update";
             send_email_forget($contact, $text, $subject);
         }

@@ -65,7 +65,7 @@ if (file_exists($filename))
     if (isset($info['filetime']) && $info['filetime'] != -1 && strtotime($info['filetime']) >= $file_time)
     {
         // Plex has a newer image
-        serve_new_image($img_path, $filename, $isThumb);
+        serve_new_image($img_path, $filename, $isThumb, $large);
     }
     else
     {
