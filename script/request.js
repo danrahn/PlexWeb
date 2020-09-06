@@ -617,7 +617,7 @@ function buildRequestPoster(request)
         }
     }
 
-    return buildNode("img", { src : `poster${posterPath}&large=1`, id : "mediaPoster" });
+    return buildNode("img", { src : posterPath.startsWith("http") ? posterPath : `poster${posterPath}&large=1`, id : "mediaPoster" });
 }
 
 /// <summary>
@@ -641,6 +641,14 @@ function buildRequestExternalLink(request)
             href : `https://www.themoviedb.org/${attr("requestTypeStr")}/${request.id}`,
             target : "_blank"
         }, "TMDb"));
+    }
+    else if (request.audible)
+    {
+        imdb = buildNode("div", { class : "mediaLink" });
+        imdb.appendChild(buildNode("a", {
+            href : `https://audible.com/pd/${attr("externalId")}?ipRedirectOverride=true`,
+            target : "_blank"
+        }, "Audible"));
     }
 
     return imdb;

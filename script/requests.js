@@ -92,6 +92,10 @@ function buildRequests(requests)
 function buildRequestPoster(request)
 {
     let imgHolder = buildNode("div", { class : "imgHolder" });
+    if (posterMax != 0)
+    {
+        imgHolder.style.width = posterMax + "px";
+    }
     let imgA = buildNode("a", { href : `request.php?id=${request.rid}` });
 
     // Sometimes a poster fails to load. If it does, let the server know
@@ -102,16 +106,30 @@ function buildRequestPoster(request)
         "img",
         {
             id : `poster${request.rid}`,
-            src : `poster${request.p}`,
+            src : request.p.startsWith("http") ? request.p : `poster${request.p}`,
             alt : "Media Poster",
             rid : request.rid
         },
         0,
         {
-            error : onFailedPoster
+            error : onFailedPoster,
+            load : onSuccessfulPoster
         });
     imgA.appendChild(img);
     return imgHolder.appendChildren(imgA);
+}
+
+let posterMax = 0;
+function onSuccessfulPoster()
+{
+    let width = getComputedStyle(this).width;
+    width = parseInt(width.substring(0, width.length - 2));
+    if (width > posterMax)
+    {
+        posterMax = width;
+        $(".imgHolder").forEach(function(poster) { poster.style.width = width + "px"; });
+    }
+    logInfo(getComputedStyle(this).width);
 }
 
 /// <summary>
@@ -407,6 +425,7 @@ Table.Filter.populate = function()
     $("#showWaiting").checked = filter.status.waiting;
     $("#showMovies").checked = filter.type.movies;
     $("#showTV").checked = filter.type.tv;
+    $("#showAudiobooks").checked = filter.type.audiobooks;
     $("#showOther").checked = filter.type.other;
     $("#sortBy").value = filter.sort;
     $("#sortOrder").value = filter.order == "desc" ? "sortDesc" : "sortAsc";
@@ -438,6 +457,7 @@ Table.Filter.getFromDialog = function()
         {
             movies : $("#showMovies").checked,
             tv : $("#showTV").checked,
+            audiobooks : $("#showAudiobooks").checked,
             other : $("#showOther").checked,
         },
         sort : $("#sortBy").value,
@@ -478,6 +498,7 @@ function addFilterCheckboxes(options)
         "" : "",
         "Show Movies" : "showMovies",
         "Show TV" : "showTV",
+        "Show Audiobooks" : "showAudiobooks",
         "Show Other" : "showOther"
     };
 
@@ -579,6 +600,7 @@ Table.Filter.get = function()
         !Object.prototype.hasOwnProperty.call(filter, "type") ||
             !Object.prototype.hasOwnProperty.call(filter.type, "movies") ||
             !Object.prototype.hasOwnProperty.call(filter.type, "tv") ||
+            !Object.prototype.hasOwnProperty.call(filter.type, "audiobooks") ||
             !Object.prototype.hasOwnProperty.call(filter.type, "other") ||
         !Object.prototype.hasOwnProperty.call(filter, "sort") ||
         !Object.prototype.hasOwnProperty.call(filter, "order") ||
@@ -621,6 +643,7 @@ Table.Filter.default = function()
         {
             movies : true,
             tv : true,
+            audiobooks : true,
             other : true
         },
         sort : "request",

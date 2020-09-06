@@ -359,6 +359,7 @@ function buildItem(match, external)
     if (match.ref)
     {
         item.setAttribute("ref", match.ref);
+        item.setAttribute("aid", match.id);
     }
     else
     {
@@ -670,12 +671,7 @@ function onSubmitRequestSucceeded(response)
 /// </summary>
 function submitSelected()
 {
-    if ($("#type").value == "audiobook")
-    {
-        alert("Sorry, audiobook requests aren't quite hooked up yet");
-        return;
-    }
-
+    const reqType = $("#type").value;
     if (!selectedSuggestion)
     {
         let button = $("#matchContinue");
@@ -685,10 +681,15 @@ function submitSelected()
         return;
     }
 
-    const tmdbid = selectedSuggestion.getAttribute("tmdbid");
+    let externalId = selectedSuggestion.getAttribute("tmdbid");
     const title = selectedSuggestion.getAttribute("title");
     let poster = selectedSuggestion.getAttribute("poster");
-    if (!tmdbid || !title)
+    if (!externalId && reqType == "audiobook")
+    {
+        externalId = selectedSuggestion.getAttribute("aid");
+    }
+
+    if (!externalId || !title)
     {
         logError("Required fields not set");
         return;
@@ -698,8 +699,8 @@ function submitSelected()
     {
         type : ProcessRequest.NewRequest,
         name : title,
-        mediatype : $("#type").value,
-        external_id : tmdbid,
+        mediatype : reqType,
+        external_id : externalId,
         poster : poster
     };
 

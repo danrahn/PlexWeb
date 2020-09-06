@@ -63,7 +63,7 @@ function get_details($req_id)
     isMediaRequest="<?php echo ($details->is_media_request ? 1 : 0)?>"
     reqId="<?= $req_id ?>"
     requestType="<?= $details->request_type ?>"
-    requestTypeStr="<?php echo ($details->request_type == 1 ? "movie" : "tv") ?>"
+    requestTypeStr="<?php echo strtolower(RequestType::get_str($details->request_type)) ?>"
     requestName="<?= $details->request_name ?>"
     requestStatus="<?= $details->status ?>"
     externalId="<?= $details->external_id?>"

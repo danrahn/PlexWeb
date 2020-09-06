@@ -127,7 +127,10 @@ function buildActivity(activity, newActivity)
 
     let imgHolder = buildNode("div", { class : "imgHolder" });
     let imgA = buildNode("a", { href : `request.php?id=${activity.rid}` });
-    let img = buildNode("img", { src : `poster${activity.poster}`, alt : "Poster" });
+
+    // For audiobooks, the poster is taken directly from audible
+    // TODO: cache audiobook posters via get_image.php
+    let img = buildNode("img", { src : activity.poster.startsWith("http") ? activity.poster : `poster${activity.poster}`, alt : "Poster" });
 
     if (activity.value == "ViewStream")
     {

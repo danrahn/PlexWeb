@@ -149,7 +149,7 @@ function process_request($type)
             $message = get_geo_ip(get("ip"));
             break;
         case ProcessRequest::SetExternalId:
-            $message = set_external_id((int)get("req_id"), (int)get("id"));
+            $message = set_external_id((int)get("req_id"), get("id"));
             break;
         case ProcessRequest::AddComment:
             $message = add_request_comment((int)get("req_id"), get("content"));
@@ -369,7 +369,7 @@ function register($username, $password, $confirm)
 function request_exists($external_id, $userid)
 {
     global $db;
-    $query = "SELECT id, request_name, satisfied FROM user_requests WHERE username_id=$userid AND external_id=$external_id";
+    $query = "SELECT id, request_name, satisfied FROM user_requests WHERE username_id=$userid AND external_id='$external_id'";
     $result = $db->query($query);
     if ($result && $result->num_rows != 0)
     {
@@ -396,7 +396,6 @@ function request_exists($external_id, $userid)
 function process_suggestion_new($suggestion, $type, $external_id, $poster)
 {
     $type = RequestType::get_type_from_str($type);
-    $external_id = (int)$external_id;
     if (strlen($suggestion) > 128)
     {
         return json_error("Suggestion must be less than 128 characters");
@@ -407,24 +406,25 @@ function process_suggestion_new($suggestion, $type, $external_id, $poster)
         return json_error("Unknown media type: " . $_POST['mediatype']);
     }
 
+    global $db;
     $userid = (int)$_SESSION['id'];
+    $external_id = $db->real_escape_string($external_id);
     $existing_request = request_exists($external_id, $userid);
     if ($existing_request != NULL)
     {
         return json_encode($existing_request);
     }
 
-    global $db;
     $suggestion = $db->real_escape_string($suggestion);
     $poster = $db->real_escape_string($poster);
-    $query = "INSERT INTO user_requests (username_id, request_type, request_name, external_id, comment, poster_path) VALUES ($userid, $type, '$suggestion', $external_id, '', '$poster')";
+    $query = "INSERT INTO user_requests (username_id, request_type, request_name, external_id, comment, poster_path) VALUES ($userid, $type, '$suggestion', '$external_id', '', '$poster')";
     if (!$db->query($query))
     {
         return db_error();
     }
 
     // Return the new entry's id
-    $query = "SELECT id, request_date FROM user_requests WHERE request_name='$suggestion' AND username_id=$userid AND request_type=$type AND external_id=$external_id ORDER BY request_date DESC";
+    $query = "SELECT id, request_date FROM user_requests WHERE request_name='$suggestion' AND username_id=$userid AND request_type=$type AND external_id='$external_id' ORDER BY request_date DESC";
     $result = $db->query($query);
     if ($result === FALSE)
     {
@@ -1628,7 +1628,8 @@ function get_geo_ip($ip)
 function set_external_id($req_id, $ext_id)
 {
     global $db;
-    $query = "UPDATE user_requests SET external_id=$ext_id WHERE id=$req_id";
+    $ext_id = $db->real_escape_string($ext_id);
+    $query = "UPDATE user_requests SET external_id='$ext_id' WHERE id=$req_id";
     $db->query($query);
     return json_success();
 }
@@ -1712,6 +1713,10 @@ function get_requests($num, $page, $search, $filter)
     if ($filter->type->tv)
     {
         array_push($filter_type, "request_type=2");
+    }
+    if ($filter->type->audiobooks)
+    {
+        array_push($filter_type, "request_type=3");
     }
     if ($filter->type->other)
     {
@@ -1881,6 +1886,8 @@ function get_poster_path($request)
             case RequestType::TVShow:
                 $json = run_query("tv/" . $request->eid);
                 break;
+            case RequestType::AudioBook:
+                break;
             default:
                 $continue = TRUE;
                 break;
@@ -1901,6 +1908,8 @@ function get_poster_path($request)
                 return "/moviedefault.svg";
             case RequestType::TVShow:
                 return "/tvdefault.svg";
+            case RequestType::AudioBook:
+                return "/audiodefault.svg";
             default:
                 return "/viewstream.svg";
         }

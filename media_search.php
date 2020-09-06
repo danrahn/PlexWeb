@@ -46,6 +46,8 @@ if ($by_id)
 
             // TV shows don't list imdb id in the main results page. Query for that as well and append it to the object
             json_message_and_exit(json_encode(parse_single_tv_show(run_query($endpoint, $params))));
+        case RequestType::AudioBook:
+            json_message_and_exit(get_audible_by_id($query));
         default:
             json_error_and_exit("Unsupported media type");
     }
@@ -187,13 +189,7 @@ function search_audible($query)
 /// </summary>
 function get_specific_audible($id)
 {
-    $ch = curl_init();
-    $url = "https://audible.com/pd/" . $id . "?ipRedirectOverride=true";
-    curl_setopt($ch, CURLOPT_URL, $url);
-    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, TRUE);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
-
-    $text = curl_exec($ch);
+    $text = get_audible_page($id);
 
     $obj = new \stdClass();
     $obj->valid = 1;
@@ -216,5 +212,88 @@ function get_specific_audible($id)
     $obj->thumb = substr($text, $image_start, $image_end - $image_start);
 
     return json_encode($obj);
+}
+
+/// <summary>
+/// Parses the audible HTML to build up fields to match those provided by Movie and TV requests
+/// </summary>
+function get_audible_by_id($id)
+{
+    $text = get_audible_page($id);
+    
+    $find = strpos($text, "id=\"bottom-0\"");
+    if ($find === FALSE)
+    {
+        return json_error("Unable to get audiobook details");
+    }
+    
+    $find = strpos($text, "[", $find);
+    if ($find === FALSE)
+    {
+        return json_error("Unable to get audiobook details");
+    }
+
+    $end = strpos($text, "</script>", $find);
+    if ($end === FALSE)
+    {
+        return json_error("Unable to get audiobook details");
+    }
+
+    $raw = json_decode(substr($text, $find, $end - $find))[0];
+    $obj = new \stdClass();
+    $obj->poster_path = $raw->image;
+    $obj->title = $raw->name;
+    $obj->release_date = $raw->datePublished;
+    $obj->overview = $raw->description;
+    $obj->audible = TRUE;
+    return json_encode($obj);
+}
+
+/// <summary>
+/// Removes extra bold/italic/paragraph formatting from the given description. Currently unused.
+/// </summary>
+function parse_overview($raw_overview)
+{
+    $overview = "";
+    $start = strpos($raw_overview, "<p>");
+    if ($start !== FALSE && $start != 0)
+    {
+        $overview .= substr($raw_overview, 0, $start) . "<br /><br />";
+    }
+
+    $end = 0;
+    while ($start !== FALSE)
+    {
+        $end = strpos($raw_overview, "</p>", $start);
+        $overview .= substr($raw_overview, $start + 3, $end - $start - 3) . "<br /><br />";
+        $start = strpos($raw_overview, "<p>", $end);
+    }
+
+    if ($end != 0 && $end != strlen($raw_overview) - 4)
+    {
+        $overview .= substr($raw_overview, $end + 4);
+    }
+
+    $overview = str_replace("<b>", "", $overview);
+    $overview = str_replace("</b>", "", $overview);
+    $overview = str_replace("<i>", "", $overview);
+    $overview = str_replace("</i>", "", $overview);
+    return $overview;
+}
+
+/// <summary>
+/// Returns the entire HTML contents for the audible page with the given id
+/// </summary>
+function get_audible_page($id)
+{
+    $ch = curl_init();
+    $url = "https://audible.com/pd/" . $id . "?ipRedirectOverride=true";
+    curl_setopt($ch, CURLOPT_URL, $url);
+    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, TRUE);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
+
+    $text = curl_exec($ch);
+    curl_close($ch);
+    return $text;
 }
 ?>

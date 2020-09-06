@@ -127,6 +127,7 @@ input[type=checkbox]:focus {
 #infoContainer, #commentsHolder {
     width: 100%;
     color: #c1c1c1;
+    margin-top: 50px;
 }
 
 #mediaBackdrop {
@@ -355,7 +356,7 @@ a:hover {
         float: left;
         margin-left: 60px;
         margin-right: 60px;
-        margin-top: 100px;
+        margin-top: 50px;
         padding: 20px;
         width: calc(100% - 160px);
         background-color: rgba(0,0,0,0.2);
