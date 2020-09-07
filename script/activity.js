@@ -113,6 +113,18 @@ function getTitleText(activity)
     return { plain : plainText, link : linkText };
 }
 
+let posterMax = 0;
+function onPosterLoaded()
+{
+    let width = getComputedStyle(this).width;
+    width = parseInt(width.substring(0, width.length - 2));
+    if (width > posterMax)
+    {
+        posterMax = width;
+        $(".imgHolder").forEach(function(poster) { poster.style.width = width + "px"; });
+    }
+}
+
 /// <summary>
 /// Creates an activity for the activity table
 /// </summary>
@@ -126,11 +138,21 @@ function buildActivity(activity, newActivity)
     }
 
     let imgHolder = buildNode("div", { class : "imgHolder" });
+    if (posterMax != 0)
+    {
+        imgHolder.style.width = posterMax + "px";
+    }
     let imgA = buildNode("a", { href : `request.php?id=${activity.rid}` });
 
     // For audiobooks, the poster is taken directly from audible
     // TODO: cache audiobook posters via get_image.php
-    let img = buildNode("img", { src : activity.poster.startsWith("http") ? activity.poster : `poster${activity.poster}`, alt : "Poster" });
+    let img = buildNode(
+        "img",
+        { src : activity.poster.startsWith("http") ? activity.poster : `poster${activity.poster}`, alt : "Poster" },
+        0,
+        {
+            load : onPosterLoaded
+        });
 
     if (activity.value == "ViewStream")
     {
