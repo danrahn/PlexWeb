@@ -14,6 +14,7 @@ window.addEventListener("load", function()
 /// </summary>
 function getRequests(searchValue="")
 {
+    posterMax = 0;
     let parameters =
     {
         type : ProcessRequest.GetRequests,
@@ -92,10 +93,6 @@ function buildRequests(requests)
 function buildRequestPoster(request)
 {
     let imgHolder = buildNode("div", { class : "imgHolder" });
-    if (posterMax != 0)
-    {
-        imgHolder.style.width = posterMax + "px";
-    }
     let imgA = buildNode("a", { href : `request.php?id=${request.rid}` });
 
     // Sometimes a poster fails to load. If it does, let the server know
@@ -129,7 +126,6 @@ function onSuccessfulPoster()
         posterMax = width;
         $(".imgHolder").forEach(function(poster) { poster.style.width = width + "px"; });
     }
-    logInfo(getComputedStyle(this).width);
 }
 
 /// <summary>
@@ -139,11 +135,11 @@ function buildRequestTitle(request)
 {
     let requestTitle = buildNode("a", { class : "tableEntryTitle", href : `request.php?id=${request.rid}` });
     requestTitle.appendChild(buildNode("span", {}, request.n));
-    if (request.t == 1 || request.t == 2)
+    if (request.t >= 1 && request.t <= 3)
     {
         requestTitle.appendChild(buildNode("img", {
             class : "inlineIcon",
-            src : Icons.getColor(request.t == 1 ? "movieicon" : "tvicon", "80A020"),
+            src : Icons.getColor(request.t == 1 ? "movieicon" : request.t == 2 ? "tvicon" : "audiobookicon", "80A020"),
             alt : request.t == 1 ? "Movie" : "TV Show"
         }));
     }
