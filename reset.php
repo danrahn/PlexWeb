@@ -82,8 +82,14 @@ function validate_request($token)
             <div class="formTitle">Password Reset<span style="float: right; font-size: smaller">(<a href="login.php">Login</a>)</span></div>
             <form id="resetForm">
                 <hr />
-                <div class="formInput"><label for="password">New Password: </label><input type="password" name="password" id="password"></div>
-                <div class="formInput"><label for="confirm">Confirm Password: </label><input type="password" name="confirm" id="confirm"></div>
+                <div class="formInput">
+                    <label for="password">New Password: </label>
+                    <input type="password" name="password" id="password" autocomplete="new-password">
+                </div>
+                <div class="formInput">
+                    <label for="confirm">Confirm Password: </label>
+                    <input type="password" name="confirm" id="confirm" autocomplete="new-password">
+                </div>
                 <div class="formInput"><input type="button" value="Reset Password" id="go"></input></div>
             </form>
         </div>
