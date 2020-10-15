@@ -248,7 +248,7 @@ function log(obj, description, freeze, level, textOnly, ...more)
     {
         desc = textOnly ? description : `${description}: ${typ(obj)}`;
     }
-    else
+    else if (typeof(obj) == "string")
     {
         desc = obj;
         obj = "";
