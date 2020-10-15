@@ -120,8 +120,7 @@ function getCapacity()
                 { value : response.free, label : "Free" },
                 { value : response.total - response.free, label : "Used" }
             ],
-            colors : ["#2e832e", "#a33e3e"],
-            noSort : true,
+            colors : response.free < response.total - response.free ? ["#2e832e", "#a33e3e"] : ["#a33e3e", "#2e832e"],
             title : "Plex Storage",
             noTitle : true
         };
