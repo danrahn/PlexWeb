@@ -84,6 +84,11 @@ function buildRequests(requests)
     Table.setPageInfo(requests.total);
 }
 
+function px(dimen)
+{
+    return dimen + "px";
+}
+
 /// <summary>
 /// Returns the poster for a given request. Also sets up
 /// event listeners to attempt to re-download a poster
@@ -93,6 +98,11 @@ function buildRequests(requests)
 function buildRequestPoster(request)
 {
     let imgHolder = buildNode("div", { class : "imgHolder" });
+    if (posterMax > 0)
+    {
+        imgHolder.style.width = px(posterMax);
+    }
+
     let imgA = buildNode("a", { href : `request.php?id=${request.rid}` });
 
     // Sometimes a poster fails to load. If it does, let the server know
@@ -124,7 +134,7 @@ function onSuccessfulPoster()
     if (width > posterMax)
     {
         posterMax = width;
-        $(".imgHolder").forEach(function(poster) { poster.style.width = width + "px"; });
+        $(".imgHolder").forEach(function(poster) { poster.style.width = px(width); });
     }
 }
 

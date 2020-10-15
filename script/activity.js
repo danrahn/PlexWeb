@@ -16,6 +16,7 @@ window.addEventListener("load", function()
 /// <param name="searchValue">Optional search term to further filter results based on substring matching</param>
 function getActivities(searchValue="")
 {
+    posterMax = 0;
     let parameters =
     {
         type : ProcessRequest.GetActivities,
