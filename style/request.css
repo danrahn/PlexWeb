@@ -351,6 +351,25 @@ a:hover {
     width: 80%;
 }
 
+#statusEdit {
+    margin-left: 10px;
+    height: 20pt;
+    opacity: 0.8;
+}
+
+#statusEdit:hover {
+    opacity: 1;
+}
+
+#changeStatus select {
+    margin: 20px;
+    font-size: 14pt;
+}
+
+option {
+    background-color: #3f4245;
+}
+
 @media (orientation: landscape), (min-width: 767px) {
     #innerInfoContainer {
         float: left;

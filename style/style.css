@@ -231,6 +231,22 @@ hr {
     transition: visibility 0.25s, opacity 0.25s linear, height 0.25s linear;
 }
 
+.inlineCombo {
+    display: inline;
+    float: none;
+    background-color: transparent;
+    border: none;
+    padding: 0;
+    margin: 0;
+    -moz-appearance: none;
+}
+
+.inlineCombo:focus {
+    background-color: rgba(100, 80, 69, 0.5);
+    border: none;
+    outline: none;
+}
+
 @media (orientation: landscape), (min-width: 767px) {
     /* width*/
     ::-webkit-scrollbar {

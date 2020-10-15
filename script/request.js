@@ -563,6 +563,9 @@ function searchForCompleteMatch()
     searchPlex();
 }
 
+// Keep in sync with .statusX css
+const statusColors = ["C84", "4C4", "C44", "CC4", "44C"];
+
 /// <summary>
 /// Return the status string based on the state of the request.
 /// If the current user is an admin, setup event listeners that enable
@@ -582,7 +585,22 @@ function getStatusSpan(status)
 
     if (isAdmin())
     {
-        setupSpanDoubleClick(statusSpan);
+        return buildNode("span").appendChildren(
+            statusSpan,
+            buildNode(
+                "img",
+                {
+                    src : Icons.getColor("edit", statusColors[status]),
+                    alt : "Edit status",
+                    id : "statusEdit",
+                    title : "Edit request status"
+                },
+                0,
+                {
+                    click : showStatusChangeOverlay
+                }
+            )
+        );
     }
 
     return statusSpan;
@@ -713,52 +731,40 @@ function buildPage(data)
 }
 
 /// <summary>
-/// Process admin input to change the status of a request
+/// Prompt the administrator for the new request status
 /// </summary>
-function getNewStatusType(input)
+function showStatusChangeOverlay()
 {
-    if (!input)
+    let select = buildNode("select", { name : "newStatus", id : "newStatus", class : "inlineCombo" });
+    let mappings = [0, 4, 3, 1, 2];
+    let selected = attrInt("requestStatus");
+    ["Pending", "Waiting", "In Progress", "Complete", "Denied"].forEach(function(item, i)
     {
-        // Either escape or no input. Don't do anything
-        return -1;
-    }
+        let option = buildNode("option", { value : mappings[i] }, item);
+        if (mappings[i] == selected)
+        {
+            option.selected = true;
+        }
 
-    let status = -1;
-    let first = input.toLowerCase()[0];
-    switch (first)
-    {
-        case "a":
-        case "1":
-            status = 1;
-            break;
-        case "d":
-        case "0":
-            status = 2;
-            break;
-        case "p":
-            status = 0;
-            break;
-        case "i":
-            status = 3;
-            break;
-        case "w":
-            status = 4;
-            break;
-        default:
-            alert("Invalid status: Must be '(A)pproved' (1), '(D)enied' (0), '(P)ending', '(I)n Progress', or '(W)aiting'");
-            break;
-    }
+        select.appendChild(option);
+    });
 
-    return status;
+    buildOverlay(
+        { dismissible : true, centered : false },
+        buildNode("div", { id : "changeStatus" }).appendChildren(
+            select,
+            buildNode("input", { type : "button", value : "Change" }, 0, { click : changeStatus })
+        )
+    );
 }
 
 /// <summary>
-/// Prompt the administrator for the new request status when double-clicking the current status
+/// Changes the status of the current request
 /// </summary>
-function onStatusDoubleClick()
+function changeStatus()
 {
-    let status = getNewStatusType(prompt("Data ((A)pproved (1), (D)enied (0), (P)ending, (I)n Progress, or (W)aiting):"));
-    if (status == -1)
+    let status = $("#newStatus").value;
+    if (status == attrInt("requestStatus"))
     {
         return;
     }
@@ -774,18 +780,23 @@ function onStatusDoubleClick()
         if (span)
         {
             span.className = "statusSpan status" + status;
-            span.innerHTML = ["Pending", "Approved", "Denied", "In Progress", "Waiting"][status];
+            span.innerHTML = ["Pending", "Complete", "Denied", "In Progress", "Waiting"][status];
+            $("#statusEdit").src = Icons.getColor("edit", statusColors[status]);
         }
 
         if (status == 1)
         {
             searchForCompleteMatch();
         }
+
+        document.body.setAttribute("requestStatus", $("#newStatus").value);
+        overlayDismiss();
     };
 
     let failureFunc = function()
     {
         alert("Failed to update. See console for details");
+        overlayDismiss();
     };
 
     sendHtmlJsonRequest("update_request.php", JSON.stringify(params), successFunc, failureFunc, null, true /*dataIsString*/);
@@ -866,15 +877,6 @@ function customSearchChanged()
 
     $("#completeRequestMatches").style.display = "block";
     internalSearchTimer = setTimeout(searchPlex, 250);
-}
-
-/// <summary>
-/// Setup double-click listener on the request status for admins
-/// </summary>
-function setupSpanDoubleClick(statusSpan)
-{
-    statusSpan.className += " statusSpan";
-    statusSpan.addEventListener("dblclick", onStatusDoubleClick);
 }
 
 /// <summary>
