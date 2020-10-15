@@ -243,7 +243,17 @@ function log(obj, description, freeze, level, textOnly, ...more)
                 level < LOG.Error ?
                     console.warn :
                     console.error;
-    let desc = description ? textOnly ? description : `${description}: ${typ(obj)}` : "";
+    let desc = "";
+    if (description)
+    {
+        desc = textOnly ? description : `${description}: ${typ(obj)}`;
+    }
+    else
+    {
+        desc = obj;
+        obj = "";
+    }
+
     print(output, `%c[%c${g_logStr[level]}%c][%c${timestring}%c] ${desc}`, curState(obj), level, colors);
 
     function getTimestring()
