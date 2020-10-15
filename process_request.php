@@ -532,6 +532,12 @@ function process_stream_access_request($which)
             {
                 return json_error("Error adding user comment");
             }
+
+            $query = "INSERT INTO `activities` (`type`, `user_id`, `request_id`, `data`) VALUES (1, $userid, $req_id, '{}')";
+            if (!$db->query($query))
+            {
+                return json_error("Error adding request to activity table");
+            }
         }
 
         return '{ "value" : "Access Requested!" }';
