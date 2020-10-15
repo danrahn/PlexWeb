@@ -1839,7 +1839,7 @@ function get_requests($num, $page, $search, $filter)
         if (!$poster_path)
         {
             // If we don't have a poster path, get it
-            $poster_path = get_poster_path($request);
+            $poster_path = get_poster_path($request->t, $request->eid);
         }
 
         if (is_null($request->pid))
@@ -1876,7 +1876,6 @@ function get_poster_path($request)
 {
     global $db;
     $type = RequestType::get_type((int)$request->t);
-    $endpoint = "";
     $json = NULL;
     $continue = false;
 
@@ -2001,7 +2000,7 @@ function get_activities($num, $page, $search, $filter)
     $offset = $num == 0 ? 0 : $num * $page;
     $current_user = $_SESSION['id'];
     $filter = json_decode($filter);
-    $query = "SELECT `type`, `user_id`, `admin_id`, `request_id`, `data`, `timestamp`, `request_name`, `poster_path` FROM `activities` ";
+    $query = "SELECT `type`, `user_id`, `admin_id`, `request_id`, `data`, `timestamp`, `request_name`, `external_id`, `poster_path` FROM `activities` ";
 
     $filter_string = "INNER JOIN `user_requests` ON `activities`.`request_id`=`user_requests`.`id` ";
 
@@ -2096,8 +2095,13 @@ function get_activities($num, $page, $search, $filter)
         $activity->username = $_SESSION['username'];
         $activity->uid = $row['user_id'];
         $activity->rid = $row['request_id'];
+        $activity->eid = $row['external_id'];
         $activity->value = $row['request_name'];
         $activity->poster = $row['poster_path'];
+        if (!$activity->poster)
+        {
+            $activity->poster = get_poster_path($activity->type, $activity->eid);
+        }
 
         $admin_id = $row['admin_id'];
         $inner_query = "";
@@ -2125,8 +2129,6 @@ function get_activities($num, $page, $search, $filter)
         $activity->username = $inner_row['username'];
         $activity->uid = $inner_row['id'];
         $inner_result->close();
-
-        $activity_rid = $row['request_id'];
 
         if ($row['type'] == 3) // Status change
         {
