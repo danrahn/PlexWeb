@@ -2,6 +2,16 @@
 /// Handles building an individual request and associated comments
 /// </summary>
 
+/// <todo>
+/// Caching mechanism for data (save for 30 days, one week?)
+/// Separate table, request_metadata for all the fields
+/// - Title (should be part of regular request info)
+/// - Release date (should conform to one format)
+/// - Description
+/// - Anything else that we happen to want to add
+/// - Separate columns for each, which will help if we ever want additional filtering options
+/// </todo>
+
 /// <summary>
 /// Add initial event listeners
 /// </summary>
@@ -542,7 +552,8 @@ function getInternalId()
 function searchForCompleteMatch()
 {
     let overlayNode = buildNode("div", { class : "formContainer" }).appendChildren(
-        buildNode("form", { id : "searchForm", style : "overflow: auto" }).appendChildren(
+        // eslint-disable-next-line no-script-url
+        buildNode("form", { id : "searchForm", style : "overflow: auto", action : "javascript:void(0)" }).appendChildren(
             buildNode("div", { style : "margin-bottom: 10px" }, "Select the Matching Request"),
             buildNode("hr"),
             buildNode("div", { id : "completeRequestMatches" }, "Searching...")
