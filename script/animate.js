@@ -61,11 +61,11 @@ let Animation = new function()
         if (animationQueue[element.id].length !== 1)
         {
             // Can't fire immediately (PURE annotation will remove it from the minified JS)
-            /*@__PURE__*/logTmi(animationQueue[element.id], "Adding animation for " + element.id + " to queue");
+            /*@__PURE__*/logTmi(animationQueue[element.id], "Adding animation for " + element.id + " to queue", true /*freeze*/);
             return;
         }
 
-        /*@__PURE__*/logTmi(animationQueue[element.id], "Firing animation for " + element.id + " immediately");
+        /*@__PURE__*/logTmi(animationQueue[element.id], "Firing animation for " + element.id + " immediately", true /*freeze*/);
         animationQueue[element.id][0].timers = [];
         for (let i = 0; i < animations.length; ++i)
         {
@@ -85,7 +85,7 @@ let Animation = new function()
         let queue = animationQueue[element.id];
         if (queue)
         {
-            /*@__PURE__*/logTmi(queue, `FireNow - queue not empty, attempting to cancel current animations for ${element.id}`);
+            /*@__PURE__*/logTmi(queue, `FireNow - queue not empty, attempting to cancel current animations for ${element.id}`, true /*freeze*/);
             for (let i = 0; i < queue[0].timers.length; ++i)
             {
                 clearTimeout(queue[0].timers[i]);
