@@ -1,5 +1,5 @@
 <div id="navholder" currentPage="<?php $_SERVER['REQUEST_URI'] ?>">
-<div id="nav">
+<div id="nav" plex_host="<?= PUBLIC_PLEX_HOST ?>">
     <div id="mainMenu" class="leftbutton" tabindex=1 title="Menu (Shift + M)">
         <div class="ham"></div>
         <div class="ham"></div>

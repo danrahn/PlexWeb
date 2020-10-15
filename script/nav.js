@@ -46,7 +46,7 @@ setupClicks("navHome", "index.php");
 setupClicks("navNewRequest", "new_request.php");
 setupClicks("navRequests", "requests.php");
 setupClicks("navActivity", "activity.php");
-setupClicks("navPlex", "https://app.plex.tv/desktop", true);
+setupClicks("navPlex", $("#nav").getAttribute("plex_host"), true);
 setupClicks("navMembers", "members.php");
 setupClicks("navUserSettings", "user_settings.php");
 setupClicks("navAdmin", "administration.php");
@@ -205,7 +205,7 @@ function tryNavKeyDispatch(key)
             break;
         }
         case KEY.P:
-            target = "https://app.plex.tv/desktop";
+            target = $("#nav").getAttribute("plex_host");
             break;
         default:
             break;

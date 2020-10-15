@@ -533,7 +533,7 @@ function getInternalId()
             return;
         }
 
-        let hyperlink = `https://app.plex.tv/desktop#!/server/${response.machine_id}/details?`;
+        let hyperlink = `${attr("plex_host")}/${attr("plex_nav")}/server/${response.machine_id}/details?`;
         hyperlink += `key=${encodeURIComponent("/library/metadata/" + response.internal_id)}`;
         $("#mediaDetails").insertBefore(
             buildNode("div", { class : "mediaLink", id : "internalId" }).appendChildren(

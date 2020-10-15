@@ -230,8 +230,10 @@ function navigateToPlex()
 {
     let pid = parseInt(this.getAttribute("pid"));
     let mid = document.body.getAttribute("mid");
+    let host = document.body.getAttribute("plex_host");
+    let nav = document.body.getAttribute("plex_nav");
     window.open(
-        `https://app.plex.tv/desktop#!/server/${mid}/details?key=${encodeURIComponent("/library/metadata/" + pid)}`,
+        `${host}/${nav}/server/${mid}/details?key=${encodeURIComponent("/library/metadata/" + pid)}`,
         "_blank");
 }
 

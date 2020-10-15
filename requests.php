@@ -22,7 +22,9 @@ verify_loggedin(TRUE /*redirect*/, "requests.php");
     <?php build_css(); ?>
 </head>
 
-<body isAdmin="<?= (UserLevel::is_admin()) ? 1 : 0 ?>">
+<body isAdmin="<?= (UserLevel::is_admin()) ? 1 : 0 ?>"
+    plex_host="<?= PUBLIC_PLEX_HOST ?>"
+    plex_nav="<?= PUBLIC_PLEX_NAV ?>">
     <div id="plexFrame">
         <?php include "nav.php" ?>
         <div id="container">

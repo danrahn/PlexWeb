@@ -1105,7 +1105,7 @@ function getInlineIconForTitle(mediaType, hover)
 function getExternalLinkTitle(hyperlink)
 {
     hyperlink = hyperlink.toLowerCase();
-    if (hyperlink.indexOf("app.plex.tv") != -1)
+    if (hyperlink.indexOf(document.body.getAttribute("plex_host")) != -1)
     {
         return "View on Plex";
     }
@@ -1142,10 +1142,11 @@ function getExternalLinkTitle(hyperlink)
 function buildActiveStreamTitle(sesh)
 {
     // Link to plex. If no link is available, try linking to the external source
+    const attr = (attribute) => document.body.getAttribute(attribute);
     let hyperlink;
     if (sesh.plex_key)
     {
-        hyperlink = `https://app.plex.tv/desktop#!/server/${sesh.machine_id}/details?key=${encodeURIComponent(sesh.plex_key)}`;
+        hyperlink = `${attr("plex_host")}/${attr("plex_nav")}/server/${sesh.machine_id}/details?key=${encodeURIComponent(sesh.plex_key)}`;
     }
     else
     {

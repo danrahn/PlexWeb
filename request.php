@@ -67,7 +67,9 @@ function get_details($req_id)
     requestName="<?= $details->request_name ?>"
     requestStatus="<?= $details->status ?>"
     externalId="<?= $details->external_id?>"
-    newrequest="<?php echo try_get('new') ?>">
+    newrequest="<?php echo try_get('new') ?>"
+    plex_host="<?= PUBLIC_PLEX_HOST ?>"
+    plex_nav="<?= PUBLIC_PLEX_NAV ?>">
     <div id="plexFrame">
         <?php include "nav.php" ?>
         <?php if (!$details->is_media_request || $details->external_id) { ?>

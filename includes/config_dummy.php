@@ -26,6 +26,8 @@ define('GEOIP_URL', 'https://api.ipgeolocation.io/ipgeo?apiKey=' . GEOIP_TOKEN .
 define('TMDB_TOKEN', "?api_key=<KEY>");
 define('TMDB_URL', "https://api.themoviedb.org/3/");
 define('BACKING_STORAGE', []); // Location(s) on disk of the plex library, used for storage calculations
+define('PUBLIC_PLEX_HOST', 'https://app.plex.tv'); // Can also forward to custom plex-hosting domain
+define('PUBLIC_PLEX_NAV', 'desktop#!'); // For custom plex-hosted domains, this will likely be 'web/index.html#!/'
 
 $db = new mysqli(DB_SERVER, DB_USERNAME, DB_PASSWORD, DB_NAME);
 if ($db->connect_error)

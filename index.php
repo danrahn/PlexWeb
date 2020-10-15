@@ -90,10 +90,9 @@ function get_username()
     <title>Plex Status</title>
     <?php build_css() ?>
 </head>
-<body plexok="<?php echo does_plex_exist() ? "1" : "0" ?>">
-<script>
-</script>
-
+<body plexok="<?php echo does_plex_exist() ? "1" : "0" ?>"
+    plex_host="<?= PUBLIC_PLEX_HOST ?>"
+    plex_nav="<?= PUBLIC_PLEX_NAV ?>">
 <div id="plexFrame">
     <?php include "nav.php" ?>
     <h3 id="welcome">Welcome <?= get_username() ?></h3>
@@ -130,7 +129,7 @@ function get_username()
             </div>
             <div class="actionSpacer"></div>
             <div class="action">
-                <a href="https://app.plex.tv/desktop" target="_blank" class="actionLink">
+                <a href="<?= PUBLIC_PLEX_HOST ?>" target="_blank" class="actionLink">
                     <img src="<?php icon('plex') ?>" class="actionImg" alt="Plex">
                     <span>Go to Plex</span>
                 </a>
