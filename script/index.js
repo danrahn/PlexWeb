@@ -1275,6 +1275,10 @@ function buildActiveStreamDetailsList(sesh, title)
     }
 
     list.appendChild(getListItem("Audio", getAudioString(sesh.audio)));
+    if (sesh.subtitle)
+    {
+        list.appendChild(getListItem("Subtitle", `${sesh.subtitle.language} - ${sesh.subtitle.extended_title}`));
+    }
 
     if (sesh.video)
     {

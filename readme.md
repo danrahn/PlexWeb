@@ -24,5 +24,4 @@ This repository contains (most of) the source code for danrahn.com/plex. Some th
 ## TODOs
 
 Some random ideas:
-1. Detect subtitle usage and report in active streams
 2. Better administration page to allow more server management capabilities

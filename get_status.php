@@ -465,6 +465,8 @@ function build_sesh($sesh, $library_names)
     $audio = $stream->xpath("Stream[@channels]")[0]; // A bit hacky - assumes the stream always includes the number of channels (which it should)
     $video = $stream->xpath("Stream[@width]");
     $video = $video ? $video[0] : NULL;
+    $subtitle = $stream->xpath("Stream[@streamType=3]");
+    $subtitle = $subtitle ? $subtitle[0] : NULL;
 
     $slim_sesh->bitrate = intval($stream['bitrate']);
     if ($slim_sesh->bitrate == 0)
@@ -494,6 +496,14 @@ function build_sesh($sesh, $library_names)
             $slim_sesh->video->transcoded_codec = strtoupper($media['videoCodec']);
             $slim_sesh->video->transcoded_resolution = (string)$media['videoResolution'];
         }
+    }
+
+    if ($subtitle)
+    {
+        $slim_sesh->subtitle = new \stdClass();
+        $slim_sesh->subtitle->burn = (string)$subtitle['decision'];
+        $slim_sesh->subtitle->language = (string)$subtitle['language'];
+        $slim_sesh->subtitle->extended_title = (string)$subtitle['extendedDisplayTitle'];
     }
 
     $transcode = $sesh->xpath("TranscodeSession");
