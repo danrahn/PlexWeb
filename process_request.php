@@ -57,6 +57,7 @@ abstract class ProcessRequest
     const LibraryStats = 33;
     const SetInternalId = 34;
     const GetInternalId = 35;
+    const ImdbRating = 36;
 }
 
 // For requests that are only made when not logged in, don't session_start or verify login state
@@ -210,6 +211,9 @@ function process_request($type)
             break;
         case ProcessRequest::GetInternalId:
             $message = get_internal_id((int)get("req_id"));
+            break;
+        case ProcessRequest::ImdbRating:
+            $message = get_imdb_rating(get("tt"));
             break;
         default:
             return json_error("Unknown request type: " . $type);
@@ -2853,6 +2857,111 @@ function get_plex_server()
 
     $server_info = simplexml_load_string(curl(PLEX_SERVER . '?' . PLEX_TOKEN));
     return (string)$server_info['machineIdentifier'];
+}
+
+/// <summary>
+/// Gets the IMDb rating for the given title
+/// </summary>
+function get_imdb_rating($title)
+{
+    global $db;
+    $titleStripped = substr($title, 2);
+    $titleInt = (int)$titleStripped;
+    $query = "SELECT `rating`, CONVERT_TZ(`update_date`, @@session.time_zone, '+00:00') AS `timestamp` FROM `imdb_rating_cache` WHERE `imdbid`=$titleInt";
+    $result = $db->query($query);
+
+    // If we don't have a cached rating, or the rating is stale (more than
+    // a week old), get the rating from IMDb and put it in the cache.
+    if (!$result || $result->num_rows == 0)
+    {
+        return update_imdb_rating_cache($titleStripped);
+    }
+
+    $cached = $result->fetch_assoc();
+    $rating = $cached['rating'];
+
+    $timestamp = new DateTime($cached['timestamp']);
+    $now = new DateTime(date("Y-m-d H:i:s"));
+    $diff = ($now->getTimestamp() - $timestamp->getTimestamp()) / 86400; // Convert to days
+    if ($diff > 7)
+    {
+        return update_imdb_rating_cache($titleStripped, $rating);
+    }
+
+    return '{ "rating" : "' .$rating . '", "cached" : true }';
+}
+
+/// <summary>
+/// Queries IMDb for the given item's rating. We should only call this if
+/// we don't already have the rating cached, or the cached rating is more
+/// than a week old, as querying is relatively expensive.
+/// </summary>
+function update_imdb_rating_cache($title, $cached="")
+{
+    global $db;
+    $text = curl("https://www.imdb.com/title/tt$title");
+
+    // Information for this title is stored in a script tag with
+    // a type of "application/ld+json". Simply parse that script
+    // tag as JSON and extract the rating.
+    $start = strpos($text, '"application/ld+json"');
+    if ($start === FALSE)
+    {
+        return imdb_rating_failure($title, $cached);
+    }
+
+    $end = strpos($text, "</script>", $start);
+    if ($end === FALSE)
+    {
+        return imdb_rating_failure($title, $cached);
+    }
+
+    $start += 22;
+    $json = json_decode(substr($text, $start, $end - $start));
+    if (!$json)
+    {
+        return imdb_rating_failure($title, $cached);
+    }
+
+    if (!$json->aggregateRating || !$json->aggregateRating->ratingValue)
+    {
+        return imdb_rating_failure($title, $cached);
+    }
+
+    $rating = $db->real_escape_string($json->aggregateRating->ratingValue);
+    $titleInt = (int)$title;
+    $query = "";
+    if ($cached)
+    {
+        $query = "UPDATE `imdb_rating_cache` SET `rating`=\"$rating\" WHERE `imdbid`=$titleInt";
+    }
+    else
+    {
+        $query = "INSERT INTO `imdb_rating_cache` (`imdbid`, `rating`) VALUES ($titleInt, \"$rating\")";
+    }
+
+    $ret = '{ "rating" : "' . $rating . '", "cached" : false ';
+
+    if ($db->query($query) === FALSE)
+    {
+        $ret .= '"err" : "Unable to update cache" ';
+    }
+
+    return $ret . "}";
+}
+
+/// <summary>
+/// Handles the case where we were unable to update/add the cached rating.
+/// If we don't have a stale cached item, return a failure, otherwise return the cached rating
+/// </summary>
+function imdb_rating_failure($title, $cached)
+{
+    if (!$cached)
+    {
+        return json_error("Could not get IMDb rating for tt$title");
+    }
+
+    return '{ "rating" : "' . $cached . '", "err" : "Unable to update stale cache  for tt' . $title . '", "cached" : true }';
 }
 
 /// <summary>

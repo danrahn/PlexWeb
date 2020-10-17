@@ -160,6 +160,14 @@ CREATE TABLE `library_stats_cache` (
  PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci
 
+CREATE TABLE `imdb_rating_cache` (
+ `id` int(11) NOT NULL AUTO_INCREMENT,
+ `imdbid` int(11) NOT NULL,
+ `rating` varchar(4) COLLATE utf8_unicode_ci NOT NULL,
+ `update_date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+ PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci
+
 # Triggers
 CREATE TRIGGER `IncrementCommentCount` AFTER INSERT ON `request_comments`
  FOR EACH ROW UPDATE user_requests r SET r.comment_count=r.comment_count+1 WHERE r.id=NEW.req_id

@@ -657,11 +657,30 @@ function buildRequestExternalLink(request)
     let imdb;
     if (request.imdb_id)
     {
-        imdb = buildNode("div", { class : "mediaLink" });
-        imdb.appendChild(buildNode("a", {
-            href : `https://imdb.com/title/${request.imdb_id}`,
-            target : "_blank"
-        }, "IMDb"));
+        imdb = buildNode("div", { class : "mediaLink", id : "imdbLink", title : "View on IMDb" });
+        imdb.appendChildren(
+            buildNode(
+                "a",
+                {
+                    href : `https://imdb.com/title/${request.imdb_id}`,
+                    target : "_blank"
+                }
+            ).appendChildren(
+                buildNode(
+                    "img",
+                    {
+                        src : Icons.get("imdb")
+                    }
+                ),
+                buildNode("span", { id : "imdbRating" }, "...")
+            )
+        );
+
+        sendHtmlJsonRequest(
+            "process_request.php",
+            { type : ProcessRequest.ImdbRating, tt : request.imdb_id },
+            function(response) { $("#imdbRating").innerHTML = response.rating; },
+            () => { $("#imdbRating").innerHTML = ""; });
     }
     else if (request.id)
     {
@@ -786,11 +805,13 @@ function changeStatus()
 
         if (status == 1)
         {
-            searchForCompleteMatch();
+            // SearchForCompleteMatch launches an overlay, so we have to wait
+            // for the last one to be dismissed first
+            overlayDismiss();
+            setTimeout(searchForCompleteMatch, 300);
         }
 
         document.body.setAttribute("requestStatus", $("#newStatus").value);
-        overlayDismiss();
     };
 
     let failureFunc = function()

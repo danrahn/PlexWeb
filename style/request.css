@@ -370,6 +370,37 @@ option {
     background-color: #3f4245;
 }
 
+#imdbLink {
+    margin-top: 5px;
+}
+
+#imdbLink a {
+    text-decoration: none;
+    background-color: #e1be00;
+    border-radius: 3px;
+    display: inline-block;
+    opacity: 0.8;
+}
+
+#imdbLink a:hover {
+    opacity: 1;
+}
+
+#imdbLink img {
+    height: 30px;
+    vertical-align: text-bottom;
+    margin-right: 5px;
+}
+
+#imdbLink span {
+    font-size: 14pt;
+    color: black;
+    text-shadow: none;
+    margin-right: 3px;
+    vertical-align: bottom;
+    line-height: 30px;
+}
+
 @media (orientation: landscape), (min-width: 767px) {
     #innerInfoContainer {
         float: left;
@@ -417,6 +448,10 @@ option {
     .mediaLink {
         font-size: 18pt;
         text-shadow: -1px 0 #313131, 0 1px #313131, 1px 0 #313131, 0 -1px #313131;
+    }
+
+    #imdbLink span {
+        font-family: Impact, Arial, sans-serif;
     }
 
     #internalId {
@@ -495,6 +530,11 @@ option {
     .mediaLink {
         font-size: 18pt;
         text-shadow: -1px 0 #313131, 0 1px #313131, 1px 0 #313131, 0 -1px #313131;
+    }
+
+    #imdbLink span {
+        font-family: "sans-serif";
+        font-weight: bold;
     }
 
     #mediaOverview {
