@@ -323,7 +323,7 @@ let Log = new function()
         // After initializing everything we need, print a message to the user to give some basic tips
         const logLevelSav = currentLogLevel;
         currentLogLevel = 2;
-        this.logInfo(" ");
+        Log.info(" ");
         console.log("Welcome to the console!\n" +
         "If you're debugging an issue, here are some tips:\n" +
         "  1. Set dark/light mode for the console via setDarkConsole(isDark), where isDark is 1 or 0.\n" +
