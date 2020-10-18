@@ -536,14 +536,14 @@ function goToExternal()
     if (imdbid)
     {
         Log.tmi("Clicked on an existing item");
-        window.open(`https://www.imdb.com/title/${imdbid}`, "_blank");
+        window.open(`https://www.imdb.com/title/${imdbid}`, "_blank", "noreferrer");
         return;
     }
 
     const ref = grandparent.getAttribute("ref");
     if (ref)
     {
-        window.open(ref, "_blank");
+        window.open(ref, "_blank", "noreferrer");
         return;
     }
 
@@ -554,7 +554,7 @@ function goToExternal()
         Log.info(response);
         if (response.imdb_id)
         {
-            window.open("https://www.imdb.com/title/" + response.imdb_id, "_blank");
+            window.open("https://www.imdb.com/title/" + response.imdb_id, "_blank", "noreferrer");
         }
         else
         {

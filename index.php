@@ -129,7 +129,7 @@ function get_username()
             </div>
             <div class="actionSpacer"></div>
             <div class="action">
-                <a href="<?= PUBLIC_PLEX_HOST ?>" target="_blank" class="actionLink">
+                <a href="<?= PUBLIC_PLEX_HOST ?>" target="_blank" rel="noreferrer" class="actionLink">
                     <img src="<?php icon('plex') ?>" class="actionImg" alt="Plex">
                     <span>Go to Plex</span>
                 </a>

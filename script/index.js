@@ -1153,7 +1153,7 @@ function buildActiveStreamTitle(sesh)
         hyperlink = sesh.hyperlink;
     }
 
-    let link = buildNode("a", { href : hyperlink, target : "_blank", title : getExternalLinkTitle(hyperlink) });
+    let link = buildNode("a", { href : hyperlink, target : "_blank", rel : "noreferrer", title : getExternalLinkTitle(hyperlink) });
     link.appendChild(buildNode("span",
         { class : `ppbutton  ${sesh.paused ? "pause" : "play"}` },
         sesh.paused ? "&#10073;&#10073;  " : "&#x25ba;  "));
@@ -1324,6 +1324,7 @@ function buildActiveStreamPoster(sesh)
         {
             href : sesh.hyperlink,
             target : "_blank",
+            rel : "noreferrer",
             title : getExternalLinkTitle(sesh.hyperlink)
         },
         0,

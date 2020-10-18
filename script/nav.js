@@ -121,7 +121,7 @@ function setupClicks(id, url, forceNewWindow)
     {
         element.addEventListener("click", function()
         {
-            window.open(url, "_blank");
+            window.open(url, "_blank", "noreferrer");
         });
     }
     else
@@ -216,7 +216,7 @@ function tryNavKeyDispatch(key)
         if (target.startsWith("http"))
         {
             // Open external links in a new tab
-            window.open(target, "_blank");
+            window.open(target, "_blank", "noreferrer");
         }
         else
         {

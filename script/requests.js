@@ -234,7 +234,8 @@ function navigateToPlex()
     let nav = document.body.getAttribute("plex_nav");
     window.open(
         `${host}/${nav}/server/${mid}/details?key=${encodeURIComponent("/library/metadata/" + pid)}`,
-        "_blank");
+        "_blank",
+        "noreferrer");
 }
 
 /// <summary>

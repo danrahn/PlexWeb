@@ -353,11 +353,11 @@ function goToImdb()
         Log.info(response);
         if (response.imdb_id)
         {
-            window.open("https://www.imdb.com/title/" + response.imdb_id, "_blank");
+            window.open("https://www.imdb.com/title/" + response.imdb_id, "_blank", "noreferrer");
         }
         else
         {
-            window.open("https://www.themoviedb.org/" + attrInt("requestTypeStr") + "/" + request.tmdbid);
+            window.open("https://www.themoviedb.org/" + attrInt("requestTypeStr") + "/" + request.tmdbid, "_blank", "noreferrer");
         }
     };
     sendHtmlJsonRequest("media_search.php", parameters, successFunc, null, { tmdbid : this.parentNode.parentNode.getAttribute("tmdbid") });
@@ -537,7 +537,7 @@ function getInternalId()
         hyperlink += `key=${encodeURIComponent("/library/metadata/" + response.internal_id)}`;
         $("#mediaDetails").insertBefore(
             buildNode("div", { class : "mediaLink", id : "internalId" }).appendChildren(
-                buildNode("a", { href : hyperlink, target : "_blank" }, "View on Plex")
+                buildNode("a", { href : hyperlink, target : "_blank", rel : "noreferrer" }, "View on Plex")
             ),
             $$("#mediaDetails hr")
         );
@@ -646,7 +646,13 @@ function buildRequestPoster(request)
         }
     }
 
-    return buildNode("img", { src : posterPath.startsWith("http") ? posterPath : `poster${posterPath}&large=1`, id : "mediaPoster" });
+    return buildNode(
+        "img",
+        {
+            src : posterPath.startsWith("http") ? posterPath : `poster${posterPath}&large=1`,
+            id : "mediaPoster",
+            alt : "Media Poster"
+        });
 }
 
 /// <summary>
@@ -658,18 +664,13 @@ function buildRequestExternalLink(request)
     if (request.imdb_id)
     {
         imdb = buildNode("div", { class : "mediaLink", id : "imdbLink", title : "View on IMDb" });
-        imdb.appendChildren(
-            buildNode(
-                "a",
-                {
-                    href : `https://imdb.com/title/${request.imdb_id}`,
-                    target : "_blank"
-                }
-            ).appendChildren(
+        imdb.appendChild(
+            externalLink(`https://imdb.com/title/${request.imdb_id}`, "").appendChildren(
                 buildNode(
                     "img",
                     {
-                        src : Icons.get("imdb")
+                        src : Icons.get("imdb"),
+                        alt : "IMDb"
                     }
                 ),
                 buildNode("span", { id : "imdbRating" }, "...")
@@ -685,21 +686,31 @@ function buildRequestExternalLink(request)
     else if (request.id)
     {
         imdb = buildNode("div", { class : "mediaLink" });
-        imdb.appendChild(buildNode("a", {
-            href : `https://www.themoviedb.org/${attr("requestTypeStr")}/${request.id}`,
-            target : "_blank"
-        }, "TMDb"));
+        imdb.appendChild(externalLink(`https://www.themoviedb.org/${attr("requestTypeStr")}/${request.id}`, "TMDb"));
     }
     else if (request.audible)
     {
         imdb = buildNode("div", { class : "mediaLink" });
-        imdb.appendChild(buildNode("a", {
-            href : `https://audible.com/pd/${attr("externalId")}?ipRedirectOverride=true`,
-            target : "_blank"
-        }, "Audible"));
+        imdb.appendChild(externalLink(`https://audible.com/pd/${attr("externalId")}?ipRedirectOverride=true`, "Audible"));
     }
 
     return imdb;
+}
+
+/// <summary>
+/// Returns a link element that will open an external site in a new window/tab
+/// </summary>
+function externalLink(url, text)
+{
+    return buildNode(
+        "a",
+        {
+            href : url,
+            target : "_blank",
+            rel : "noreferrer"
+        },
+        text
+    );
 }
 
 /// <summary>
@@ -715,7 +726,8 @@ function buildPage(data)
     {
         backdrop = buildNode("img", {
             src : `https://image.tmdb.org/t/p/original${data.backdrop_path}`,
-            id : "mediaBackdrop"
+            id : "mediaBackdrop",
+            alt : "Media Backdrop"
         });
     }
 
