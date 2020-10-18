@@ -544,6 +544,7 @@ abstract class RequestType
         {
             case "movie":
                 return RequestType::Movie;
+            case "tv show":
             case "tvshow":
             case "tv":
                 return RequestType::TVShow;
