@@ -450,6 +450,9 @@ def create_temp(includes, rem_log, ultra):
             consolelog = consolelog.replace(consolelog[test_all:consolelog.find('}', test_all) + 1], '')
             for i, level in enumerate(['Extreme', 'Tmi', 'Verbose', 'Info', 'Warn', 'Error', 'Critical']):
                 consolelog = consolelog.replace('Log.Level.' + level, str(i - 1))
+
+            # I really hate this.
+            consolelog = consolelog.replace('e.g. Log.setLevel(1)', 'e.g. Log.setLevel(Log.Level.Verbose)')
             class_entry = consolelog.find('{') + 2
             consolelog = consolelog[:class_entry] + 'let l_ = localStorage; ' + consolelog[class_entry:].replace('localStorage', 'l_')
             # consolelog = 'let l_ = localStorage; ' + consolelog.replace('localStorage', 'l_')

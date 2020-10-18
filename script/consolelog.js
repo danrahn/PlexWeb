@@ -51,16 +51,16 @@ let Log = new function()
         consoleColors[1],
         consoleColors[2],
         [
-            "#E50; background-color: #FFFBE5",
-            "#C40; background-color: #332B00",
-            "inherit; background-color: #FFFBE5",
-            "#DFC185; background-color: #332B00"
+            "#E50; background: #FFFBE5",
+            "#C40; background: #332B00",
+            "inherit; background: #FFFBE5",
+            "#DFC185; background: #332B00"
         ],
         [
-            "red; background-color: #FEF0EF",
-            "#D76868; background-color: #290000",
-            "red; background-color: #FEF0EF",
-            "#D76868; background-color: #290000"
+            "red; background: #FEF0EF",
+            "#D76868; background: #290000",
+            "red; background: #FEF0EF",
+            "#D76868; background: #290000"
         ],
         [
             "red; font-size: 2em",
@@ -314,9 +314,10 @@ let Log = new function()
         console.log("Welcome to the console!\n" +
         "If you're debugging an issue, here are some tips:\n" +
         "  1. Set dark/light mode for the console via setDarkConsole(isDark), where isDark is 1 or 0.\n" +
-        "  2. Set the log level via Log.setLevel(level), where level is a value from the LOG dictionary (e.g. Log.setLevel(Log.Level.Verbose);)\n" +
+        "  2. Set the log level via Log.setLevel(level), where level is a value from the Log.Level dictionary " +
+            "(e.g. Log.setLevel(Log.Level.Verbose);)\n" +
         "  3. To view unminified js sources, add nomin=1 to the url parameters.\n" +
-        "  4. To view the stack trace for every logged event, call setTrace(1). To revert, setTrace(0)\n\n");
+        "  4. To view the stack trace for every logged event, call Log.setTrace(1). To revert, Log.setTrace(0)\n\n");
         currentLogLevel = logLevelSav;
     };
 
