@@ -212,7 +212,7 @@ let Log = new function()
         if (currentLogLevel == Log.Level.Extreme)
         {
             write(
-                console.log,
+                console.debug,
                 `%c[%cEXTREME%c][%c${timestring}%c] Called log with '${description ? description + ": " : ""}${type(obj)},${level}'`,
                 currentState(obj, freeze),
                 6,
@@ -262,10 +262,7 @@ let Log = new function()
     /// </summary>
     let getTimestring = function()
     {
-        let padLeft = function(str, pad=2)
-        {
-            return ("00" + str).substr(-pad);
-        };
+        let padLeft = (str, pad=2) => ("00" + str).substr(-pad);
 
         let time = new Date();
         return `${time.getFullYear()}.${padLeft(time.getMonth()+1)}.${padLeft(time.getDate())} ` +
@@ -298,21 +295,11 @@ let Log = new function()
     /// </summary>
     let getOutputStream = function(level)
     {
-        if (traceLogging)
-        {
-            return console.trace;
-        }
-
-        switch (level)
-        {
-            case Log.Level.Critical:
-            case Log.Level.Error:
-                return console.error;
-            case Log.Level.Warn:
-                return console.warn;
-            default:
-                return console.log;
-        }
+        return traceLogging ? console.trace :
+            level > Log.Level.Warn ? console.error :
+                level > Log.Level.Info ? console.warn :
+                    level > Log.Level.Tmi ? console.info :
+                        console.debug;
     };
 
     /// <summary>
