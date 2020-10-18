@@ -100,6 +100,7 @@ function free_icon($icon)
         case "mdlink":
         case "mdimage":
         case "mdtable":
+        case "exit":
             return TRUE;
         default:
             return FALSE;

@@ -5,6 +5,7 @@ session_start();
 require_once "includes/common.php";
 require_once "includes/config.php";
 
+requireSSL();
 verify_loggedin();
 if (!UserLevel::is_admin())
 {
@@ -217,6 +218,12 @@ else
                 <a href="password_reset.php" class="actionLink">
                     <img src="<?php icon('lock') ?>" class="actionImg">
                     <span>Password Reset</span>
+                </a>
+            </div>
+            <div class="action actionRight">
+                <a href="#" class="actionLink" id="imdbUpdate">
+                    <img src="<?php icon('up') ?>" class="actionImg" id="imdbUpdateImg">
+                    <span>Update ratings</span>
                 </a>
             </div>
         </div>

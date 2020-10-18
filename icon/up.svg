@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px"
+	 viewBox="0 0 128 128" style="enable-background:new 0 0 128 128;" xml:space="preserve">
+<style type="text/css">
+	.st0{fill:none;stroke:FILL_COLOR;stroke-width:6;stroke-miterlimit:10;}
+	.st1{fill-rule:evenodd;clip-rule:evenodd;fill:none;stroke:FILL_COLOR;stroke-width:6;stroke-miterlimit:10;}
+</style>
+<g>
+	<g>
+		<path fill="FILL_COLOR" d="M64,13c28.1,0,51,22.9,51,51s-22.9,51-51,51S13,92.1,13,64S35.9,13,64,13 M64,7C32.5,7,7,32.5,7,64s25.5,57,57,57
+			s57-25.5,57-57S95.5,7,64,7L64,7z"/>
+	</g>
+	<g>
+		<line class="st0" x1="64" y1="96" x2="64" y2="32"/>
+	</g>
+	<polyline class="st1" points="88,56 64,32 40,56 	"/>
+</g>
+</svg>

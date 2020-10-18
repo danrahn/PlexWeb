@@ -21,7 +21,10 @@
     {
         "js" :
         [
+            "common",
+            "iconMap",
             "nav",
+            "overlay",
             "queryStatus"
         ],
         "css" :

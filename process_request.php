@@ -58,6 +58,7 @@ abstract class ProcessRequest
     const SetInternalId = 34;
     const GetInternalId = 35;
     const ImdbRating = 36;
+    const UpdateImdbRatings = 37;
 }
 
 // For requests that are only made when not logged in, don't session_start or verify login state
@@ -214,6 +215,9 @@ function process_request($type)
             break;
         case ProcessRequest::ImdbRating:
             $message = get_imdb_rating(get("tt"));
+            break;
+        case ProcessRequest::UpdateImdbRatings:
+            $message = force_update_imdb_ratings();
             break;
         default:
             return json_error("Unknown request type: " . $type);
@@ -2864,90 +2868,129 @@ function get_plex_server()
 /// </summary>
 function get_imdb_rating($title)
 {
+    $update = 0;
+    $res = refresh_imdb_ratings(FALSE /*force*/);
+    if ($res)
+    {
+        // Hacky. If we don't need to update, we'll return FALSE and not hit this block. However, a
+        // successful update will return the time in seconds it took to update, which we want to return
+        // to the user. If we hit a failure, we'll be given a JSON string, which will fail floatval
+        $update = floatval($res);
+        if ($update == 0)
+        {
+            return $res;
+        }
+    }
+
     global $db;
-    $titleStripped = substr($title, 2);
-    $titleInt = (int)$titleStripped;
-    $query = "SELECT `rating`, CONVERT_TZ(`update_date`, @@session.time_zone, '+00:00') AS `timestamp` FROM `imdb_rating_cache` WHERE `imdbid`=$titleInt";
+    $titleStripped = (int)substr($title, 2);
+    $query = "SELECT `rating` FROM `imdb_ratings` WHERE `imdbid`=$titleStripped";
     $result = $db->query($query);
-
-    // If we don't have a cached rating, or the rating is stale (more than
-    // a week old), get the rating from IMDb and put it in the cache.
-    if (!$result || $result->num_rows == 0)
+    if (!$result)
     {
-        return update_imdb_rating_cache($titleStripped);
+        return db_error();
     }
 
-    $cached = $result->fetch_assoc();
-    $rating = $cached['rating'];
-
-    $timestamp = new DateTime($cached['timestamp']);
-    $now = new DateTime(date("Y-m-d H:i:s"));
-    $diff = ($now->getTimestamp() - $timestamp->getTimestamp()) / 86400; // Convert to days
-    if ($diff > 7)
+    if ($result->num_rows !== 1)
     {
-        return update_imdb_rating_cache($titleStripped, $rating);
+        return json_error("Unable to find rating for $title");
     }
 
-    return '{ "rating" : "' .$rating . '", "cached" : true }';
+    return '{ "rating" : "' . $result->fetch_row()[0] . '"' . ($update ? (' "update" : ' . $update) : "") . ' }';
 }
 
 /// <summary>
-/// Queries IMDb for the given item's rating. We should only call this if
-/// we don't already have the rating cached, or the cached rating is more
-/// than a week old, as querying is relatively expensive.
+/// Checks if we need to update our IMDb ratings database.
+/// If $force is true, then we update the database regardless of
+/// the last time the database was updated.
 /// </summary>
-function update_imdb_rating_cache($title, $cached="")
+function refresh_imdb_ratings($force)
 {
-    global $db;
-    $text = curl("https://www.imdb.com/title/tt$title");
-
-    // Information for this title is stored in a script tag with
-    // a type of "application/ld+json". Simply parse that script
-    // tag as JSON and extract the rating.
-    $start = strpos($text, '"application/ld+json"');
-    if ($start === FALSE)
+    $file = "includes/title.ratings.tsv";
+    $exists = file_exists($file);
+    if (!$force && (file_exists($file) || time() - filemtime($file) <= (86400 * 7)))
     {
-        return imdb_rating_failure($title, $cached);
+        return FALSE;
     }
 
-    $end = strpos($text, "</script>", $start);
-    if ($end === FALSE)
+    $data = "";
+    if ($exists && !$force)
     {
-        return imdb_rating_failure($title, $cached);
-    }
-
-    $start += 22;
-    $json = json_decode(substr($text, $start, $end - $start));
-    if (!$json)
-    {
-        return imdb_rating_failure($title, $cached);
-    }
-
-    if (!$json->aggregateRating || !$json->aggregateRating->ratingValue)
-    {
-        return imdb_rating_failure($title, $cached);
-    }
-
-    $rating = $db->real_escape_string($json->aggregateRating->ratingValue);
-    $titleInt = (int)$title;
-    $query = "";
-    if ($cached)
-    {
-        $query = "UPDATE `imdb_rating_cache` SET `rating`=\"$rating\" WHERE `imdbid`=$titleInt";
+        $data = file_get_contents($file);
     }
     else
     {
-        $query = "INSERT INTO `imdb_rating_cache` (`imdbid`, `rating`) VALUES ($titleInt, \"$rating\")";
+        $url = "https://datasets.imdbws.com/title.ratings.tsv.gz";
+        $result = curl($url, Array(
+            CURLOPT_HEADER => 0,
+            CURLOPT_TIMEOUT => 60 // This is under 6MB, so it better not take more than a minute!
+        ));
+
+        if ($result[0] == '{')
+        {
+            // This smells like a curl error
+            return $result;
+        }
+    
+        $data = gzdecode($result);
+
+        // Writing to an output file isn't really necessary, but it makes checking
+        // the last modified date easier.
+        $output = fopen($file, "w");
+        if (fwrite($output, $data) === FALSE)
+        {
+            return json_error("Unable to write to tsv file");
+        }
+    
+        fclose($output);
     }
 
-    $ret = '{ "rating" : "' . $rating . '", "cached" : false ';
+    global $db;
 
-    if ($db->query($query) === FALSE)
+    $rows = explode("\n", $data);
+    $start = microtime(TRUE);
+
+    // Autocommit kills the speed of this operation (by about 15x). Even with autocommit off this takes
+    // ~100 seconds, so it should probably be done as a fire-and-forget task instead of on the main thread.
+    if (!$db->autocommit(FALSE))
     {
-        $ret .= '"err" : "Unable to update cache" ';
+        return db_error();
     }
 
-    return $ret . "}";
+    // Better to just clear it out and re-fill. 'ON DUPLICATE KEY UPDATE' is a possibility, but this is
+    // likely more performant when dealing with 1M+ rows that are mostly duplicates.
+    if (!$db->query("TRUNCATE TABLE `imdb_ratings`"))
+    {
+        return db_error();
+    }
+
+    $total = count($rows);
+    $count = 0;
+    for ($i = 1; $i < $total; ++$i) // First row is headers
+    {
+        $row = $rows[$i];
+        $entry = explode("\t", $row);
+        $id = (int)substr($entry[0], 2);
+        $rating = $entry[1];
+        $votes = (int)$entry[2];
+
+        $query = "INSERT INTO `imdb_ratings` (`imdbid`, `rating`, `votes`) VALUES ($id, \"$rating\", $votes)";
+        
+        if (!$db->query($query))
+        {
+            return json_error("Error updating row for " . $entry[0]);
+        }
+
+        ++$count;
+    }
+
+    if (!$db->commit() || !$db->autocommit(TRUE))
+    {
+        return db_error();
+    }
+
+    // On success, return the number of seconds it took to complete the operation
+    return microtime(TRUE) - $start;
 }
 
 /// <summary>
@@ -2964,21 +3007,46 @@ function imdb_rating_failure($title, $cached)
     return '{ "rating" : "' . $cached . '", "err" : "Unable to update stale cache  for tt' . $title . '", "cached" : true }';
 }
 
+// By default IMDb ratings will update if it's been over 7 days
+// since the last update, but administrators can also force an update
+function force_update_imdb_ratings()
+{
+    if (!UserLevel::is_admin())
+    {
+        return json_error("Not Authorized");
+    }
+
+    $result = refresh_imdb_ratings(TRUE);
+    $update_time = floatval($result);
+    if ($update_time == 0)
+    {
+        // An update time of 0 indicates a failure in floatval, which we take
+        // as a sign that the update failed and a JSON string was returned
+        return $result;
+    }
+
+    return "{ \"update_time\" : $update_time }";
+}
+
 /// <summary>
 /// Get the contents of the given url
 /// </summary>
-function curl($url)
+function curl($url, $extra=[])
 {
     $ch = curl_init();
-    curl_setopt($ch, CURLOPT_URL, $url);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+    curl_set($ch,
+    Array(
+        CURLOPT_URL => $url,
+        CURLOPT_RETURNTRANSFER => TRUE,
+        CURLOPT_FOLLOWLOCATION => TRUE
+    ));
 
+    curl_set($ch, $extra);
     $return = curl_exec($ch);
 
     if (curl_errno($ch))
     {
-        $return = '{ "curl error" : "' . curl_error($ch) . '" }';
+        $return = json_error(curl_error($ch));
     }
     else
     {
@@ -2987,12 +3055,24 @@ function curl($url)
             case 200:
                 break;
             default:
-                $return = '{ "Bad curl response" : ' . $http_code . ' }';
+                $return = json_error("Bad curl response: $http_code");
                 break;
         }
     }
 
     curl_close($ch);
     return $return;
+}
+
+/// <summary>
+/// Helper that makes it slightly less cumbersome to set
+/// multiple curl options
+/// </summary>
+function curl_set($ch, $args)
+{
+    foreach ($args as $key => $value)
+    {
+        curl_setopt($ch, $key, $value);
+    }
 }
 ?>

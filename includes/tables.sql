@@ -160,12 +160,13 @@ CREATE TABLE `library_stats_cache` (
  PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci
 
-CREATE TABLE `imdb_rating_cache` (
+CREATE TABLE `imdb_ratings` (
  `id` int(11) NOT NULL AUTO_INCREMENT,
  `imdbid` int(11) NOT NULL,
  `rating` varchar(4) COLLATE utf8_unicode_ci NOT NULL,
- `update_date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
- PRIMARY KEY (`id`)
+ `votes` int(11) NOT NULL,
+ PRIMARY KEY (`id`),
+ UNIQUE KEY `imdbid` (`imdbid`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci
 
 # Triggers

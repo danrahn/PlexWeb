@@ -33,3 +33,6 @@ query.*
 
 # Personal file for markdown testing
 script/markdownSamples.js
+
+# IMDb ratings cache
+includes/*.tsv
