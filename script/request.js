@@ -559,7 +559,7 @@ function searchForCompleteMatch()
             buildNode("div", { id : "completeRequestMatches" }, "Searching...")
         )
     );
-    buildOverlay({ dismissible : true, centered : false }, overlayNode);
+    Overlay.build({ dismissible : true, centered : false }, overlayNode);
     searchPlex();
 }
 
@@ -768,7 +768,7 @@ function showStatusChangeOverlay()
         select.appendChild(option);
     });
 
-    buildOverlay(
+    Overlay.build(
         { dismissible : true, centered : false },
         buildNode("div", { id : "changeStatus" }).appendChildren(
             select,
@@ -807,7 +807,7 @@ function changeStatus()
         {
             // SearchForCompleteMatch launches an overlay, so we have to wait
             // for the last one to be dismissed first
-            overlayDismiss();
+            Overlay.dismiss();
             setTimeout(searchForCompleteMatch, 300);
         }
 
@@ -817,7 +817,7 @@ function changeStatus()
     let failureFunc = function()
     {
         alert("Failed to update. See console for details");
-        overlayDismiss();
+        Overlay.dismiss();
     };
 
     sendHtmlJsonRequest("update_request.php", JSON.stringify(params), successFunc, failureFunc, null, true /*dataIsString*/);
@@ -1014,7 +1014,7 @@ function promptForNotifications()
     outerButtonContainer.appendChildren(buttonContainer.appendChildren(buttons.yes, buttons.no));
 
     promptHolder.appendChildren(title, prompt, checkHolder, outerButtonContainer);
-    buildOverlay({ dismissible : true, centered : false }, promptHolder);
+    Overlay.build({ dismissible : true, centered : false }, promptHolder);
 }
 
 /// <summary>
@@ -1031,7 +1031,7 @@ function checkDontAskAgain(redirect)
         }
         else
         {
-            overlayDismiss();
+            Overlay.dismiss();
         }
 
         return;
@@ -1047,7 +1047,7 @@ function checkDontAskAgain(redirect)
         }
         else
         {
-            overlayDismiss();
+            Overlay.dismiss();
         }
     };
 
@@ -1304,7 +1304,7 @@ function editComment()
     let raw = commentCache[commentId];
     if (!raw)
     {
-        overlay("Something went wrong. Please try again later.", "OK", overlayDismiss);
+        Overlay.show("Something went wrong. Please try again later.", "OK", Overlay.dismiss);
     }
 
     let holder = $(`#holder${commentId}`);
@@ -1402,7 +1402,7 @@ function submitCommentEdit()
 
     let failureFunc = function(response, request)
     {
-        overlay(response.Error, "OK", overlayDismiss);
+        Overlay.show(response.Error, "OK", Overlay.dismiss);
         dismissEdit(request.commentId);
     };
 
@@ -1467,7 +1467,7 @@ function deleteComment()
 
     let failureFunc = function(response)
     {
-        overlay(response.Error, "Okay", overlayDismiss, true /*dismissible*/);
+        Overlay.show(response.Error, "Okay", Overlay.dismiss, true /*dismissible*/);
     };
 
     sendHtmlJsonRequest("process_request.php", params, successFunc, failureFunc, { commentId : commentId });

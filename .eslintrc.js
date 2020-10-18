@@ -338,9 +338,7 @@ module.exports = {
         "Animation" : "readonly",
         "Color" : "readonly",
         // overlay.js
-        "overlay" : "readonly",
-        "buildOverlay" : "readonly",
-        "overlayDismiss" : "readonly",
+        "Overlay" : "readonly",
         // tooltip.js
         "Tooltip" : "readonly",
         // iconMap.js

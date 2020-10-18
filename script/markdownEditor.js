@@ -316,7 +316,7 @@ let MarkdownEditor = new function()
             case "showMdHelp":
                 MarkdownHelp.getHelp(function(response)
                 {
-                    overlay('<div class="mdHelp">' + response.data + "</div>", "Got It", overlayDismiss, true /*dismissible*/);
+                    Overlay.show('<div class="mdHelp">' + response.data + "</div>", "Got It", Overlay.dismiss, true /*dismissible*/);
                 });
                 return;
             default:
@@ -369,7 +369,7 @@ let MarkdownEditor = new function()
 
         container.appendChild(getOkCancelButtons("addLinkOk", insertLinkInComment, comment, { isPhoto : isPhoto ? 1 : 0 }));
 
-        buildOverlay({ dismissible : true, centered : false }, container);
+        Overlay.build({ dismissible : true, centered : false }, container);
         $("#addLinkLink").focus();
     };
 
@@ -460,7 +460,7 @@ let MarkdownEditor = new function()
             },
             0,
             {
-                click : overlayDismiss
+                click : Overlay.dismiss
             }
         );
 
@@ -501,7 +501,7 @@ let MarkdownEditor = new function()
             comment.setRangeText(newText, comment.selectionStart, comment.selectionEnd, "select");
         }
 
-        overlayDismiss();
+        Overlay.dismiss();
         comment.dispatchEvent(new Event("change"));
     };
 
@@ -560,7 +560,7 @@ let MarkdownEditor = new function()
         let header = buildNode("h2", {}, "Insert Table");
         let resizeButtons = getBuildTableButtons();
         let table = defaultInsertTable();
-        buildOverlay({ dismissible : true, centered : false },
+        Overlay.build({ dismissible : true, centered : false },
             container.appendChildren(
                 header,
                 resizeButtons,
@@ -987,7 +987,7 @@ let MarkdownEditor = new function()
             comment.setRangeText(tableText, comment.selectionStart, comment.selectionEnd, "select");
         }
 
-        overlayDismiss();
+        Overlay.dismiss();
         comment.dispatchEvent(new Event("change"));
     };
 

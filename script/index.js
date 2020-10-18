@@ -340,7 +340,7 @@ function buildChartOverlay(chartData)
 
     let titleSav = !!chartData.noTitle;
     chartData.noTitle = false;
-    buildOverlay({ dismissible : true, centered : true },
+    Overlay.build({ dismissible : true, centered : true },
         buildNode("div").appendChildren(chartData.radius ? Chart.pie(chartData) : Chart.bar(chartData)),
         buildNode("input",
             {
@@ -351,7 +351,7 @@ function buildChartOverlay(chartData)
             },
             0,
             {
-                click : overlayDismiss
+                click : Overlay.dismiss
             }));
     chartData.noTitle = titleSav;
 
@@ -578,7 +578,7 @@ function showStreamAccessOverlay()
             click : requestStreamAccess
         });
 
-    buildOverlay({ dismissible : true, centered : false }, message, textbox, button);
+    Overlay.build({ dismissible : true, centered : false }, message, textbox, button);
 }
 
 /// <summary>
@@ -728,7 +728,7 @@ function showRestartSessionOverlay()
         {
             click : () => { window.location = "login.php"; }
         });
-    buildOverlay({ dismissible : false, centered : false }, message, button);
+    Overlay.build({ dismissible : false, centered : false }, message, button);
     $("#goToLogin").focus();
 }
 

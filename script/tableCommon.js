@@ -246,7 +246,7 @@ let Table = new function()
         }
         catch (e)
         {
-            overlay("This table doesn't have search enabled (yet)", "OK", overlayDismiss);
+            Overlay.show("This table doesn't have search enabled (yet)", "OK", Overlay.dismiss);
         }
     };
 

@@ -59,21 +59,21 @@ function preValidate()
     switch (valid())
     {
         case -2:
-            overlay(
+            Overlay.show(
                 "This token has been superseded by a newer reset token. Please use the new token or request another reset.",
                 "Go Back",
                 goToIndex,
                 false);
             break;
         case -1:
-            overlay(
+            Overlay.show(
                 "Invalid reset token",
                 "Go Back",
                 goToIndex,
                 false);
             break;
         case 0:
-            overlay(
+            Overlay.show(
                 "Reset token has expired",
                 "Go Back",
                 goToIndex,
@@ -82,7 +82,7 @@ function preValidate()
         case 1:
             break;
         default:
-            overlay(
+            Overlay.show(
                 "Something went wrong. Please try again later.",
                 "Go Back",
                 goToIndex,

@@ -32,18 +32,18 @@ function forgotCallback(response)
             statusError("Username does not exist. Would you like to <a href='register.php'>register</a>?");
             break;
         case 0:
-            overlay(
+            Overlay.show(
                 "No recovery options found! Please reach out to the administrator to get help recovering your account.",
                 "OK",
                 fadeOut);
             break;
         case 1:
-            overlay("A password reset link has been sent to your phone, and will be valid for 20 minutes.",
+            Overlay.show("A password reset link has been sent to your phone, and will be valid for 20 minutes.",
                 "OK",
                 navToLogin);
             break;
         case 2:
-            overlay("A password reset link has been sent to your email, and will be valid for 20 minutes.",
+            Overlay.show("A password reset link has been sent to your email, and will be valid for 20 minutes.",
                 "OK",
                 navToLogin);
             break;
@@ -89,7 +89,7 @@ function setupForgotForm()
     $("#forgotUser").addEventListener("click", function()
     {
         // From for phone# or email. If none, pop this
-        buildOverlay({ dismissible : true, centered : false },
+        Overlay.build({ dismissible : true, centered : false },
             buildNode("div", {}, "Please reach out to the administrator to get help recovering your account."),
             buildNode(
                 "input",

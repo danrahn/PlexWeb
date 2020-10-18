@@ -637,7 +637,7 @@ function showAlreadyExistsAlert(response)
         },
         0,
         {
-            click : overlayDismiss
+            click : Overlay.dismiss
         });
 
     let outerButtonContainer = buildNode("div", { class : "formInput", style : "text-align: center" }).appendChildren(
@@ -647,7 +647,7 @@ function showAlreadyExistsAlert(response)
         )
     );
 
-    buildOverlay({ dismissible : true, centered : false }, message, outerButtonContainer);
+    Overlay.build({ dismissible : true, centered : false }, message, outerButtonContainer);
 }
 
 /// <summary>
