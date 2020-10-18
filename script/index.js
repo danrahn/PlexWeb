@@ -1426,12 +1426,14 @@ function progressHover(e)
 /// </summary>
 function getHoverText(element)
 {
+    let tcString = buildNode("div");
+    const msRemaining = parseInt(element.getAttribute("duration")) - parseInt(element.getAttribute("progress"));
+    tcString.appendChildren(hoverFormat("Remaining", msToHms(msRemaining)), buildNode("br"));
+
     const progress = element.children[0].style.width;
     const tcprogress = parseFloat(element.getAttribute("tcprogress")).toFixed(2);
-    let tcString = buildNode("div");
     tcString.appendChildren(hoverFormat("Play Progress", parseFloat(progress).toFixed(2) + "%"), buildNode("br"));
-    const msRemaining = parseInt(element.getAttribute("duration")) - parseInt(element.getAttribute("progress"));
-    tcString.appendChildren(hoverFormat("Time Remaining", msToHms(msRemaining)), buildNode("br"));
+
     if (tcprogress > 0)
     {
         tcString.appendChildren(
