@@ -471,7 +471,7 @@ let Table = new function()
             let failureFunc = function()
             {
                 Animation.queue({ backgroundColor : "rgb(100, 66, 69)" }, $("#filterTo"), 500);
-                Animation.queueDelayed({ backgroundColor : "rgb(63, 66, 69" }, $("#filterTo"), 1000, 500, true);
+                Animation.queueDelayed({ backgroundColor : "rgb(63, 66, 69)" }, $("#filterTo"), 1000, 500, true);
             };
 
             sendHtmlJsonRequest("process_request.php", params, successFunc, failureFunc);
