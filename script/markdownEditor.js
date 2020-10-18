@@ -1,7 +1,6 @@
 /* exported MarkdownEditor */
 
-/* eslint-disable max-lines-per-function */
-
+// eslint-disable-next-line max-lines-per-function
 let MarkdownEditor = new function()
 {
     /// <summary>
@@ -28,28 +27,8 @@ let MarkdownEditor = new function()
         if (!hasSelection && !event.shiftKey)
         {
             // In the case of no selection and a regular tab, indent from the cursor position
-            let add = 4 - ((start - lineStart) % 4);
-            if (_supportsInsertText())
-            {
-                document.execCommand("insertText", false, " ".repeat(add));
-            }
-            else
-            {
-                comment.value = comment.value.substring(0, start) + " ".repeat(add) + comment.value.substring(comment.selectionEnd);
-            }
-
-            comment.selectionStart = start + add;
-            comment.selectionEnd = start + add;
+            indentFromCursor(start, lineStart, comment);
             return;
-        }
-
-        let prefixedSpaces = 0;
-        for (let i = lineStart; i < comment.selectionEnd; ++i, ++prefixedSpaces)
-        {
-            if (comment.value[i] != " ")
-            {
-                break;
-            }
         }
 
         // Always select full lines just to make things easier. Ideally if we aren't selecting
@@ -62,11 +41,7 @@ let MarkdownEditor = new function()
             comment.selectionStart = start;
         }
 
-        let spaces = "    ";
-        if (prefixedSpaces % 4 != 0)
-        {
-            spaces = " ".repeat(event.shiftKey ? prefixedSpaces % 4 : 4 - (prefixedSpaces % 4));
-        }
+        let spaces = getSpacesToInsert(comment, lineStart, event.shiftKey);
 
         let newText;
         if (event.shiftKey)
@@ -92,6 +67,54 @@ let MarkdownEditor = new function()
         let spaceLen = event.shiftKey ? -spaces.length : spaces.length;
         comment.selectionStart = hasSelection ? start : startSav + spaceLen;
         comment.selectionEnd = hasSelection ? start + newText.length : comment.selectionStart;
+    };
+
+    /// <summary>
+    /// Simplest tab case - no selection and a regular tab. Insert
+    /// the correct number of spaces on the cursor
+    /// </summary>
+    let indentFromCursor = (start, lineStart, comment) =>
+    {
+        let add = 4 - ((start - lineStart) % 4);
+        if (_supportsInsertText())
+        {
+            document.execCommand("insertText", false, " ".repeat(add));
+        }
+        else
+        {
+            comment.value = comment.value.substring(0, start) + " ".repeat(add) + comment.value.substring(comment.selectionEnd);
+        }
+
+        comment.selectionStart = start + add;
+        comment.selectionEnd = start + add;
+    };
+
+    /// <summary>
+    /// Returns the spaces to be inserted or removed.
+    /// In the case of a deindent with no prefixed spaces, we do nothing
+    /// </summary>
+    let getSpacesToInsert = (comment, lineStart, deindent) =>
+    {
+        let prefixedSpaces = 0;
+        for (let i = lineStart; i < comment.selectionEnd; ++i, ++prefixedSpaces)
+        {
+            if (comment.value[i] != " ")
+            {
+                break;
+            }
+        }
+
+        if (prefixedSpaces == 0 && deindent)
+        {
+            return "";
+        }
+
+        if (prefixedSpaces % 4 != 0)
+        {
+            return " ".repeat(deindent ? prefixedSpaces % 4 : 4 - (prefixedSpaces % 4));
+        }
+
+        return "    ";
     };
 
     /// <summary>
