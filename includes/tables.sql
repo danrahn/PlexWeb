@@ -163,7 +163,7 @@ CREATE TABLE `library_stats_cache` (
 CREATE TABLE `imdb_ratings` (
  `id` int(11) NOT NULL AUTO_INCREMENT,
  `imdbid` int(11) NOT NULL,
- `rating` varchar(4) COLLATE utf8_unicode_ci NOT NULL,
+ `rating` int(11) NOT NULL,
  `votes` int(11) NOT NULL,
  PRIMARY KEY (`id`),
  UNIQUE KEY `imdbid` (`imdbid`)

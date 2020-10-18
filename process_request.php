@@ -2896,7 +2896,7 @@ function get_imdb_rating($title)
         return json_error("Unable to find rating for $title");
     }
 
-    return '{ "rating" : "' . $result->fetch_row()[0] . '"' . ($update ? (' "update" : ' . $update) : "") . ' }';
+    return '{ "rating" : ' . round($result->fetch_row()[0] / 10, 1) . ($update ? (', "update" : ' . $update) : "") . ' }';
 }
 
 /// <summary>
@@ -2971,10 +2971,10 @@ function refresh_imdb_ratings($force)
         $row = $rows[$i];
         $entry = explode("\t", $row);
         $id = (int)substr($entry[0], 2);
-        $rating = $entry[1];
+        $rating = (int)((double)($entry[1]) * 10);
         $votes = (int)$entry[2];
 
-        $query = "INSERT INTO `imdb_ratings` (`imdbid`, `rating`, `votes`) VALUES ($id, \"$rating\", $votes)";
+        $query = "INSERT INTO `imdb_ratings` (`imdbid`, `rating`, `votes`) VALUES ($id, $rating, $votes)";
         
         if (!$db->query($query))
         {
