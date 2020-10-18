@@ -1084,8 +1084,8 @@ class MarkdownTestSuite
     static _runCore(tests)
     {
         let stats = { passed : 0, failed : 0 };
-        let logSav = Log.getLogLevel();
-        Log.setLogLevel(Log.Level.Info);
+        let logSav = Log.getLevel();
+        Log.setLevel(Log.Level.Info);
         let colors = this._consoleColors(Log.getDarkConsole());
 
         tests.forEach(function(test)
@@ -1100,7 +1100,7 @@ class MarkdownTestSuite
             }
         });
 
-        Log.setLogLevel(logSav);
+        Log.setLevel(logSav);
         Log.info(`Ran ${stats.passed + stats.failed} Tests: Passed: ${stats.passed}  -  Failed: ${stats.failed}`);
         return stats;
     }

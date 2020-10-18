@@ -3173,7 +3173,7 @@ class Run
 
         // Even the setup for logging can get expensive when 'convert' is called hundreds/thousands
         // of times. Do some faster short-circuiting before setting anything up.
-        const shouldLogTmi = Log.getLogLevel() < Log.Level.Verbose;
+        const shouldLogTmi = Log.getLevel() < Log.Level.Verbose;
         let ident = shouldLogTmi ? ' '.repeat((this._nestLevel() + (inlineOnly ? 1 : 0)) * 3) : ''; // Indent logging to indicate nest level
         if (shouldLogTmi)
         {

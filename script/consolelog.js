@@ -104,25 +104,25 @@ let Log = new function()
     this.testConsolelog = function()
     {
         const old = currentLogLevel;
-        this.setLogLevel(-1);
+        this.setLevel(-1);
         this.tmi("TMI!");
-        this.setLogLevel(0);
+        this.setLevel(0);
         this.verbose("Verbose!");
         this.info("Info!");
         this.warn("Warn!");
         this.error("Error!");
         this.log("Crit!", undefined, false /*freeze*/, Log.Level.Critical);
         this.formattedText(Log.Level.Info, "%cFormatted%c,%c Text!%c", "color: green", "color: red", "color: orange", "color: inherit");
-        this.setLogLevel(old);
+        this.setLevel(old);
     };
 
-    this.setLogLevel = function(level)
+    this.setLevel = function(level)
     {
         localStorage.setItem("loglevel", level);
         currentLogLevel = level;
     };
 
-    this.getLogLevel = function()
+    this.getLevel = function()
     {
         return currentLogLevel;
     };
@@ -327,7 +327,7 @@ let Log = new function()
         console.log("Welcome to the console!\n" +
         "If you're debugging an issue, here are some tips:\n" +
         "  1. Set dark/light mode for the console via setDarkConsole(isDark), where isDark is 1 or 0.\n" +
-        "  2. Set the log level via setLogLevel(level), where level is a value from the LOG dictionary (e.g. setLogLevel(LOG.Verbose);)\n" +
+        "  2. Set the log level via Log.setLevel(level), where level is a value from the LOG dictionary (e.g. Log.setLevel(Log.Level.Verbose);)\n" +
         "  3. To view unminified js sources, add nomin=1 to the url parameters.\n" +
         "  4. To view the stack trace for every logged event, call setTrace(1). To revert, setTrace(0)\n\n");
         currentLogLevel = logLevelSav;
