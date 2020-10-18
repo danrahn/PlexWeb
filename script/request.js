@@ -908,7 +908,7 @@ function getComments()
     let params = { type : ProcessRequest.GetComments, req_id : reqId() };
     let successFunc = function(response)
     {
-        Log.info(response);
+        Log.info(response, "Comments");
         buildComments(response);
     };
     let failureFunc = function(response)
