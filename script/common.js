@@ -138,10 +138,10 @@ function sendHtmlJsonRequest(url, parameters, successFunc, failFunc, additionalP
         try
         {
             let response = JSON.parse(this.responseText);
-            logVerbose(response, `${url}${sanitized}`);
+            Log.verbose(response, `${url}${sanitized}`);
             if (response.Error)
             {
-                logError(response.Error, `Error querying ${url}${sanitized}`);
+                Log.error(response.Error, `Error querying ${url}${sanitized}`);
                 if (failFunc)
                 {
                     failFunc(response, this);
@@ -155,9 +155,9 @@ function sendHtmlJsonRequest(url, parameters, successFunc, failFunc, additionalP
         }
         catch (ex)
         {
-            logError(ex, "Exception");
-            logError(ex.stack);
-            logError(this.responseText, "Response Text");
+            Log.error(ex, "Exception");
+            Log.error(ex.stack);
+            Log.error(this.responseText, "Response Text");
         }
     };
 
@@ -286,4 +286,4 @@ const ProcessRequest =
     ImdbRating : 36,
 };
 
-console.assert(!_logErrorId || _logErrorId == ProcessRequest.LogError, "Update _logErrorId!");
+console.assert(!Log.logErrorId || Log.logErrorId == ProcessRequest.LogError, "Update _logErrorId!");

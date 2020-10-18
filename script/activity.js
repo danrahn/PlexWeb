@@ -107,7 +107,7 @@ function getTitleText(activity)
         default:
             plainText = "Error getting activity details. ";
             linkText = "Click here to view the request.";
-            logError(activity.type, "Unknown activity type");
+            Log.error(activity.type, "Unknown activity type");
             break;
     }
 
@@ -192,7 +192,7 @@ function buildActivities(response)
 {
     if (response.count == 0)
     {
-        logWarn("No results, likely due to bad page index or filter");
+        Log.warn("No results, likely due to bad page index or filter");
         Table.displayInfoMessage("No requests found with the current filter");
         return;
     }
@@ -201,7 +201,7 @@ function buildActivities(response)
     let newActivities = response.new;
     let total = response.total;
 
-    logVerbose(response);
+    Log.verbose(response);
 
     for (let i = 0; i < activities.length; ++i)
     {
@@ -346,7 +346,7 @@ Table.Filter.get = function()
     }
     catch (exception)
     {
-        logError("Unable to parse stored filter");
+        Log.error("Unable to parse stored filter");
     }
 
     if (filter === null ||
@@ -359,13 +359,13 @@ Table.Filter.get = function()
         !hasProp(filter, "order") ||
         !hasProp(filter, "user"))
     {
-        logError("Bad filter, resetting: ");
-        logError(filter);
+        Log.error("Bad filter, resetting: ");
+        Log.error(filter);
         filter = Table.Filter.default();
         Table.Filter.set(filter, false);
     }
 
-    logVerbose(filter, "Got Filter");
+    Log.verbose(filter, "Got Filter");
     return filter;
 };
 

@@ -121,7 +121,7 @@ function applyCurrentValues(response)
 
     let phoneAlerts = $$("input[name=phonealerts]");
     phoneAlerts.checked = initialValues.phonealerts = response.phonealerts != "0";
-    logVerbose(initialValues.phone.replace(/[^\d]/g, "").length);
+    Log.verbose(initialValues.phone.replace(/[^\d]/g, "").length);
     if (initialValues.phone.replace(/[^\d]/g, "").length == 10)
     {
         setVisible(phoneAlerts.parentNode, true);
@@ -139,7 +139,7 @@ function applyCurrentValues(response)
 function getCurrentValues()
 {
     // Basic client-side validation is okay, now send it to the server
-    logVerbose("Grabbing current user info");
+    Log.verbose("Grabbing current user info");
 
     let params =
     {
@@ -148,7 +148,7 @@ function getCurrentValues()
 
     let failureFunc = function(response)
     {
-        logError(response.Error);
+        Log.error(response.Error);
         let error = $("#formError");
         error.innerHTML = response.Error;
         error.style.display = "block";
@@ -171,7 +171,7 @@ function setupEmailListeners()
     email.addEventListener("input", emailChangeListener);
     alerts.addEventListener("change", function()
     {
-        logVerbose("Email alerts changed to " + this.checked);
+        Log.verbose("Email alerts changed to " + this.checked);
     });
 
     if (g_forNotify)
@@ -198,7 +198,7 @@ function emailChangeListenerCore(ele)
     let emailAlerts = $$("input[name=emailalerts");
     if (ele.value.match(validEmailRegex))
     {
-        logTmi("valid email found");
+        Log.tmi("valid email found");
         ele.style.backgroundColor = null;
         setVisible($$("input[name=emailalerts]").parentNode, true);
         if (g_forNotify)
@@ -209,7 +209,7 @@ function emailChangeListenerCore(ele)
     }
     else
     {
-        logTmi("Invalid email");
+        Log.tmi("Invalid email");
         if (ele.value.length == 0)
         {
             ele.style.backgroundColor = null;
@@ -241,7 +241,7 @@ function setupPhoneListeners()
     // Needs to be 10 digits (11-digit international numbers don't seem to work)
     if (digits.length === 10)
     {
-        logTmi("Valid phone");
+        Log.tmi("Valid phone");
     }
 
     phone.addEventListener("input", phoneListener);
@@ -250,7 +250,7 @@ function setupPhoneListeners()
 
     alerts.addEventListener("change", function()
     {
-        logVerbose("Phone alerts changed to " + this.checked);
+        Log.verbose("Phone alerts changed to " + this.checked);
     });
 
     if (g_forNotify)
@@ -278,7 +278,7 @@ function phoneListenerCore(ele)
     let phone = $$("input[name=phone]");
     if (digit.length == 10)
     {
-        logTmi("Valid phone");
+        Log.tmi("Valid phone");
         ele.style.backgroundColor = null;
         setVisible(alerts.parentNode, true);
         if (g_forNotify)
@@ -289,7 +289,7 @@ function phoneListenerCore(ele)
     }
     else
     {
-        logTmi("Invalid phone");
+        Log.tmi("Invalid phone");
         ele.style.backgroundColor = ele.value ? "rgb(100, 66, 69)" : null;
         setVisible(alerts.parentNode, false);
         if (g_forNotify)
@@ -313,7 +313,7 @@ function phoneFocusListener()
 function phoneFocusListenerCore(ele)
 {
     let digit = ele.value.replace(/[^\d]/g, "");
-    logVerbose("Phone focus changed, attempting to format");
+    Log.verbose("Phone focus changed, attempting to format");
     if (digit.length === 10)
     {
         ele.value = "(" + digit.substring(0, 3) + ") " + digit.substring(3, 6) + "-" + digit.substring(6);
@@ -397,7 +397,7 @@ function setupLabelListener(label)
         {
             if (this.getAttribute("changed"))
             {
-                logVerbose(this.id + " same as original");
+                Log.verbose(this.id + " same as original");
             }
 
             this.parentNode.children[0].style.color = null;
@@ -407,7 +407,7 @@ function setupLabelListener(label)
         {
             if (!this.getAttribute("changed") || this.getAttribute("changed") == 0)
             {
-                logVerbose(this.id + " different from original");
+                Log.verbose(this.id + " different from original");
             }
 
             this.parentNode.children[0].style.color = changedColor.s();
@@ -539,7 +539,7 @@ function setupSubmitButton()
             return;
         }
 
-        logInfo("Submitting user info changes");
+        Log.info("Submitting user info changes");
 
         // Basic client-side validation is okay, now send it to the server
         let params =

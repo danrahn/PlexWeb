@@ -263,7 +263,7 @@ let Table = new function()
         /// </param>
         this.set = function(filter, update)
         {
-            logVerbose(filter, "Setting filter to");
+            Log.verbose(filter, "Setting filter to");
             localStorage.setItem(Table.idCore() + "_filter", JSON.stringify(filter));
             if (update)
             {

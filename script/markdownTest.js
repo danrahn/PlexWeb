@@ -49,9 +49,9 @@ class MarkdownTestSuite
 
         addResult(this.testBugFixes());
 
-        logInfo('');
+        Log.info('');
         let totalTests = overallResults.passed + overallResults.failed;
-        logInfo(`Passed ${overallResults.passed} of ${totalTests} tests (${((overallResults.passed / totalTests) * 100).toFixed(2)}%)`);
+        Log.info(`Passed ${overallResults.passed} of ${totalTests} tests (${((overallResults.passed / totalTests) * 100).toFixed(2)}%)`);
         return overallResults;
     }
 
@@ -1065,7 +1065,7 @@ class MarkdownTestSuite
     /// </summary>
     static testString(testStr)
     {
-        logInfo(`Testing : ${testStr}`);
+        Log.info(`Testing : ${testStr}`);
         return new Markdown().parse(testStr);
     }
 
@@ -1074,7 +1074,7 @@ class MarkdownTestSuite
     /// </summary>
     static _runSingleSuite(tests, testName)
     {
-        logInfo(`Running suite: ${testName}`);
+        Log.info(`Running suite: ${testName}`);
         return this._runCore(tests);
     }
 
@@ -1084,9 +1084,9 @@ class MarkdownTestSuite
     static _runCore(tests)
     {
         let stats = { passed : 0, failed : 0 };
-        let logSav = getLogLevel();
-        setLogLevel(LOG.Info);
-        let colors = this._consoleColors(getDarkConsole());
+        let logSav = Log.getLogLevel();
+        Log.setLogLevel(Log.Level.Info);
+        let colors = this._consoleColors(Log.getDarkConsole());
 
         tests.forEach(function(test)
         {
@@ -1100,8 +1100,8 @@ class MarkdownTestSuite
             }
         });
 
-        setLogLevel(logSav);
-        logInfo(`Ran ${stats.passed + stats.failed} Tests: Passed: ${stats.passed}  -  Failed: ${stats.failed}`);
+        Log.setLogLevel(logSav);
+        Log.info(`Ran ${stats.passed + stats.failed} Tests: Passed: ${stats.passed}  -  Failed: ${stats.failed}`);
         return stats;
     }
 
@@ -1140,7 +1140,7 @@ class MarkdownTestSuite
         if (result == test.expected)
         {
             let logString = `    %cPassed!%c [%c${displayInput}%c]%c => %c[%c${displayExpected}%c]`;
-            logFormattedText(LOG.Info, logString, ...colors.success);
+            Log.formattedText(Log.Level.Info, logString, ...colors.success);
             ++stats.passed;
         }
         else
@@ -1150,7 +1150,7 @@ class MarkdownTestSuite
                 `${fixedIndent}%cInput:    %c[%c${displayInput}%c]%c\n` +
                 `${fixedIndent}Expected: %c[%c${MarkdownTestSuite._escapeTestString(displayExpected)}%c]%c\n` +
                 `${fixedIndent}Actual:   %c[%c${MarkdownTestSuite._escapeTestString(result)}%c]`;
-            logFormattedText(LOG.Warn, logString, ...colors.failure);
+            Log.formattedText(Log.Level.Warn, logString, ...colors.failure);
             ++stats.failed;
         }
     }

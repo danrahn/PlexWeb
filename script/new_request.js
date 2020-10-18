@@ -111,7 +111,7 @@ function searchItem()
     let params = { type : type, query : $("#name").value };
     let successFunc = function(response)
     {
-        logInfo(response, "Search Results");
+        Log.info(response, "Search Results");
         setVisibility("externalContainer", true);
         if (response.results.length === 0)
         {
@@ -150,7 +150,7 @@ function searchInternal()
 
     let successFunc = function(response)
     {
-        logInfo(response, "Internal Search");
+        Log.info(response, "Internal Search");
         clearElement("existingMatchContainer");
         if (response.length > 0)
         {
@@ -165,10 +165,10 @@ function searchInternal()
 
     let failureFunc = function(response)
     {
-        logError(response, "Failed to parse internal search");
+        Log.error(response, "Failed to parse internal search");
     };
 
-    logTmi(`Initiating internal search for ${name}`);
+    Log.tmi(`Initiating internal search for ${name}`);
     sendHtmlJsonRequest("process_request.php", parameters, successFunc, failureFunc);
 }
 
@@ -204,7 +204,7 @@ function validateId(id, isAudiobook)
 /// </summary>
 function externalSearchSuccess(response)
 {
-    logInfo(response);
+    Log.info(response);
     let type = $("#type").value;
     switch (type)
     {
@@ -386,7 +386,7 @@ function buildItem(match, external)
 function buildItems(matches, holder)
 {
     const external = holder == "existingMatchContainer";
-    logTmi(matches, `${holder} matches`);
+    Log.tmi(matches, `${holder} matches`);
     let container = $("#" + holder);
     container.innerHTML = "";
     container.appendChild(buildNode("hr"));
@@ -453,27 +453,27 @@ function processSeason(seasons, currentSeason, seasonIndex, missing, complete, i
 {
     if (currentSeason > seasons[seasons.length - 1].season)
     {
-        logTmi(`Adding season ${currentSeason} to missing array`);
+        Log.tmi(`Adding season ${currentSeason} to missing array`);
         missing.push(currentSeason);
         return seasonIndex;
     }
 
     while (currentSeason < seasons[seasonIndex].season)
     {
-        logTmi(`Adding season ${currentSeason} to missing array`);
+        Log.tmi(`Adding season ${currentSeason} to missing array`);
         missing.push(currentSeason);
         ++currentSeason;
     }
 
     if (seasons[seasonIndex].complete)
     {
-        logTmi(`Adding season ${currentSeason} to complete array`);
+        Log.tmi(`Adding season ${currentSeason} to complete array`);
         complete.push(currentSeason);
         ++seasonIndex;
     }
     else
     {
-        logTmi(`Adding season ${currentSeason} to incomplete array`);
+        Log.tmi(`Adding season ${currentSeason} to incomplete array`);
         incomplete.push(currentSeason);
         ++seasonIndex;
     }
@@ -486,7 +486,7 @@ function processSeason(seasons, currentSeason, seasonIndex, missing, complete, i
 /// </summary>
 function buildSeasonDetails(response, request)
 {
-    logTmi("Building season details");
+    Log.tmi("Building season details");
 
     let complete = [];
     let incomplete = [];
@@ -498,9 +498,9 @@ function buildSeasonDetails(response, request)
         seasonIndex = processSeason(response.seasons, i, seasonIndex, missing, complete, incomplete);
     }
 
-    logTmi(complete, "Complete");
-    logTmi(incomplete, "Incomplete");
-    logTmi(missing, "Missing");
+    Log.tmi(complete, "Complete");
+    Log.tmi(incomplete, "Incomplete");
+    Log.tmi(missing, "Missing");
 
     let seasonString = "";
     if (complete.length != 0)
@@ -535,7 +535,7 @@ function goToExternal()
     const imdbid = grandparent.getAttribute("imdbid");
     if (imdbid)
     {
-        logTmi("Clicked on an existing item");
+        Log.tmi("Clicked on an existing item");
         window.open(`https://www.imdb.com/title/${imdbid}`, "_blank");
         return;
     }
@@ -551,7 +551,7 @@ function goToExternal()
     let parameters = { type : value == "movie" ? 1 : 2, query : tmdbid, by_id : "true" };
     let successFunc = function(response, request)
     {
-        logInfo(response);
+        Log.info(response);
         if (response.imdb_id)
         {
             window.open("https://www.imdb.com/title/" + response.imdb_id, "_blank");
@@ -577,8 +577,8 @@ function clickSuggestion(e)
 
     let enableButton = "matchContinue_" + this.parentNode.id;
     let disableButton = "matchContinue_" + (enableButton.charAt(14) == "m" ? "externalResult" : "matchContainer");
-    logTmi("EnableButton: " + enableButton);
-    logTmi("DisableButton: " + disableButton);
+    Log.tmi("EnableButton: " + enableButton);
+    Log.tmi("DisableButton: " + disableButton);
     if (selectedSuggestion && selectedSuggestion != this)
     {
         selectedSuggestion.className = "searchResult";
@@ -691,7 +691,7 @@ function submitSelected()
 
     if (!externalId || !title)
     {
-        logError("Required fields not set");
+        Log.error("Required fields not set");
         return;
     }
 

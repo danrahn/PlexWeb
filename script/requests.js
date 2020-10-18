@@ -61,12 +61,12 @@ function buildRequests(requests)
 {
     if (requests.count == 0)
     {
-        logWarn("No results, likely due to bad page index or filter");
+        Log.warn("No results, likely due to bad page index or filter");
         Table.displayInfoMessage("No requests found with the current filter");
         return;
     }
 
-    logInfo(`Building ${requests.count} requests`);
+    Log.info(`Building ${requests.count} requests`);
     let sortOrder = Table.Filter.get().sort;
     document.body.setAttribute("mid", requests.machine_id);
     for (let i = 0; i < requests.count; ++i)
@@ -249,7 +249,7 @@ function buildRequest(request, sortOrder)
     let textHolder = buildRequestBody(request, sortOrder, holder);
 
     holder.appendChildren(imgHolder, textHolder);
-    logTmi(holder, "Built Item", false);
+    Log.tmi(holder, "Built Item", false);
     return holder;
 }
 
@@ -264,7 +264,7 @@ function onFailedPoster()
     {
         // We can get into a nasty loop if we continue
         // attempting to reload an image that truly doesn't exist
-        logWarn("We already failed, not trying again");
+        Log.warn("We already failed, not trying again");
         return;
     }
 
@@ -595,7 +595,7 @@ Table.Filter.get = function()
     }
     catch (e)
     {
-        logError("Unable to parse stored filter");
+        Log.error("Unable to parse stored filter");
     }
 
     if (filter === null ||
@@ -616,19 +616,19 @@ Table.Filter.get = function()
     {
         if (filter === null)
         {
-            logInfo("No filter found, creating default filter");
+            Log.info("No filter found, creating default filter");
         }
         else
         {
-            logError("Bad filter, resetting: ");
-            logError(filter);
+            Log.error("Bad filter, resetting: ");
+            Log.error(filter);
         }
 
         filter = Table.Filter.default();
         Table.Filter.set(filter, false);
     }
 
-    logVerbose(filter, "Got Filter");
+    Log.verbose(filter, "Got Filter");
     return filter;
 };
 

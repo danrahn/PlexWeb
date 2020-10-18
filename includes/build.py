@@ -414,7 +414,7 @@ def create_temp(includes, rem_log, ultra):
             continue
         lines = get_lines(include_file)
 
-        # Experimental. Attempts to remove all logTmi entries from the source file.
+        # Experimental. Attempts to remove all Log.tmi entries from the source file.
         # The regex is simple, so things could go wrong if funky comments/log statements are used.
         if rem_log & 3 != 0:
             reg = r'(\/\*@__PURE__\*\/)?\blogTmi\(.*\); *\n'
@@ -446,15 +446,13 @@ def create_temp(includes, rem_log, ultra):
     if len(consolelog) > 0:
         # prepend this outside of our scope
         if ultra:
-            test_all = consolelog.find('function testAll()')
+            test_all = consolelog.find('this.testConsolelog =')
             consolelog = consolelog.replace(consolelog[test_all:consolelog.find('}', test_all) + 1], '')
-            consolelog = consolelog.replace('g_levelColors', 'g_c')
-            consolelog = consolelog.replace('g_traceColors', 'g_t')
-            consolelog = consolelog.replace('g_traceLogging', 'g_tl')
-            consolelog = consolelog.replace('g_darkConsole', 'g_dc')
-            consolelog = consolelog.replace('g_logLevel', 'g_ll')
-            consolelog = consolelog.replace('_inherit', '_i')
-            consolelog = 'let l_ = localStorage; ' + consolelog.replace('localStorage', 'l_')
+            for i, level in enumerate(['Extreme', 'Tmi', 'Verbose', 'Info', 'Warn', 'Error', 'Critical']):
+                consolelog = consolelog.replace('Log.Level.' + level, str(i - 1))
+            class_entry = consolelog.find('{') + 2
+            consolelog = consolelog[:class_entry] + 'let l_ = localStorage; ' + consolelog[class_entry:].replace('localStorage', 'l_')
+            # consolelog = 'let l_ = localStorage; ' + consolelog.replace('localStorage', 'l_')
         combined = consolelog + combined
 
     return combined

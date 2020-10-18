@@ -296,7 +296,7 @@ Table.Filter.get = function()
     }
     catch (e)
     {
-        logError("Unable to parse stored filter, resetting");
+        Log.error("Unable to parse stored filter, resetting");
     }
 
     if (filter === null ||
@@ -310,14 +310,14 @@ Table.Filter.get = function()
     {
         if (filter !== null)
         {
-            logError(filter, "Bad filter, resetting");
+            Log.error(filter, "Bad filter, resetting");
         }
 
         filter = Table.Filter.default();
         Table.Filter.set(filter, false);
     }
 
-    logVerbose(filter, "Got Filter");
+    Log.verbose(filter, "Got Filter");
     return filter;
 };
 

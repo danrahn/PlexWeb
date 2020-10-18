@@ -117,7 +117,7 @@ function parseMarkdown()
 {
     const text = $("#newComment").value;
 
-    logTmi(`Parsing "${text}"`);
+    Log.tmi(`Parsing "${text}"`);
     let html = mdPreview.parse(text);
     $("#mdHolder").style.display = (text.length != 0 && mdPreview.markdownPresent) ? "block" : "none";
 
@@ -149,13 +149,13 @@ function addNavListener()
             return;
         }
 
-        logVerbose("Searching for next id");
+        Log.verbose("Searching for next id");
         let parameters = { type : ProcessRequest.NextRequest, id : reqId(), dir : e.which === KEY.LEFT ? "0" : "1" };
         let successFunc = function(response)
         {
             if (response.new_id == -1)
             {
-                logInfo("No more requests in that direction!");
+                Log.info("No more requests in that direction!");
                 return;
             }
 
@@ -211,7 +211,7 @@ function searchImdb()
     let parameters = { type : attrInt("requestType"), query : id, imdb : true };
     let successFunc = function(response)
     {
-        logInfo(response);
+        Log.info(response);
         let type = attrInt("requestType");
         switch (type)
         {
@@ -242,7 +242,7 @@ function searchForMediaCore()
     let parameters = { type : attrInt("requestType"), query : attr("requestName") };
     let successFunc = function(response)
     {
-        logInfo(response);
+        Log.info(response);
         if (response.results.length === 0)
         {
             $("#matchContainer").innerHTML = "No matches found. Please enter the IMDb id below";
@@ -350,7 +350,7 @@ function goToImdb()
     let parameters = { type : attrInt("requestType"), query : this.parentNode.parentNode.getAttribute("tmdbid"), by_id : "true" };
     let successFunc = function(response, request)
     {
-        logInfo(response);
+        Log.info(response);
         if (response.imdb_id)
         {
             window.open("https://www.imdb.com/title/" + response.imdb_id, "_blank");
@@ -425,7 +425,7 @@ function chooseSelected()
 
     if (!selectedSuggestion.getAttribute("tmdbid"))
     {
-        logError("No tmdb id found");
+        Log.error("No tmdb id found");
         return;
     }
 
@@ -471,7 +471,7 @@ function setExternalId()
 
     let successFunc = function(response)
     {
-        logInfo(response);
+        Log.info(response);
         let matches = $(".matchContinue");
 
         for (let i = 0; i < matches.length; ++i)
@@ -493,7 +493,7 @@ function getMediaInfo()
     let parameters = { type : attrInt("requestType"), query : attr("externalId"), by_id : "true" };
     let successFunc = function(response)
     {
-        logInfo(response);
+        Log.info(response);
         buildPage(response);
         getInternalId();
     };
@@ -908,7 +908,7 @@ function getComments()
     let params = { type : ProcessRequest.GetComments, req_id : reqId() };
     let successFunc = function(response)
     {
-        logInfo(response);
+        Log.info(response);
         buildComments(response);
     };
     let failureFunc = function(response)
@@ -1112,7 +1112,7 @@ function addStyle(ele, eleStyle, style)
         style[ele] = "";
     }
 
-    logVerbose(`Adding style for ${ele}: ${eleStyle}`);
+    Log.verbose(`Adding style for ${ele}: ${eleStyle}`);
     style[ele] += eleStyle;
 }
 
@@ -1130,7 +1130,7 @@ function parseCss(css)
     // Assume the first element is the base .md element
     if (!css.startsWith(".md {"))
     {
-        log("Unexpected start to Markdown CSS. Email notifications will be styled incorrectly.", 0, 0, LOG.Critical);
+        Log.log("Unexpected start to Markdown CSS. Email notifications will be styled incorrectly.", 0, 0, Log.Level.Critical);
         return style;
     }
 
@@ -1196,12 +1196,12 @@ async function addComment()
     let text = comment.value;
     if (text.length === 0)
     {
-        logInfo("Not adding comment - no content!");
+        Log.info("Not adding comment - no content!");
         return;
     }
 
     comment.value = "";
-    logInfo("Adding comment: " + text);
+    Log.info("Adding comment: " + text);
 
     let params = { type : ProcessRequest.AddComment, req_id : reqId(), content : text };
 
@@ -1454,7 +1454,7 @@ function cancelDelete()
 function deleteComment()
 {
     const commentId = this.getAttribute("commentId");
-    logVerbose("Deleting comment " + commentId);
+    Log.verbose("Deleting comment " + commentId);
 
     let params = { type : ProcessRequest.DeleteComment, comment_id : commentId };
     let successFunc = function(response, request)

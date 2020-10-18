@@ -24,7 +24,7 @@ function buildSections(sections)
 /// </summary>
 function buildSection(section)
 {
-    logInfo(section);
+    Log.info(section);
     section.created = new Date(section.created * 1000);
     section.updated = new Date(section.updated * 1000);
     section.last_scanned = new Date(section.last_scanned * 1000);

@@ -139,7 +139,7 @@ const stateAllowedInState = function(state, current, index)
         case State.OrderedList:
             return state == State.ListItem; // Lists can only have listitems.
         default:
-            logError('Unknown state: ' + current.state);
+            Log.error('Unknown state: ' + current.state);
             return false;
     }
 };
@@ -289,7 +289,7 @@ class Markdown
     {
         if (this._inParse)
         {
-            log("Can't call parse when we're already parsing!", 0, 0, LOG.Critical);
+            Log.log("Can't call parse when we're already parsing!", 0, 0, Log.Level.Critical);
             return '';
         }
 
@@ -313,7 +313,7 @@ class Markdown
                 this._inlineOnly == inlineOnly &&
                 this.text == text)
             {
-                logTmi('Identical content, returning cached content');
+                Log.tmi('Identical content, returning cached content');
                 this.sameText = true;
                 return this._cachedParse;
             }
@@ -342,14 +342,14 @@ class Markdown
         {
             while (i == this.currentRun.end)
             {
-                logTmi('Resetting to parent: ' + (this.currentRun.parent === null ? '(null)' : stateToStr(this.currentRun.parent.state)));
+                Log.tmi('Resetting to parent: ' + (this.currentRun.parent === null ? '(null)' : stateToStr(this.currentRun.parent.state)));
                 this.currentRun = this.currentRun.parent;
             }
 
             i = this._dispatch(i);
         }
 
-        logTmi(this.topRun, 'Parsing tree');
+        Log.tmi(this.topRun, 'Parsing tree');
         this.markdownPresent = this.topRun.innerRuns.length != 0;
         let html = this.topRun.convert(this.text, this._inlineOnly).trim();
         this._cachedParse = html;
@@ -358,7 +358,7 @@ class Markdown
         this._parseTime = perfStop - perfStart;
         if (this._inlineOnly)
         {
-            logTmi(`Parsed inline markdown in ${perfStop - perfStart}ms`);
+            Log.tmi(`Parsed inline markdown in ${perfStop - perfStart}ms`);
         }
         else
         {
@@ -372,7 +372,7 @@ class Markdown
                 str = ' (Cache ON)';
             }
 
-            logVerbose(`Parsed markdown in ${perfStop - perfStart}ms ${str}`);
+            Log.verbose(`Parsed markdown in ${perfStop - perfStart}ms ${str}`);
         }
 
         return html;
@@ -891,7 +891,7 @@ class Markdown
                 format = new Strikethrough(start, sepInfo.index, this.currentRun);
                 break;
             default:
-                logError(`How did we try to make a format with a '${sepInfo.separator}'?`);
+                Log.error(`How did we try to make a format with a '${sepInfo.separator}'?`);
                 break;
         }
 
@@ -1280,7 +1280,7 @@ class Markdown
         let parentState = this.currentRun.state;
         if (newNestLevel > 1 && parentState != State.BlockQuote && parentState != State.ListItem)
         {
-            logError('Something went wrong! ' +
+            Log.error('Something went wrong! ' +
                 'Nested blockquotes should have a blockquote parent or be nested in a list, found ' + stateToStr(parentState));
             return;
         }
@@ -3020,7 +3020,7 @@ class Markdown
     {
         while (this._runCache.length != 0 && this._runCache[0].start < start)
         {
-            logWarn(this._runCache[0], 'Skipped cached run, currently at ' + start);
+            Log.warn(this._runCache[0], 'Skipped cached run, currently at ' + start);
             this._runCache.splice(0, 1);
         }
 
@@ -3148,7 +3148,7 @@ class Run
         // HTML representation of this Run, generated after the run is `convert`ed.
         this.cached = '';
 
-        logTmi(`Added ${stateToStr(state)}: start=${start}, end=${end}`);
+        Log.tmi(`Added ${stateToStr(state)}: start=${start}, end=${end}`);
     }
 
     /// <summary>
@@ -3173,11 +3173,11 @@ class Run
 
         // Even the setup for logging can get expensive when 'convert' is called hundreds/thousands
         // of times. Do some faster short-circuiting before setting anything up.
-        const shouldLogTmi = getLogLevel() < LOG.Verbose;
+        const shouldLogTmi = Log.getLogLevel() < Log.Level.Verbose;
         let ident = shouldLogTmi ? ' '.repeat((this._nestLevel() + (inlineOnly ? 1 : 0)) * 3) : ''; // Indent logging to indicate nest level
         if (shouldLogTmi)
         {
-            logTmi(`${ident}Converting State.${stateToStr(this.state)} : ${this.start}-${this.end}. ${this.innerRuns.length} children.`);
+            Log.tmi(`${ident}Converting State.${stateToStr(this.state)} : ${this.start}-${this.end}. ${this.innerRuns.length} children.`);
         }
 
         this.cached = this.tag(false /*end*/);
@@ -3291,7 +3291,7 @@ class Run
             case RunSide.Middle:
                 return text;
             default:
-                logError('Unknown side: ' + side);
+                Log.error('Unknown side: ' + side);
                 return text;
         }
     }
@@ -3376,7 +3376,7 @@ class Run
             case State.Subscript:
                 return false;
             default:
-                logWarn('Unknown state: ' + this.state);
+                Log.warn('Unknown state: ' + this.state);
                 return false;
         }
     }
@@ -3689,7 +3689,7 @@ class Run
                     // element do it itself.
                     if (this.innerRuns[i - 1].isBlockElement())
                     {
-                        logWarn('Only inline elements should be hitting this');
+                        Log.warn('Only inline elements should be hitting this');
                     }
 
                     return 0;
@@ -4278,7 +4278,7 @@ class ReferenceUrl extends Url
         }
         else
         {
-            logError('Could not find link match for ' + this.url);
+            Log.error('Could not find link match for ' + this.url);
             return;
         }
 
@@ -4568,7 +4568,7 @@ class BacktickCodeBlock extends CodeBlock
             return line.substring(trim);
         }
 
-        logError("We're in a block quote, but didn't find the right number of markers");
+        Log.error("We're in a block quote, but didn't find the right number of markers");
         return line;
     }
 }
@@ -4619,7 +4619,7 @@ class IndentCodeBlock extends CodeBlock
                 }
                 else
                 {
-                    logWarn('Error parsing indent code block line: ' + line);
+                    Log.warn('Error parsing indent code block line: ' + line);
                     finalText += lineNumber + super.transform(line) + '\n';
                 }
             }

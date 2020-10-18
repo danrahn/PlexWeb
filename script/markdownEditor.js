@@ -320,7 +320,7 @@ let MarkdownEditor = new function()
                 });
                 return;
             default:
-                logWarn(this, "Unknown toolbar button");
+                Log.warn(this, "Unknown toolbar button");
                 return;
         }
 
@@ -534,8 +534,8 @@ let MarkdownEditor = new function()
             height = parseInt(height.substring(0, height.length - 1));
         }
 
-        logInfo(width);
-        logInfo(height);
+        Log.info(width);
+        Log.info(height);
 
         let whString = text.length > 0 ? " " : "";
         if (width != 0 && !isNaN(width))
@@ -885,7 +885,7 @@ let MarkdownEditor = new function()
         let length = rows.children.length;
         if (length == 0)
         {
-            logWarn("How are we removing a row when we don't have any?");
+            Log.warn("How are we removing a row when we don't have any?");
             return;
         }
 
@@ -924,7 +924,7 @@ let MarkdownEditor = new function()
         let length = $$("#mdt thead tr").children.length;
         if (length == 1)
         {
-            logWarn("How are we removing a column when we only have one left?");
+            Log.warn("How are we removing a column when we only have one left?");
             return;
         }
 

@@ -12,7 +12,7 @@ function parseMarkdownCore(force)
     }
 
     const text = $('#query').value;
-    logTmi(`Parsing "${text}"`);
+    Log.tmi(`Parsing "${text}"`);
     let html;
     if (force)
     {

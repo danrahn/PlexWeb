@@ -17,7 +17,7 @@ function processQueryStatus(response)
         // Only reset the title if we've previously changed it to avoid constant title updates
         if (hasChanged)
         {
-            logVerbose("No more active items, clearing status");
+            Log.verbose("No more active items, clearing status");
             hasChanged = false;
             $$("title").innerHTML = baseTitle;
         }
@@ -31,7 +31,7 @@ function processQueryStatus(response)
         return;
     }
 
-    logVerbose(response, "Status changed");
+    Log.verbose(response, "Status changed");
     previous.pl = response.play;
     previous.pa = response.pause;
 
@@ -59,7 +59,7 @@ function queryStatusError(response)
 {
     if (response.Error && response.Error == "Not Authorized")
     {
-        logVerbose("Stopping queryStatus, user is not authorized");
+        Log.verbose("Stopping queryStatus, user is not authorized");
         clearInterval(queryStatusTimer);
     }
 }

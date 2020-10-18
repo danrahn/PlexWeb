@@ -100,7 +100,7 @@ function getNewActivities()
 /// </summary>
 function expandContractMenu(menu, expand, duration)
 {
-    logVerbose((expand ? "Expanding" : "Contracting") + " Menu");
+    Log.verbose((expand ? "Expanding" : "Contracting") + " Menu");
     Animation.queue({ opacity : (expand ? 1 : 0), left : (expand ? "0px" : "-170px") }, menu, duration || 200);
     setEnabled(expand);
 }

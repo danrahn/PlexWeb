@@ -34,7 +34,7 @@ let Animation = new function()
 
         if (!element.id)
         {
-            logWarn("Element has no id!");
+            Log.warn("Element has no id!");
         }
 
         if (!animationQueue[element.id])
@@ -61,11 +61,11 @@ let Animation = new function()
         if (animationQueue[element.id].length !== 1)
         {
             // Can't fire immediately (PURE annotation will remove it from the minified JS)
-            /*@__PURE__*/logTmi(animationQueue[element.id], "Adding animation for " + element.id + " to queue", true /*freeze*/);
+            /*@__PURE__*/Log.tmi(animationQueue[element.id], "Adding animation for " + element.id + " to queue", true /*freeze*/);
             return;
         }
 
-        /*@__PURE__*/logTmi(animationQueue[element.id], "Firing animation for " + element.id + " immediately", true /*freeze*/);
+        /*@__PURE__*/Log.tmi(animationQueue[element.id], "Firing animation for " + element.id + " immediately", true /*freeze*/);
         animationQueue[element.id][0].timers = [];
         for (let i = 0; i < animations.length; ++i)
         {
@@ -81,11 +81,11 @@ let Animation = new function()
     /// </summary>
     this.fireNow = function(func, element, ...args)
     {
-        /*@__PURE__*/logTmi(`Firing now: ${element.id}`);
+        /*@__PURE__*/Log.tmi(`Firing now: ${element.id}`);
         let queue = animationQueue[element.id];
         if (queue)
         {
-            /*@__PURE__*/logTmi(queue, `FireNow - queue not empty, attempting to cancel current animations for ${element.id}`, true /*freeze*/);
+            /*@__PURE__*/Log.tmi(queue, `FireNow - queue not empty, attempting to cancel current animations for ${element.id}`, true /*freeze*/);
             for (let i = 0; i < queue[0].timers.length; ++i)
             {
                 clearTimeout(queue[0].timers[i]);
@@ -124,24 +124,24 @@ let Animation = new function()
         if (queue[0].length == 0)
         {
             // Clear it from our dictionary to save some space
-            /*@__PURE__*/logTmi(`No more animations in the current group for ${element.id}, removing it from the queue`);
+            /*@__PURE__*/Log.tmi(`No more animations in the current group for ${element.id}, removing it from the queue`);
             queue.shift();
         }
         else
         {
             // Still waiting for the last animation from the given group
-            /*@__PURE__*/logTmi(`Waiting for additional animations in to finish for ${element.id}`);
+            /*@__PURE__*/Log.tmi(`Waiting for additional animations in to finish for ${element.id}`);
             return;
         }
 
         if (queue.length == 0)
         {
-            /*@__PURE__*/logTmi(`no more animations for ${element.id}`);
+            /*@__PURE__*/Log.tmi(`no more animations for ${element.id}`);
             delete animationQueue[element.id];
         }
         else
         {
-            /*@__PURE__*/logTmi(`Firing next animation for ${element.id}`);
+            /*@__PURE__*/Log.tmi(`Firing next animation for ${element.id}`);
             let nextAnimations = queue[0];
             nextAnimations.timers = [];
             for (let i = 0; i < nextAnimations.length; ++i)
@@ -194,7 +194,7 @@ let Animation = new function()
                         }
                     }
 
-                    /*@__PURE__*/logTmi(`Animating ${prop} of ${element.id} from ${oldColor.s()} to ${newColor.s()} in ${duration}ms`);
+                    /*@__PURE__*/Log.tmi(`Animating ${prop} of ${element.id} from ${oldColor.s()} to ${newColor.s()} in ${duration}ms`);
 
                     let animationFunc = (func, element, oldColor, newColor, i, steps, prop, deleteAfterTransition) =>
                     {
@@ -247,7 +247,7 @@ let Animation = new function()
                         oldVal /= parseInt(getStyle(document.body).width);
                     }
 
-                    /*@__PURE__*/logTmi("Animating " + prop + " of " + element.id + " from " + oldVal + " to " + newVal + " in " + duration + "ms");
+                    /*@__PURE__*/Log.tmi("Animating " + prop + " of " + element.id + " from " + oldVal + " to " + newVal + " in " + duration + "ms");
                     let animationFunc = (func, element, prop, oldVal, newVal, percent, px, i, steps, deleteAfterTransition) =>
                     {
                         if (animationQueue[element.id][0].canceled)
@@ -285,7 +285,7 @@ let Animation = new function()
                     fireNext(element);
                 };
             default:
-                logError("Bad:" + func);
+                Log.error("Bad:" + func);
                 return () => {};
         }
     };

@@ -4,9 +4,8 @@
 
 /* exported DateUtil */
 
-/* eslint-disable max-lines-per-function */
+// eslint-disable-next-line max-lines-per-function
 let DateUtil = new function()
-/* eslint-enable max-lines-per-function */
 {
     /// <summary>
     /// Determine how long ago a date is from the current time.

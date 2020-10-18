@@ -842,7 +842,7 @@ function trimSessions(newSessions, existingSessions)
         if (!found)
         {
             // An existing session is no longer active, remove it
-            logInfo("Attempting to remove session " + session.id);
+            Log.info("Attempting to remove session " + session.id);
 
             if ($("#" + session.id + " .progressHolder")[0].hasAttribute("hovered"))
             {
@@ -944,7 +944,7 @@ function innerUpdate(sesh, addTime=true)
 
     element.$$(".tcdiff").style.width = (tcprogress - newProgress) + "%";
     element.$$(".remaining").style.width = (100 - tcprogress) + "%";
-    logTmi(`${sesh} - Progress: ${newProgress}; TC: ${tcprogress}; Remaining: ${100 - tcprogress}`);
+    Log.tmi(`${sesh} - Progress: ${newProgress}; TC: ${tcprogress}; Remaining: ${100 - tcprogress}`);
     time.innerHTML = newTimeStr;
     progressHolder.setAttribute("progress", newMsProgress);
 
@@ -962,7 +962,7 @@ function addNewSessions(newIds)
     for (let i = 0; i < newIds.length; ++i)
     {
         const id = newIds[i];
-        logInfo("Attempting to add session " + id);
+        Log.info("Attempting to add session " + id);
         let parameters =
         {
             type : QueryType.SingleSession,
@@ -1340,7 +1340,7 @@ function buildActiveStreamPoster(sesh)
 function buildMediaInfo(sesh)
 {
     // Main container
-    logVerbose(sesh, "Adding Session");
+    Log.verbose(sesh, "Adding Session");
     let container = getContainerNode(sesh);
 
     const innerHolder = buildNode("div", { class : "innerHolder" });
