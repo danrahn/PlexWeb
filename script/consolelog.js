@@ -77,7 +77,7 @@ let Log = new function()
     let currentLogLevel = parseInt(localStorage.getItem("loglevel"));
     if (isNaN(currentLogLevel))
     {
-        currentLogLevel = Log.Level.Info;
+        currentLogLevel = this.Level.Info;
     }
 
     /// <summary>

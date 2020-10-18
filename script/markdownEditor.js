@@ -160,6 +160,8 @@ let MarkdownEditor = new function()
             chEnd = chStart;
         }
 
+        Log.tmi(`Inserting Markdown format: ${chStart}[Text]${chEnd}`);
+
         let start = comment.selectionStart;
         let end = comment.selectionEnd;
         comment.focus();
@@ -475,6 +477,7 @@ let MarkdownEditor = new function()
     /// </summary>
     let insertLinkInComment = function()
     {
+        Log.tmi("Processing inserted link");
         let comment = $("#" + this.getAttribute("targetTextarea"));
         let link = $("#addLinkLink").value;
         let text = $("#addLinkText").value;
@@ -510,6 +513,7 @@ let MarkdownEditor = new function()
     /// </summary>
     let processPhotoDimensions = function(link, text)
     {
+        Log.tmi("Processing inserted photo");
         let width = $("#insertWidth").value;
         let height = $("#insertHeight").value;
         let widthP = false;
@@ -534,13 +538,13 @@ let MarkdownEditor = new function()
             height = parseInt(height.substring(0, height.length - 1));
         }
 
-        Log.info(width);
-        Log.info(height);
+        Log.info(width, "Inserted image width");
+        Log.info(height, "Inserted image height");
 
         let whString = text.length > 0 ? " " : "";
         if (width != 0 && !isNaN(width))
         {
-            whString = `w=${width}${widthP ? "%" : ""}`;
+            whString += `w=${width}${widthP ? "%" : ""}`;
         }
 
         if (height != 0 && !isNaN(height))
@@ -580,6 +584,7 @@ let MarkdownEditor = new function()
     /// </summary>
     let defaultInsertTable = function()
     {
+        Log.tmi("Building default table");
         let holder = buildNode("div", { id : "mdtHolder" });
         let table = buildNode("table", { id : "mdt" });
         let head = buildNode("thead");
@@ -644,6 +649,7 @@ let MarkdownEditor = new function()
     /// </summary>
     let getBuildTableButtons = function()
     {
+        Log.tmi("Building table buttons");
         let div = buildNode("div", { id : "mdtButtons" });
         let divLeft = buildNode("div", { id : "mdtRowButtons" });
         let divRight = buildNode("div", { id : "mdtColButtons" });
@@ -708,24 +714,28 @@ let MarkdownEditor = new function()
             case KEY.RIGHT:
                 if (atRight(this))
                 {
+                    Log.tmi("At end of textarea, moving to next column");
                     selectMdTableTextarea(mdtRow(this), e.ctrlKey ? $$("#mdt thead tr").children.length - 1 : mdtCol(this) + 1, false);
                 }
                 break;
             case KEY.LEFT:
                 if (atLeft(this))
                 {
+                    Log.tmi("At beginning of textarea, moving to previous column");
                     selectMdTableTextarea(mdtRow(this), e.ctrlKey ? 0 : mdtCol(this) - 1, true);
                 }
                 break;
             case KEY.DOWN:
                 if (atBottom(this))
                 {
+                    Log.tmi("At end of textarea, moving to next row");
                     selectMdTableTextarea(e.ctrlKey ? $$("#mdt tbody").children.length : mdtRow(this) + 1, mdtCol(this), false);
                 }
                 break;
             case KEY.UP:
                 if (atTop(this))
                 {
+                    Log.tmi("At beginning of textarea, moving to previous row");
                     selectMdTableTextarea(e.ctrlKey ? 0 : mdtRow(this) - 1, mdtCol(this), true);
                 }
                 break;
@@ -864,6 +874,7 @@ let MarkdownEditor = new function()
     /// </summary>
     let addMdTableRow = function()
     {
+        Log.tmi("Adding Markdown table row");
         let body = $$("#mdt tbody");
         let columns = $$("#mdt thead tr").children.length;
         let newRow = body.children.length + 1;
@@ -881,6 +892,7 @@ let MarkdownEditor = new function()
     /// </summary>
     let removeMdTableRow = function()
     {
+        Log.tmi("Removing Markdown table row");
         let rows = $$("#mdt tbody");
         let length = rows.children.length;
         if (length == 0)
@@ -892,6 +904,7 @@ let MarkdownEditor = new function()
         rows.removeChild(rows.children[rows.children.length - 1]);
         if (length == 1)
         {
+            Log.tmi("Only one row remaining, disabling button");
             $("#mdtRemoveRow").disabled = true;
         }
     };
@@ -901,6 +914,7 @@ let MarkdownEditor = new function()
     /// </summary>
     let addMdTableColumn = function()
     {
+        Log.tmi("Adding Markdown table column");
         $("#mdt tr").forEach(function(row)
         {
             row.appendChild(newTableCell());
@@ -921,6 +935,7 @@ let MarkdownEditor = new function()
     /// </summary>
     let removeMdTableColumn = function()
     {
+        Log.tmi("Removing Markdown table column");
         let length = $$("#mdt thead tr").children.length;
         if (length == 1)
         {
@@ -935,6 +950,7 @@ let MarkdownEditor = new function()
 
         if (length == 2)
         {
+            Log.tmi("Only one column remaining, disabling button");
             $("#mdtRemoveColumn").disabled = true;
         }
     };
@@ -971,6 +987,7 @@ let MarkdownEditor = new function()
 
         let comment = $("#" + this.getAttribute("targetTextarea"));
         comment.focus();
+        Log.verbose(tableText, "Inserting Markdown Table\n");
         if (_supportsInsertText())
         {
             // This is deprecated, but it's the only way I've found that supports undo
