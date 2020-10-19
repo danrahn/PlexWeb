@@ -169,6 +169,14 @@ CREATE TABLE `imdb_ratings` (
  UNIQUE KEY `imdbid` (`imdbid`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci
 
+CREATE TABLE `banned_ips` (
+ `id` int(11) NOT NULL AUTO_INCREMENT,
+ `ip` varchar(39) COLLATE utf8_unicode_ci NOT NULL,
+ `why` varchar(256) COLLATE utf8_unicode_ci NOT NULL,
+ `date_added` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci
+
 # Triggers
 CREATE TRIGGER `IncrementCommentCount` AFTER INSERT ON `request_comments`
  FOR EACH ROW UPDATE user_requests r SET r.comment_count=r.comment_count+1 WHERE r.id=NEW.req_id

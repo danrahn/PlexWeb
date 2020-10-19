@@ -3,6 +3,7 @@
 session_start();
 
 require_once "includes/common.php";
+check_if_banned();
 requireSSL();
 ieCheck();
 

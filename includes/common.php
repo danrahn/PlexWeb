@@ -39,6 +39,25 @@ function verify_loggedin($redirect = FALSE, $return = "", $json = FALSE)
 }
 
 /// <summary>
+/// Ensures the client accessing this site is not banned
+/// </summary>
+function check_if_banned()
+{
+    global $db;
+    $ip = $db->real_escape_string($_SERVER["REMOTE_ADDR"]);
+    $query = "SELECT * FROM `banned_ips` WHERE `ip`=\"$ip\"";
+    $result = $db->query($query);
+    if (!$result || $result->num_rows === 0)
+    {
+        return;
+    }
+
+    $message = "Your IP has been banned from accessing this resource. If you think this is an error, please contact admin@danrahn.com";
+    header(HTTPStatusHeader(403), TRUE, 403);
+    error_and_exit(403, $message);
+}
+
+/// <summary>
 /// Print a simple JSON error and exit the script
 /// </summary>
 function json_error_and_exit($error)

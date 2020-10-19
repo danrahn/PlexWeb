@@ -58,6 +58,8 @@ function process_query($type)
             return get_sections();
         case "refresh":
             return refresh_library(get("section"));
+        case "ban":
+            return ban_client(get("ip"), get("reason"));
         default:
             return json_error("Unknown admin request: " . $type);
     }
@@ -180,6 +182,20 @@ function get_num_items($key, $type, &$section)
     return $items;
 }
 
+function ban_client($ip, $reason)
+{
+    global $db;
+    $ip = $db->real_escape_string($ip);
+    $reason = $db->real_escape_string($reason);
+    $query = "INSERT INTO `banned_ips` (`ip`, `why`) VALUES (\"$ip\", \"$reason\")";
+    if (!$db->query($query))
+    {
+        return json_error("Unable to ban client");
+    }
+
+    return json_success();
+}
+
 $type = try_get("type");
 if ($type)
 {
@@ -224,6 +240,12 @@ else
                 <a href="#" class="actionLink" id="imdbUpdate">
                     <img src="<?php icon('up') ?>" class="actionImg" id="imdbUpdateImg">
                     <span>Update ratings</span>
+                </a>
+            </div>
+            <div class="action actionRight">
+                <a href="#" class="actionLink" id="banClient">
+                    <img src="<?php icon('exit') ?>" class="actionImg" id="banClientImg">
+                    <span>Ban Client</span>
                 </a>
             </div>
         </div>
