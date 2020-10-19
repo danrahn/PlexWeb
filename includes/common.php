@@ -145,7 +145,7 @@ function get($param)
 /// </summary>
 function try_get($param)
 {
-    $value;
+    $value = NULL;
     if (param($param, $value))
     {
         return $value;
@@ -638,7 +638,7 @@ abstract class UserLevel
     static function get_type($level)
     {
         $level = (int)$level;
-        if ($level == 0)
+        if ($level < 20)
         {
             return UserLevel::Noob;
         }
