@@ -815,11 +815,11 @@ function changeStatus()
             $("#statusEdit").src = Icons.getColor("edit", statusColors[status]);
         }
 
+        Overlay.dismiss();
         if (status == 1)
         {
             // SearchForCompleteMatch launches an overlay, so we have to wait
             // for the last one to be dismissed first
-            Overlay.dismiss();
             setTimeout(searchForCompleteMatch, 300);
         }
 
