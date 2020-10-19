@@ -91,6 +91,11 @@ let Tooltip = new function()
     /// </summary>
     let showTooltipCore = function(e, text)
     {
+        if (!showingTooltip)
+        {
+            Log.tmi(`Launching tooltip: ${text}`);
+        }
+
         ttElement = e.target;
         showingTooltip = true;
         const top = (e.clientY + 20) + "px";
@@ -110,6 +115,10 @@ let Tooltip = new function()
     /// </summary>
     this.dismiss = function()
     {
+        if (showingTooltip)
+        {
+            Log.tmi(`Dismissing tooltip: ${$("#tooltip").innerHTML}`);
+        }
         $("#tooltip").style.display = "none";
         clearTimeout(tooltipTimer);
         tooltipTimer = null;

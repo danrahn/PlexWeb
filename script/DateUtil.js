@@ -4,7 +4,7 @@
 
 /* exported DateUtil */
 
-// eslint-disable-next-line max-lines-per-function
+/* eslint-disable-next-line max-lines-per-function */
 let DateUtil = new function()
 {
     /// <summary>

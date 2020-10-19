@@ -23,6 +23,12 @@ def process():
     clean_tmp()
 
     args_lower = [arg.lower() for arg in sys.argv]
+    if len(args_lower) > 1:
+         arg1 = args_lower[1]
+         if arg1 == '/?' or arg1 == '-?' or arg1.startswith('--h'):
+             print_help()
+             return
+
     force = "-force" in args_lower or '-f' in args_lower
     babel = '-babel' in args_lower or '-b' in args_lower
     ultra = '-ultra' in args_lower or '-u' in args_lower
@@ -744,5 +750,34 @@ def process_output(output):
 def clean_tmp():
     if os.path.exists('tmp'):
         shutil.rmtree('tmp')
+
+def print_help():
+    print()
+    print('build.py - builds plexweb sources')
+    print()
+    print('By default, minifies JS with terser, css with csso, and SVGs with svgo')
+    print()
+    print('This script is neither robust nor sophisticated; it is dumb and brute-force.')
+    print('It must be run from the repository root (not /includes), and allows a')
+    print('hodgepodge of options, none of which are required. It theoretically has UNIX')
+    print('support, but it has not been rigoriously tested')
+    print()
+    print('Options:')
+    print('  -?        : Print this help menu')
+    print('  -f[orce]  : Ignore modified timestamps and update everything')
+    print('  -b[abel]  : Use babel for minification instead of terser')
+    print('  -u[ltra]  : Do some extra potentially unsafe custom minifications')
+    print('  -q[uiet]  : Don\'t show warnings/extra info when building')
+    print('  -noicon   : Don\'t process SVG icons (trumps noicon)')
+    print('  -icononly : Only process icons')
+    print('  -nocss    : Don\'t process CSS (trumps cssonly)')
+    print('  -cssonly  : Only process CSS')
+    print('  -cleancss : Use cleancss instead of csso')
+    print('  -cmp      : If -u[ltra] is specified, compares file sizes')
+    print('  -s file   : Only process the given php file')
+    print('  -notmi    : Discard all Log.tmi logging')
+    print('  -nolog    : Discard all logging')
+    print('  -nomdtmi  : Discard Log.tmi logging, but only from the Markdown parser')
+
 
 process()

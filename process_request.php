@@ -1400,12 +1400,7 @@ function search_external($query, $kind)
 
     if ($type != RequestType::Movie && $type != RequestType::TVShow)
     {
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, "https://www.audible.com/search?keywords=" . $query);
-        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        $text = curl_exec($ch);
-        curl_close($ch);
+        $text = curl("https://www.audible.com/search?keywords=" . $query);
         $find = strpos($text, "productListItem");
         if ($find === FALSE)
         {

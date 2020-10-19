@@ -99,7 +99,7 @@ const stateToStr = function(state)
 /// Returns whether `state` is allowed given the `current` state
 /// </summary>
 /// <param name="index">The current parse location</param>
-// eslint-disable-next-line complexity
+/* eslint-disable-next-line complexity */
 const stateAllowedInState = function(state, current, index)
 {
     switch (current.state)
