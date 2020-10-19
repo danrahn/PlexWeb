@@ -436,6 +436,11 @@ function build_sesh($sesh, $library_names)
 
     $slim_sesh->title = get_title($sesh, $sesh_type);
     $slim_sesh->hyperlink = get_hyperlink($sesh, $sesh_type);
+    $imdb_rating = "";
+    if (get_imdb_rating($slim_sesh->hyperlink, $imdb_rating))
+    {
+        $slim_sesh->imdb_rating = $imdb_rating;
+    }
 
     $slim_sesh->session_id = get_sesh_id($sesh);
 
@@ -513,6 +518,36 @@ function build_sesh($sesh, $library_names)
     }
 
     return $slim_sesh;
+}
+
+/// <summary>
+/// Gets the IMDb rating associated with the given link, putting it in $rating.
+/// On failure, return FALSE and $rating's value is not guaranteed
+/// </summary>
+function get_imdb_rating($link, &$rating)
+{
+    global $db;
+    $last = strrpos($link, "/");
+    if ($last === FALSE)
+    {
+        return FALSE;
+    }
+
+    if (strlen($link) <= $last + 2 || $link[$last + 1] != 't' || $link[$last + 2] != 't')
+    {
+        return FALSE;
+    }
+
+    $tt = (int)substr($link, $last + 3);
+    $query = "SELECT `rating` FROM `imdb_ratings` WHERE `imdbid`=$tt";
+    $result = $db->query($query);
+    if (!$result || $result->num_rows === 0)
+    {
+        return FALSE;
+    }
+
+    $rating = round($result->fetch_row()[0] / 10, 1);
+    return TRUE;
 }
 
 /// <summary>

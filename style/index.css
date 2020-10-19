@@ -205,6 +205,38 @@
     font-size: smaller;
 }
 
+#imdbLink {
+    text-decoration: none;
+    background-color: #e1be00;
+    border-radius: 0 0 3px 3px;
+    width: 100px;
+    margin: auto;
+    overflow: hidden;
+    margin-top: -4px;
+    opacity: 0.8;
+}
+
+#imdbLink img {
+    height: 20px;
+    vertical-align: text-bottom;
+    float: left;
+    margin-top: -2px;
+    margin-bottom: -2px;
+}
+
+#imdbLink span {
+    font-size: 11pt;
+    color: black;
+    text-shadow: none;
+    margin-right: 5px;
+    vertical-align: bottom;
+    line-height: 16px;
+    text-decoration: none;
+    float: right;
+    font-family: Impact, sans-serif;
+    font-weight: lighter;
+}
+
 /* Desktop/Landscape */
 @media (orientation: landscape), (min-width: 767px) {
     .details {

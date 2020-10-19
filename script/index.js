@@ -1319,6 +1319,22 @@ function buildActiveStreamPoster(sesh)
         return poster;
     }
 
+    let rating;
+    if (sesh.imdb_rating)
+    {
+        rating = buildNode("div", { class : "mediaLink", id : "imdbLink", title : "View on IMDb" });
+        rating.appendChildren(
+            buildNode(
+                "img",
+                {
+                    src : Icons.get("imdb"),
+                    alt : "IMDb"
+                }
+            ),
+            buildNode("span", { id : "imdbRating" }, sesh.imdb_rating)
+        );
+    }
+
     let externalLink = buildNode(
         "a",
         {
@@ -1332,6 +1348,12 @@ function buildActiveStreamPoster(sesh)
             mouseenter : () => {},
             mouseleave : () => {}
         });
+
+    if (rating)
+    {
+        return externalLink.appendChildren(poster, rating);
+    }
+
     return externalLink.appendChildren(poster);
 }
 
