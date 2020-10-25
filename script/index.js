@@ -1322,7 +1322,7 @@ function buildActiveStreamPoster(sesh)
     let rating;
     if (sesh.imdb_rating)
     {
-        rating = buildNode("div", { class : "mediaLink", id : "imdbLink", title : "View on IMDb" });
+        rating = buildNode("div", { class : "mediaLink imdbLink", title : "View on IMDb" });
         rating.appendChildren(
             buildNode(
                 "img",

@@ -205,7 +205,11 @@
     font-size: smaller;
 }
 
-#imdbLink {
+.thumbholder:hover .imdbLink {
+    opacity: 0.8;
+}
+
+.imdbLink {
     text-decoration: none;
     background-color: #e1be00;
     border-radius: 0 0 3px 3px;
@@ -213,10 +217,10 @@
     margin: auto;
     overflow: hidden;
     margin-top: -4px;
-    opacity: 0.8;
+    opacity: 0.6;
 }
 
-#imdbLink img {
+.imdbLink img {
     height: 20px;
     vertical-align: text-bottom;
     float: left;
@@ -224,7 +228,7 @@
     margin-bottom: -2px;
 }
 
-#imdbLink span {
+.imdbLink span {
     font-size: 11pt;
     color: black;
     text-shadow: none;
