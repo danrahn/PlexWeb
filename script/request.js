@@ -783,6 +783,7 @@ function showStatusChangeOverlay()
     Overlay.build(
         { dismissible : true, centered : false },
         buildNode("div", { id : "changeStatus" }).appendChildren(
+            buildNode("div", {}, "Update request status"),
             select,
             buildNode("input", { type : "button", value : "Change" }, 0, { click : changeStatus })
         )
