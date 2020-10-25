@@ -50,7 +50,7 @@ function banOverlay()
 {
     Overlay.build(
         { dismissible : true },
-        buildNode("div", { style : "width: 30vw; min-width: 300px" }).appendChildren(
+        buildNode("div", { style : "width: 30vw; min-width: 300px; max-width: 400px" }).appendChildren(
             buildNode("span", {}, "Select the client to ban"),
             buildNode("div").appendChildren(
                 buildNode("div", { class : "formInput" }).appendChildren(
@@ -62,7 +62,7 @@ function banOverlay()
                     buildNode("input", { type : "text", name : "banReason", id : "banReason", style : "float: right" })
                 )
             ),
-            buildNode("div", { style : "width: 30vw; min-width: 300px; overflow: auto" }).appendChildren(
+            buildNode("div", { style : "width: 30vw; min-width: 300px; max-width: 400px; overflow: auto" }).appendChildren(
                 buildNode("input", { type : "button", value : "Ban", style : "float: left; width: 100px" }, 0, { click : banClient }),
                 buildNode("input", { type : "button", value : "Cancel", style : "float: right; width: 100px" }, 0, { click : Overlay.dismiss })
             )
