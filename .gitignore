@@ -9,6 +9,7 @@ includes/cache/poster/342/*
 includes/cache/thumb/*
 includes/phpMail/*
 includes/tvdberror.txt
+includes/status.json
 
 # config_dummy is a copy of this, with sensitive info removed
 includes/config.php

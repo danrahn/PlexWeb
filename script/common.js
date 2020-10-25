@@ -285,6 +285,7 @@ const ProcessRequest =
     GetInternalId : 35,
     ImdbRating : 36,
     UpdateImdbRatings : 37,
+    GetImdbUpdateStatus : 38,
 };
 
 console.assert(!Log.logErrorId || Log.logErrorId == ProcessRequest.LogError, "Update _logErrorId!");

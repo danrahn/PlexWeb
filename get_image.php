@@ -185,21 +185,6 @@ function validate_path($path, $type)
 }
 
 /// <summary>
-/// Send a simple cURL request
-/// </summary>
-function curl($url)
-{
-    $ch = curl_init();
-    curl_setopt($ch, CURLOPT_URL, $url);
-    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-
-    $return = curl_exec($ch);
-    curl_close($ch);
-    return $return;
-}
-
-/// <summary>
 /// Map the passed in string type to its corresponding ImgType
 /// </summary>
 function get_type()

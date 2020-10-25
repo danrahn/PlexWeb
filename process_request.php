@@ -59,6 +59,7 @@ abstract class ProcessRequest
     const GetInternalId = 35;
     const ImdbRating = 36;
     const UpdateImdbRatings = 37;
+    const GetImdbUpdateStatus = 38;
 }
 
 // For requests that are only made when not logged in, don't session_start or verify login state
@@ -218,6 +219,9 @@ function process_request($type)
             break;
         case ProcessRequest::UpdateImdbRatings:
             $message = force_update_imdb_ratings();
+            break;
+        case ProcessRequest::GetImdbUpdateStatus:
+            $message = get_imdb_update_status();
             break;
         default:
             return json_error("Unknown request type: " . $type);
@@ -2909,84 +2913,9 @@ function refresh_imdb_ratings($force)
         return FALSE;
     }
 
-    $data = "";
-    if ($exists && !$force)
-    {
-        $data = file_get_contents($file);
-    }
-    else
-    {
-        $url = "https://datasets.imdbws.com/title.ratings.tsv.gz";
-        $result = curl($url, Array(
-            CURLOPT_HEADER => 0,
-            CURLOPT_TIMEOUT => 60 // This is under 6MB, so it better not take more than a minute!
-        ));
-
-        if ($result[0] == '{')
-        {
-            // This smells like a curl error
-            return $result;
-        }
-    
-        $data = gzdecode($result);
-
-        // Writing to an output file isn't really necessary, but it makes checking
-        // the last modified date easier.
-        $output = fopen($file, "w");
-        if (fwrite($output, $data) === FALSE)
-        {
-            return json_error("Unable to write to tsv file");
-        }
-    
-        fclose($output);
-    }
-
-    global $db;
-
-    $rows = explode("\n", $data);
-    $start = microtime(TRUE);
-
-    // Autocommit kills the speed of this operation (by about 15x). Even with autocommit off this takes
-    // ~100 seconds, so it should probably be done as a fire-and-forget task instead of on the main thread.
-    if (!$db->autocommit(FALSE))
-    {
-        return db_error();
-    }
-
-    // Better to just clear it out and re-fill. 'ON DUPLICATE KEY UPDATE' is a possibility, but this is
-    // likely more performant when dealing with 1M+ rows that are mostly duplicates.
-    if (!$db->query("TRUNCATE TABLE `imdb_ratings`"))
-    {
-        return db_error();
-    }
-
-    $total = count($rows);
-    $count = 0;
-    for ($i = 1; $i < $total; ++$i) // First row is headers
-    {
-        $row = $rows[$i];
-        $entry = explode("\t", $row);
-        $id = (int)substr($entry[0], 2);
-        $rating = (int)((double)($entry[1]) * 10);
-        $votes = (int)$entry[2];
-
-        $query = "INSERT INTO `imdb_ratings` (`imdbid`, `rating`, `votes`) VALUES ($id, $rating, $votes)";
-        
-        if (!$db->query($query))
-        {
-            return json_error("Error updating row for " . $entry[0]);
-        }
-
-        ++$count;
-    }
-
-    if (!$db->commit() || !$db->autocommit(TRUE))
-    {
-        return db_error();
-    }
-
-    // On success, return the number of seconds it took to complete the operation
-    return microtime(TRUE) - $start;
+    // This is an expensive operation. Fire and forget so we don't lock up the site
+    fire_and_forget("http://127.0.0.1/plex/includes/update_imdb_ratings.php", "");
+    return json_success();
 }
 
 /// <summary>
@@ -3012,6 +2941,16 @@ function force_update_imdb_ratings()
         return json_error("Not Authorized");
     }
 
+    $file = "includes/status.json";
+    if (file_exists($file) && json_decode(file_get_contents("includes/status.json"))->status != "Success")
+    {
+        $message = json_decode(file_get_contents($file));
+        if (property_exists($message, "status") && $message->status == "In Progress")
+        {
+            return json_error("Refresh already in progress!");
+        }
+    }
+
     $result = refresh_imdb_ratings(TRUE);
     $update_time = floatval($result);
     if ($update_time == 0)
@@ -3024,51 +2963,14 @@ function force_update_imdb_ratings()
     return "{ \"update_time\" : $update_time }";
 }
 
-/// <summary>
-/// Get the contents of the given url
-/// </summary>
-function curl($url, $extra=[])
+function get_imdb_update_status()
 {
-    $ch = curl_init();
-    curl_set($ch,
-    Array(
-        CURLOPT_URL => $url,
-        CURLOPT_RETURNTRANSFER => TRUE,
-        CURLOPT_FOLLOWLOCATION => TRUE
-    ));
-
-    curl_set($ch, $extra);
-    $return = curl_exec($ch);
-
-    if (curl_errno($ch))
+    $file = "includes/status.json";
+    if (!file_exists($file))
     {
-        $return = json_error(curl_error($ch));
-    }
-    else
-    {
-        switch ($http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE))
-        {
-            case 200:
-                break;
-            default:
-                $return = json_error("Bad curl response: $http_code");
-                break;
-        }
+        return '{ "Status" : "Unknown" }';
     }
 
-    curl_close($ch);
-    return $return;
-}
-
-/// <summary>
-/// Helper that makes it slightly less cumbersome to set
-/// multiple curl options
-/// </summary>
-function curl_set($ch, $args)
-{
-    foreach ($args as $key => $value)
-    {
-        curl_setopt($ch, $key, $value);
-    }
+    return file_get_contents($file);
 }
 ?>

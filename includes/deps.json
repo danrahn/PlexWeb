@@ -22,10 +22,12 @@
         "js" :
         [
             "common",
+            "DateUtil",
             "iconMap",
             "nav",
             "overlay",
-            "queryStatus"
+            "queryStatus",
+            "tooltip"
         ],
         "css" :
         [

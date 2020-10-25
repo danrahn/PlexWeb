@@ -4,15 +4,25 @@ window.addEventListener("load", function()
     $("#banClient").addEventListener("click", banOverlay);
 });
 
-let imdbUpdate = 0;
+let updateInterval = null;
 function tryUpdateImdbRatings()
 {
+    if (updateInterval)
+    {
+        Overlay.show("An update is already in progress...", "OK", Overlay.dismiss);
+        return;
+    }
+
     Overlay.show(
         "This operation takes about two minutes to complete. Are you sure you want to continue?" +
+        "<br /><br />" +
+        `<span id="imdbUpdateDate">Database was last updated: <img src=${Icons.get("loading")} height=12pt></span>` +
         "<br /><br />" +
         "(Click outside this message to cancel)",
         "Yes",
         updateImdbRatings);
+
+    getLastUpdateDate();
 }
 
 /// <summary>
@@ -20,27 +30,156 @@ function tryUpdateImdbRatings()
 /// </summary>
 function updateImdbRatings()
 {
-    Overlay.dismiss();
-    imdbUpdate = 0;
-    let interval = setInterval(function() { imdbUpdate += 5; Log.verbose(`Updating IMDb ratings... ${imdbUpdate} seconds`); }, 5000);
     Log.verbose("Starting IMDb rating update...");
-    $("#imdbUpdateImg").src = Icons.get("loading");
 
+    let successFunc = function()
+    {
+        Log.verbose("Started IMDb update process");
+        startImdbUpdateStatusQuery();
+    };
+
+    let failureFunc = function(response)
+    {
+        Log.verbose(`Failed to update IMDb ratings :(`);
+        if (response.Error == "Refresh already in progress!" && !updateInterval)
+        {
+            startImdbUpdateStatusQuery();
+        }
+    };
+
+    sendHtmlJsonRequest("process_request.php", { type : ProcessRequest.UpdateImdbRatings }, successFunc, failureFunc);
+}
+
+function startImdbUpdateStatusQuery()
+{
+    let container = $("#overlayContainer");
+    if (!container)
+    {
+        return;
+    }
+
+    container.removeChild($("#overlayMessage"));
+    container.removeChild($("#overlayBtn"));
+
+    imdbStatus();
+    updateInterval = setInterval(imdbStatus, 5000);
+}
+
+/// <summary>
+/// Retrieve the last known update date for the IMDb ratings database
+/// </summary>
+function getLastUpdateDate()
+{
     let successFunc = function(response)
     {
-        clearInterval(interval);
-        $("#imdbUpdateImg").src = Icons.get("up");
-        Log.verbose(`IMDb rating update took ${response.update_time} seconds`);
+        let span = $("#imdbUpdateDate");
+        if (!span)
+        {
+            return;
+        }
+
+        switch (response.status)
+        {
+            case "Success":
+                {
+                    let updateDate = new Date(response.message.substring(0, response.message.indexOf(" - ")));
+                    span.innerHTML = "Database was last updated: " +
+                        DateUtil.getDisplayDate(updateDate);
+                    Tooltip.setTooltip(span, DateUtil.getFullDate(updateDate));
+                }
+                break;
+            case "Failure":
+                span.innerHTML = "Database was last updated: Last update failed!";
+                break;
+            case "In Progress":
+                span.innerHTML = "Database was last updated: We're updating now!";
+                break;
+            default:
+                span.innerHTML = "Database was last updated: Unknown";
+                break;
+        }
+
     };
 
     let failureFunc = function()
     {
-        clearInterval(interval);
-        $("#imdbUpdateImg").src = Icons.get("up");
-        Log.verbose(`Failed to update IMDb ratings :(`);
+        let span = $("#imdbUpdateDate");
+        if (span)
+        {
+            span.innerHTML = "Database was last updated: Unknown";
+        }
     };
 
-    sendHtmlJsonRequest("process_request.php", { type : ProcessRequest.UpdateImdbRatings }, successFunc, failureFunc);
+    sendHtmlJsonRequest("process_request.php", { type : ProcessRequest.GetImdbUpdateStatus }, successFunc, failureFunc);
+}
+
+/// <summary>
+/// Queries for the status of the IMDb ratings database update
+/// </summary>
+function imdbStatus()
+{
+    let successFunc = function(response)
+    {
+        if (!ensureImdbUpdateSpan())
+        {
+            return;
+        }
+
+        $("#imdbStatus").innerHTML = `Status: ${response.status}<br>Message: ${response.message}`;
+        if (response.status == "Failed" || response.status == "Success")
+        {
+            $("#imdbUpdateTitle").style.display = "none";
+            clearInterval(updateInterval);
+            updateInterval = null;
+        }
+    };
+
+    let failureFunc = function()
+    {
+        if (!ensureImdbUpdateSpan())
+        {
+            return;
+        }
+
+        $("#imdbStatus").innerHTML = `Failed to get updated status :(`;
+        clearInterval(updateInterval);
+        updateInterval = null;
+    };
+
+    sendHtmlJsonRequest("process_request.php", { type : ProcessRequest.GetImdbUpdateStatus }, successFunc, failureFunc);
+}
+
+/// <summary>
+/// If an overlay is showing, ensure that we have the correct IMDb update content
+/// </summary>
+function ensureImdbUpdateSpan()
+{
+    if (!$("#overlayContainer"))
+    {
+        clearInterval(updateInterval);
+        updateInterval = null;
+        return false;
+    }
+
+    if (!$("#imdbStatus"))
+    {
+        appendImdbUpdateSpan();
+    }
+
+    return true;
+}
+
+/// <summary>
+/// Appends the IMDb update content to the current overlay
+/// </summary>
+function appendImdbUpdateSpan()
+{
+    $("#overlayContainer").appendChildren(
+        buildNode("div", { id : "imdbUpdateTitle" }).appendChildren(
+            buildNode("span", {}, "Updating IMDb ratings"),
+            buildNode("img", { src : Icons.get("loading"), alt : "loading", height : "12pt" })
+        ),
+        buildNode("div", { id : "imdbStatus" }, "Status: Unknown"));
 }
 
 /// <summary>

@@ -12,19 +12,6 @@ if (!UserLevel::is_admin())
     error_and_exit(403);
 }
 
-/// <summary>
-/// Get the contents of the given url
-/// </summary>
-function curl($url)
-{
-    $ch = curl_init();
-    curl_setopt($ch, CURLOPT_URL, $url);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-
-    $return = curl_exec($ch);
-    curl_close($ch);
-    return $return;
-}
 
 /// <summary>
 /// Map of library types, mapping string representations to the underlying library type

@@ -672,14 +672,10 @@ abstract class UserLevel
 }
 
 /// <summary>
-/// Sends a request to send an email to the specified address. Everything better
-/// be in order here, as we fire-and-forget
+/// Writes a request to the given url with the given data, and doesn't wait for a response
 /// </summary>
-function send_email_forget($to, $content, $subject)
+function fire_and_forget($url, $data)
 {
-    $url = "http://127.0.0.1/plex/includes/send_email.php";
-
-    $data = http_build_query(array("to" => $to, "content" => $content, "subject" => $subject));
     $parts = parse_url($url);
     $fp = fsockopen($parts['host'], 80, $errno, $errstr, 30);
     $out = "POST " . $parts['path'] . " HTTP/1.1\r\n";
@@ -691,6 +687,65 @@ function send_email_forget($to, $content, $subject)
 
     fwrite($fp, $out);
     fclose($fp);
+}
+
+/// <summary>
+/// Sends a request to send an email to the specified address. Everything better
+/// be in order here, as we fire-and-forget
+/// </summary>
+function send_email_forget($to, $content, $subject)
+{
+    $url = "http://127.0.0.1/plex/includes/send_email.php";
+    $data = http_build_query(array("to" => $to, "content" => $content, "subject" => $subject));
+    fire_and_forget($url, $data);
+}
+
+/// <summary>
+/// Get the contents of the given url
+/// </summary>
+function curl($url, $extra=[])
+{
+    $ch = curl_init();
+    curl_set($ch,
+    Array(
+        CURLOPT_URL => $url,
+        CURLOPT_RETURNTRANSFER => TRUE,
+        CURLOPT_FOLLOWLOCATION => TRUE
+    ));
+
+    curl_set($ch, $extra);
+    $return = curl_exec($ch);
+
+    if (curl_errno($ch))
+    {
+        $return = json_error(curl_error($ch));
+    }
+    else
+    {
+        switch ($http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE))
+        {
+            case 200:
+                break;
+            default:
+                $return = json_error("Bad curl response: $http_code");
+                break;
+        }
+    }
+
+    curl_close($ch);
+    return $return;
+}
+
+/// <summary>
+/// Helper that makes it slightly less cumbersome to set
+/// multiple curl options
+/// </summary>
+function curl_set($ch, $args)
+{
+    foreach ($args as $key => $value)
+    {
+        curl_setopt($ch, $key, $value);
+    }
 }
 
 /// <summary>

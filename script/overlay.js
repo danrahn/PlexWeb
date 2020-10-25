@@ -13,7 +13,7 @@ let Overlay = new function()
     this.show = function(message, buttonText, buttonFunc, dismissible=true)
     {
         this.build({ dismissible : dismissible, centered : false },
-            buildNode("div", {}, message),
+            buildNode("div", { id : "overlayMessage" }, message),
             buildNode(
                 "input",
                 {
