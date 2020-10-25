@@ -2891,7 +2891,8 @@ function get_imdb_rating($title)
         return json_error("Unable to find rating for $title");
     }
 
-    return '{ "rating" : ' . round($result->fetch_row()[0] / 10, 1) . ($update ? (', "update" : ' . $update) : "") . ' }';
+    $rating = number_format($result->fetch_row()[0] / 10, 1, '.', '');
+    return '{ "rating" : "' . $rating . ($update ? ('", "update" : ' . $update) : '"') . ' }';
 }
 
 /// <summary>

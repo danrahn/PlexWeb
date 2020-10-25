@@ -546,7 +546,7 @@ function get_imdb_rating($link, &$rating)
         return FALSE;
     }
 
-    $rating = round($result->fetch_row()[0] / 10, 1);
+    $rating = number_format($result->fetch_row()[0] / 10, 1, '.', '');
     return TRUE;
 }
 
