@@ -15,7 +15,6 @@
 .playerNavButton {
     height: 65px;
     width: 65px;
-    line-height: 65px;
 }
 
 .playbackButton:hover, .playerNavButton:hover {

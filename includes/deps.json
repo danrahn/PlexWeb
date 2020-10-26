@@ -305,6 +305,23 @@
             "request"
         ]
     },
+    "remote" :
+    {
+        "js" :
+        [
+            "animate",
+            "common",
+            "consolelog",
+            "nav",
+            "queryStatus"
+        ],
+        "css" :
+        [
+            "nav",
+            "remote",
+            "style"
+        ]
+    },
     "requests" :
     {
         "js" :
@@ -323,22 +340,6 @@
         [
             "style",
             "requests"
-        ]
-    },
-    "remote" :
-    {
-        "js" :
-        [
-            "animate",
-            "common",
-            "consolelog",
-            "nav",
-            "queryStatus"
-        ],
-        "css" :
-        [
-            "style",
-            "nav"
         ]
     },
     "reset" :

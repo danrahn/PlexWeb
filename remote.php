@@ -26,7 +26,7 @@ function remote($identifier, $ip, $endpoint, $command, $command_id, $client_iden
             return $result;
         }
 
-        $result = json_decode(send_command($identifier, $ip,  $endpoint, $command, $command_id + 1, $client_identifier));
+        $result = json_decode(send_command($identifier, $ip,  $endpoint, $command, 2, $client_identifier));
         $result->needed_init = TRUE;
         return json_encode($result);
     }
@@ -207,24 +207,24 @@ else
             <select id="devices"></select>
         </div>
         <div id="playback">
-            <button class="playbackButton" id="seekBack" title="Seek Back"><span class="bigger">&laquo;</span></button>
-            <button class="playbackButton" id="play" title="Play">&#x25ba;</button>
-            <button class="playbackButton" id="pause" title="Pause">&#10073;&#10073;</button>
-            <button class="playbackButton" id="seekForward" title="Seek Forward"><span class="bigger">&raquo;</span></button>
+            <button class="playbackButton" id="seekBack" title="Seek Back (Shift + Left)"><span class="bigger">&laquo;</span></button>
+            <button class="playbackButton" id="play" title="Play (Shift + .)">&#x25ba;</button>
+            <button class="playbackButton" id="pause" title="Pause (Shift + \)">&#10073;&#10073;</button>
+            <button class="playbackButton" id="seekForward" title="Seek Forward (Shift + Right)"><span class="bigger">&raquo;</span></button>
         </div>
         <div id="remoteNav">
             <div class="navRow">
-                <button class="playerNavButton" id="navBack">Back</button>
-                <button class="playerNavButton" id="navUp">Up</button>
-                <button class="playerNavButton" id="plexNavHome">Home</button>
+                <button class="playerNavButton" id="navBack" title="Go Back (Shift + Backspace)">Back</button>
+                <button class="playerNavButton" id="navUp" title="Up (Up Arrow)">Up</button>
+                <button class="playerNavButton" id="plexNavHome" title="Home (Home Key)">Home</button>
             </div>
             <div class="navRow">
-                <button class="playerNavButton" id="navLeft">Left</button>
-                <button class="playerNavButton" id="navSelect">Go</button>
-                <button class="playerNavButton" id="navRight">Right</button>
+                <button class="playerNavButton" id="navLeft" title="Left (Left Arrow)">Left</button>
+                <button class="playerNavButton" id="navSelect" title="Select (Enter)">Go</button>
+                <button class="playerNavButton" id="navRight" title="Right (Right Arrow)">Right</button>
             </div>
             <div class="navRow">
-                <button class="playerNavButton" id="navDown">Down</button>
+                <button class="playerNavButton" id="navDown" title="Down (Down Arrow)">Down</button>
             </div>
         </div>
     </div>

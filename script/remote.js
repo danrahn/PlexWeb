@@ -204,19 +204,19 @@ function parseShortcut(e)
             $("#navPlexHome").click();
             break;
         case KEY.PERIOD:
-            if (key.shiftKey) // '>', which is kind of like a play button
+            if (event.shiftKey) // '>', which is kind of like a play button
             {
                 $("#play").click();
             }
             break;
         case KEY.BACKSLASH:
-            if (key.shiftKey) // '|', pipe, which is kind of like a pause button
+            if (event.shiftKey) // '|', pipe, which is kind of like a pause button
             {
                 $("#pause").click();
             }
             break;
         case KEY.BACKSPACE:
-            if (key.shiftKey)
+            if (event.shiftKey)
             {
                 $("#navBack").click();
             }
