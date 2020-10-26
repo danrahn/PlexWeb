@@ -659,7 +659,7 @@ function onSubmitRequestSucceeded(response)
 {
     if (!response.exists)
     {
-        window.location.href = `https://danrahn.com/plex/request.php?id=${response.req_id}&new=1`;
+        window.location.href = `request.php?id=${response.req_id}&new=1`;
         return;
     }
 

@@ -52,7 +52,7 @@ function check_if_banned()
         return;
     }
 
-    $message = "Your IP has been banned from accessing this resource. If you think this is an error, please contact admin@danrahn.com";
+    $message = "Your IP has been banned from accessing this resource. If you think this is an error, please contact admin@" . SITE_DOMAIN;
     header(HTTPStatusHeader(403), TRUE, 403);
     error_and_exit(403, $message);
 }

@@ -42,15 +42,17 @@ function init_control($identifier, $ip, $client_identifier)
 {
     // NEEDED:
     // X-Plex-Device-Name
+    $domain = SITE_DOMAIN;
+    $client_id_post = str_replace(".", "-", $domain);
     $customHeaders = array(
-        'Accept-Encoding: gzip',
-        'Host: https://danrahn.com:32400',
-        'Connection: Keep-Alive',
-        'X-Plex-Client-Identifier: ' . $client_identifier . '-plex-danrahn-com',
-        'X-Plex-Target-Client-Identifier: ' . $identifier,
+        "Accept-Encoding: gzip",
+        "Host: https://$domain:32400",
+        "Connection: Keep-Alive",
+        "X-Plex-Client-Identifier: $client_identifier-plex-$client_id_post",
+        "X-Plex-Target-Client-Identifier: $identifier",
 
-        'X-Plex-Provides: controller',
-        'X-Plex-Device-Name: Danrahn.com Controller',
+        "X-Plex-Provides: controller",
+        "X-Plex-Device-Name: $domain Controller",
     );
 
     $result = curl(
@@ -82,12 +84,14 @@ function send_command($identifier, $ip, $endpoint, $command, $command_id, $clien
     // Connection: Keep-Alive
     //
     // commandID needs to be there, but the value doesn't seem to actually matter
+    $domain = SITE_DOMAIN;
+    $client_id_post = str_replace(".", "-", $domain);
     $customHeaders = array(
-        'Accept-Encoding: gzip',
-        'Host: https://danrahn.com:32400',
-        'Connection: Keep-Alive',
-        'X-Plex-Client-Identifier: ' . $client_identifier . '-plex-danrahn-com',
-        'X-Plex-Target-Client-Identifier: ' . $identifier
+        "Accept-Encoding: gzip",
+        "Host: https://$domain:32400",
+        "Connection: Keep-Alive",
+        "X-Plex-Client-Identifier: $client_identifier-plex-$client_id_post",
+        "X-Plex-Target-Client-Identifier: $identifier"
     );
 
     $result = curl(

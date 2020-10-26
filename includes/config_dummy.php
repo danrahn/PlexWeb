@@ -28,6 +28,8 @@ define('TMDB_URL', "https://api.themoviedb.org/3/");
 define('BACKING_STORAGE', []); // Location(s) on disk of the plex library, used for storage calculations
 define('PUBLIC_PLEX_HOST', 'https://app.plex.tv'); // Can also forward to custom plex-hosting domain
 define('PUBLIC_PLEX_NAV', 'desktop#!'); // For custom plex-hosted domains, this will likely be 'web/index.html#!/'
+define('SITE_DOMAIN', 'www.example.com'); // Root domain
+define('SITE_SHORT_DOMAIN', 'www.example.com/plexweb'); // where the PlexWeb root lives (potentially the same as SITE_DOMAIN)
 
 $db = new mysqli(DB_SERVER, DB_USERNAME, DB_PASSWORD, DB_NAME);
 if ($db->connect_error)

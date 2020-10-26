@@ -752,13 +752,14 @@ function send_notifications_if_needed($type, $requester, $req_name, $content, $r
     $text = "";
     $email = "<html><body style='background-color:#313131;color=#c1c1c1'><div>";
     $max_text = 160;
+    $domain = SITE_SHORT_DOMAIN;
     switch ($type)
     {
         case "comment":
-            $text = "A comment has been added your your request for " . $req_name . ". See it here: https://plex.danrahn.com/r/" . $req_id;
+            $text = "A comment has been added your your request for $req_name. See it here: https://$domain/r/$req_id";
             if ($text > $max_text)
             {
-                $text = "A comment has been added to one of your requests. See it here: https://plex.danrahn.com/r/" . $req_id;
+                $text = "A comment has been added to one of your requests. See it here: https://$domain/r/$req_id";
             }
 
             // Don't bother with the expensive email creation if we won't even be sending an email
@@ -768,14 +769,14 @@ function send_notifications_if_needed($type, $requester, $req_name, $content, $r
             }
 
             // Emails have more formatting and also displays markdown correctly
-            $style_noise = 'url("https://danrahn.com/plex/res/noise.8b05ce45d0df59343e206bc9ae78d85d.png")';
+            $style_noise = 'url("https://' . $domain . '/res/noise.8b05ce45d0df59343e206bc9ae78d85d.png")';
             $email_style = '<style>.markdownEmailContent { background: rgba(0,0,0,0) ' . $style_noise . ' repeat scroll 0% 0%; ';
             $email_style .= 'color: #c1c1c1 !important; border: 5px solid #919191; } ';
             $email_style .= '.md { color: #c1c1c1 !important; } ';
             $email_style .= '.h1Title { margin-top: 0; padding: 20px; border-bottom: 5px solid #919191; } ';
             $email_style .= '</style>';
 
-            $body_background = "url('https://danrahn.com/plex/res/preset-light.770a0981b66e038d3ffffbcc4f5a26a4.png')";
+            $body_background = "url('https://$domain/res/preset-light.770a0981b66e038d3ffffbcc4f5a26a4.png')";
 
             $subheader = '<h3 style="padding: 0 20px 0 20px;">A comment has been added to your request for ' . $req_name . ':</h3>';
 
@@ -788,23 +789,23 @@ function send_notifications_if_needed($type, $requester, $req_name, $content, $r
             $email .=     '<div class="md" style="padding: 0 20px 20px 20px"><div style="padding-left: 20px">';
             $email .=        $content;
             $email .=     '</div><br>';
-            $email .=     "View your request <a href='https://plex.danrahn.com/request.php?id=" . $req_id . "'>here</a>.";
+            $email .=     "View your request <a href='https://$domain/request.php?id=$req_id'>here</a>.";
             $email .=   '</div>';
             $email .= '</div></body></html>';
             break;
         case "status":
             // This has moved to update_request.php. We should really consolidate the update request
             // logic, since there's a good chunk of dead code between the two implementations
-            $text = "The status of your request has changed:\nRequest: " . $req_name . "\nStatus: " . $content . "\n\nhttps://plex.danrahn.com/request.php?id=" . $req_id;
-            $email = "<div>The status of your request for " . $req_name . " has changed: " . $content . "</div><br />";
-            $email .= "<br />View your request here: https://plex.danrahn.com/request.php?id=" . $req_id;
+            $text = "The status of your request has changed:\nRequest: " . $req_name . "\nStatus: $content\n\nhttps://$domain/request.php?id=$req_id";
+            $email = "<div>The status of your request for $req_name has changed: $content</div><br />";
+            $email .= "<br />View your request here: https://$domain/request.php?id=$req_id";
             $email .= "</div></body></html>";
             break;
         case "create":
-            $text = $requester->username . " created a request for " . $req_name . ". See it here: https://plex.danrahn.com/r/" . $req_id;
+            $text = "$requester->username created a request for $req_name. See it here: https://$domain/r/$req_id";
             if ($text > $max_text)
             {
-                $text = "Someone created a new request. See it here: https://plex.danrahn.com/r/" . $req_id;
+                $text = "Someone created a new request. See it here: https://$domain/r/$req_id";
             }
             $email = $text;
             break;
@@ -1846,7 +1847,7 @@ function get_requests($num, $page, $search, $filter)
         if (!$poster_path)
         {
             // If we don't have a poster path, get it
-            $poster_path = get_poster_path($request->t, $request->eid);
+            $poster_path = get_poster_path($request->t, $request->eid, $request->rid);
         }
 
         if (is_null($request->pid))
@@ -1879,24 +1880,24 @@ function get_requests($num, $page, $search, $filter)
 /// falls back to default posters. If it is found, cache it in the
 /// request.
 /// </summary>
-function get_poster_path($request)
+function get_poster_path($type, $external_id, $request_id)
 {
     global $db;
-    $type = RequestType::get_type((int)$request->t);
+    $type = RequestType::get_type((int)$type);
     $json = NULL;
     $continue = false;
 
     // Some early requests don't have an external id. Don't try
     // to get a poster for a null item, as it will fail anyway
-    if ($request->eid)
+    if ($external_id)
     {
         switch ($type)
         {
             case RequestType::Movie:
-                $json = run_query("movie/" . $request->eid);
+                $json = run_query("movie/" . $external_id);
                 break;
             case RequestType::TVShow:
-                $json = run_query("tv/" . $request->eid);
+                $json = run_query("tv/" . $external_id);
                 break;
             case RequestType::AudioBook:
                 break;
@@ -1951,7 +1952,7 @@ function get_poster_path($request)
         }
     }
 
-    $query = "UPDATE user_requests SET poster_path='$poster_path' WHERE id=$request->rid";
+    $query = "UPDATE user_requests SET poster_path='$poster_path' WHERE id=$request_id";
     $inner_res = $db->query($query);
     if ($inner_res === FALSE)
     {
@@ -2107,7 +2108,7 @@ function get_activities($num, $page, $search, $filter)
         $activity->poster = $row['poster_path'];
         if (!$activity->poster)
         {
-            $activity->poster = get_poster_path($activity->type, $activity->eid);
+            $activity->poster = get_poster_path($activity->type, $activity->eid, $activity->rid);
         }
 
         $admin_id = $row['admin_id'];
@@ -2314,7 +2315,8 @@ function forgot_password($username)
         return '{ "Method" : 4 }';
     }
 
-    $message = "Hello, $username. You recently requested a password reset at plex.danrahn.com. Click the following link to reset your password: https://plex.danrahn.com/reset?token=$token\n\nIf you did not request a password reset, you can ignore this message.";
+    $domain = SITE_SHORT_DOMAIN;
+    $message = "Hello, $username. You recently requested a password reset at $domain. Click the following link to reset your password: https://$domain/reset?token=$token\n\nIf you did not request a password reset, you can ignore this message.";
     send_email_forget($email, $message, "Password Reset");
 
     return '{ "Method" : ' . $method . ' }';
@@ -2406,7 +2408,8 @@ function forgot_password_admin($username, $email)
         return db_error();
     }
 
-    $message = "Hello, $username. You recently requested a password reset at plex.danrahn.com. Click the following link to reset your password: https://plex.danrahn.com/reset?token=$token\n\nIf you did not request a password reset, you can ignore this message.";
+    $domain = SITE_SHORT_DOMAIN;
+    $message = "Hello, $username. You recently requested a password reset at $domain. Click the following link to reset your password: https://$domain/reset?token=$token\n\nIf you did not request a password reset, you can ignore this message.";
     send_email_forget($email, $message, "Password Reset");
 
     return json_success();
@@ -2501,7 +2504,7 @@ function update_poster($rid)
     $request->t = $result["request_type"];
     $request->eid = $result["external_id"];
     $request->rid = $rid;
-    $poster = get_poster_path($request);
+    $poster = get_poster_path($request->t, $request->eid, $rid);
 
     $return = new \stdClass();
     $return->rid = $rid;

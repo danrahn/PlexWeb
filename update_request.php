@@ -71,6 +71,7 @@ function process_request_update($requests)
     // An associative array, mapping contacts (email or phone number)
     // to an array of objects representing individual updates
     $alerts = [];
+    $domain = SITE_SHORT_DOMAIN;
     foreach ($requests as $request)
     {
         $req_id = (int)$request->id;
@@ -137,7 +138,7 @@ function process_request_update($requests)
             $text = "";
             if (count($data->messages) != 1)
             {
-                $text = "Multiple requests have been updated. See them here: https://danrahn.com/plex/requests.php";
+                $text = "Multiple requests have been updated. See them here: https://$domain/requests.php";
             }
             else
             {
@@ -146,19 +147,19 @@ function process_request_update($requests)
                 switch ($message->kind)
                 {
                     case "adm_cm":
-                        $text = "A comment has been added your your request for " . $message->request . ". See it here: https://plex.danrahn.com/r/" . $message->request_id;
+                        $text = "A comment has been added your your request for $message->request. See it here: https://$domain/r/$message->request_id";
                         if (strlen($text) > $max)
                         {
-                            $text = "A comment has been added to one of your requests. See it here: https://plex.danrahn.com/r/" . $message->request_id;
+                            $text = "A comment has been added to one of your requests. See it here: https://$domain/r/$message->request_id";
                         }
                         break;
                     case "status":
                         $status = get_status_string((int)$message->content);
 
-                        $text = "The status of your request for " . $message->request . " has changed to " . $status . ". See it here: https://plex.danrahn.com/r/" . $message->request_id;
+                        $text = "The status of your request for $message->request has changed to $status. See it here: https://$domain/r/$message->request_id";
                         if (strlen($text) > $max)
                         {
-                            $text = "The status of one of your requests has changed to " . $status . ". See it here: https://plex.danrahn.com/r/" . $message->request_id;
+                            $text = "The status of one of your requests has changed to $status. See it here: https://$domain/r/$message->request_id";
                         }
                         break;
                     default:
@@ -174,14 +175,14 @@ function process_request_update($requests)
             $text = '';
             $multi = count($data->messages) > 1;
             // For actual email addresses, add some additional styling. Largely copied from send_notifications_if_needed
-            $style_noise = 'url("https://danrahn.com/plex/res/noise.8b05ce45d0df59343e206bc9ae78d85d.png")';
+            $style_noise = 'url("https://' . $domain . '/res/noise.8b05ce45d0df59343e206bc9ae78d85d.png")';
             $email_style = '<style>.markdownEmailContent { background: rgba(0,0,0,0) ' . $style_noise . ' repeat scroll 0% 0%; ';
             $email_style .= 'color: #c1c1c1 !important; border: 5px solid #919191; } ';
             $email_style .= '.md { color: #c1c1c1 !important; } ';
             $email_style .= '.h1Title { margin-top: 0; padding: 20px; border-bottom: 5px solid #919191; } ';
             $email_style .= '</style>';
 
-            $body_background = "url('https://danrahn.com/plex/res/preset-light.770a0981b66e038d3ffffbcc4f5a26a4.png')";
+            $body_background = "url('https://' . $domain . '/res/preset-light.770a0981b66e038d3ffffbcc4f5a26a4.png')";
 
             $content = '';
             $email = '<html><head><style>' . file_get_contents("style/markdown.css") . '</style>';
@@ -202,7 +203,7 @@ function process_request_update($requests)
                     }
 
                     $status = get_status_string((int)$message->content);
-                    $link = '<a href="https://plex.danrahn.com/r/' . $message->request_id . '">' . $message->request . '</a>';
+                    $link = '<a href="https://' . $domain . '/r/' . $message->request_id . '">' . $message->request . '</a>';
                     $email .= '<li>The status of ' . $link . ' has changed to <em>' . $status . '</em></li>';
                 }
 
@@ -215,7 +216,7 @@ function process_request_update($requests)
                 $email .= '<div class="md" style="margin-left: 10px">';
                 $email .= '<div style="padding: 0 20px 0 20px;">';
                 $email .= 'The status of your request for <strong>' . $message->request . '</strong> has changed to <em>' . $status . '</em>, ';
-                $email .= 'view it <a href="https://plex.danrahn.com/r/' . $message->request_id . '">here</a>.</div>';
+                $email .= 'view it <a href="https://' . $domain . '/r/' . $message->request_id . '">here</a>.</div>';
                 $email .= '<br></div>';
             }
 
