@@ -1,0 +1,38 @@
+.playbackButton, .playerNavButton {
+    background: rgba(0,0,0,0.3);
+    border: 2px solid rgba(0,0,0,0.7);
+    font-size: 14pt;
+    color: #c1c1c1;
+    margin: 5px;
+    cursor: pointer;
+}
+
+.playbackButton {
+    height: 35px;
+    width: 40px;
+}
+
+.playerNavButton {
+    height: 65px;
+    width: 65px;
+    line-height: 65px;
+}
+
+.playbackButton:hover, .playerNavButton:hover {
+    background: rgba(0,0,0,0.2);
+}
+
+.bigger {
+    font-size: 22pt;
+    line-height:25px;
+    padding-bottom: 5px;
+}
+
+#playback, .navRow, .playerSelection {
+    display: flex;
+    justify-content: center;
+}
+
+#remoteNav {
+    margin-top: 20px;
+}

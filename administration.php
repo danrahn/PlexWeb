@@ -235,6 +235,12 @@ else
                     <span>Ban Client</span>
                 </a>
             </div>
+            <div class="action actionRight">
+                <a href="remote.php" class="actionLink">
+                    <img src="<?php icon('remote') ?>" alt="remote control" class="actionImg">
+                    <span>Remote Control</span>
+                </a>
+            </div>
         </div>
     </div>
 </div>

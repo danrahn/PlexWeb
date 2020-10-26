@@ -325,6 +325,22 @@
             "requests"
         ]
     },
+    "remote" :
+    {
+        "js" :
+        [
+            "animate",
+            "common",
+            "consolelog",
+            "nav",
+            "queryStatus"
+        ],
+        "css" :
+        [
+            "style",
+            "nav"
+        ]
+    },
     "reset" :
     {
         "js" :
