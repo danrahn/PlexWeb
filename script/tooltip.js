@@ -86,6 +86,23 @@ let Tooltip = new function()
     };
 
     /// <summary>
+    /// Updates the position of the current tooltip, if active
+    /// </summary>
+    this.updatePosition = function(clientX, clientY)
+    {
+        if (!showingTooltip)
+        {
+            Log.verbose("Not updating tooltip position as it's not currently active");
+            return;
+        }
+
+        let tooltip = $("#tooltip");
+        tooltip.style.top = (clientY + 20) + "px";
+        let max = $("#plexFrame").clientWidth - tooltip.clientWidth - 10;
+        tooltip.style.left = Math.min(clientX, max) + "px";
+    };
+
+    /// <summary>
     /// Core routine to show a tooltip and update its position
     /// Should not be called outside of this file
     /// </summary>
@@ -123,5 +140,13 @@ let Tooltip = new function()
         clearTimeout(tooltipTimer);
         tooltipTimer = null;
         showingTooltip = false;
+    };
+
+    /// <summary>
+    /// Returns whether we're currently showing a tooltip
+    /// </summary>
+    this.active = function()
+    {
+        return showingTooltip;
     };
 }();

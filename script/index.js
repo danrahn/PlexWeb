@@ -948,9 +948,10 @@ function innerUpdate(sesh, addTime=true)
     time.innerHTML = newTimeStr;
     progressHolder.setAttribute("progress", newMsProgress);
 
-    if (progressHolder.hasAttribute("hovered"))
+    // Only update the tooltip if it's actually active
+    if (progressHolder.hasAttribute("hovered") && Tooltip.active())
     {
-        $("#tooltip").innerHTML = getHoverText(progressHolder);
+        progressHoverTooltip(progressHolder, null /*event*/);
     }
 }
 
@@ -1442,9 +1443,117 @@ function getIPInfo(ip, id)
 function progressHover(e)
 {
     this.setAttribute("hovered", true);
-    Tooltip.showTooltip(e, getHoverText(this));
+    progressHoverTooltip(this, e);
 }
 
+/// <summary>
+/// Updates the progress hover tooltip contents, or, if the tooltip is not
+/// active, creates and shows the progress hover tooltip
+/// </summary>
+function progressHoverTooltip(element, event)
+{
+    let sentinel = $("#ttRemaining");
+    if (!Tooltip.active() || !sentinel)
+    {
+        Tooltip.showTooltip(event, getHoverText(element));
+        return;
+    }
+
+    const msRemaining = parseInt(element.getAttribute("duration")) - parseInt(element.getAttribute("progress"));
+    const progress = element.children[0].style.width;
+    const tcprogress = parseFloat(element.getAttribute("tcprogress")).toFixed(2);
+    let tooltip = $("#tooltip");
+
+    $("#ttRemaining").innerHTML = msToHms(msRemaining);
+    $("#ttProgress").innerHtml = parseFloat(progress).toFixed(2) + "%";
+
+    let ttTranscode = $("#ttTranscode");
+
+    // The most dynamic part of this tooltip is based on whether the stream is a direct play or a transcode.
+    // The following accounts for any switches between the two
+    if (tcprogress > 0 && ttTranscode) // Still a transcode
+    {
+        ttTranscode.innerHTML = tcprogress + "%";
+        $("#ttBuffer").innerHTML = (tcprogress - parseFloat(progress)).toFixed(2) + "%";
+    }
+    else if (tcprogress > 0 && !ttTranscode) // Was direct, now transcode
+    {
+        $("#ttDirect").remove();
+        tooltip.children[tooltip.children.length - 1].remove();
+        tooltip.appendChildren(
+            hoverFormat("Transcoded", tcprogress + "%", "ttTranscode"),
+            buildNode("br"),
+            hoverFormat("Buffer", (tcprogress - parseFloat(progress)).toFixed(2) + "%", "ttBuffer"),
+            buildNode("br")
+        );
+    }
+    else if (tcprogress <= 0 && ttTranscode) // Was transcode, now direct
+    {
+        $("#ttTranscode").parentElement.remove();
+        $("#ttBuffer").parentElement.remove();
+        tooltip.children[tooltip.children.length - 1].remove();
+        tooltip.children[tooltip.children.length - 1].remove();
+        tooltip.appendChildren(buildNode("span", {}, "Direct Play", "ttDirect"), buildNode("br"));
+    }
+    // Only other case is that we're still a direct stream, in which case there's nothing to do
+
+    if (!(element.parentElement.id in noPreviewThumbs))
+    {
+        addPreviewThumbnail(element, tooltip);
+    }
+
+    if (event)
+    {
+        Tooltip.updatePosition(event.clientX, event.clientY);
+    }
+}
+
+/// <summary>
+/// Adds or update the live preview thumbnail for the given stream
+/// <summary>
+function addPreviewThumbnail(holder, attach)
+{
+    let part = holder.getAttribute("part_id");
+    let partProgress = holder.getAttribute("progress");
+    let partPath = encodeURIComponent(`/library/parts/${part}/indexes/sd/${partProgress}`);
+    let previewThumbPath = `preview_thumbnail.php?path=${partPath}`;
+    let previewImage = $("#previewThumbnail");
+    if (previewImage)
+    {
+        // Only update the source if it's actually different from the original
+        if (previewImage.src.indexOf(previewThumbPath) == -1)
+        {
+            Log.tmi(`Getting new thumb path. Was ${previewImage.src}. Now ${previewThumbPath}`);
+            previewImage.src = previewThumbPath;
+        }
+    }
+    else
+    {
+        // First retrieval of the live preview thumbnail. Attach the image element to the tooltip
+        attach.appendChild(buildNode(
+            "img",
+            {
+                id : "previewThumbnail",
+                src : previewThumbPath,
+                width : "214px",
+                height : "100px",
+                parentId : holder.parentElement.id
+            },
+            0,
+            {
+                error : function()
+                {
+                    this.style.display = "none";
+                    noPreviewThumbs[this.getAttribute("parentId")] = true;
+                }
+            })
+        );
+    }
+}
+
+/// <summary>
+/// Set of stream IDs that don't have live preview thumbnails
+/// </summary>
 let noPreviewThumbs = {};
 
 /// <summary>
@@ -1454,45 +1563,31 @@ function getHoverText(element)
 {
     let tcString = buildNode("div");
     const msRemaining = parseInt(element.getAttribute("duration")) - parseInt(element.getAttribute("progress"));
-    tcString.appendChildren(hoverFormat("Remaining", msToHms(msRemaining)), buildNode("br"));
+    tcString.appendChildren(hoverFormat("Remaining", msToHms(msRemaining), "ttRemaining"), buildNode("br"));
 
     const progress = element.children[0].style.width;
     const tcprogress = parseFloat(element.getAttribute("tcprogress")).toFixed(2);
-    tcString.appendChildren(hoverFormat("Play Progress", parseFloat(progress).toFixed(2) + "%"), buildNode("br"));
+    tcString.appendChildren(
+        hoverFormat("Play Progress", parseFloat(progress).toFixed(2) + "%", "ttProgress"),
+        buildNode("br"));
 
     if (tcprogress > 0)
     {
         tcString.appendChildren(
-            hoverFormat("Transcoded", tcprogress + "%"),
+            hoverFormat("Transcoded", tcprogress + "%", "ttTranscode"),
             buildNode("br"),
-            hoverFormat("Buffer", (tcprogress - parseFloat(progress)).toFixed(2) + "%"),
+            hoverFormat("Buffer", (tcprogress - parseFloat(progress)).toFixed(2) + "%", "ttBuffer"),
             buildNode("br")
         );
     }
     else
     {
-        tcString.appendChildren(buildNode("span", {}, "Direct Play"), buildNode("br"));
+        tcString.appendChildren(buildNode("span", { id : "ttDirect" }, "Direct Play"), buildNode("br"));
     }
 
     if (!(element.parentElement.id in noPreviewThumbs))
     {
-        let part = element.getAttribute("part_id");
-        let partProgress = element.getAttribute("progress");
-        let partPath = encodeURIComponent(`/library/parts/${part}/indexes/sd/${partProgress}`);
-        let previewThumbPath = `preview_thumbnail.php?path=${partPath}`;
-        tcString.appendChild(buildNode(
-            "img",
-            {
-                id : "previewThumbnail",
-                src : previewThumbPath,
-                width : "214px",
-                height : "100px",
-                parentId : element.parentElement.id
-            },
-            0,
-            {
-                error : function() { this.style.display = "none"; noPreviewThumbs[this.getAttribute("parentId")] = true; }
-            }));
+        addPreviewThumbnail(element, tcString);
     }
 
     return tcString.innerHTML;
@@ -1501,9 +1596,9 @@ function getHoverText(element)
 /// <summary>
 /// Returns a formatted line for a stream progress tooltip
 /// </summary>
-function hoverFormat(title, data)
+function hoverFormat(title, data, id)
 {
-    return buildNode("span", {}, `${title}: `).appendChildren(buildNode("span", { class : "tooltipProgress" }, data));
+    return buildNode("span", {}, `${title}: `).appendChildren(buildNode("span", { id : id, class : "tooltipProgress" }, data));
 }
 
 /// <summary>
