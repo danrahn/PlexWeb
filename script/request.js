@@ -499,7 +499,7 @@ function getMediaInfo()
     };
     let failureFunc = function()
     {
-        $("#infoContainer").innerHTML = "Unable to query request information";
+        $("#loadingInfo").innerHTML = "Unable to query request information";
     };
     sendHtmlJsonRequest("media_search.php", parameters, successFunc, failureFunc);
 }
@@ -619,7 +619,7 @@ function getNonMediaInfo()
         )
     );
 
-    $("#infoContainer").innerHTML = "";
+    $("#loadingInfo").parentElement.removeChild($("#loadingInfo"));
     $("#infoContainer").appendChild(outerContainer);
 }
 
@@ -718,6 +718,7 @@ function externalLink(url, text)
 /// </summary>
 function buildPage(data)
 {
+    $("#loadingInfo").parentElement.removeChild($("#loadingInfo"));
     let container = $("#infoContainer");
     container.innerHTML = "";
 

@@ -73,7 +73,8 @@ function get_details($req_id)
     <div id="plexFrame">
         <?php include "nav.php" ?>
         <?php if (!$details->is_media_request || $details->external_id) { ?>
-            <div id="infoContainer">Getting info...</div>
+            <div id="loadingInfo"><img src='<?php icon("loading") ?>' alt="Loading" width="15%"></div>
+            <div id="infoContainer"></div>
             <div id="commentsHolder">
                 <div style="margin-bottom: 10px" class="commentHeader">Comments:</div>
                 <div id="comments">

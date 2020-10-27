@@ -124,6 +124,13 @@ input[type=checkbox]:focus {
     height: 20px;
 }
 
+#loadingInfo {
+    margin-top: 50px;
+    display: flex;
+    justify-content: center;
+    color: #c1c1c1;
+}
+
 #infoContainer, #commentsHolder {
     width: 100%;
     color: #c1c1c1;
