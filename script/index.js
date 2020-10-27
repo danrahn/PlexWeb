@@ -1200,7 +1200,8 @@ function buildActivityProgress(sesh)
             class : "progressHolder",
             progress : sesh.progress,
             duration : sesh.duration,
-            tcprogress : tcprogress
+            tcprogress : tcprogress,
+            part_id : sesh.part
         },
         0,
         {
@@ -1444,6 +1445,8 @@ function progressHover(e)
     Tooltip.showTooltip(e, getHoverText(this));
 }
 
+let noPreviewThumbs = {};
+
 /// <summary>
 /// Gets the hover text for the given element (must be of class progressHolder)
 /// </summary>
@@ -1462,12 +1465,34 @@ function getHoverText(element)
         tcString.appendChildren(
             hoverFormat("Transcoded", tcprogress + "%"),
             buildNode("br"),
-            hoverFormat("Buffer", (tcprogress - parseFloat(progress)).toFixed(2) + "%")
+            hoverFormat("Buffer", (tcprogress - parseFloat(progress)).toFixed(2) + "%"),
+            buildNode("br")
         );
     }
     else
     {
-        tcString.appendChild(buildNode("span", {}, "Direct Play"));
+        tcString.appendChildren(buildNode("span", {}, "Direct Play"), buildNode("br"));
+    }
+
+    if (!(element.parentElement.id in noPreviewThumbs))
+    {
+        let part = element.getAttribute("part_id");
+        let partProgress = element.getAttribute("progress");
+        let partPath = encodeURIComponent(`/library/parts/${part}/indexes/sd/${partProgress}`);
+        let previewThumbPath = `preview_thumbnail.php?path=${partPath}`;
+        tcString.appendChild(buildNode(
+            "img",
+            {
+                id : "previewThumbnail",
+                src : previewThumbPath,
+                width : "214px",
+                height : "100px",
+                parentId : element.parentElement.id
+            },
+            0,
+            {
+                error : function() { this.style.display = "none"; noPreviewThumbs[this.getAttribute("parentId")] = true; }
+            }));
     }
 
     return tcString.innerHTML;
