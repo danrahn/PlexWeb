@@ -1,3 +1,7 @@
+* {
+    color: #c1c1c1;
+}
+
 .playbackButton, .playerNavButton {
     background: rgba(0,0,0,0.3);
     border: 2px solid rgba(0,0,0,0.7);
@@ -34,4 +38,20 @@
 
 #remoteNav {
     margin-top: 20px;
+}
+
+#refreshClients {
+    cursor: pointer;
+    margin-left: 5px;
+    margin-right: 5px;
+}
+
+#refreshClients:hover {
+    color: #a1a1a1;
+}
+
+#remoteNav button:disabled {
+    color: #818181;
+    cursor: no-drop;
+    background-color: rgba(0,0,0,0.3);
 }

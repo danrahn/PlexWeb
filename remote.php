@@ -15,18 +15,18 @@ if (!UserLevel::is_admin())
 /// <summary>
 /// Performs the remote operation
 /// </summary>
-function remote($identifier, $ip, $endpoint, $command, $command_id, $client_identifier)
+function remote($identifier, $endpoint, $command, $command_id, $client_identifier)
 {
-    $result = send_command($identifier, $ip, $endpoint, $command, $command_id, $client_identifier);
+    $result = send_command($identifier, $endpoint, $command, $command_id, $client_identifier);
     if (!property_exists(json_decode($result), "Success"))
     {
-        $result = init_control($identifier, $ip, $client_identifier);
+        $result = init_control($identifier, $client_identifier);
         if (!property_exists(json_decode($result), "Success"))
         {
             return $result;
         }
 
-        $result = json_decode(send_command($identifier, $ip,  $endpoint, $command, 2, $client_identifier));
+        $result = json_decode(send_command($identifier, $endpoint, $command, 2, $client_identifier));
         $result->needed_init = TRUE;
         return json_encode($result);
     }
@@ -38,7 +38,7 @@ function remote($identifier, $ip, $endpoint, $command, $command_id, $client_iden
 /// On the first remote command sent (or if it's been awhile since the last one),
 /// we need to register with Plex as a remote
 /// </summary>
-function init_control($identifier, $ip, $client_identifier)
+function init_control($identifier, $client_identifier)
 {
     // NEEDED:
     // X-Plex-Device-Name
@@ -56,8 +56,8 @@ function init_control($identifier, $ip, $client_identifier)
     );
 
     $result = curl(
-        "$ip:32400/player/timeline/subscribe?protocol=https&port=32500&commandID=1&includeExternalMedia=1&" . PLEX_TOKEN,
-        Array(CURLOPT_HTTPHEADER => $customHeaders)
+        PLEX_HOST . ":" . PLEX_PORT . "/player/timeline/subscribe?protocol=https&port=32500&commandID=1&includeExternalMedia=1&" . PLEX_TOKEN,
+        Array(CURLOPT_HTTPHEADER => $customHeaders, CURLOPT_TIMEOUT => 2, CURLOPT_ENCODING => "gzip")
     );
 
     if ($result && $result[0] == '{')
@@ -72,7 +72,7 @@ function init_control($identifier, $ip, $client_identifier)
 /// <summary>
 /// Attempts to send the remote command to the given client
 /// </summary>
-function send_command($identifier, $ip, $endpoint, $command, $command_id, $client_identifier)
+function send_command($identifier, $endpoint, $command, $command_id, $client_identifier)
 {
     // NEEDED:
     // X-Plex-Client-Identifier
@@ -95,8 +95,8 @@ function send_command($identifier, $ip, $endpoint, $command, $command_id, $clien
     );
 
     $result = curl(
-        "$ip:32400/player/$endpoint/$command?type=video&commandID=$command_id&" . PLEX_TOKEN,
-        array(CURLOPT_HTTPHEADER => $customHeaders)
+        PLEX_HOST . ":" . PLEX_PORT . "/player/$endpoint/$command?type=video&commandID=$command_id&" . PLEX_TOKEN,
+        array(CURLOPT_HTTPHEADER => $customHeaders, CURLOPT_TIMEOUT => 2, CURLOPT_ENCODING => "gzip")
     );
 
     if ($result && $result[0] == '{')
@@ -108,45 +108,7 @@ function send_command($identifier, $ip, $endpoint, $command, $command_id, $clien
 }
 
 /// <summary>
-/// Returns a list of players we can potentially control
-/// </summary>
-function get_players($type)
-{
-    switch ($type)
-    {
-        case "active":
-            return get_sessions();
-        case "passive":
-            return get_clients();
-        default:
-        return json_error("Unknown type '$type'");
-    }
-}
-
-/// <summary>
-/// Get players for active streams only
-/// </summary>
-function get_sessions()
-{
-    $sessions = simplexml_load_string(curl(PLEX_SERVER . '/status/sessions?' . PLEX_TOKEN));
-    $return = array();
-    foreach ($sessions as $sesh)
-    {
-        $player = $sesh->xpath("Player")[0];
-        $ip = (string)$player['remotePublicAddress'];
-        $id = (string)$player['machineIdentifier'];
-        $entry = new \stdClass();
-        $entry->ip = $ip;
-        $entry->user = (string)$sesh->xpath("User")[0]["title"];
-        $entry->device = (string)$player->product . " (" . (string)$player['title'] . ")";
-        $return[$id] = $entry;
-    }
-
-    return json_encode($return);
-}
-
-/// <summary>
-/// Get players for all clients, not just ones that are actively playing media
+/// Get all clients we can potentially control
 /// </summary>
 function get_clients()
 {
@@ -158,25 +120,45 @@ function get_clients()
         $id = (string)$client['machineIdentifier'];
         $entry = new \stdClass();
         $entry->ip = $ip;
-        $entry->user = "";
+        $entry->user = try_get_user($id);
         $entry->device = (string)$client['product'] . " (" . (string)$client['name'] . ")";
+        $entry->capabilities = explode(",", $client['protocolCapabilities']);
         $return[$id] = $entry;
     }
 
     return json_encode($return);
 }
 
+/// <summary>
+/// The Client list does not include the user associated with the machine, but if that client
+/// is currently playing something we can still match it.
+/// </summary>
+function try_get_user($id)
+{
+    $sessions = simplexml_load_string(curl(PLEX_SERVER . '/status/sessions?' . PLEX_TOKEN));
+    foreach ($sessions as $sesh)
+    {
+        $player = $sesh->xpath("Player")[0];
+        if ($id == (string)$player['machineIdentifier'])
+        {
+            return (string)$sesh->xpath("User")[0]["title"];
+        }
+    }
+
+    return "";
+}
+
 $endpoint = try_get("endpoint");
 if ($endpoint)
 {
-    json_message_and_exit(remote(get("id"), get("ip"), get("endpoint"), get("command"), get("command_id"), get("client_id")));
+    json_message_and_exit(remote(get("id"), get("endpoint"), get("command"), get("command_id"), get("client_id")));
 }
 else
 {
-    $type = try_get("type");
+    $type = try_get("clients");
     if ($type)
     {
-        json_message_and_exit(get_players($type));
+        json_message_and_exit(get_clients());
     }
 ?>
 
@@ -196,12 +178,9 @@ else
 <div id="plexFrame">
     <?php include "nav.php" ?>
     <div id="container">
-        <h2 style="margin-top:50px; color:#c1c1c1">Remote Control</h2>
+        <h2 style="margin-top:50px;">Remote Control</h2>
         <div class="playerSelection">
-            <select id="type">
-                <option value="active" selected>Active Sessions</option>
-                <option value="passive">All Sessions</option>
-            </select>
+            <div>Client:<span id="refreshClients" title="Refresh Clients">&#8635;</span></div>
         </div>
         <div class="playerSelection">
             <select id="devices"></select>

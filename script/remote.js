@@ -85,7 +85,6 @@ function player(element, endpoint, command)
     let params =
     {
         id : device,
-        ip : globalPlayers[device].ip,
         endpoint : endpoint,
         command : command,
         command_id : commandIds[device],
@@ -100,16 +99,16 @@ function player(element, endpoint, command)
 /// </summary>
 function setupPlayerList()
 {
-    $("#type").addEventListener("change", retrievePlayers);
-    $("#devices").addEventListener("change", changeDeviceTitle);
+    $("#refreshClients").addEventListener("click", retrievePlayers);
+    $("#devices").addEventListener("change", changeDevice);
     retrievePlayers();
-    changeDeviceTitle();
+    changeDevice();
 }
 
 /// <summary>
 /// When the selected device changes, set the tooltip to be the IP address of the given player
 /// </summary>
-function changeDeviceTitle()
+function changeDevice()
 {
     let devices = $("#devices");
     let device = devices.value;
@@ -120,6 +119,15 @@ function changeDeviceTitle()
     }
 
     devices.title = globalPlayers[device].ip;
+    toggleNavigationControls(globalPlayers[device].capabilities.indexOf("navigation") != -1);
+}
+
+function toggleNavigationControls(enabled)
+{
+    $("#remoteNav button").forEach(function(element)
+    {
+        element.disabled = !enabled;
+    });
 }
 
 /// <summary>
@@ -139,7 +147,7 @@ function retrievePlayers()
         buildPlayerList();
     };
 
-    sendHtmlJsonRequest("remote.php", { type : $("#type").value }, successFunc, failureFunc);
+    sendHtmlJsonRequest("remote.php", { clients : true }, successFunc, failureFunc);
 }
 
 /// <summary>
@@ -164,7 +172,7 @@ function buildPlayerList()
         devices.appendChild(buildNode("option", { value : keys[i] }, name));
     }
 
-    changeDeviceTitle();
+    changeDevice();
 }
 
 function setupShortcuts()
@@ -204,19 +212,19 @@ function parseShortcut(e)
             $("#navPlexHome").click();
             break;
         case KEY.PERIOD:
-            if (event.shiftKey) // '>', which is kind of like a play button
+            if (e.shiftKey) // '>', which is kind of like a play button
             {
                 $("#play").click();
             }
             break;
         case KEY.BACKSLASH:
-            if (event.shiftKey) // '|', pipe, which is kind of like a pause button
+            if (e.shiftKey) // '|', pipe, which is kind of like a pause button
             {
                 $("#pause").click();
             }
             break;
         case KEY.BACKSPACE:
-            if (event.shiftKey)
+            if (e.shiftKey)
             {
                 $("#navBack").click();
             }
