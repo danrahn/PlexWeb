@@ -241,6 +241,17 @@
     font-weight: lighter;
 }
 
+#previewThumbnailHolder {
+    display: flex;
+    justify-content: center;
+}
+
+#previewThumbnail {
+    display: flex;
+    justify-content: center;
+    border: 1px solid black;
+}
+
 /* Desktop/Landscape */
 @media (orientation: landscape), (min-width: 767px) {
     .details {

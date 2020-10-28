@@ -848,7 +848,7 @@ function trimSessions(newSessions, existingSessions)
             {
                 // If this is the currently hovered item, make sure we remove the tooltip,
                 // otherwise it won't go away until another progress bar is hovered
-                $("#tooltip").style.display = "none";
+                Tooltip.dismiss();
             }
 
             $("#" + session.id).remove();
@@ -1517,7 +1517,7 @@ function addPreviewThumbnail(holder, attach)
     let partProgress = holder.getAttribute("progress");
     let partPath = encodeURIComponent(`/library/parts/${part}/indexes/sd/${partProgress}`);
     let previewThumbPath = `preview_thumbnail.php?path=${partPath}`;
-    let previewImage = $("#previewThumbnail");
+    let previewImage = attach.$("#previewThumbnail");
     if (previewImage)
     {
         // Only update the source if it's actually different from the original
@@ -1530,23 +1530,27 @@ function addPreviewThumbnail(holder, attach)
     else
     {
         // First retrieval of the live preview thumbnail. Attach the image element to the tooltip
-        attach.appendChild(buildNode(
-            "img",
-            {
-                id : "previewThumbnail",
-                src : previewThumbPath,
-                width : "214px",
-                height : "100px",
-                parentId : holder.parentElement.id
-            },
-            0,
-            {
-                error : function()
+        attach.appendChild(
+            buildNode(
+                "span",
+                { id : "previewThumbnailHolder" }
+            ).appendChildren(buildNode(
+                "img",
                 {
-                    this.style.display = "none";
-                    noPreviewThumbs[this.getAttribute("parentId")] = true;
-                }
-            })
+                    id : "previewThumbnail",
+                    src : previewThumbPath,
+                    height : "100px",
+                    parentId : holder.parentElement.id
+                },
+                0,
+                {
+                    error : function()
+                    {
+                        this.style.display = "none";
+                        noPreviewThumbs[this.getAttribute("parentId")] = true;
+                    }
+                })
+            )
         );
     }
 }
