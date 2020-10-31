@@ -709,10 +709,17 @@ function get_tv_hyperlink($show_guid)
     $episode = $tvdb_client->get_episode($arr[0], $arr[1], $arr[2]);
     if ($episode->isError())
     {
-        // Log errors to a file, since it's much more likely to be buggy than the better
-        // supported package this replaced
-        file_put_contents("includes/tvdberror.txt", $episode->getError() . "\n", FILE_APPEND);
-        return "";
+        // As a backup, attempt to grab the IMDb id for the series as a whole
+        $series = $tvdb_client->get_series($arr[0]);
+        if ($series->isError())
+        {
+            // Log errors to a file, since it's much more likely to be buggy than the better
+            // supported package this replaced
+            file_put_contents("includes/tvdberror.txt", $series->getError() . "\n", FILE_APPEND);
+            return "";
+        }
+
+        return $series->getImdbLink(); // Don't cache (for now), in hopes of us eventually getting the right ID
     }
     else
     {

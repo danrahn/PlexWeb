@@ -1331,7 +1331,7 @@ function get_imdb_link_from_guid($guid, $type)
             return $guid;
         }
 
-        $imdb = $tvdb_client->get_series($id)['imdbId'];
+        $imdb = $tvdb_client->get_series($id)->getImdbLink();
         $result = $db->query("INSERT INTO imdb_tv_cache (show_id, season, episode, imdb_link) VALUES ($id, -1, -1, '$imdb')");
         return $imdb;
     }
@@ -1377,11 +1377,13 @@ function get_season_details($path)
 
             if ($totalSeasons == 0)
             {
-                $details->totalSeasons = $tvdb_client->get_series($seasonGuid)['season'];
+                $details->totalSeasons = $tvdb_client->get_series($seasonGuid)->getSeasonCount();
             }
 
             $totalEpisodes = count($tvdb_client->get_season_episodes($seasonGuid, $data->season));
-            $data->complete = $totalEpisodes == $availableEpisodes;
+
+            // Say we're complete if we have at least as many episodes as TVDb says there are in the season
+            $data->complete = $totalEpisodes <= $availableEpisodes;
         }
         else
         {

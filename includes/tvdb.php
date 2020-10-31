@@ -4,11 +4,52 @@
 /// </summary>
 require_once "includes/config.php";
 
+/// </summary>
+/// Base class for episodes and series (and potentially in the future, seasons)
+/// </summary
+class Media
+{
+    protected $error;
+    public function check_error($data)
+    {
+        if (isset($data['data']) && count($data['data']) != 1)
+        {
+            $this->error = FALSE;
+            return FALSE;
+        }
+
+        if (isset($data['Error']))
+        {
+            $this->error = $data['Error'];
+        }
+        else if (isset($data['data']) && count($data['data']) != 1)
+        {
+            $this->error = "Episode query was ambiguous";
+        }
+        else
+        {
+            $this->error = "Something went wrong";
+        }
+
+        return TRUE;
+    }
+
+    public function isError()
+    {
+        return !!$this->error;
+    }
+
+    public function getError()
+    {
+        return $this->error;
+    }
+}
+
 /// <summary>
 /// A class containing relevant Episode information. imdbId is currently
 /// the only field that's actually used
 /// </summary>
-class Episode
+class Episode extends Media
 {
     private $id;
     private $season;
@@ -22,22 +63,10 @@ class Episode
     /// </summary>
     public function __construct($tvdb, $data)
     {
-        if (!isset($data['data']) || count($data['data']) != 1)
+        if ($this->check_error($data))
         {
-            if (isset($data['Error']))
-            {
-                $this->error = $data['Error'];
-            }
-            else if (isset($data['data']) && count($data['data']) != 1)
-            {
-                $this->error = "Episode query was ambiguous";
-            }
-
-            $this->error = "Something went wrong";
             return;
         }
-
-        $this->error = false;
 
         $data = $data['data'][0];
         $this->id = $data['id'];
@@ -52,18 +81,6 @@ class Episode
         {
             $this->imdb = $this->getBackupId($tvdb, $data['seriesId']);
         }
-    }
-
-    public function isError()
-    {
-        return !!$this->error;
-    }
-
-    // Simple accessors
-
-    public function getError()
-    {
-        return $this->error;
     }
 
     public function getId()
@@ -102,7 +119,52 @@ class Episode
             $tvdb->login();
         }
 
-        return $tvdb->get_series($seriesId)['imdbId'];
+        return $tvdb->get_series($seriesId)->getImdbLink();
+    }
+}
+
+/// <summary>
+/// Simple class that defines a series
+/// </summary>
+class Series extends Media
+{
+    private $id;
+    private $imdb;
+    private $name;
+    private $seasons;
+
+    public function __construct($data)
+    {
+        if ($this->check_error($data))
+        {
+            return;
+        }
+
+        $data = $data['data'];
+        $this->id = $data['id'];
+        $this->seasons = $data['season'];
+        $this->name = $data['seriesName'] ?? "";
+        $this->imdb = $data['imdbId'] ?? "";
+    }
+
+    public function getId()
+    {
+        return $this->id;
+    }
+
+    public function getName()
+    {
+        return $this->name;
+    }
+
+    public function getSeasonCount()
+    {
+        return $this->seasons;
+    }
+
+    public function getImdbLink()
+    {
+        return $this->imdb;
     }
 }
 
@@ -163,7 +225,7 @@ class Tvdb
     {
         $data = [];
         $response = json_decode($this->apiCall('GET', 'series/' . $showId, $data), true);
-        return $response['data'];
+        return new Series($response);
     }
 
     /// <summary>
