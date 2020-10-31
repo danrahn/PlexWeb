@@ -62,7 +62,7 @@ let Tooltip = new function()
         }
     };
 
-    let tooltipTimer;
+    let tooltipTimer = null;
     let showingTooltip = false;
     let ttElement = null;
 
@@ -85,6 +85,8 @@ let Tooltip = new function()
         tooltipTimer = setTimeout(showTooltipCore, delay, e, text);
     };
 
+    const windowMargin = 10;
+
     /// <summary>
     /// Updates the position of the current tooltip, if active
     /// </summary>
@@ -97,9 +99,11 @@ let Tooltip = new function()
         }
 
         let tooltip = $("#tooltip");
-        tooltip.style.top = (clientY + 20) + "px";
-        let max = $("#plexFrame").clientWidth - tooltip.clientWidth - 10;
-        tooltip.style.left = Math.min(clientX, max) + "px";
+        let maxHeight = $("#plexFrame").clientHeight - tooltip.clientHeight - 20 - windowMargin;
+        tooltip.style.top = (Math.min(clientY, maxHeight) + 20) + "px";
+        let avoidOverlay = clientY > maxHeight ? 10 : 0;
+        let maxWidth = $("#plexFrame").clientWidth - tooltip.clientWidth - windowMargin - avoidOverlay;
+        tooltip.style.left = (Math.min(clientX, maxWidth) + avoidOverlay) + "px";
     };
 
     /// <summary>
@@ -115,16 +119,18 @@ let Tooltip = new function()
 
         ttElement = e.target;
         showingTooltip = true;
-        const top = (e.clientY + 20) + "px";
         let tooltip = $("#tooltip");
-        tooltip.style.top = top;
 
         let ttUpdated = ttElement && ttElement.getAttribute("tt");
         tooltip.innerHTML = ttUpdated || text;
         tooltip.style.display = "inline";
 
-        let max = $("#plexFrame").clientWidth - tooltip.clientWidth - 10;
-        tooltip.style.left = Math.min(e.clientX, max) + "px";
+        let maxHeight = $("#plexFrame").clientHeight - tooltip.clientHeight - 20 - windowMargin;
+        tooltip.style.top = (Math.min(e.clientY, maxHeight) + 20) + "px";
+
+        let avoidOverlay = e.clientY > maxHeight ? 10 : 0;
+        let maxWidth = $("#plexFrame").clientWidth - tooltip.clientWidth - windowMargin - avoidOverlay;
+        tooltip.style.left = (Math.min(e.clientX, maxWidth) + avoidOverlay) + "px";
     };
 
     /// <summary>
