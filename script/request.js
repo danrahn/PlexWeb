@@ -574,7 +574,7 @@ const statusColors = ["C84", "4C4", "C44", "CC4", "44C"];
 function getStatusSpan(status)
 {
     let statusSpan = buildNode("span",
-        { class : `status${status}` },
+        { class : `status${status} statusSpan` },
         [
             "Pending",
             "Complete",
