@@ -235,10 +235,37 @@ function addTvStats(tv)
         height : 100,
         points : barPoints,
         title : "Content Rating",
-        noTitle : true
+        noTitle : true,
+        sortFn : tvSort
     };
 
     appendChart(g_chartCache.tv, "tvGraph", false /*isPie*/);
+}
+
+/// <summary>
+/// Order of TV content ratings in the US. Anything not listed here
+/// will go to the end of the content rating chart
+/// </summary>
+const tvContentRatings = {
+    "TV-Y" : 0,
+    "TV-Y7" : 1,
+    "TV-G" : 2,
+    "TV-PG" : 3,
+    "TV-14" : 4,
+    "TV-MA" : 5
+};
+
+const tvContentRatingsMax = 6;
+
+/// <summary>
+/// Sorts TV content ratings by their "severity"
+/// </summary>
+function tvSort(left, right)
+{
+    let leftRank = (left.label in tvContentRatings) ? tvContentRatings[left.label] : tvContentRatingsMax;
+    let rightRank = (right.label in tvContentRatings) ? tvContentRatings[right.label] : tvContentRatingsMax;
+    Log.verbose(`Comparing ${left.label} to ${right.label}: ${leftRank - rightRank}`);
+    return leftRank - rightRank;
 }
 
 /// <summary>
@@ -275,15 +302,14 @@ function addMusicStats(music)
         buildNode("li").appendChild(ul)
     );
 
-    barPoints.sort((left, right) => right.label - left.label);
-
     g_chartCache.music =
     {
         width : 140,
         height : 100,
         points : barPoints,
         title : "Decades",
-        noTitle : true
+        noTitle : true,
+        sortFn : (left, right) => right.label - left.label
     };
     appendChart(g_chartCache.music, "musicGraph", false /*isPie*/);
 }

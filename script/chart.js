@@ -93,6 +93,7 @@ let Chart = new function()
     {
         // For now, don't bother with negative values and assume all charts start at 0
         let max = data.points.reduce((acc, cur) => acc < cur.value ? cur.value : acc, 0);
+        sortBar(data);
 
         let hasTitle = data.title && !data.noTitle;
         let titleOffset = hasTitle ? 40 : 0;
@@ -147,6 +148,27 @@ let Chart = new function()
         }
 
         return svg;
+    };
+
+    /// <summary>
+    /// Sorts a bar chart's data points, unless we explicitly don't want to.
+    /// If data.sortFn is set, sort on that function. Otherwise, do a default smallest-to-largest sort
+    /// </summary>
+    let sortBar = function(data)
+    {
+        if (data.noSort)
+        {
+            return;
+        }
+
+        if (data.sortFn)
+        {
+            data.points.sort(data.sortFn);
+        }
+        else
+        {
+            data.points.sort((a, b) => a.value - b.value);
+        }
     };
 
     /// <summary>
