@@ -1461,12 +1461,35 @@ function progressHoverTooltip(element, event)
 
     const msRemaining = parseInt(element.getAttribute("duration")) - parseInt(element.getAttribute("progress"));
     const progress = element.children[0].style.width;
-    const tcprogress = parseFloat(element.getAttribute("tcprogress")).toFixed(2);
     let tooltip = $("#tooltip");
 
     $("#ttRemaining").innerHTML = msToHms(msRemaining);
-    $("#ttProgress").innerHtml = parseFloat(progress).toFixed(2) + "%";
+    $("#ttProgress").innerHTML = parseFloat(progress).toFixed(2) + "%";
 
+    updateTranscodeTooltip(tooltip, progress, element);
+
+    if (element.parentElement.id in noPreviewThumbs)
+    {
+        let thumbHolder = $("#previewThumbnailHolder");
+        if (thumbHolder)
+        {
+            thumbHolder.style.display = "none";
+        }
+    }
+    else
+    {
+        addPreviewThumbnail(element, tooltip);
+    }
+
+    if (event && Tooltip.active())
+    {
+        Tooltip.updatePosition(event.clientX, event.clientY);
+    }
+}
+
+function updateTranscodeTooltip(tooltip, progress, element)
+{
+    const tcprogress = parseFloat(element.getAttribute("tcprogress")).toFixed(2);
     let ttTranscode = $("#ttTranscode");
 
     // The most dynamic part of this tooltip is based on whether the stream is a direct play or a transcode.
@@ -1496,16 +1519,6 @@ function progressHoverTooltip(element, event)
         tooltip.appendChildren(buildNode("span", {}, "Direct Play", "ttDirect"), buildNode("br"));
     }
     // Only other case is that we're still a direct stream, in which case there's nothing to do
-
-    if (!(element.parentElement.id in noPreviewThumbs))
-    {
-        addPreviewThumbnail(element, tooltip);
-    }
-
-    if (event)
-    {
-        Tooltip.updatePosition(event.clientX, event.clientY);
-    }
 }
 
 /// <summary>
@@ -1546,7 +1559,8 @@ function addPreviewThumbnail(holder, attach)
                 {
                     error : function()
                     {
-                        this.style.display = "none";
+                        Log.verbose("Adding " + this.getAttribute("parentId") + " to bad ids");
+                        this.parentNode.style.display = "none";
                         noPreviewThumbs[this.getAttribute("parentId")] = true;
                     }
                 })
