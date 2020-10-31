@@ -162,8 +162,10 @@ function addMovieStats(movies)
     createStatSection("movie");
     let piePoints = [];
     let ul = buildNode("ul", { class : "innerStatList" });
-    for (let [resolution, count] of Object.entries(movies.resolution))
+    let resolutions = sortResolutions(movies.resolution);
+    for (let resolution of resolutions)
     {
+        let count = movies.resolution[resolution];
         piePoints.push({ value : parseInt(count), label : resolution });
         ul.appendChild(
             buildNode("li").appendChildren(
@@ -193,6 +195,32 @@ function addMovieStats(movies)
     };
 
     appendChart(g_chartCache.movies, "movieGraph", true);
+}
+
+/// <summary>
+/// Return an array of resolutions from highest to lowest resolution
+/// </summary>
+function sortResolutions(resolutions)
+{
+    /* eslint-disable quote-props */
+    const possibleResolutions = {
+        "4K" : 0,
+        "1080p" : 1,
+        "720p" : 2,
+        "480p" : 3,
+        "SD" : 4
+    };
+    /* eslint-enable quote-props */
+
+    let sorted = Object.keys(resolutions);
+    sorted.sort(function(left, right)
+    {
+        let leftRank = (left in possibleResolutions) ? possibleResolutions[left] : possibleResolutions;
+        let rightRank = (right in possibleResolutions) ? possibleResolutions[right] : possibleResolutions;
+        return leftRank - rightRank;
+    });
+
+    return sorted;
 }
 
 /// <summary>
@@ -264,7 +292,6 @@ function tvSort(left, right)
 {
     let leftRank = (left.label in tvContentRatings) ? tvContentRatings[left.label] : tvContentRatingsMax;
     let rightRank = (right.label in tvContentRatings) ? tvContentRatings[right.label] : tvContentRatingsMax;
-    Log.verbose(`Comparing ${left.label} to ${right.label}: ${leftRank - rightRank}`);
     return leftRank - rightRank;
 }
 
