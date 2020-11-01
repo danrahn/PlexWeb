@@ -483,7 +483,14 @@ function build_sesh($sesh, $library_names)
     $slim_sesh->audio->transcode = strcmp($audio['decision'], 'transcode') === 0;
     $slim_sesh->audio->original = (string)$audio['displayTitle'];
     $slim_sesh->audio->bitrate = (int)$audio['bitrate'];
-    $slim_sesh->part = (string)$stream['id'];
+    $slim_sesh->parts = array();
+    $all_media = $sesh->xpath('Media');
+    foreach ($all_media as $media_entry)
+    {
+        $part = $media_entry->xpath('Part[@decision]');
+        $part = $part ? $part[0] : $media_entry->xpath('Part')[0];
+        array_push($slim_sesh->parts, (string)$part['id']);
+    }
 
     if ($slim_sesh->audio->transcode)
     {

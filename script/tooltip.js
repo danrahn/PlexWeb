@@ -71,6 +71,12 @@ let Tooltip = new function()
     /// </summary>
     this.showTooltip = function(e, text, delay=250)
     {
+        // If we have a raw string, shove it in a span first
+        if (typeof(text) == "string")
+        {
+            text = buildNode("span", {}, text);
+        }
+
         if (showingTooltip)
         {
             showTooltipCore(e, text);
@@ -122,7 +128,16 @@ let Tooltip = new function()
         let tooltip = $("#tooltip");
 
         let ttUpdated = ttElement && ttElement.getAttribute("tt");
-        tooltip.innerHTML = ttUpdated || text;
+        if (ttUpdated)
+        {
+            tooltip.innerHTML = ttUpdated;
+        }
+        else
+        {
+            tooltip.innerHTML = "";
+            tooltip.appendChild(text);
+        }
+
         tooltip.style.display = "inline";
 
         let maxHeight = $("#plexFrame").clientHeight - tooltip.clientHeight - 20 - windowMargin;

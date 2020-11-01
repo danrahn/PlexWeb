@@ -1242,6 +1242,12 @@ function inlineHover(link, hovered)
 }
 
 /// <summary>
+/// Map of streams to all their parts
+/// There should only be multiple parts if there are multiple versions of a particular stream
+/// </summary>
+let allParts = {};
+
+/// <summary>
 /// Builds the bottom progress bar of an active stream.
 /// Direct plays show only the current progress.
 /// Transcodes have an additional bar indicating transcode progress
@@ -1255,7 +1261,7 @@ function buildActivityProgress(sesh)
             progress : sesh.progress,
             duration : sesh.duration,
             tcprogress : tcprogress,
-            part_id : sesh.part
+            part_id : sesh.session_id
         },
         0,
         {
@@ -1266,6 +1272,9 @@ function buildActivityProgress(sesh)
                 Tooltip.dismiss();
             }
         });
+
+    // The poor man's locking - have a flag for whether the part is locked
+    allParts[sesh.session_id] = { parts : sesh.parts, locked : false };
 
     const progressPercent = (sesh.progress / sesh.duration * 100);
     let progress = buildNode("div", { class : "progress", style : `width: ${progressPercent}%` });
@@ -1579,7 +1588,17 @@ function updateTranscodeTooltip(tooltip, progress, element)
 /// <summary>
 function addPreviewThumbnail(holder, attach)
 {
-    let part = holder.getAttribute("part_id");
+    let partId = holder.getAttribute("part_id");
+    let parts = allParts[partId];
+    if (!parts || !parts.parts || parts.parts.length == 0)
+    {
+        return;
+    }
+
+    parts = parts.parts;
+
+    // Let's try the first part
+    let part = parts[0];
     let partProgress = holder.getAttribute("progress");
     let partPath = encodeURIComponent(`/library/parts/${part}/indexes/sd/${partProgress}`);
     let previewThumbPath = `preview_thumbnail.php?path=${partPath}`;
@@ -1606,19 +1625,69 @@ function addPreviewThumbnail(holder, attach)
                     id : "previewThumbnail",
                     src : previewThumbPath,
                     height : "100px",
-                    parentId : holder.parentElement.id
+                    parentId : holder.parentElement.id,
+                    partId : partId,
+                    progress : partProgress
                 },
                 0,
                 {
-                    error : function()
-                    {
-                        Log.verbose("Adding " + this.getAttribute("parentId") + " to bad ids");
-                        this.parentNode.style.display = "none";
-                        noPreviewThumbs[this.getAttribute("parentId")] = true;
-                    }
+                    load : thumbnailSuccess,
+                    error : thumbnailError
                 })
             )
         );
+    }
+}
+
+/// <summary>
+/// On a successful thumbnail load, unlock the parts dictionary
+/// </summary>
+function thumbnailSuccess()
+{
+    let id = this.getAttribute("partId");
+    if (allParts[id])
+    {
+        allParts[id].locked = false;
+    }
+}
+
+/// <summary>
+/// Handler for when we fail to load a part thumbnail.
+/// If a stream only has a single part, do not attempt to load any more thumbnail for the
+/// remainder of the session. However, if there are multiple parts, check to see if the other
+/// parts have thumbnails before giving up
+/// </summary>
+function thumbnailError()
+{
+    let id = this.getAttribute("partId");
+    Log.verbose("Looking for additional parts for " + id);
+    let parts = allParts[id];
+    if (parts && parts.locked)
+    {
+        Log.verbose("Parts are locked, don't do anything!");
+        return;
+    }
+
+    if (parts && parts.parts.length > 1)
+    {
+        parts.locked = true;
+        parts = parts.parts;
+        Log.verbose(`Unable to find thumbnail for part ${parts[0]}, switching to ${parts[1]}`);
+        parts.shift();
+        let newPart = parts[0];
+        let progress = this.getAttribute("progress");
+        let newPath = encodeURIComponent(`/library/parts/${newPart}/indexes/sd/${progress}`);
+        this.src = `preview_thumbnail.php?path=${newPath}`;
+        return;
+    }
+
+    parts.locked = false;
+    this.parentNode.style.display = "none";
+    let parentId = this.getAttribute("parentId");
+    if (!(parentId in noPreviewThumbs))
+    {
+        Log.verbose("No thumbnails found. Adding " + parentId + " to ignore list");
+        noPreviewThumbs[this.getAttribute("parentId")] = true;
     }
 }
 
@@ -1661,7 +1730,7 @@ function getHoverText(element)
         addPreviewThumbnail(element, tcString);
     }
 
-    return tcString.innerHTML;
+    return tcString;
 }
 
 /// <summary>
