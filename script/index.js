@@ -204,17 +204,19 @@ function sortResolutions(resolutions)
 {
     /* eslint-disable quote-props */
     const possibleResolutions = {
-        "4K" : 0,
+        "4k" : 0,
         "1080p" : 1,
         "720p" : 2,
         "480p" : 3,
-        "SD" : 4
+        "sd" : 4
     };
     /* eslint-enable quote-props */
 
     let sorted = Object.keys(resolutions);
     sorted.sort(function(left, right)
     {
+        left = left.toLowerCase();
+        right = right.toLowerCase();
         let leftRank = (left in possibleResolutions) ? possibleResolutions[left] : possibleResolutions;
         let rightRank = (right in possibleResolutions) ? possibleResolutions[right] : possibleResolutions;
         return leftRank - rightRank;
