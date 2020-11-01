@@ -887,12 +887,27 @@ function get_img_average($src)
         return $colors;
     }
 
-    $size = @getimagesize($path);
-    $img = @imagecreatefromjpeg($path);
-    $samples = 0;
-    for ($x = 0; $x < $size[0]; $x += 5) // Every 5 pixels, as doing every pixel gets very expensive
+    $image_info = @getimagesize($path);
+    $img = FALSE;
+    if ($image_info['mime'] == "image/png")
     {
-        for ($y = 0; $y < $size[1]; $y += 5)
+        $img = @imagecreatefrompng($path);
+    }
+    else if ($image_info['mime'] == "image/jpeg")
+    {
+        $img = @imagecreatefromjpeg($path);
+    }
+
+    if (!$img)
+    {
+        // Failed to create image, maybe a new mime check needs to be added
+        return $colors;
+    }
+
+    $samples = 0;
+    for ($x = 0; $x < $image_info[0]; $x += 5) // Every 5 pixels, as doing every pixel gets very expensive
+    {
+        for ($y = 0; $y < $image_info[1]; $y += 5)
         {
             $thisColor = imagecolorat($img, $x, $y);
             $rgb = imagecolorsforindex($img, $thisColor);
