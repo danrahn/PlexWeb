@@ -12,7 +12,7 @@ class Media
     protected $error;
     public function check_error($data)
     {
-        if (isset($data['data']) && count($data['data']) != 1)
+        if (isset($data['data']) && count($data['data']) == 1)
         {
             $this->error = FALSE;
             return FALSE;
