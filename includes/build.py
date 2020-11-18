@@ -121,48 +121,30 @@ def verify_structure():
         return False
     
     s = os.sep
-    base = f'includes{s}cache{s}'
+    cache_base = f'includes{s}cache{s}'
 
-    background = base + f'background{s}'
-    if not os.path.isdir(background):
-        os.mkdir(background)
-
-    art = background + 'art'
-    if not os.path.isdir(art):
-        os.mkdir(art)
-
-    thumb = background + 'thumb'
-    if not os.path.isdir(thumb):
-        os.mkdir(thumb)
-
-    poster = base + f'poster{s}'
-    if not os.path.isdir(poster):
-        os.mkdir(poster)
+    background = cache_base + f'background{s}'
+    mkdir_if_absent(background)
+    mkdir_if_absent(background + 'art')
+    mkdir_if_absent(background + 'thumb')
     
-    p342 = poster + '342'
-    if not os.path.isdir(p342):
-        os.mkdir(p342)
-    
-    if not os.path.isdir(base + 'thumb'):
-        os.mkdir(base + 'thumb')
+    poster = f'{cache_base}poster{s}'
+    mkdir_if_absent(poster)
+    mkdir_if_absent(poster + '342')
 
-    if not os.path.isdir('min'):
-        os.mkdir('min')
-    
+    mkdir_if_absent(cache_base + 'thumb')
+
     min_base = f'min{s}'
-    min_script = min_base + 'script'
-    if not os.path.isdir(min_script):
-        os.mkdir(min_script)
-
-    min_icon = min_base + 'icon'
-    if not os.path.isdir(min_icon):
-        os.mkdir(min_icon)
-    
-    min_style = min_base + 'style'
-    if not os.path.isdir(min_style):
-        os.mkdir(min_style)
+    mkdir_if_absent(min_base)
+    mkdir_if_absent(min_base + 'script')
+    mkdir_if_absent(min_base + 'style')
+    mkdir_if_absent(min_base + 'icon')
 
     return True
+
+def mkdir_if_absent(directory):
+    if not os.path.isdir(directory):
+        os.mkdir(directory)
 
 
 def process_svg_icons(force, quiet):
