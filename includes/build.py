@@ -146,6 +146,22 @@ def verify_structure():
     if not os.path.isdir(base + 'thumb'):
         os.mkdir(base + 'thumb')
 
+    if not os.path.isdir('min'):
+        os.mkdir('min')
+    
+    min_base = f'min{s}'
+    min_script = min_base + 'script'
+    if not os.path.isdir(min_script):
+        os.mkdir(min_script)
+
+    min_icon = min_base + 'script'
+    if not os.path.isdir(min_icon):
+        os.mkdir(min_icon)
+    
+    min_style = min_base + 'style'
+    if not os.path.isdir(min_style):
+        os.mkdir(min_style)
+
     return True
 
 
