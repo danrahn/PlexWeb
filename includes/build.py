@@ -154,7 +154,7 @@ def verify_structure():
     if not os.path.isdir(min_script):
         os.mkdir(min_script)
 
-    min_icon = min_base + 'script'
+    min_icon = min_base + 'icon'
     if not os.path.isdir(min_icon):
         os.mkdir(min_icon)
     
