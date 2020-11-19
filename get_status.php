@@ -746,6 +746,7 @@ function get_cached_link($info)
     $season = (int)$info[1];
     $episode = (int)$info[2];
 
+    // TODO: re-grab the id if stale, or, cache whether we fell back to the show id, and only retry those
     $query = "SELECT imdb_link FROM imdb_tv_cache WHERE show_id=$show AND season=$season AND episode=$episode";
     $result = $db->query($query);
     if (!$result)
@@ -765,6 +766,12 @@ function set_imdb_link($show, $season, $episode, $link)
 {
     global $db;
 
+    // If the link is empty, don't do anything
+    if (strlen($link) == 0)
+    {
+        return;
+    }
+
     $show = (int)$show;
     $season = (int)$season;
     $episode = (int)$episode;
@@ -773,7 +780,7 @@ function set_imdb_link($show, $season, $episode, $link)
 
     // Assume it succeeds. If it doesn't not much we can do anyway, and we can always query tvdb directly
     $cached = get_cached_link(array(0=>$show, 1=>$season, 2=>$episode));
-    if ($cached && strcmp($cached, $link) !== 0)
+    if ($cached !== FALSE && strcmp($cached, $link) !== 0)
     {
         // the entry exists but our value is different. Update it
         $query = "UPDATE imdb_tv_cache SET imdb_link='$link' WHERE show_id=$show AND season=$season AND episode=$episode";
