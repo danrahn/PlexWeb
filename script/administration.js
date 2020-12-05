@@ -14,7 +14,7 @@ function tryUpdateImdbRatings()
     }
 
     Overlay.show(
-        "This operation takes about two minutes to complete. Are you sure you want to continue?" +
+        "This operation will trigger a download of over 1 million IMDb ratings. Are you sure you want to continue?" +
         "<br /><br />" +
         `<span id="imdbUpdateDate">Database was last updated: <img src=${Icons.get("loading")} height=12pt></span>` +
         "<br /><br />" +
@@ -62,7 +62,7 @@ function startImdbUpdateStatusQuery()
     container.removeChild($("#overlayBtn"));
 
     imdbStatus();
-    updateInterval = setInterval(imdbStatus, 5000);
+    updateInterval = setInterval(imdbStatus, 1000);
 }
 
 /// <summary>
