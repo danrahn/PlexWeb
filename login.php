@@ -25,6 +25,19 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === TRUE)
     <meta name="theme-color" content="#3C5260" />
     <title>Plex Status: Login</title>
     <?php build_css() ?>
+    <style>
+#loginNote {
+    color: #919191;
+    margin-top: 0;
+    margin-bottom: 0;
+    padding: 5px;
+    clear: both;
+}
+
+#loginNote:hover {
+    color: #a1a1a1;
+}
+    </style>
 </head>
 <body>
 

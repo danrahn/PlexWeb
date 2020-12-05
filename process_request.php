@@ -272,7 +272,9 @@ function login($username, $password)
     if ($result->num_rows === 0)
     {
         record_login($normalized, $ip, $user_agent, LoginResult::BadUsername);
-        return json_error("User does not exist. Would you like to <a href=register.php>register</a>?");
+        $err = "User does not exist. Would you like to <a href=register.php>register</a>?";
+        $err .= "<h5 id='loginNote' class='hidden'>Note: your plex.tv account will not work</h5>";
+        return json_error($err);
     }
 
     $row = $result->fetch_row();
