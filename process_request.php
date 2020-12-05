@@ -2609,7 +2609,6 @@ function get_library_stats($force)
         return db_error();
     }
 
-    $json = "";
     if ($result->num_rows == 0)
     {
         return refresh_library_stats();
@@ -2788,7 +2787,7 @@ function addSectionDetails($type, $sectionKey, $detailKey, &$section)
     {
         $path = $base . "/all?type=$type&$detailKey=" . (string)$item["key"] . "&" . PLEX_TOKEN . $append;
         $dict_key = (string)$item["title"];
-        $items->$dict_key = (string)simplexml_load_string(curl($path))["totalSize"];
+        $items->$dict_key = (int)simplexml_load_string(curl($path))["totalSize"];
     }
 
     $section->$detailKey = $items;
