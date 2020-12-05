@@ -143,14 +143,15 @@ function update_level()
 function process()
 {
     update_level();
-    if (UserLevel::current() < UserLevel::Regular)
+    $type = param_or_die('type');
+    $query_type = QueryType::get_query_type($type);
+    if (UserLevel::current() < UserLevel::Regular && $query_type != QueryType::Status)
     {
         json_error_and_exit("Not Authorized");
     }
 
     $payload = "";
-    $type = param_or_die('type');
-    switch (QueryType::get_query_type($type))
+    switch ($query_type)
     {
         case QueryType::AllSessions:
             $payload = get_all_sessions();
@@ -162,7 +163,14 @@ function process()
             $payload = get_single_session(param_or_die('id'));
             break;
         case QueryType::Status:
-            $payload = get_status();
+            if (UserLevel::current() < UserLevel::Regular)
+            {
+                $payload = '{ "nopermission" : true }';
+            }
+            else
+            {
+                $payload = get_status();
+            }
             break;
         default:
             error_and_exit("400");

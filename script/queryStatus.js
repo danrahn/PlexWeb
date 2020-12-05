@@ -12,6 +12,16 @@ let previous = { pl : 0, pa : 0 };
 /// </summary>
 function processQueryStatus(response)
 {
+    if (response.nopermissions)
+    {
+        // We don't want a lack of permissions to result in an error of the
+        // message itself, since it pollutes our error table. Instead, we return
+        // a separate field in our response indicating the user does not have
+        // permissions to access this
+        queryStatusError({ Error : "Not Authorized" });
+        return;
+    }
+
     if (response.play == 0 && response.pause == 0)
     {
         // Only reset the title if we've previously changed it to avoid constant title updates
