@@ -22,7 +22,7 @@ $img = curl($url);
 
 if ($img && $img[0] == '{')
 {
-    error_and_exit(400);
+    error_and_exit(404);
 }
 
 header('HTTP/1.1 200 OK');
