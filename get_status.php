@@ -693,7 +693,7 @@ function get_tv_hyperlink($show_guid)
 
     // If we have our link cached, grab it. Querying tvdb can be slow, and we also
     // don't want to swamp them with requests.
-    $cached = get_cached_link($arr);
+    $cached = get_cached_link($arr, TRUE /*checkDate*/);
     if ($cached)
     {
         return $cached;
@@ -738,7 +738,7 @@ function get_tv_hyperlink($show_guid)
 /// <summary>
 /// Returns the imdb link to the given tv episode, or FALSE if it doesn't exist
 /// </summary>
-function get_cached_link($info)
+function get_cached_link($info, $check_date)
 {
     global $db;
 
@@ -747,14 +747,29 @@ function get_cached_link($info)
     $episode = (int)$info[2];
 
     // TODO: re-grab the id if stale, or, cache whether we fell back to the show id, and only retry those
-    $query = "SELECT imdb_link FROM imdb_tv_cache WHERE show_id=$show AND season=$season AND episode=$episode";
+    $query = "SELECT imdb_link, CONVERT_TZ(date_added, @@session.time_zone, '+00:00') AS `date_added_utc` FROM imdb_tv_cache WHERE show_id=$show AND season=$season AND episode=$episode";
     $result = $db->query($query);
     if (!$result)
     {
         return FALSE;
     }
 
-    $cached_id = $result->fetch_row()[0];
+    $row = $result->fetch_row();
+    if ($check_date)
+    {
+        $timestamp = new DateTime($row[1]);
+        $now = new DateTime(date("Y-m-d H:i:s"));
+        $diff = ($now->getTimestamp() - $timestamp->getTimestamp());
+    
+        // diff is in seconds. If it's greater than 30 days, refresh it
+        if ($diff > 30 * 24 * 60 * 60)
+        {
+            $result->close();
+            return FALSE;
+        }
+    }
+
+    $cached_id = $row[0];
     $result->close();
     return $cached_id;
 }
@@ -779,7 +794,7 @@ function set_imdb_link($show, $season, $episode, $link)
     $query = "";
 
     // Assume it succeeds. If it doesn't not much we can do anyway, and we can always query tvdb directly
-    $cached = get_cached_link(array(0=>$show, 1=>$season, 2=>$episode));
+    $cached = get_cached_link(array(0=>$show, 1=>$season, 2=>$episode), FALSE /*checkDate*/);
     if ($cached !== FALSE && strcmp($cached, $link) !== 0)
     {
         // the entry exists but our value is different. Update it
