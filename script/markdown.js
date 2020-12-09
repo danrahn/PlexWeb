@@ -1805,7 +1805,7 @@ class Markdown
         let span = '';
         for (let i = 0; i < line.length; ++i)
         {
-            if (line[i] == '`' && !this._isEscaped(i))
+            if (line[i] == '`' && !this._isEscapedText(line, i))
             {
                 let inlineEnd = this._inlineEndCore(line, i, line.length, false /*cache*/);
                 if (inlineEnd != -1)
@@ -1816,7 +1816,7 @@ class Markdown
                 }
             }
 
-            if (line[i] == '|' && !this._isEscaped(i))
+            if (line[i] == '|' && !this._isEscapedText(line, i))
             {
                 arr.push(span);
                 span = '';
@@ -3095,8 +3095,17 @@ class Markdown
     /// </summary>
     _isEscaped(index)
     {
+        return this._isEscapedText(this.text, index);
+    }
+
+    /// <summary>
+    /// Returns whether the character at the given index in the
+    /// given string is escaped with a backslash.
+    /// </summary>
+    _isEscapedText(text, index)
+    {
         let bs = 0;
-        while (index - bs > 0 && this.text[index - 1 - bs] == '\\')
+        while (index - bs > 0 && text[index - 1 - bs] == '\\')
         {
             ++bs;
         }

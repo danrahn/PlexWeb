@@ -1054,7 +1054,12 @@ class MarkdownTestSuite
             [
                 '^(a\n\n)',
                 this._divWrap('<sup>(a</sup>') + this._divWrap(')')
-            ]
+            ],
+            [
+                // Make sure the right offsets are used when determining whether a pipe is escaped
+                '1\n| `` A ` | `` \\| ` B ` | C |\n| --- | --- |',
+                '1<table><thead><tr><td><code> A ` | </code> | <code> B </code></td><td>C</td></tr></thead><tbody></tbody></table>'
+            ],
         );
 
         return this._runSingleSuite(tests, 'Fixed Bugs');
