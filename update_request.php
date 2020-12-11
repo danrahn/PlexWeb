@@ -182,7 +182,7 @@ function process_request_update($requests)
             $email_style .= '.h1Title { margin-top: 0; padding: 20px; border-bottom: 5px solid #919191; } ';
             $email_style .= '</style>';
 
-            $body_background = "url('https://' . $domain . '/res/preset-light.770a0981b66e038d3ffffbcc4f5a26a4.png')";
+            $body_background = "url('https://$domain/res/preset-light.770a0981b66e038d3ffffbcc4f5a26a4.png')";
 
             $content = '';
             $email = '<html><head><style>' . file_get_contents("style/markdown.css") . '</style>';
