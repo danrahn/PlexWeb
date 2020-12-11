@@ -447,7 +447,7 @@ function process_suggestion_new($suggestion, $type, $external_id, $poster)
 
     $row = $result->fetch_assoc();
     $id = $row['id'];
-    send_notifications_if_needed("create", get_user_from_request($id), $suggestion, "", $id, FALSE /*is_markdown*/);
+    send_notifications_if_needed("create", get_user_from_request($id), $suggestion, "", $id);
 
     // Add an entry to the activity table
     if (!add_create_activity($id, $userid))
@@ -611,11 +611,11 @@ function add_request_comment($req_id, $content)
     $md_content = try_get("md");
     if ($md_content)
     {
-        send_notifications_if_needed("comment", get_user_from_request($req_id), $req_name, $md_content, $req_id, TRUE /*is_markdown*/);
+        send_notifications_if_needed("comment", get_user_from_request($req_id), $req_name, $md_content, $req_id);
     }
     else
     {
-        send_notifications_if_needed("comment", get_user_from_request($req_id), $req_name, $content, $req_id, FALSE /*is_markdown*/);
+        send_notifications_if_needed("comment", get_user_from_request($req_id), $req_name, $content, $req_id);
     }
 
     // Need to get the ID of this comment to add it to the activity table
@@ -738,32 +738,63 @@ function update_user_settings($firstname, $lastname, $email, $emailalerts, $phon
     }
 }
 
+/// <summary>
+/// Returns whether notifications are enabled (either text or email) for the given user
+/// </summary>
+function notifications_enabled($user)
+{
+    return ($user->info->phone_alerts && $user->info->phone) ||
+        ($user->info->email_alerts && !empty($user->info->email));
+}
 
 /// <summary>
 /// Send email and text notifications if the user has requested them
 /// </summary>
-function send_notifications_if_needed($type, $requester, $req_name, $content, $req_id, $is_markdown)
+function send_notifications_if_needed($type, $req_owner, $req_name, $content, $req_id)
 {
-    if ($type != "create" && $requester->id == $_SESSION['id'] && !UserLevel::is_admin())
+    // Don't bother building the potentially expensive text strings if we're not going to
+    // send any notifications
+    $admins = get_admins();
+    $should_send = FALSE;
+    foreach ($admins as $admin)
+    {
+        if (notifications_enabled($admin) && $admin->id != $_SESSION['id'])
+        {
+            $should_send = TRUE;
+            break;
+        }
+    }
+
+    if (!$should_send && $req_owner->id != $_SESSION['id'] && !notifications_enabled($req_owner))
     {
         return;
     }
 
-    $text = "";
+    $text_replace = array(
+        "#_#_",
+        "#__#",
+        "##__"
+    );
+    $string_map = array(
+        $text_replace[0] => array("your", "the"),
+        $text_replace[1] => array("one of your", "a"),
+        $text_replace[2] => array("your", "a")
+    );
+
     $email = "<html><body style='background-color:#313131;color=#c1c1c1'><div>";
     $max_text = 160;
     $domain = SITE_SHORT_DOMAIN;
     switch ($type)
     {
         case "comment":
-            $text = "A comment has been added your your request for $req_name. See it here: https://$domain/r/$req_id";
+            $text = "A comment has been added to {$text_replace[0]} request for $req_name. See it here: https://$domain/r/$req_id";
             if ($text > $max_text)
             {
-                $text = "A comment has been added to one of your requests. See it here: https://$domain/r/$req_id";
+                $text = "A comment has been added to {$text_replace[1]} requests. See it here: https://$domain/r/$req_id";
             }
 
             // Don't bother with the expensive email creation if we won't even be sending an email
-            if (!$requester->info->email_alerts || empty($requester->info->email))
+            if (!$req_owner->info->email_alerts || empty($req_owner->info->email))
             {
                 break;
             }
@@ -778,7 +809,7 @@ function send_notifications_if_needed($type, $requester, $req_name, $content, $r
 
             $body_background = "url('https://$domain/res/preset-light.770a0981b66e038d3ffffbcc4f5a26a4.png')";
 
-            $subheader = '<h3 style="padding: 0 20px 0 20px;">A comment has been added to your request for ' . $req_name . ':</h3>';
+            $subheader = '<h3 style="padding: 0 20px 0 20px;">A comment has been added to ' . $text_replace[0] . ' request for ' . $req_name . ':</h3>';
 
             $email = '<html><head><style>' . file_get_contents("style/markdown.css") . '</style>';
             $email .= $email_style;
@@ -789,20 +820,20 @@ function send_notifications_if_needed($type, $requester, $req_name, $content, $r
             $email .=     '<div class="md" style="padding: 0 20px 20px 20px"><div style="padding-left: 20px">';
             $email .=        $content;
             $email .=     '</div><br>';
-            $email .=     "View your request <a href='https://$domain/request.php?id=$req_id'>here</a>.";
+            $email .=     "View {$text_replace[0]} request <a href='https://$domain/request.php?id=$req_id'>here</a>.";
             $email .=   '</div>';
             $email .= '</div></body></html>';
             break;
         case "status":
             // This has moved to update_request.php. We should really consolidate the update request
             // logic, since there's a good chunk of dead code between the two implementations
-            $text = "The status of your request has changed:\nRequest: " . $req_name . "\nStatus: $content\n\nhttps://$domain/request.php?id=$req_id";
-            $email = "<div>The status of your request for $req_name has changed: $content</div><br />";
-            $email .= "<br />View your request here: https://$domain/request.php?id=$req_id";
+            $text = "The status of {$text_replace[2]} request has changed:\nRequest: " . $req_name . "\nStatus: $content\n\nhttps://$domain/request.php?id=$req_id";
+            $email = "<div>The status of {$text_replace[0]} request for $req_name has changed: $content</div><br />";
+            $email .= "<br />View {$text_replace[0]} request here: https://$domain/request.php?id=$req_id";
             $email .= "</div></body></html>";
             break;
         case "create":
-            $text = "$requester->username created a request for $req_name. See it here: https://$domain/r/$req_id";
+            $text = "$req_owner->username created a request for $req_name. See it here: https://$domain/r/$req_id";
             if ($text > $max_text)
             {
                 $text = "Someone created a new request. See it here: https://$domain/r/$req_id";
@@ -813,21 +844,42 @@ function send_notifications_if_needed($type, $requester, $req_name, $content, $r
             return json_error("Unknown notification type: " . $type);
     }
 
-    if ($type != "create")
+    // Send notifications to all admins and the owner of
+    // the given request. Don't send to a user if they're
+    // the one who created the request/comment
+    $admin_text = get_notification_text($text, $string_map, 1);
+    $admin_email = get_notification_text($email, $string_map, 1);
+    foreach ($admins as $admin)
     {
-        send_notification($requester, $text, $email);
-        return json_success();
-    }
-    else
-    {
-        $admins = get_admins();
-        foreach ($admins as $admin)
+        if ($admin->id != $_SESSION['id'])
         {
-            send_notification($admin, $text, $email);
+            send_notification($admin, $admin_text, $admin_email);
         }
     }
 
+    if ($req_owner->id != $_SESSION['id'])
+    {
+        $user_text = get_notification_text($text, $string_map, 0);
+        $user_email = get_notification_text($email, $string_map, 0);
+        send_notification($req_owner, $user_text, $user_email);
+    }
+
     return json_success();
+}
+
+/// <summary>
+/// Substitutes sentinel strings in the given text with the values specified
+/// in the given map. map_index indicates the index of the replacement string to use
+/// </summary>
+function get_notification_text($text, $map, $map_index)
+{
+    $new_text = $text;
+    foreach ($map as $marker=>$replace)
+    {
+        $new_text = str_replace($marker, $replace[$map_index], $new_text);
+    }
+
+    return $new_text;
 }
 
 /// <summary>
