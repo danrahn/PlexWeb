@@ -527,38 +527,36 @@ function process_stream_access_request($which)
         {
             return db_error();
         }
+        
+        $query = "SELECT id
+                  FROM user_requests
+                  WHERE username_id=$userid
+                    AND request_type=10
+                    AND request_name='ViewStream'
+                  ORDER BY request_date DESC";
+        
+        $result = $db->query($query);
+        if (!$result)
+        {
+            return db_error();
+        }
 
+        $req_id = $result->fetch_row()[0];
+
+        // Add to activity table
+        $query = "INSERT INTO `activities` (`type`, `user_id`, `request_id`, `data`) VALUES (1, $userid, $req_id, '{}')";
+        $db->query($query); // Not the end of the world if this fails
+
+        // If the user left a comment, add it to the comment table
         if (strlen($msg) != 0)
         {
-            $query = "SELECT id FROM user_requests WHERE username_id=$userid AND request_type=10 AND request_name='ViewStream' ORDER BY request_date DESC";
-
-            $result = $db->query($query);
-
-            if (!$result)
-            {
-                return json_error("Error adding user comment");
-            }
-
-            $req_id = $result->fetch_row()[0];
-
-            $query = "INSERT INTO request_comments (req_id, user_id, content) VALUES ($req_id, $userid, '$msg')";
-            if (!$db->query($query))
-            {
-                return json_error("Error adding user comment");
-            }
-
-            $query = "INSERT INTO `activities` (`type`, `user_id`, `request_id`, `data`) VALUES (1, $userid, $req_id, '{}')";
-            if (!$db->query($query))
-            {
-                return json_error("Error adding request to activity table");
-            }
+            add_request_comment($req_id, try_get("msg"));
         }
 
         return '{ "value" : "Access Requested!" }';
     }
     else
     {
-        $str = "";
         $row = $result->fetch_row();
         $id = $row[0];
         $status = (int)$row[1];
