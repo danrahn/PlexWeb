@@ -313,7 +313,7 @@ let Log = new function()
         Log.info(" ");
         console.log("Welcome to the console!\n" +
         "If you're debugging an issue, here are some tips:\n" +
-        "  1. Set dark/light mode for the console via setDarkConsole(isDark), where isDark is 1 or 0.\n" +
+        "  1. Set dark/light mode for the console via Log.setDarkConsole(isDark), where isDark is 1 or 0.\n" +
         "  2. Set the log level via Log.setLevel(level), where level is a value from the Log.Level dictionary " +
             "(e.g. Log.setLevel(Log.Level.Verbose);)\n" +
         "  3. To view unminified js sources, add nomin=1 to the url parameters.\n" +
