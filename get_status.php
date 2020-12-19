@@ -531,6 +531,10 @@ function build_sesh($sesh, $library_names)
     if ($transcode)
     {
         $slim_sesh->transcode_progress = (float)$transcode[0]['progress'];
+        if (isset($transcode[0]['transcodeHwEncoding']))
+        {
+            $slim_sesh->video->hw_transcode = (string)$transcode[0]['transcodeHwEncoding'];
+        }
     }
 
     return $slim_sesh;

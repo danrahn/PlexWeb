@@ -1753,14 +1753,15 @@ function getVideoString(video)
     let videoString = "";
     if (video.transcode)
     {
-        videoString = "Transcode - " + video.original + " &#8594; " + video.transcoded_codec + " " + video.transcoded_resolution;
+        let hw = video.hw_transcode ? " HW" : "";
+        videoString = `${video.original} &#8594;${hw} ${video.transcoded_codec} ${video.transcoded_resolution}`;
     }
     else
     {
-        videoString = "Direct Play - " + video.original;
+        videoString = "Direct Play: " + video.original;
     }
 
-    return videoString + " (" + video.bitrate + " kbps)";
+    return `${videoString} (${video.bitrate} kbps)`;
 }
 
 /// <summary>
@@ -1771,11 +1772,11 @@ function getAudioString(audio)
     let audioString = "";
     if (audio.transcode)
     {
-        audioString = "Transcode - " + audio.original + " &#8594; " + audio.transcoded_codec + " " + audio.transcoded_channels;
+        audioString = `${audio.original} &#8594; ${audio.transcoded_codec} ${audio.transcoded_channels}`;
     }
     else
     {
-        audioString = "Direct Play - " + audio.original;
+        audioString = `Direct Play: ${audio.original}`;
     }
 
     if (parseInt(audio.bitrate) === 0)
@@ -1783,7 +1784,7 @@ function getAudioString(audio)
         return audioString;
     }
 
-    return audioString + " (" + audio.bitrate + " kbps)";
+    return `${audioString} (${audio.bitrate} kbps)`;
 }
 
 /// <summary>
