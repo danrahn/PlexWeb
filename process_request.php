@@ -2677,6 +2677,11 @@ function get_available_space()
 /// </summary>
 function get_library_stats($force)
 {
+    if ($force && UserLevel::is_admin())
+    {
+        return refresh_library_stats();
+    }
+
     global $db;
     $query = "SELECT id, data, CONVERT_TZ(timestamp, @@session.time_zone, '+00:00') AS `utc_timestamp` FROM `library_stats_cache` ORDER BY id DESC LIMIT 1";
     $result = $db->query($query);

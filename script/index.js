@@ -126,7 +126,7 @@ function getCapacity()
         };
 
         appendChart(g_chartCache.capacity, "spaceGraph", true /*isPie*/);
-        getLibraryDetails();
+        getLibraryDetails(false /*forceRefresh*/);
     };
 
     sendHtmlJsonRequest("process_request.php", { type : ProcessRequest.FreeSpace }, successFunc);
@@ -136,17 +136,42 @@ function getCapacity()
 /// Builds the library details section, indicating how many items are
 /// in each library, what what their makeup is
 /// </summary>
-function getLibraryDetails()
+function getLibraryDetails(forceRefresh)
 {
+    let params =
+    {
+        type : ProcessRequest.LibraryStats,
+        force : forceRefresh ? 1 : 0
+    };
+
     let successFunc = function(response)
     {
+        clearStats();
         addMovieStats(getStatSection("Movies", response));
         addTvStats(getStatSection("TV Shows", response));
         addMusicStats(getStatSection("Music", response));
         showStatsIcon();
     };
 
-    sendHtmlJsonRequest("process_request.php", { type : ProcessRequest.LibraryStats }, successFunc);
+    let failureFunc = function()
+    {
+        let statButton = $("#showStatsBtn");
+        if (forceRefresh && statButton)
+        {
+            statButton.src = Icons.getColor("stats", "2e832e");
+            statButton.setAttribute("iconType", "stats");
+        }
+    };
+
+    sendHtmlJsonRequest("process_request.php", params, successFunc, failureFunc);
+}
+
+/// <summary>
+/// Removes stats from the page in preparation for a refresh
+/// </summary>
+function clearStats()
+{
+    $(".statSection.clearable").forEach((section) => section.parentNode.removeChild(section));
 }
 
 /// <summary>
@@ -427,7 +452,7 @@ function buildChartOverlay(chartData)
 function createStatSection(name)
 {
     $("#libStats").appendChildren(
-        buildNode("div", { id : `${name}Stats`, class : "statSection" }).appendChildren(
+        buildNode("div", { id : `${name}Stats`, class : "statSection clearable" }).appendChildren(
             buildNode("div", { class : "statList" }).appendChildren(buildNode("ul")),
             buildNode("div", { id : `${name}Graph`, class : "statGraph" })
         )
@@ -455,18 +480,27 @@ function getStatSection(title, sections)
 /// </summary>
 function showStatsIcon()
 {
+    let existing = $("#showStatsBtn");
+    if (existing)
+    {
+        existing.src = Icons.getColor("stats", "2e832e");
+        existing.setAttribute("iconType", "stats");
+        return;
+    }
+
     let stats = buildNode(
         "img",
         {
             style : "width: 20px; cursor: pointer",
             src : Icons.getColor("stats", "2e832e"),
-            id : "showStatsBtn"
+            id : "showStatsBtn",
+            iconType : "stats"
         },
         0,
         {
             click : showHideStats,
-            mouseover : function() { this.src = Icons.getColor("stats", "80A020"); },
-            mouseout : function() { this.src = Icons.getColor("stats", "2e832e"); },
+            mouseover : function() { this.src = Icons.getColor(this.getAttribute("iconType"), "80A020"); },
+            mouseout : function() { this.src = Icons.getColor(this.getAttribute("iconType"), "2e832e"); },
         }
     );
     Tooltip.setTooltip(stats, "Show Plex Stats", 250 /*delay*/, true /*static*/);
@@ -508,8 +542,18 @@ function getFriendlySpace(response)
 /// <summary>
 /// Shows or hides the library stats table
 /// </summary>
-function showHideStats()
+function showHideStats(e)
 {
+    // Like in other places, 'isAdmin' is not foolproof, so server-side validation
+    // is needed to ensure that a forced refresh is actually coming from an admin
+    if (e.shiftKey && document.body.getAttribute("isAdmin") == "1")
+    {
+        this.src = Icons.getColor("loading", "2e832e");
+        this.setAttribute("iconType", "loading");
+        getLibraryDetails(true);
+        return;
+    }
+
     let stats = $("#libStats");
     let hidden = stats.classList.contains("hideStats");
     stats.classList.add(hidden ? "showStats" : "hideStats");
