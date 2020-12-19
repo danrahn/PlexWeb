@@ -1635,7 +1635,7 @@ function get_geo_ip($ip)
     $query = "SELECT city, state, country, isp, CONVERT_TZ(timestamp, @@session.time_zone, '+00:00') AS `utc_timestamp` FROM ip_cache WHERE ip='$ip_safe'";
     $exists = FALSE;
     $result = $db->query($query);
-    if ($result && $result->num_rows == 1)
+    if ($result && $result->num_rows > 0)
     {
         $exists = TRUE;
         $row = $result->fetch_row();
@@ -1663,19 +1663,43 @@ function get_geo_ip($ip)
 
     // If we have no cached value or our cached value is out of date, grab
     // it from the actual API
-    $json = json_decode(curl(GEOIP_URL . $ip));
-    if ($json == NULL)
-    {
-        return json_error("Failed to parse geoip response");
-    }
-
-    // We only care about certain fields
+    
+    // api.ipgeolocation.io has been giving flat-out incorrect results lately.
+    // Unfortunately the only decent free alternative I've found is http only,
+    // but I'm fine with that tradeoff since the insecure results don't tell me
+    // that someone who I know is in Washington is actually in New Jersey.
+    $use_insecure_api = TRUE;
     $trimmed_json = new \stdClass();
-    $trimmed_json->country = $json->country_name;
-    $trimmed_json->state = $json->state_prov;
-    $trimmed_json->city = $json->city;
-    $trimmed_json->isp = $json->isp;
-    $trimmed_json->cached = FALSE;
+    if ($use_insecure_api)
+    {
+        // We only care about certain fields
+        $json = json_decode(curl("http://ip-api.com/json/$ip?fields=countryCode,regionName,city,isp"));
+        if ($json == NULL)
+        {
+            return json_error("Failed to parse geoip response");
+        }
+
+        $trimmed_json->country = $json->countryCode;
+        $trimmed_json->state = $json->regionName;
+        $trimmed_json->city = $json->city;
+        $trimmed_json->isp = $json->isp;
+        $trimmed_json->cached = FALSE;
+    }
+    else
+    {
+        $json = json_decode(curl(GEOIP_URL . $ip));
+        if ($json == NULL)
+        {
+            return json_error("Failed to parse geoip response");
+        }
+
+        // We only care about certain fields
+        $trimmed_json->country = $json->country_name;
+        $trimmed_json->state = $json->state_prov;
+        $trimmed_json->city = $json->city;
+        $trimmed_json->isp = $json->isp;
+        $trimmed_json->cached = FALSE;
+    }
 
     $country = $db->real_escape_string($trimmed_json->country);
     $state = $db->real_escape_string($trimmed_json->state);
