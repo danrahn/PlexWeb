@@ -43,8 +43,8 @@ a:hover {
 }
 
 input[type=checkbox] {
-    appearance: none;
     -webkit-appearance: none;
+    appearance: none;
     padding: 6px;
     margin: auto;
     display: inline-block;
@@ -157,6 +157,9 @@ input[type=checkbox]:focus {
 }
 
 .statusSpan {
+    -ms-user-select: none;
+    -moz-user-select: none;
+    -webkit-user-select: none;
     user-select: none;
 }
 

@@ -71,9 +71,8 @@ if (file_exists($filename))
     {
         $headers = apache_request_headers();
 
-        // Cache of one week. Could probably be longer, how often are posters going to change?
-        header('Cache-Control: max-age=604800, public');
-        header('Expires: ' . gmdate('D, d M Y H:i:s \G\M\T', time() + (60 * 60 * 24 * 7)));
+        // Cache of one year.
+        header('Cache-Control: max-age=31536000, immutable');
         header('Last-Modified: '.gmdate('D, d M Y H:i:s \G\M\T', $file_time));
         if (isset($headers['If-Modified-Since']) && (strtotime($headers['If-Modified-Since']) >= $file_time))
         {
@@ -85,6 +84,7 @@ if (file_exists($filename))
             header('HTTP/1.1 200 OK');
             header('Content-Length: '. filesize($filename));
             header('Content-type: image/' . $contenttype);
+            header('X-Content-Type-Options: nosniff');
             header('Etag: ' . md5_file($filename));
 
             readfile($filename);
@@ -145,7 +145,7 @@ function serve_new_image($img_path, $filename, $type, $large)
             break;
     }
 
-    header('Cache-Control: max-age=604800, public');
+    header('Cache-Control: max-age=31536000, public');
     header('Expires: ' . gmdate('D, d M Y H:i:s \G\M\T', time() + (60 * 60 * 24 * 7)));
     header('Last-Modified: ' . gmdate('D, d M Y H:i:s \G\M\T', time()));
     header('HTTP/1.1 200 OK');

@@ -50,7 +50,7 @@ function get_details($req_id)
 <!DOCTYPE html>
 <html lang="en-us">
 <head>
-    <meta http-equiv="Content-Type" content="text/html;charset=utf-8">
+    <meta charset="utf-8">
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="alternate icon" href="favicon.png">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -81,6 +81,7 @@ function get_details($req_id)
                     
                 </div>
                 <div id="newCommentHolder">
+                    <label style="display:none" for="newComment">Add comment</label>
                     <textarea id="newComment" placeholder="Add comment..." class="commentEditor"></textarea>
                 </div>
                 <div id="mdHolder" style="display: none">

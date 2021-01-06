@@ -69,6 +69,8 @@ function json_error_and_exit($error)
     }
 
     header("Content-Type: application/json; charset=UTF-8");
+    header("Cache-Control: no-cache");
+    header("X-Content-Type-Options: nosniff");
     echo json_error($error);
     exit;
 }
@@ -107,6 +109,8 @@ function db_error()
 function json_message_and_exit($message)
 {
     header("Content-Type: application/json; charset=UTF-8");
+    header("Cache-Control: no-cache");
+    header("X-Content-Type-Options: nosniff");
     echo $message;
     exit;
 }
@@ -412,9 +416,9 @@ function icon($name)
         return;
     }
 
-    $icon = substr($gl[0], strrpos($gl[0], "/"));
+    $icon = substr($gl[0], strrpos($gl[0], "/") + 1);
     $icon = explode(".", $icon);
-    echo "i/c1c1c1/" . $icon[1] . $icon[0] . ".svg";
+    echo "i/c1c1c1/" . $icon[0] . "." . $icon[1] . ".svg";
 }
 
 /// <summary>

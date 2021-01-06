@@ -57,8 +57,7 @@ $filename = $gl[0];
 
 $headers = apache_request_headers();
 $file_time = filemtime($filename);
-header('Cache-Control: max-age=31536000, public');
-header('Expires: ' . gmdate('D, d M Y H:i:s \G\M\T', time() + (60 * 60 * 24 * 7)));
+header('Cache-Control: max-age=31536000, immutable');
 header('Last-Modified: '.gmdate('D, d M Y H:i:s \G\M\T', $file_time));
 
 if (isset($headers['If-Modified-Since']))
@@ -77,7 +76,8 @@ else
     $img = str_ireplace("FILL_COLOR", "#$color", $img);
     header('HTTP/1.1 200 OK');
     header('Content-Length: ' . filesize($filename));
-    header('Content-type: image/svg+xml');
+    header('Content-type: image/svg+xml;  charset=UTF-8');
+    header('X-Content-Type-Options: nosniff');
     header('Etag: ' . md5_file($filename));
     
     echo $img;
@@ -101,6 +101,7 @@ function free_icon($icon)
         case "mdimage":
         case "mdtable":
         case "exit":
+        case "loading":
             return TRUE;
         default:
             return FALSE;

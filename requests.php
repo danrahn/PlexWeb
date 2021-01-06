@@ -11,7 +11,7 @@ verify_loggedin(TRUE /*redirect*/, "requests.php");
 <!DOCTYPE html>
 <html lang=en-us>
 <head>
-    <meta http-equiv="Content-Type" content="text/html;charset=utf-8">
+    <meta charset="utf-8">
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="alternate icon" href="favicon.png">

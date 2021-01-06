@@ -196,7 +196,7 @@ else
 <!DOCTYPE html>
 <html lang="en-us">
 <head>
-    <meta http-equiv="Content-Type" content="text/html;charset=utf-8">
+    <meta charset="utf-8">
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="alternate icon" href="favicon.png">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -213,31 +213,31 @@ else
         <div id="actions">
             <div class="action actionLeft">
                 <a href="library.php" class="actionLink">
-                    <img src="<?php icon('settings') ?>" class="actionImg">
+                    <img src="<?php icon('settings') ?>" class="actionImg" alt="Manage Library">
                     <span>Manage Library</span>
                 </a>
             </div>
             <div class="action actionRight">
                 <a href="password_reset.php" class="actionLink">
-                    <img src="<?php icon('lock') ?>" class="actionImg">
+                    <img src="<?php icon('lock') ?>" class="actionImg" alt="Password Reset">
                     <span>Password Reset</span>
                 </a>
             </div>
             <div class="action actionRight">
                 <a href="#" class="actionLink" id="imdbUpdate">
-                    <img src="<?php icon('up') ?>" class="actionImg" id="imdbUpdateImg">
+                    <img src="<?php icon('up') ?>" class="actionImg" id="imdbUpdateImg" alt="Update IMDb Ratings">
                     <span>Update ratings</span>
                 </a>
             </div>
             <div class="action actionRight">
                 <a href="#" class="actionLink" id="banClient">
-                    <img src="<?php icon('exit') ?>" class="actionImg" id="banClientImg">
+                    <img src="<?php icon('exit') ?>" class="actionImg" id="banClientImg" alt="Ban Client">
                     <span>Ban Client</span>
                 </a>
             </div>
             <div class="action actionRight">
                 <a href="remote.php" class="actionLink">
-                    <img src="<?php icon('remote') ?>" alt="remote control" class="actionImg">
+                    <img src="<?php icon('remote') ?>" alt="remote control" class="actionImg" alt="Remote Control">
                     <span>Remote Control</span>
                 </a>
             </div>

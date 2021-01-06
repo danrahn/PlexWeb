@@ -1,6 +1,7 @@
 <?php
 session_start();
 require_once "includes/common.php";
+require_once "includes/config.php";
 verify_loggedin(TRUE /*redirect*/, "user_settings.php");
 requireSSL();
 ?>
@@ -8,7 +9,7 @@ requireSSL();
 <!DOCTYPE html>
 <html lang="en-us">
 <head>
-    <meta http-equiv="Content-Type" content="text/html;charset=utf-8">
+    <meta charset="utf-8">
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="alternate icon" href="favicon.png">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -68,7 +69,8 @@ requireSSL();
             <div class="formTitle">Change Password</div>
             <form id="pwForm">
                 <hr />
-                <input hidden="1" type="text" name="username" autocomplete="username">
+                <label style="display:none" for="passUsername">Username</label>
+                <input hidden="1" type="text" id="passUsername" name="username" autocomplete="username">
                 <div class="formInput">
                     <label for="oldPass" id="oldPassLabel">Old Password: </label>
                     <input type="password" name="oldPass" id="oldPass" autocomplete="current-password">

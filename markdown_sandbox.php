@@ -8,7 +8,7 @@ session_start();
 <!DOCTYPE html>
 <html lang="en-us">
 <head>
-    <meta http-equiv="Content-Type" content="text/html;charset=utf-8">
+    <meta charset="utf-8">
     <link rel="icon" type="image/svg+xml" href="mdfav.svg">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#3C5260" />
@@ -21,6 +21,7 @@ session_start();
     <h2 id="welcome">Test Markdown</h2>
     <div id="container">
         <div id="queryContainer">
+            <label for="query" style="display:none">Markdown Textbox</label>
             <textarea id="query" rows=20></textarea>
             <br>
             <input type="button" value="Test" id="markdownSubmit" />

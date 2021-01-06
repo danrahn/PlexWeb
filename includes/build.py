@@ -199,12 +199,12 @@ const Icons = new function()
 
     this.get = function(icon)
     {
-        return `i/c1c1c1/${_map[icon]}/${icon}.svg`;
+        return `i/c1c1c1/${icon}.${_map[icon]}.svg`;
     };
 
     this.getColor = function(icon, color)
     {
-        return `i/${color}/${_map[icon]}/${icon}.svg`;
+        return `i/${color}/${icon}.${_map[icon]}.svg`;
     };
 }();
 

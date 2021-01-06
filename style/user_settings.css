@@ -15,8 +15,8 @@
   }
   
   input[type=checkbox] {
-      appearance: none;
       -webkit-appearance: none;
+      appearance: none;
       padding: 7px;
       display: inline-block;
       position: relative;

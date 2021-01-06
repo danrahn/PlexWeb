@@ -3,7 +3,7 @@ RewriteRule ^/?art/(.*)$ get_image.php?path=/$1&type=background [PT]
 RewriteRule ^/?thumb/(.*)$ get_image.php?path=/$1&type=thumb [PT]
 RewriteRule ^/?poster/(.*)$ get_image.php?path=/$1&type=poster [PT]
 RewriteRule ^/?r/(\d+)$ unshorten.php?type=r&data=$1 [PT]
-RewriteRule ^/?i/([^/]+)/([^/]+)/(.*)$ svg.php?icon=$3&hash=$2&color=$1 [PT]
+RewriteRule ^/?i/([^/]+)/([^.]+).([^.]+)(.*)$ svg.php?icon=$2$4&hash=$3&color=$1 [PT]
 RewriteRule ^/?markdown.php$ markdown_sandbox.php [PT]
 
 FileETag MTime Size

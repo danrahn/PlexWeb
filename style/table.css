@@ -7,8 +7,8 @@ a:hover {
 }
 
 input[type=checkbox] {
-    appearance: none;
     -webkit-appearance: none;
+    appearance: none;
     padding: 6px;
     margin: auto;
     display: inline-block;
@@ -31,11 +31,11 @@ option {
 .tableHolder {
     margin: auto;
     margin-top: 20px;
-    margin-bottom: 20px;
     width: 80%;
     min-width: 300px;
     max-width: 800px;
     color: #c1c1c1;
+    padding-bottom: 20px;
 }
 
 #resultInfo {

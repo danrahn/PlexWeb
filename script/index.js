@@ -207,7 +207,7 @@ function addMovieStats(movies)
         buildNode("li").appendChildren(
             buildNode("strong", {}, "Total Movies: "),
             movieCount),
-        buildNode("li").appendChild(ul)
+        buildNode("li", { class : "innerListHolder" }).appendChildren(ul)
     );
 
     g_chartCache.movies =
@@ -281,7 +281,7 @@ function addTvStats(tv)
     list.appendChildren(
         buildNode("li").appendChildren(
             buildNode("strong", {}, "TV Shows")),
-        buildNode("li").appendChild(ul)
+        buildNode("li", { class : "innerListHolder" }).appendChildren(ul)
     );
 
     g_chartCache.tv =
@@ -353,7 +353,7 @@ function addMusicStats(music)
     list.appendChildren(
         buildNode("li").appendChildren(
             buildNode("strong", {}, "Music")),
-        buildNode("li").appendChild(ul)
+        buildNode("li", { class : "innerListHolder" }).appendChildren(ul)
     );
 
     g_chartCache.music =
@@ -381,7 +381,7 @@ function appendChart(chartData, holderId, isPie)
     holder.style.height = (isPie ? chartData.radius * 2 : chartData.height) + "px";
     let expandIcon = buildNode(
         "img",
-        { src : Icons.get("expand"), class : "statGraphExpand" },
+        { src : Icons.get("expand"), class : "statGraphExpand", alt : "expand graph" },
         0,
         {
             click : function() { buildChartOverlay(chartData); },
@@ -494,7 +494,8 @@ function showStatsIcon()
             style : "width: 20px; cursor: pointer",
             src : Icons.getColor("stats", "2e832e"),
             id : "showStatsBtn",
-            iconType : "stats"
+            iconType : "stats",
+            alt : "toggle stats"
         },
         0,
         {
@@ -1441,7 +1442,7 @@ function buildActiveStreamPoster(sesh)
                     alt : "IMDb"
                 }
             ),
-            buildNode("span", { id : "imdbRating" }, sesh.imdb_rating)
+            buildNode("span", { class : "imdbRating" }, sesh.imdb_rating)
         );
     }
 

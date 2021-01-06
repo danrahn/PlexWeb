@@ -108,8 +108,8 @@
     color: #c1c1c1;
     font-weight: bold;
     left: 50%;
-    transform: translateX(-50%);
     -webkit-transform: translateX(-50%);
+    transform: translateX(-50%);
     opacity: 0;
 }
 
@@ -250,6 +250,10 @@
     display: flex;
     justify-content: center;
     border: 1px solid black;
+}
+
+.innerListHolder {
+    display: block; /* no bullet */
 }
 
 /* Desktop/Landscape */

@@ -65,6 +65,10 @@
         <div class=btnimg><image src='<?php icon('plex') ?>' alt='Plex'/></div>
     </div>
 <?php if (UserLevel::is_admin()) { ?>
+    <div class="navButton" id="navEmbedPlex" title="Embedded Plex Desktop (Shift + E)">
+        <button class=btntxt disabled=true>Embed Plex</button>
+        <div class=btnimg><image src='<?php icon('plex') ?>' alt='Plex'/></div>
+    </div>
     <div class="navButton" id="navMembers" title="Members">
         <button class=btntxt disabled=true>Members</button>
         <div class=btnimg><image src='<?php icon('members') ?>' alt='Members'/></div>
@@ -75,7 +79,7 @@
         <div class=btnimg><image src='<?php icon('settings') ?>' alt='Settings'/></div>
     </div>
 <?php if (UserLevel::is_admin()) { ?>
-    <div class="navButton rightbutton" id="navAdmin" title="Admin">
+    <div class="navButton rightbutton" id="navAdmin" title="Admin (Alt + Shift + A)">
         <button class=btntxt disabled=true>Admin</button>
         <div class=btnimg><image src='<?php icon('admin') ?>' alt='Admin' /></div>
     </div>

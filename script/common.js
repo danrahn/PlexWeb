@@ -112,6 +112,7 @@ function sendHtmlJsonRequest(url, parameters, successFunc, failFunc, additionalP
     let http = new XMLHttpRequest();
     http.open("POST", url, true /*async*/);
     http.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+    http.setRequestHeader("accept", "application/json");
     const queryString = dataIsString ? parameters : buildQuery(parameters);
     attachExtraParams(additionalParams, http);
 

@@ -18,7 +18,7 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === TRUE)
 <!DOCTYPE html>
 <html lang="en-us">
 <head>
-    <meta http-equiv="Content-Type" content="text/html;charset=utf-8">
+    <meta charset="utf-8">
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="alternate icon" href="favicon.png">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -37,16 +37,16 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === TRUE)
                 <hr />
                 <div class="formInput">
                     <label for="username">Username: </label>
-                    <input type="text" name="username" autocomplete="username">
+                    <input type="text" id="username" name="username" autocomplete="username">
                 </div>
                 <hr />
                 <div class="formInput">
                     <label for="password">Password: </label>
-                    <input type="password" name="password" autocomplete="new-password">
+                    <input type="password" id="password" name="password" autocomplete="new-password">
                 </div>
                 <div class="formInput" style="display: none">
                     <label for="confirm">Confirm Password: </label>
-                    <input type="password" name="confirm" autocomplete="new-password">
+                    <input type="password" id="confirm" name="confirm" autocomplete="new-password">
                 </div>
                 <hr />
                 <div class="formInput"><input type="button" value="Register" id="go"></input></div>
