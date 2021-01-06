@@ -38,28 +38,27 @@ abstract class ProcessRequest
     const GetMembers = 14;
     const GetAllMembers = 15;
     const SearchPlex = 16;
-    const SearchExternal = 17;
-    const SetExternalId = 18;
-    const GetSeasonDetails = 19;
-    const GeoIP = 20;
-    const AddComment = 21;
-    const DeleteComment = 22;
-    const EditComment = 23;
-    const GetComments = 24;
-    const GetActivities = 25;
-    const NewActivities = 26;
-    const LogError = 27;
-    const UpdatePoster = 28;
-    const CheckNotificationAlert = 29;
-    const DisableNotificationAlert = 30;
-    const MarkdownText = 31;
-    const FreeSpace = 32;
-    const LibraryStats = 33;
-    const SetInternalId = 34;
-    const GetInternalId = 35;
-    const ImdbRating = 36;
-    const UpdateImdbRatings = 37;
-    const GetImdbUpdateStatus = 38;
+    const SetExternalId = 17;
+    const GetSeasonDetails = 18;
+    const GeoIP = 19;
+    const AddComment = 20;
+    const DeleteComment = 21;
+    const EditComment = 22;
+    const GetComments = 23;
+    const GetActivities = 24;
+    const NewActivities = 25;
+    const LogError = 26;
+    const UpdatePoster = 27;
+    const CheckNotificationAlert = 28;
+    const DisableNotificationAlert = 29;
+    const MarkdownText = 30;
+    const FreeSpace = 31;
+    const LibraryStats = 32;
+    const SetInternalId = 33;
+    const GetInternalId = 34;
+    const ImdbRating = 35;
+    const UpdateImdbRatings = 36;
+    const GetImdbUpdateStatus = 37;
 }
 
 // For requests that are only made when not logged in, don't session_start or verify login state
@@ -141,9 +140,6 @@ function process_request($type)
             break;
         case ProcessRequest::GetSeasonDetails:
             $message = get_season_details(get("path"));
-            break;
-        case ProcessRequest::SearchExternal: // Unused? media_search.php
-            $message = search_external(get("query"), get("kind"));
             break;
         case ProcessRequest::UpdatePassword:
             $message = update_password(get("old_pass"), get("new_pass"), get("conf_pass"));
@@ -1448,135 +1444,6 @@ function get_season_details($path)
     return json_encode($details);
 }
 
-/// <summary>
-/// Search for a movie or tv show via IMDb.
-/// </summary>
-function search_external($query, $kind)
-{
-    $query = strtolower(trim($query));
-    $letter = substr($query, 0, 1);
-    $type = strtolower(RequestType::get_type_from_str($kind));
-
-    if ($type != RequestType::Movie && $type != RequestType::TVShow)
-    {
-        $text = curl("https://www.audible.com/search?keywords=" . $query);
-        $find = strpos($text, "productListItem");
-        if ($find === FALSE)
-        {
-            $obj = new \stdClass();
-            $obj->length = 0;
-            $obj->top = array();
-            return json_encode($obj);
-        }
-
-        $results = array();
-        while ($find !== FALSE && sizeof($results) < 5)
-        {
-            $title_start = strpos($text, "aria-label='", $find) + 12;
-            $title_end = strpos($text, "'", $title_start);
-            $title = html_entity_decode(substr($text, $title_start, $title_end - $title_start), ENT_QUOTES | ENT_HTML5);
-
-            $ref_find = strpos($text, "bc-color-link", $title_end);
-            $ref_start = strpos($text, "href=\"", $ref_find) + 6;
-            $ref_end = strpos($text, "?", $ref_start);
-            $ref = "https://audible.com" . substr($text, $ref_start, $ref_end - $ref_start);
-
-            $id_start = strrpos($ref, "/") + 1;
-            $id = substr($ref, $id_start);
-
-            $img_find = strpos($text, "bc-image-inset-border", $find);
-            $img_start = strpos($text, "src=", $img_find) + 5;
-            $img_end = strpos($text, "\"", $img_start);
-            $img = substr($text, $img_start, $img_end - $img_start);
-
-            $rel_start = strpos($text, "Release date:", $img_find) + 13;
-            $rel_end = strpos($text, "</span", $rel_start);
-            $rel = str_replace("\n", "", str_replace(" ", "", substr($text, $rel_start, $rel_end - $rel_start)));
-
-            $item = new \stdClass();
-            $item->title = $title;
-            $item->year = $rel;
-            $item->thumb = $img;
-            $item->id = $id;
-            $item->ref = $ref;
-
-            array_push($results, $item);
-
-            $find = strpos($text, "productListItem", $rel_end);
-        }
-
-        $final_obj = new \stdClass();
-        $final_obj->length = sizeof($results);
-        $final_obj->top = $results;
-
-        return json_encode($final_obj);
-    }
-
-    $url = "https://v2.sg.media-imdb.com/suggests/" . urlencode($letter) . "/" . urlencode($query) . ".json";
-    $response = curl($url);
-    if (strtolower(substr($response, 0, 5)) == "imdb$")
-    {
-        $index = strpos($response, "(") + 1;
-        $length = strlen($response) - $index;
-        $response = substr($response, $index, $length - 1);
-
-        $results = array();
-        $response = json_decode($response, true)['d'];
-
-        $len = sizeof($response);
-
-        foreach ($response as $result)
-        {
-            if (substr($result['id'], 0, 2) != "tt" || !isset($result['q']))
-            {
-                // Not a movie/show
-                --$len;
-                continue;
-            }
-
-            if ($type == RequestType::Movie && $result['q'] != "feature")
-            {
-                // Movie type (q) is 'feature'
-                --$len;
-                continue;
-            }
-            else if ($type == RequestType::TVShow && strtolower($result['q']) != "tv series")
-            {
-                --$len;
-                continue;
-            }
-
-            if (!isset($result['y']) || !isset($result['i']))
-            {
-                // No year/thumbnail == no entry
-                --$len;
-                continue;
-            }
-
-            $item = new \stdClass();
-            $item->title = $result['l'];
-            $item->year = $result['y'];
-            $item->thumb = $result['i'][0];
-            $item->id = $result['id'];
-            $item->ref = "https://imdb.com/title/" . $result['id'];
-            array_push($results, $item);
-
-            if (sizeof($results) == 5)
-            {
-                break;
-            }
-        }
-
-        $final_obj = new \stdClass();
-        $final_obj->length = $len;
-        $final_obj->top = $results;
-        return json_encode($final_obj);
-    }
-    else
-    {
-        return json_error("Unknown IMDb error: " . $response);
-    }
-}
 
 /// <summary>
 /// Attempt to update a user's password, failing if the old password is incorrect,
