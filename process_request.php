@@ -2394,8 +2394,13 @@ function forgot_password($username)
     }
 
     $domain = SITE_SHORT_DOMAIN;
-    $message = "Hello, $username. You recently requested a password reset at $domain. Click the following link to reset your password: https://$domain/reset?token=$token\n\nIf you did not request a password reset, you can ignore this message.";
-    send_email_forget($email, $message, "Password Reset");
+    $message = "Reset your Plex Requests password here: https://$domain/reset?token=$token. If you did not make this request, ignore this message.";
+    if ($method == 2)
+    {
+        $message = "Hello, $username. You recently requested a password reset at $domain. Click the following link to reset your password: https://$domain/reset?token=$token\n\nIf you did not request a password reset, you can ignore this message.";
+    }
+
+    send_email_forget($email, $message, $method == 2 ? "Password Reset" : "");
 
     return '{ "Method" : ' . $method . ' }';
 }
