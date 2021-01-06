@@ -288,4 +288,4 @@ const ProcessRequest =
     GetImdbUpdateStatus : 37,
 };
 
-console.assert(!Log.logErrorId || Log.logErrorId == ProcessRequest.LogError, "Update _logErrorId!");
+console.assert(!Log.logErrorId || Log.logErrorId == ProcessRequest.LogError, "Update Log.logErrorId!");

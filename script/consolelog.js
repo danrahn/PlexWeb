@@ -25,7 +25,7 @@ let Log = new function()
 
     const logStrings = ["TMI", "VERBOSE", "INFO", "WARN", "ERROR", "CRITICAL"];
     const _inherit = "inherit";
-    this.logErrorId = 27;
+    this.logErrorId = 26;
 
     /// <summary>
     /// Console color definitions for each log level
