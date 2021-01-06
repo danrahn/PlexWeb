@@ -156,7 +156,7 @@ function search_audible($query)
         $id = substr($ref, $id_start);
 
         $img_find = strpos($text, "bc-image-inset-border", $find);
-        $img_start = strpos($text, "src=", $img_find) + 5;
+        $img_start = strpos($text, "data-lazy=", $img_find) + 11;
         $img_end = strpos($text, "\"", $img_start);
         $img = substr($text, $img_start, $img_end - $img_start);
 

@@ -32,7 +32,7 @@ requireSSL();
                     <option value="none"></option>
                     <option value="movie">Movie</option>
                     <option value="tv">TV Show</option>
-                    <?php if (UserLevel::is_admin()) {?> <option value="audiobook">Audiobook</option> <?php } ?>
+                    <option value="audiobook">Audiobook</option>
                     <!-- <option value="music">Music</option> -->
                 </select></div>
                 <div class="formInput hiddenInputStart" id="nameHolder"><label for="name">Suggestion:</label><input type="text" name="name" id="name" maxlength=128></div>
