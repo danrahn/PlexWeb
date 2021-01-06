@@ -65,7 +65,7 @@ function checkUsername()
         username : user.value
     };
 
-    sendHtmlJsonRequest("process_request", params, onCheckUsernameResponse, undefined /*failureFunc*/, { lastUsername : user.value });
+    sendHtmlJsonRequest("process_request.php", params, onCheckUsernameResponse, undefined /*failureFunc*/, { lastUsername : user.value });
 
     hasUserChanged = false;
 }
