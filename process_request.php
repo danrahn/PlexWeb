@@ -2824,18 +2824,12 @@ function get_plex_server()
 /// </summary>
 function get_imdb_rating($title)
 {
-    $update = 0;
-    $res = refresh_imdb_ratings(FALSE /*force*/);
-    if ($res)
+    if (!imdb_update_in_progress())
     {
-        // Hacky. If we don't need to update, we'll return FALSE and not hit this block. However, a
-        // successful update will return the time in seconds it took to update, which we want to return
-        // to the user. If we hit a failure, we'll be given a JSON string, which will fail floatval
-        $update = floatval($res);
-        if ($update == 0)
-        {
-            return $res;
-        }
+        // Kick off a refresh if necessary. This won't affect this
+        // particular call since the update happens in the background,
+        // but ensures that the database is periodically updated
+        refresh_imdb_ratings(FALSE /*force*/);
     }
 
     global $db;
@@ -2853,26 +2847,37 @@ function get_imdb_rating($title)
     }
 
     $rating = number_format($result->fetch_row()[0] / 10, 1, '.', '');
-    return '{ "rating" : "' . $rating . ($update ? ('", "update" : ' . $update) : '"') . ' }';
+    return '{ "rating" : "' . $rating . '" }';
 }
 
 /// <summary>
 /// Checks if we need to update our IMDb ratings database.
 /// If $force is true, then we update the database regardless of
 /// the last time the database was updated.
+/// Returns TRUE if we kicked off an update, FALSE otherwise
 /// </summary>
 function refresh_imdb_ratings($force)
 {
-    $file = "includes/title.ratings.tsv";
-    $exists = file_exists($file);
-    if (!$force && (file_exists($file) || time() - filemtime($file) <= (86400 * 7)))
+    $file = "includes/status.json";
+    if (!$force && file_exists($file))
     {
-        return FALSE;
+        $message = json_decode(file_get_contents($file));
+        if (property_exists($message, "status") &&
+            $message->status == "Success" &&
+            (time() - filemtime($file) <= 86400 * 7))
+        {
+            return FALSE;
+        }
     }
+
+    $status = new \stdClass();
+    $status->status = "In Progress";
+    $status->message = "Initializing";
+    file_put_contents("includes/status.json", json_encode($status));
 
     // This is an expensive operation. Fire and forget so we don't lock up the site
     fire_and_forget("http://127.0.0.1/plex/includes/update_imdb_ratings.php", "");
-    return json_success();
+    return TRUE;
 }
 
 /// <summary>
@@ -2898,26 +2903,29 @@ function force_update_imdb_ratings()
         return json_error("Not Authorized");
     }
 
+    if (imdb_update_in_progress())
+    {
+        return json_error("Refresh already in progress!");
+    }
+
+    if (refresh_imdb_ratings(TRUE /*force*/))
+    {
+        return json_success();
+    }
+
+    return json_error("Failed to force refresh ratings");
+}
+
+function imdb_update_in_progress()
+{
     $file = "includes/status.json";
-    if (file_exists($file) && json_decode(file_get_contents("includes/status.json"))->status != "Success")
+    if (!file_exists($file))
     {
-        $message = json_decode(file_get_contents($file));
-        if (property_exists($message, "status") && $message->status == "In Progress")
-        {
-            return json_error("Refresh already in progress!");
-        }
+        return false;
     }
 
-    $result = refresh_imdb_ratings(TRUE);
-    $update_time = floatval($result);
-    if ($update_time == 0)
-    {
-        // An update time of 0 indicates a failure in floatval, which we take
-        // as a sign that the update failed and a JSON string was returned
-        return $result;
-    }
-
-    return "{ \"update_time\" : $update_time }";
+    $message = json_decode(file_get_contents($file));
+    return property_exists($message, "status") && $message->status == "In Progress";
 }
 
 function get_imdb_update_status()
