@@ -49,7 +49,7 @@ let Chart = new function()
         let svg = makeSvg(r * 2, r * 2 + titleOffset);
         --r; // Need space for border
         let cumulative = 0;
-        let colors = data.colors ? data.colors : ["#FFC000", "#5B9BD5", "#70AD47", "#4472C4", "#ED7D31", "#A5A5A5"];
+        let colors = data.colors ? data.colors : ["#FFC000", "#5B9BD5", "#A5A5A5", "#70AD47", "#4472C4", "#ED7D31"];
         let colorIndex = 0;
         for (let point of data.points)
         {

@@ -232,8 +232,9 @@ function sortResolutions(resolutions)
         "4k" : 0,
         "1080p" : 1,
         "720p" : 2,
-        "480p" : 3,
-        "sd" : 4
+        "576p" : 3,
+        "480p" : 4,
+        "sd" : 5
     };
     /* eslint-enable quote-props */
 
