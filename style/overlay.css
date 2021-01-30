@@ -12,7 +12,6 @@
 #overlayContainer {
     width: auto;
     height: auto;
-    padding: 20px;
     background-color: rgba(0,0,0,0.3);
     color: rgb(196, 196, 196);
 }
@@ -66,6 +65,10 @@
     .defaultOverlay {
         margin-top: 25vh;
     }
+
+    #overlayContainer {
+        padding: 20px;
+    }
 }
 
 /* Phone/Portrait */
@@ -77,5 +80,9 @@
 
     .defaultOverlay {
         margin-top: 10vh;
+    }
+
+    #overlayContainer {
+        padding: 5px;
     }
 }
