@@ -14,10 +14,32 @@ let selectedSuggestion;
 window.addEventListener("load", function()
 {
     selectChanged();
-    $("#type").addEventListener("change", selectChanged);
+    $("#typeContainer").addEventListener("click", selectChanged);
     $("#name").addEventListener("input", suggestionChanged);
     $("#external_id").addEventListener("input", searchSpecificExternal);
 });
+
+/// <summary>
+/// Helper to return the name of the suggestion type
+/// </summary>
+function getType()
+{
+    let ele = getTypeElement();
+    if (!ele)
+    {
+        return "none";
+    }
+
+    return ele.id;
+}
+
+/// <summary>
+/// Return the currently selected element
+/// </summary>
+function getTypeElement()
+{
+    return $$(".typeSelected");
+}
 
 /// <summary>
 /// Shows or hides the element with the given id
@@ -34,19 +56,19 @@ function setInputVisibility(id, vis)
 /// <summary>
 /// Update UI when request options change
 /// </summary>
-function selectChanged()
+function selectChanged(e)
 {
-    let value = $("#type").value;
-    if (value == "none")
+    $(".typeOption").forEach((ele) => { ele.classList.remove("typeSelected"); });
+    if (!e || !e.target.classList.contains("typeOption"))
     {
         setInputVisibility("nameHolder", false);
         $("#matchHolder").style.display = "none";
         $("#existingMatchHolder").style.display = "none";
         setVisibility("suggestions", false);
-        setVisibility("submitHolder", false);
         return;
     }
 
+    e.target.classList.add("typeSelected");
     setInputVisibility("nameHolder", true);
     suggestionChanged();
 }
@@ -95,7 +117,7 @@ function setExternalType(type)
 /// </summary>
 function searchItem()
 {
-    let value = $("#type").value;
+    let value = getType();
     if (value != "movie" && value != "tv" && value != "audiobook")
     {
         // Only movies and tv shows supported for now
@@ -136,7 +158,7 @@ function searchItem()
 function searchInternal()
 {
     // For now only search for movies, since TV shows can have requests for different seasons
-    let type = $("#type").value;
+    let type = getType();
 
     let name = $("#name").value;
     let parameters =
@@ -205,7 +227,7 @@ function validateId(id, isAudiobook)
 function externalSearchSuccess(response)
 {
     Log.info(response);
-    let type = $("#type").value;
+    let type = getType();
     switch (type)
     {
         case "movie":
@@ -247,7 +269,7 @@ function externalSearchSuccess(response)
 function searchSpecificExternal()
 {
     let id = $("#external_id").value;
-    const isAudiobook = $("#type").value == "audiobook";
+    const isAudiobook = getType() == "audiobook";
     if (!validateId(id, isAudiobook))
     {
         return;
@@ -255,7 +277,7 @@ function searchSpecificExternal()
 
     $("#externalResult").innerHTML = "Searching...";
 
-    let value = $("#type").value;
+    let value = getType();
     let type = value == "movie" ? 1 : (value == "tv" ? 2 : 3);
     let parameters = { type : type, query : id, imdb : type != 3, audible : type == 3 };
 
@@ -349,7 +371,7 @@ function buildItem(match, external)
         {
             class : "searchResult",
             title : match.title ? match.title : match.name,
-            poster : match.poster_path ? match.poster_path : match.thumb ? match.thumb : `/${$("#type").value}default.png`
+            poster : match.poster_path ? match.poster_path : match.thumb ? match.thumb : `/${getType()}default.png`
         },
         0,
         external ? {} : {
@@ -372,7 +394,7 @@ function buildItem(match, external)
             `https://image.tmdb.org/t/p/w92${match.poster_path}` :
             (match.thumb ?
                 match.thumb :
-                `poster/${$("#type").value}default.png`
+                `poster/${getType()}default.png`
             )
         )
     });
@@ -530,7 +552,7 @@ function buildSeasonDetails(response, request)
 /// </summary>
 function goToExternal()
 {
-    let value = $("#type").value;
+    let value = getType();
     let grandparent = this.parentNode.parentNode;
     const imdbid = grandparent.getAttribute("imdbid");
     if (imdbid)
@@ -559,7 +581,7 @@ function goToExternal()
         else
         {
             let extId = request.linkElement.parentNode.parentNode.getAttribute("tmdbid");
-            window.open("https://www.themoviedb.org/" + ($("#type").value == "movie" ? "movie" : "tv") + "/" + extId);
+            window.open("https://www.themoviedb.org/" + (getType() == "movie" ? "movie" : "tv") + "/" + extId);
         }
     };
     sendHtmlJsonRequest("media_search.php", parameters, successFunc, null, { linkElement : this });
@@ -671,7 +693,7 @@ function onSubmitRequestSucceeded(response)
 /// </summary>
 function submitSelected()
 {
-    const reqType = $("#type").value;
+    const reqType = getType();
     if (!selectedSuggestion)
     {
         let button = $("#matchContinue");

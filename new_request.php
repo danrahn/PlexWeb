@@ -28,14 +28,16 @@ requireSSL();
             <div class="formTitle">New Request</div>
             <form id="suggestForm" action="javascript:void(0);">
                 <hr />
-                <div class="formInput"><label for="type">Suggestion Type: </label><select name="type" id="type">
-                    <option value="none"></option>
-                    <option value="movie">Movie</option>
-                    <option value="tv">TV Show</option>
-                    <option value="audiobook">Audiobook</option>
-                    <!-- <option value="music">Music</option> -->
-                </select></div>
-                <div class="formInput hiddenInputStart" id="nameHolder"><label for="name">Suggestion:</label><input type="text" name="name" id="name" maxlength=128></div>
+                <div class="formInput">
+                    <ul id="typeContainer">
+                        <li class="typeOption left" id="movie">Movie</li>
+                        <li class="typeOption" id="tv">TV Show</li>
+                        <li class="typeOption right" id="audiobook">Audiobook</li>
+                    </ul>
+                </div>
+                <div class="formInput hiddenInputStart" id="nameHolder">
+                    <input type="text" name="name" id="name" maxlength=128>
+                </div>
                 <div id="existingMatchHolder">
                     <div id="existingMatchContainer"></div>
                 </div>
@@ -54,7 +56,6 @@ requireSSL();
                         <h4>Existing Items</h4>
                     </div>
                 </div>
-                <div class="formInput" id="submitHolder"><input type="button" value="Submit" id="go"></input></div>
             </form>
             <hr />
             <a href="user_settings.php">Change notification settings</a>

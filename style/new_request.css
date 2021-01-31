@@ -34,10 +34,10 @@ form select {
 }
 
 .selectedSuggestion {
-    background-color: #2E5E3E;
+    background-color: rgba(0,50,0,0.4);
 }
 .selectedSuggestion:hover {
-    background-color: #1E4E2E;
+    background-color: rgba(0,70,0,0.5);
 }
 
 .searchResult img {
@@ -73,4 +73,62 @@ form select {
 #existingSuggestions,
 #outsideSuggestions {
     display: none;
+}
+
+.typeOption {
+    display: block;
+    flex: 1 1 0;
+    list-style-type: none;
+    padding-top: 15px;
+    padding-bottom: 15px;
+    background-color: rgba(0,0,0,.1);
+    cursor: pointer;
+}
+
+.typeOption:hover {
+    background-color: rgba(0,0,0,0.2);
+}
+
+.typeOption:not(.left) {
+    border-left: 1px solid #666;
+}
+
+.typeOption.left {
+    border-top-left-radius: 10px;
+    border-bottom-left-radius: 10px;
+}
+
+.typeOption.right {
+    border-top-right-radius: 10px;
+    border-bottom-right-radius: 10px;
+}
+
+#typeContainer {
+    border-radius: 10px;
+    border: 1px solid #666;
+    text-align: center;
+    display: flex;
+    align-items: stretch;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+.typeSelected {
+    background-color: rgba(0, 50, 0, 0.4);
+}
+
+.typeSelected:hover {
+    background-color: rgba(0,70,0,0.5);
+}
+
+#name {
+    width: calc(100% - 2px);
+    font-size: 16px;
+    text-align: center;
+    background-color: rgba(0,0,0,.1);
+}
+
+#name:hover {
+    background-color: rgba(0,0,0,0.2);
 }
