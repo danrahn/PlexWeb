@@ -13,7 +13,7 @@ let DateUtil = new function()
     /// </summary>
     this.getDisplayDate = function(date)
     {
-        if (typeof(date) == "string")
+        if (!(date instanceof Date))
         {
             date = new Date(date);
         }
@@ -58,7 +58,7 @@ let DateUtil = new function()
     /// </summary>
     this.getFullDate = function(date)
     {
-        if (typeof(date) == "string")
+        if (!(date instanceof Date))
         {
             date = new Date(date);
         }
