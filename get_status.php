@@ -634,7 +634,13 @@ function get_hyperlink_core($guid, $type)
             return $imdb_start . $guid;
         }
         case MediaType::TVShow:
-            return $imdb_start . get_tv_hyperlink($guid);
+            $id = get_tv_hyperlink($guid);
+            if (!$id)
+            {
+                return "";
+            }
+
+            return $imdb_start . $id;
         case MediaType::Audiobook:
         {
             $start = strpos($guid, '://') + 3;
@@ -662,7 +668,13 @@ function get_hyperlink($sesh, $type)
     // and can be parsed directly
     if (substr($sesh['guid'], 0, 5) != 'plex:')
     {
-        return get_hyperlink_core($sesh['guid'], $type);
+        $hyperlink = get_hyperlink_core($sesh['guid'], $type);
+        if (!$hyperlink)
+        {
+            return get_hyperlink_core($sesh['parentGuid'], $type);
+        }
+
+        return $hyperlink;
     }
 
     // Otherwise we have to go to the metadata for the item, looking for the right Guid
