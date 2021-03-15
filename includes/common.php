@@ -540,7 +540,7 @@ abstract class RequestType
             case RequestType::Movie:
                 return "Movie";
             case RequestType::TVShow:
-                return "TV Show";
+                return "TV";
             case RequestType::AudioBook:
                 return "Audiobook";
             case RequestType::Music:
