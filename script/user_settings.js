@@ -153,7 +153,7 @@ function getCurrentValues()
         error.innerHTML = response.Error;
         error.style.display = "block";
         Animation.queue({ opacity : 1 }, error, 500);
-        Animation.queueDelayedAnimation({ opacity : 0 }, error, 3000, 1000);
+        Animation.queueDelayed({ opacity : 0 }, error, 3000, 1000);
         Animation.queue({ display : "none" }, error);
     };
 
