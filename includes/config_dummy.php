@@ -30,7 +30,14 @@ define('PUBLIC_PLEX_HOST', 'https://app.plex.tv'); // Can also forward to custom
 define('PUBLIC_PLEX_NAV', 'desktop#!'); // For custom plex-hosted domains, this will likely be 'web/index.html#!/'
 define('SITE_DOMAIN', 'www.example.com'); // Root domain
 define('SITE_SHORT_DOMAIN', 'www.example.com/plexweb'); // where the PlexWeb root lives (potentially the same as SITE_DOMAIN)
-
+define('LIBRARIES',
+    [
+        "MOVIES" => "Movies",
+        "TV" => "TV Shows",
+        "MUSIC" => "Music",
+        "AUDIOBOOKS" => "Audiobooks"
+    ]
+); // Map of Plex library types to library names
 $db = new mysqli(DB_SERVER, DB_USERNAME, DB_PASSWORD, DB_NAME);
 if ($db->connect_error)
 {

@@ -74,6 +74,20 @@ function get_username()
 
     return $row[0] . ' ' . $row[1];
 }
+
+/// <summary>
+/// Returns a JSON string mapping library types to library names,
+/// used for determining what library stats to display
+/// </summary>
+function get_library_map()
+{
+    if (UserLevel::current() < UserLevel::Regular)
+    {
+        return "{}";
+    }
+
+    return json_encode(LIBRARIES);
+}
 ?>
 
 <!DOCTYPE html>
@@ -94,7 +108,8 @@ function get_username()
 <body plexok="<?php echo does_plex_exist() ? "1" : "0" ?>"
     plex_host="<?= PUBLIC_PLEX_HOST ?>"
     plex_nav="<?= PUBLIC_PLEX_NAV ?>"
-    isAdmin="<?= (UserLevel::is_admin()) ? 1 : 0 ?>">
+    isAdmin="<?= (UserLevel::is_admin()) ? 1 : 0 ?>"
+    libraries='<?= get_library_map() ?>'>
 <div id="plexFrame">
     <?php include "nav.php" ?>
     <h3 id="welcome">Welcome <?= get_username() ?></h3>

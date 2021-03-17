@@ -2634,6 +2634,7 @@ function process_section_items($key, $type, &$section)
     $type_start = $type;
     $type_end = $type;
     $labels = array("Movies");
+    $audiobook_section = FALSE;
 
     if ($type > 1 && $type < 5)
     {
@@ -2647,7 +2648,8 @@ function process_section_items($key, $type, &$section)
         // Music, get artists, albums, and tracks
         $type_start = 8;
         $type_end = 10;
-        $labels = array("Artists", "Albums", "Tracks");
+        $audiobook_section = $section->title == LIBRARIES["AUDIOBOOKS"];
+        $labels = $audiobook_section ? array("Authors", "Books", "Chapters") : array("Artists", "Albums", "Tracks");
     }
 
     $items = array();
@@ -2667,7 +2669,7 @@ function process_section_items($key, $type, &$section)
             addTvDetails($key, $section);
             break;
         case 8:
-            addAudioDetails($key, $section);
+            addAudioDetails($key, $section, $audiobook_section);
             break;
         default:
             break;
@@ -2693,12 +2695,14 @@ function addTvDetails($key, $section)
 }
 
 /// <summary>
-/// Adds details about music sections, in this case how many tracks are from each decade
+/// Adds details about music sections. For "real" music, organize by tracks per decade.
+/// For audiobooks, organize by books (i.e. albums) per decade.
 /// </summary>
-function addAudioDetails($key, $section)
+function addAudioDetails($key, $section, $audiobook_section)
 {
-    $before = PLEX_SERVER . "/library/sections/$key/all?type=10&album.year%3C%3C=1900";
-    $append = "&" . PLEX_TOKEN . "&type=10&X-Plex-Container-Start=0&X-Plex-Container-Size=0";
+    $type_query = $audiobook_section ? "9&" : "10&album.";
+    $before = PLEX_SERVER . "/library/sections/$key/all?type=" . $type_query . "year%3C%3C=1900";
+    $append = "&" . PLEX_TOKEN . "&type=" . ($audiobook_section ? "9" : "10") . "&X-Plex-Container-Start=0&X-Plex-Container-Size=0";
     
     $items = new \stdClass();
     $before_count = (int)simplexml_load_string(curl($before . $append))["totalSize"];
@@ -2713,7 +2717,7 @@ function addAudioDetails($key, $section)
     $any = false;
     while ($decade <= $max)
     {
-        $decadePath = PLEX_SERVER . "/library/sections/$key/all?type=10&album.decade=$decade" . $append;
+        $decadePath = PLEX_SERVER . "/library/sections/$key/all?type=" . $type_query . "decade=$decade" . $append;
         $count = (int)simplexml_load_string(curl($decadePath))["totalSize"];
         if ($count != 0 || $any)
         {

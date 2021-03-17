@@ -147,9 +147,11 @@ function getLibraryDetails(forceRefresh)
     let successFunc = function(response)
     {
         clearStats();
-        addMovieStats(getStatSection("Movies", response));
-        addTvStats(getStatSection("TV Shows", response));
-        addMusicStats(getStatSection("Music", response));
+        let libraries = JSON.parse(document.body.getAttribute("libraries"));
+        if (libraries.MOVIES) { addMovieStats(getStatSection(libraries.MOVIES, response)); }
+        if (libraries.TV) { addTvStats(getStatSection(libraries.TV, response)); }
+        if (libraries.AUDIOBOOKS) { addAudiobookStats(getStatSection(libraries.AUDIOBOOKS, response)); }
+        if (libraries.MUSIC) { addMusicStats(getStatSection(libraries.MUSIC, response)); }
         showStatsIcon();
     };
 
@@ -324,40 +326,55 @@ function tvSort(left, right)
 }
 
 /// <summary>
+/// Builds the stats section for Audiobooks
+/// </summary>
+function addAudiobookStats(audiobooks)
+{
+    addAudioStats(audiobooks, "audiobooks", ["Authors", "Books", "Chapters"]);
+}
+
+/// <summary>
 /// Builds the stats section for Music
 /// </summary>
 function addMusicStats(music)
 {
-    if (!music)
+    addAudioStats(music, "music", ["Artists", "Albums", "Tracks"]);
+}
+
+function addAudioStats(data, audioType, audioCategories)
+{
+    if (!data)
     {
         return;
     }
 
-    createStatSection("music");
+    createStatSection(audioType);
 
     let barPoints = [];
     let ul = buildNode("ul", { class : "innerStatList" });
-    for (let type of ["Artists", "Albums", "Tracks"])
+    for (let type of audioCategories)
     {
         ul.appendChild(
             buildNode("li").appendChildren(
-                buildNode("strong", {}, `${type}: `),
-                buildNode("span", {}, music[type])
-            ));
+                buildNode("strong", {}, `${type}`),
+                buildNode("span", {}, data[type])
+            )
+        );
     }
-    for (let [decade, count] of Object.entries(music.decades))
+
+    for (let [decade, count] of Object.entries(data.decades))
     {
         barPoints.push({ value : parseInt(count), label : decade });
     }
 
-    let list = $$("#musicStats ul");
+    let list = $$(`#${audioType}Stats ul`);
     list.appendChildren(
         buildNode("li").appendChildren(
-            buildNode("strong", {}, "Music")),
+            buildNode("strong", {}, `${audioType[0].toUpperCase()}${audioType.substring(1)}`)),
         buildNode("li", { class : "innerListHolder" }).appendChildren(ul)
     );
 
-    g_chartCache.music =
+    g_chartCache[audioType] =
     {
         width : 140,
         height : 100,
@@ -366,7 +383,8 @@ function addMusicStats(music)
         noTitle : true,
         sortFn : (left, right) => right.label - left.label
     };
-    appendChart(g_chartCache.music, "musicGraph", false /*isPie*/);
+
+    appendChart(g_chartCache[audioType], `${audioType}Graph`, false /*isPie*/);
 }
 
 /// <summary>
