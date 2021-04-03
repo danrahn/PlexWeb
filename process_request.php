@@ -597,8 +597,8 @@ function add_request_comment($req_id, $content)
     }
 
     (int)$userid = $_SESSION['id'];
-    $content = $db->real_escape_string($content);
-    $query = "INSERT INTO request_comments (req_id, user_id, content) VALUES ($req_id, $userid, '$content')";
+    $content_escaped = $db->real_escape_string($content);
+    $query = "INSERT INTO request_comments (req_id, user_id, content) VALUES ($req_id, $userid, '$content_escaped')";
     if (!$db->query($query))
     {
         return db_error();
@@ -615,7 +615,7 @@ function add_request_comment($req_id, $content)
     }
 
     // Need to get the ID of this comment to add it to the activity table
-    $query = "SELECT `id` FROM request_comments WHERE `req_id`=$req_id AND `user_id`=$userid AND `content`='$content' ORDER BY `timestamp` DESC";
+    $query = "SELECT `id` FROM request_comments WHERE `req_id`=$req_id AND `user_id`=$userid AND `content`='$content_escaped' ORDER BY `timestamp` DESC";
 
     $result = $db->query($query);
     if (!$result)
