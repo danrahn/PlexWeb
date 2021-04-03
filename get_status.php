@@ -657,9 +657,9 @@ function get_hyperlink_core($guid, $type)
 /// Gets the hyperlink for the specific MediaType, taking into account the new
 /// media agent that stores the actual external id elsewhere
 /// Movies - imdb
-// TV Shows - imdb (via TVDB API)
-// Audiobooks - audible
-// Music - none (#)
+/// TV Shows - imdb (via TVDB API)
+/// Audiobooks - audible
+/// Music - none (#)
 /// </summary>
 function get_hyperlink($sesh, $type)
 {
@@ -680,12 +680,22 @@ function get_hyperlink($sesh, $type)
     // Otherwise we have to go to the metadata for the item, looking for the right Guid
     $media_info = simplexml_load_string(curl(PLEX_SERVER . $sesh['key'] . '?' . PLEX_TOKEN));
     $guids = $media_info->xpath("//Guid");
+    $tvdb_backup = ""; // For the new Series scanner if there's isn't an imdb guid.
     foreach ($guids as $guid)
     {
         if (substr($guid['id'], 0, 5) == 'imdb:')
         {
-            return get_hyperlink_core($guid['id'], $type);
+            return 'https://imdb.com/title/' . substr($guid['id'], 7);
         }
+        else if ($type == MediaType::TVShow && strpos($guid['id'], 'tvdb:') === 0)
+        {
+            $tvdb_backup = "thetvdb://" . substr($guid['id'], 7);
+        }
+    }
+
+    if ($tvdb_backup)
+    {
+        return get_tv_hyperlink($tvdb_backup);
     }
 
     return '#';
@@ -700,7 +710,6 @@ function get_tv_hyperlink($show_guid)
     $ind = strpos($show_guid, "thetvdb://");
     if ($ind === FALSE)
     {
-        // We don't have a tvdb guid, can't query
         return "";
     }
 
