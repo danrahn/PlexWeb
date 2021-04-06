@@ -1397,13 +1397,22 @@ function get_season_details($path)
     $details->path = $path;
     $seasonStatus = array();
     $children = simplexml_load_string(curl(PLEX_SERVER . $path . '?' . PLEX_TOKEN));
-    $totalSeasons = 0;
+    $total_seasons = 0;
     $seasons = $children->xpath('Directory');
+    $new_agent = -1;
 
     $tvdb_client = new Tvdb();
+    $tmdb_data = NULL;
     foreach ($seasons as $season)
     {
         if (!$season['type'] || $season['type'] != 'season')
+        {
+            continue;
+        }
+
+        // We don't care about specials
+        $season_number = (int)$season['index'];
+        if ($season_number === 0)
         {
             continue;
         }
@@ -1412,7 +1421,16 @@ function get_season_details($path)
         $data->season = (int)$season['index'];
         $episodePath = $season['key'];
         $episodes = simplexml_load_string(curl(PLEX_SERVER . $episodePath . '?' . PLEX_TOKEN));
-        $availableEpisodes = count($episodes);
+        $available_episodes = count($episodes);
+
+        if ($new_agent == -1)
+        {
+            $new_agent = check_new_tv_agent($season, $path, $tmdb_data);
+            if ($new_agent == 1)
+            {
+                $details->totalSeasons = (int)$tmdb_data->number_of_seasons;
+            }
+        }
 
         if (isset($season['guid']) && strpos($season['guid'], 'thetvdb') !== FALSE)
         {
@@ -1423,7 +1441,7 @@ function get_season_details($path)
                 $tvdb_client->login();
             }
 
-            if ($totalSeasons == 0)
+            if ($total_seasons == 0)
             {
                 $details->totalSeasons = $tvdb_client->get_series($seasonGuid)->getSeasonCount();
             }
@@ -1431,7 +1449,25 @@ function get_season_details($path)
             $totalEpisodes = count($tvdb_client->get_season_episodes($seasonGuid, $data->season));
 
             // Say we're complete if we have at least as many episodes as TVDb says there are in the season
-            $data->complete = $totalEpisodes <= $availableEpisodes;
+            $data->complete = $totalEpisodes <= $available_episodes;
+        }
+        else if ($new_agent)
+        {
+            $found = FALSE;
+            foreach ($tmdb_data->seasons as $tmdb_season)
+            {
+                if ((int)$tmdb_season->season_number == $data->season)
+                {
+                    $data->complete = $tmdb_season->episode_count <= $available_episodes;
+                    $found = TRUE;
+                    break;
+                }
+            }
+
+            if (!$found)
+            {
+                $data->unknown = TRUE;
+            }
         }
         else
         {
@@ -1442,6 +1478,40 @@ function get_season_details($path)
 
     $details->seasons = $seasonStatus;
     return json_encode($details);
+}
+
+
+/// <summary>
+/// Checks whether the library we're parsing is using the new TV scanner, which has different
+/// guid parsing methods. If we are using the new agent, returns 1. If we're not using the new
+/// agent, or we were unable to grab the show information from TMDB (tmdb_data), return 0.
+/// </summary>
+function check_new_tv_agent($season, $path, &$tmdb_data)
+{
+    if (!isset($season['guid']) || strpos($season['guid'], 'plex:') === FALSE)
+    {
+        return 0;
+    }
+
+    $parent = substr($path, 0, strlen($path) - 9);
+    $base = simplexml_load_string(curl(PLEX_SERVER . $parent . '?' . PLEX_TOKEN));
+    $guids = $base->xpath("//Guid");
+    $tmdb_id = '';
+    foreach ($guids as $guid)
+    {
+        if (substr($guid['id'], 0, 5) == 'tmdb:')
+        {
+            $tmdb_id = substr($guid['id'], 7);
+        }
+    }
+
+    if (!$tmdb_id)
+    {
+        return 0;
+    }
+
+    $tmdb_data = json_decode(curl(TMDB_URL . "tv/$tmdb_id" . TMDB_TOKEN));
+    return 1;
 }
 
 
