@@ -22,7 +22,7 @@ CREATE TABLE `user_requests` (
  `request_type` int(11) NOT NULL COMMENT 'Permission or Media request',
  `request_name` varchar(128) COLLATE utf8_unicode_ci NOT NULL,
  `comment` varchar(1024) COLLATE utf8_unicode_ci NOT NULL,
- `satisfied` smallint(1) NOT NULL DEFAULT '0' COMMENT '0=Pending;1=Approved;2=Denied;3=In Progress;4=Waiting',
+ `satisfied` smallint(1) NOT NULL DEFAULT '0' COMMENT '0=Pending;1=Approved;2=Denied;3=In Progress;4=Waiting;5=Deleted',
  `request_date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
  `satisfied_date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
  `admin_comment` varchar(1024) COLLATE utf8_unicode_ci DEFAULT NULL,

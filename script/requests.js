@@ -165,7 +165,7 @@ function buildRequestStatus(request, requestHolder)
 {
     let status = buildNode("span");
     let statusVal = parseInt(request.a);
-    let statusText = ["Pending", "Complete", "Denied", "In Progress", "Waiting"][statusVal];
+    let statusText = ["Pending", "Complete", "Denied", "In Progress", "Waiting", "Deleted"][statusVal];
 
     if (isAdmin())
     {
@@ -178,7 +178,7 @@ function buildRequestStatus(request, requestHolder)
 
     if (statusVal != 0)
     {
-        requestHolder.classList.add(["", "requestComplete", "requestDenied", "requestInProgress", "requestWaiting"][statusVal]);
+        requestHolder.classList.add(["", "requestComplete", "requestDenied", "requestInProgress", "requestWaiting", "requestDeleted"][statusVal]);
     }
 
     return status;
@@ -307,10 +307,13 @@ function getStatusSelection(statusHolder, rid, selected)
 {
     statusHolder.appendChild(buildNode("label", { for : `status_${rid}` }, "Status: "));
     let select = buildNode("select", { name : `status_${rid}`, id : `status_${rid}`, class : "inlineCombo" });
-    let mappings = [0, 4, 3, 1, 2];
-    ["Pending", "Waiting", "In Progress", "Complete", "Denied"].forEach(function(item, i)
+    let mappings = [0, 4, 3, 1, 2, 5];
+    ["Pending", "Waiting", "In Progress", "Complete", "Denied", "Deleted"].forEach(function(item, i)
     {
-        select.appendChild(buildNode("option", { value : mappings[i] }, item));
+        if (i != 5 || selected == 5) // Only show 'Deleted' if the item itself is deleted, don't allow it from the dropdown
+        {
+            select.appendChild(buildNode("option", { value : mappings[i] }, item));
+        }
     });
 
     statusHolder.appendChild(select);
@@ -432,6 +435,7 @@ Table.Filter.populate = function()
     $("#showDeclined").checked = filter.status.declined;
     $("#showInProgress").checked = filter.status.inprogress;
     $("#showWaiting").checked = filter.status.waiting;
+    $("#showDeleted").checked = isAdmin() && filter.status.deleted;
     $("#showMovies").checked = filter.type.movies;
     $("#showTV").checked = filter.type.tv;
     $("#showAudiobooks").checked = filter.type.audiobooks;
@@ -442,6 +446,10 @@ Table.Filter.populate = function()
     if (isAdmin())
     {
         Table.Filter.populateUserFilter();
+    }
+    else
+    {
+        $("#showDeleted").parentNode.style.display = "none";
     }
 
     setSortOrderValues();
@@ -460,7 +468,8 @@ Table.Filter.getFromDialog = function()
             complete : $("#showComplete").checked,
             declined : $("#showDeclined").checked,
             inprogress : $("#showInProgress").checked,
-            waiting : $("#showWaiting").checked
+            waiting : $("#showWaiting").checked,
+            deleted : isAdmin() && $("#showDeleted").checked,
         },
         type :
         {
@@ -504,6 +513,7 @@ function addFilterCheckboxes(options)
         "Show In Progress" : "showInProgress",
         "Show Complete" : "showComplete",
         "Show Declined" : "showDeclined",
+        "Show Deleted" : "showDeleted",
         "" : "",
         "Show Movies" : "showMovies",
         "Show TV" : "showTV",
@@ -606,6 +616,7 @@ Table.Filter.get = function()
             !Object.prototype.hasOwnProperty.call(filter.status, "declined") ||
             !Object.prototype.hasOwnProperty.call(filter.status, "inprogress") ||
             !Object.prototype.hasOwnProperty.call(filter.status, "waiting") ||
+            !Object.prototype.hasOwnProperty.call(filter.status, "deleted") ||
         !Object.prototype.hasOwnProperty.call(filter, "type") ||
             !Object.prototype.hasOwnProperty.call(filter.type, "movies") ||
             !Object.prototype.hasOwnProperty.call(filter.type, "tv") ||
@@ -646,7 +657,8 @@ Table.Filter.default = function()
             complete : true,
             declined : true,
             inprogress : true,
-            waiting : true
+            waiting : true,
+            deleted : false,
         },
         type :
         {

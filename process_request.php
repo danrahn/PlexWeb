@@ -59,6 +59,7 @@ abstract class ProcessRequest
     const ImdbRating = 35;
     const UpdateImdbRatings = 36;
     const GetImdbUpdateStatus = 37;
+    const DeleteRequest = 38;
 }
 
 // For requests that are only made when not logged in, don't session_start or verify login state
@@ -218,6 +219,9 @@ function process_request($type)
             break;
         case ProcessRequest::GetImdbUpdateStatus:
             $message = get_imdb_update_status();
+            break;
+        case  ProcessRequest::DeleteRequest:
+            $message = delete_request((int)get("rid"));
             break;
         default:
             return json_error("Unknown request type: " . $type);
@@ -384,11 +388,17 @@ function request_exists($external_id, $userid)
     if ($result && $result->num_rows != 0)
     {
         $row = $result->fetch_row();
+        $status = $row[2]; // For the sake of UI/user interactions, a deleted request "doesn't exist"
+        if ($status == 5)
+        {
+            return NULL;
+        }
+
         $existing_request = new \stdClass();
         $existing_request->exists = TRUE;
         $existing_request->rid = $row[0];
         $existing_request->name = $row[1];
-        $existing_request->status = $row[2];
+        $existing_request->status = $status;
         return $existing_request;
     }
 
@@ -1733,6 +1743,10 @@ function get_requests($num, $page, $search, $filter)
     {
         array_push($filter_status, "satisfied=4");
     }
+    if ($filter->status->deleted && UserLevel::is_admin())
+    {
+        array_push($filter_status, "satisfied=5");
+    }
 
     $filter_type = array();
     if ($filter->type->movies)
@@ -2155,9 +2169,9 @@ function get_activities($num, $page, $search, $filter)
 
         if ($row['type'] == 3) // Status change
         {
-            $statuses = array("Pending", "Complete", "Denied", "In Progress", "Waiting");
+            $statuses = array("Pending", "Complete", "Denied", "In Progress", "Waiting", "Deleted");
             $data = json_decode($row['data']);
-            if ($data->status >= count($statuses))
+            if ($data->status < 0 || $data->status >= count($statuses))
             {
                 $activity->status = "Unknown";
             }
@@ -3011,5 +3025,46 @@ function get_imdb_update_status()
     }
 
     return file_get_contents($file);
+}
+
+/// <summary>
+/// Deletes a request, given the request belongs to the current user
+/// and is not already complete.
+/// </summary>
+function delete_request($rid)
+{
+    global $db;
+    $query = "SELECT username_id, satisfied FROM user_requests WHERE id=$rid";
+    $result = $db->query($query);
+    if ($result === FALSE || $result->num_rows == 0)
+    {
+        return json_error("bad request id");
+    }
+
+    $row = $result->fetch_row();
+    $uid = (int)$_SESSION['id'];
+    $req_userid = (int)$row[0];
+    $satisfied = (int)$row[1];
+    if ($uid != $req_userid || $satisfied == 1)
+    {
+        return json_error("You don't have permission to delete this request");
+    }
+
+    $query = "UPDATE user_requests SET satisfied=5 WHERE id=$rid";
+    if (!$db->query($query))
+    {
+        return json_error("Error deleting request");
+    }
+
+    // Add it to the activity table.
+    // Admin id is 0 because only the owner of the request can delete it,
+    // so admins are treated as users in this case.
+    $data = "{\"status\" : 5}";
+    $query = "INSERT INTO `activities`
+        (`type`, `user_id`, `admin_id`, `request_id`, `data`) VALUES
+        (3, $uid, 0, $rid, '$data')";
+    $db->query($query);
+
+    return json_success();
 }
 ?>

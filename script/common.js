@@ -287,6 +287,7 @@ const ProcessRequest =
     ImdbRating : 35,
     UpdateImdbRatings : 36,
     GetImdbUpdateStatus : 37,
+    DeleteRequest : 38,
 };
 
 console.assert(!Log.logErrorId || Log.logErrorId == ProcessRequest.LogError, "Update Log.logErrorId!");

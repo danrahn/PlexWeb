@@ -183,6 +183,10 @@ input[type=checkbox]:focus {
     color: #44C;
 }
 
+.status5 {
+    color: #840;
+}
+
 .commentHolder {
     background-color: rgba(0,0,0,0.3);
     margin-bottom: 10px;
@@ -361,19 +365,27 @@ a:hover {
     width: 80%;
 }
 
-#statusEdit {
+.statusTitleIcon {
     margin-left: 10px;
     height: 20pt;
     opacity: 0.8;
 }
 
-#statusEdit:hover {
+.statusTitleIcon:hover {
     opacity: 1;
 }
 
 #changeStatus select {
     margin: 20px;
     font-size: 14pt;
+}
+
+#confirmDeleteButton {
+    background-color: rgb(99, 54, 57);
+}
+
+#confirmDeleteButton:hover {
+    background-color: rgb(119, 74, 77);
 }
 
 option {

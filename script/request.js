@@ -79,6 +79,14 @@ function isAdmin()
 }
 
 /// <summary>
+/// Returns whether this request belongs to the current user
+/// </summary>
+function isAuthor()
+{
+    return attrInt("isAuthor");
+}
+
+/// <summary>
 /// Returns the id associated with the current request
 /// </summary>
 function reqId()
@@ -564,7 +572,7 @@ function searchForCompleteMatch()
 }
 
 // Keep in sync with .statusX css
-const statusColors = ["C84", "4C4", "C44", "CC4", "44C"];
+const statusColors = ["C84", "4C4", "C44", "CC4", "44C", "840"];
 
 /// <summary>
 /// Return the status string based on the state of the request.
@@ -575,24 +583,20 @@ function getStatusSpan(status)
 {
     let statusSpan = buildNode("span",
         { class : `status${status} statusSpan` },
-        [
-            "Pending",
-            "Complete",
-            "Denied",
-            "In Progress",
-            "Waiting"
-        ][status]);
+        ["Pending", "Complete", "Denied", "In Progress", "Waiting", "Deleted"][status]);
 
+    let containerSpan = buildNode("span");
+    containerSpan.appendChild(statusSpan);
     if (isAdmin())
     {
-        return buildNode("span").appendChildren(
-            statusSpan,
+        containerSpan.appendChild(
             buildNode(
                 "img",
                 {
                     src : Icons.getColor("edit", statusColors[status]),
                     alt : "Edit status",
                     id : "statusEdit",
+                    class : "statusTitleIcon",
                     title : "Edit request status"
                 },
                 0,
@@ -603,7 +607,27 @@ function getStatusSpan(status)
         );
     }
 
-    return statusSpan;
+    if (isAuthor() && status != 1 && status != 5) // Can't delete completed requests (or already deleted ones)
+    {
+        containerSpan.appendChild(
+            buildNode(
+                "img",
+                {
+                    src : Icons.getColor("delete", statusColors[2]),
+                    alt : "Delete Request",
+                    id : "deleteRequest",
+                    class : "statusTitleIcon",
+                    title : "Delete this request"
+                },
+                0,
+                {
+                    click : confirmDeleteRequest
+                }
+            )
+        );
+    }
+
+    return containerSpan;
 }
 
 /// <summary>
@@ -813,7 +837,7 @@ function changeStatus()
         if (span)
         {
             span.className = "statusSpan status" + status;
-            span.innerHTML = ["Pending", "Complete", "Denied", "In Progress", "Waiting"][status];
+            span.innerHTML = ["Pending", "Complete", "Denied", "In Progress", "Waiting", "Deleted"][status];
             $("#statusEdit").src = Icons.getColor("edit", statusColors[status]);
         }
 
@@ -835,6 +859,113 @@ function changeStatus()
     };
 
     sendHtmlJsonRequest("update_request.php", JSON.stringify(params), successFunc, failureFunc, null, true /*dataIsString*/);
+}
+
+/// <summary>
+/// Prompts the user to delete the request
+/// </summary>
+function confirmDeleteRequest()
+{
+    let okayButton = buildNode(
+        "input",
+        {
+            type : "button",
+            id : "confirmDeleteButton",
+            value : "Delete",
+            style : "width: 100px; margin-right: 10px; display: inline",
+        },
+        0,
+        { click : deleteRequest }
+    );
+
+    let cancelButton = buildNode(
+        "input",
+        {
+            type : "button",
+            value : "Cancel",
+            style : "width: 100px; display: inline"
+        },
+        0,
+        { click : Overlay.dismiss }
+    );
+
+    let outerButtonContainer = buildNode("div", { class : "formInput", style : "text-align: center" });
+    let buttonContainer = buildNode("div", { style : "float: right; overflow: auto; width: 100%; margin: auto" });
+    outerButtonContainer.appendChild(buttonContainer.appendChildren(okayButton, cancelButton));
+
+    Overlay.build(
+        { dismissible : true, centered : false },
+        buildNode("div").appendChildren(
+            buildNode("div", {}, "Are you sure you want to delete this request?"),
+            outerButtonContainer
+        )
+    );
+}
+
+/// <summary>
+/// Deletes this request
+/// </summary>
+function deleteRequest()
+{
+    let parameters =
+    {
+        type : ProcessRequest.DeleteRequest,
+        rid : reqId()
+    };
+
+    let successFunc = function()
+    {
+        if ($("#mainOverlay"))
+        {
+            let deleteBtn = $("#confirmDeleteButton");
+            if (deleteBtn)
+            {
+                Animation.fireNow({ backgroundColor : "rgb(51, 99, 57)" }, deleteBtn, 500);
+            }
+        }
+
+        setTimeout(() => { window.location = "requests.php"; }, 1000);
+    };
+
+    sendHtmlJsonRequest("process_request.php", parameters, successFunc, deleteRequestFailed);
+}
+
+/// <summary>
+/// Adjusts the overlay message when we fail to delete a request
+/// </summary>
+function deleteRequestFailed()
+{
+    let message = "Sorry, something went wrong and we could not delete this request. Please try again later.";
+    let mainOverlay = $("#mainOverlay");
+    if (mainOverlay)
+    {
+        let container = $("#overlayContainer");
+        while (container.firstChild)
+        {
+            container.removeChild(container.firstChild);
+        }
+
+        container.appendChildren(
+            buildNode("div", { id : "overlayMessage" }, message),
+            buildNode(
+                "input",
+                {
+                    type : "button",
+                    id : "overlayBtn",
+                    value : "OK",
+                    style : "width: 100px"
+                },
+                0,
+                {
+                    click : Overlay.dismiss
+                }
+            )
+        );
+    }
+    else
+    {
+        Overlay.show(message, "OK", Overlay.dismiss);
+    }
 }
 
 /// <summary>

@@ -9,9 +9,19 @@ verify_loggedin(TRUE /*redirect*/, "request.php?id=" . $req_id);
 
 $details = get_details($req_id);
 
-if (!UserLevel::is_admin() && !$details->is_author)
+if (!UserLevel::is_admin())
 {
-    error_and_exit(403, "You don't have access to this request!<br><br><a href='requests.php'>Take me back!</a>");
+    $ref = $_SERVER['HTTP_REFERER'];
+    $back_link = $ref ? $ref : "requests.php";
+    if (!$details->is_author)
+    {
+        error_and_exit(403, "You don't have access to this request!<br><br><a href='$ref'>Take me back!</a>");
+    }
+
+    if ($details->status == 5)
+    {
+        error_and_exit(400, "This request is deleted.<br><br><a href='$ref'>Take me back!</a>");
+    }
 }
 
 /// <summary>
@@ -60,6 +70,7 @@ function get_details($req_id)
 </head>
 <body
     isAdmin="<?= (UserLevel::is_admin()) ? 1 : 0 ?>"
+    isAuthor="<?php echo ($details->is_author ? 1 : 0) ?>"
     isMediaRequest="<?php echo ($details->is_media_request ? 1 : 0)?>"
     reqId="<?= $req_id ?>"
     requestType="<?= $details->request_type ?>"

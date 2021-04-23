@@ -92,7 +92,11 @@ function getTitleText(activity)
             linkText = activity.value;
             break;
         case Activity.StatusChange:
-            if (activity.username == attrib("username"))
+            if (activity.status == "Deleted")
+            {
+                plainText = `${name} deleted the request for ${activity.value}.`;
+            }
+            else if (activity.username == attrib("username"))
             {
                 plainText = `You changed the status of the request for ${activity.value} to `;
                 linkText = activity.status;
@@ -171,12 +175,16 @@ function buildActivity(activity, newActivity)
     let textHolder = buildNode("div", { class : "textHolder"/*, "style": "max-width: calc(100% - 70px"*/ });
     let span = buildNode("span", { class : "tableEntryTitle" });
 
-    let requestLink = buildNode("a", { href : `request.php?id=${activity.rid}` });
     let titleText = getTitleText(activity);
-
-    requestLink.appendChild(buildNode("span", {}, titleText.link));
     span.appendChild(buildNode("span", {}, titleText.plain));
-    span.appendChild(requestLink);
+
+    let requestLink;
+    if (titleText.link)
+    {
+        requestLink = buildNode("a", { href : `request.php?id=${activity.rid}` });
+        requestLink.appendChild(buildNode("span", {}, titleText.link));
+        span.appendChild(requestLink);
+    }
 
     let activityTime = buildNode("span", {}, DateUtil.getDisplayDate(activity.timestamp));
     Tooltip.setTooltip(activityTime, DateUtil.getFullDate(activity.timestamp));
