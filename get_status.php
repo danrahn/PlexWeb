@@ -586,11 +586,20 @@ function get_title($sesh, $type)
             return (string)$sesh['title'];
         case MediaType::TVShow:
         {
-            $season = $sesh['parentTitle'];
-            $season = substr($season, strrpos($season, ' ') + 1, strlen($season) + strrpos($season, ' ') + 1);
+            $season = "";
+            if (isset($sesh['parentIndex']))
+            {
+                $season = $sesh['parentIndex'];
+            }
+            else
+            {
+                $season = $sesh['parentTitle'];
+                $season = substr($season, strrpos($season, ' ') + 1, strlen($season) + strrpos($season, ' ') + 1);
+            }
+
             $season = strlen($season) == 1 ? '0' . $season : $season;
             $episode = $sesh['index'];
-            $episode = strlen($episode == 1) ? '0' . $episode : $episode;
+            $episode = strlen($episode) == 1 ? '0' . $episode : $episode;
             return $sesh['grandparentTitle'] . ': ' . $sesh['title'] . ' (S' . $season . 'E' . $episode . ')';
         }
         case MediaType::Audiobook:
