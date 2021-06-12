@@ -469,38 +469,46 @@ function buildSeasons(seasons)
 }
 
 /// <summary>
-/// Buckets the given seasons from currentSeason to seasonIndex into complete, incomplete, and missing buckets
+/// Buckets the given seasons into complete, incomplete, and missing categories
 /// </summary>
-function processSeason(seasons, currentSeason, seasonIndex, missing, complete, incomplete)
+function populateSeasonSections(data, missing, complete, incomplete)
 {
-    if (currentSeason > seasons[seasons.length - 1].season)
+    let totalSeasons = data.totalSeasons;
+    let seasons = data.seasons;
+    let seasonIndex = 0;
+    let currentSeason = 1;
+    while (currentSeason <= totalSeasons)
     {
-        Log.tmi(`Adding season ${currentSeason} to missing array`);
-        missing.push(currentSeason);
-        return seasonIndex;
-    }
+        if (currentSeason > seasons[seasons.length - 1].season)
+        {
+            Log.tmi(`Adding season(s) ${currentSeason}${currentSeason == totalSeasons ? "" : "-" + totalSeasons} to missing array`);
 
-    while (currentSeason < seasons[seasonIndex].season)
-    {
-        Log.tmi(`Adding season ${currentSeason} to missing array`);
-        missing.push(currentSeason);
+            /* eslint-disable-next-line no-loop-func, id-length */ // This particular usage is okay
+            missing.push(...Array.from(Array(totalSeasons - currentSeason + 1), (_, index) => index + currentSeason));
+            return;
+        }
+
+        while (currentSeason < seasons[seasonIndex].season)
+        {
+            Log.tmi(`Adding season ${currentSeason} to missing array`);
+            missing.push(currentSeason);
+            ++currentSeason;
+        }
+
+        if (seasons[seasonIndex].complete)
+        {
+            Log.tmi(`Adding season ${currentSeason} to complete array`);
+            complete.push(currentSeason);
+        }
+        else
+        {
+            Log.tmi(`Adding season ${currentSeason} to incomplete array`);
+            incomplete.push(currentSeason);
+        }
+
+        ++seasonIndex;
         ++currentSeason;
     }
-
-    if (seasons[seasonIndex].complete)
-    {
-        Log.tmi(`Adding season ${currentSeason} to complete array`);
-        complete.push(currentSeason);
-        ++seasonIndex;
-    }
-    else
-    {
-        Log.tmi(`Adding season ${currentSeason} to incomplete array`);
-        incomplete.push(currentSeason);
-        ++seasonIndex;
-    }
-
-    return seasonIndex;
 }
 
 /// <summary>
@@ -513,12 +521,7 @@ function buildSeasonDetails(response, request)
     let complete = [];
     let incomplete = [];
     let missing = [];
-    let totalSeasons = response.totalSeasons;
-    let seasonIndex = 0;
-    for (let i = 1; i <= totalSeasons; ++i)
-    {
-        seasonIndex = processSeason(response.seasons, i, seasonIndex, missing, complete, incomplete);
-    }
+    populateSeasonSections(response, missing, complete, incomplete);
 
     Log.tmi(complete, "Complete");
     Log.tmi(incomplete, "Incomplete");
