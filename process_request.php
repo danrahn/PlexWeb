@@ -747,10 +747,15 @@ function update_user_settings($firstname, $lastname, $email, $emailalerts, $phon
 /// <summary>
 /// Returns whether notifications are enabled (either text or email) for the given user
 /// </summary>
-function notifications_enabled($user)
+function notifications_enabled($user, &$email_enabled=NULL)
 {
-    return ($user->info->phone_alerts && $user->info->phone) ||
-        ($user->info->email_alerts && !empty($user->info->email));
+    $email = $user->info->email_alerts && !empty($user->info->email);
+    if ($email_enabled !== NULL)
+    {
+        $email_enabled = $email;
+    }
+
+    return ($user->info->phone_alerts && $user->info->phone) || $email;
 }
 
 /// <summary>
@@ -762,11 +767,18 @@ function send_notifications_if_needed($type, $req_owner, $req_name, $content, $r
     // send any notifications
     $admins = get_admins();
     $should_send = FALSE;
+    $send_admin_email = FALSE;
     foreach ($admins as $admin)
     {
-        if (notifications_enabled($admin) && $admin->id != $_SESSION['id'])
+        $email_enabled = FALSE;
+        if (notifications_enabled($admin, $email_enabled) && $admin->id != $_SESSION['id'])
         {
             $should_send = TRUE;
+            $send_admin_email = $send_admin_email || $email_enabled;
+        }
+
+        if ($should_send && $send_admin_email)
+        {
             break;
         }
     }
@@ -800,7 +812,7 @@ function send_notifications_if_needed($type, $req_owner, $req_name, $content, $r
             }
 
             // Don't bother with the expensive email creation if we won't even be sending an email
-            if (!$req_owner->info->email_alerts || empty($req_owner->info->email))
+            if (!$send_admin_email && (!$req_owner->info->email_alerts || empty($req_owner->info->email)))
             {
                 break;
             }
