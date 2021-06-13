@@ -585,27 +585,36 @@ class Markdown
         // Non-standard width/height syntax, since I explicitly don't want
         // to support direct HTML insertion.
         // ![AltText w=X,h=Y](url)
-        let dimen = /[[ ]([wh])=(\d+%?)(?:,h=(\d+%?))?$/.exec(result.text);
+        let dimen = /(.*)[[ ]([wh])=(\d+%?)(?:,h=(\d+%?))?$/.exec(result.text);
         let width = '';
         let height = '';
         if (dimen !== null)
         {
-            if (dimen[3])
+            if (dimen[4])
             {
-                width = dimen[2];
-                height = dimen[3];
+                width = dimen[3];
+                height = dimen[4];
             }
-            else if (dimen[1] == 'w')
+            else if (dimen[2] == 'w')
             {
-                width = dimen[2];
+                width = dimen[3];
             }
             else
             {
-                height = dimen[2];
+                height = dimen[3];
+            }
+
+            if (dimen[1])
+            {
+                result.text = dimen[1];
+            }
+            else
+            {
+                result.text = '_'; // For substring(1)
             }
         }
 
-        new Image(start, result.end, result.text, result.url, width, height, this.currentRun);
+        new Image(start, result.end, result.text.substring(1), result.url, width, height, this.currentRun);
         return result.end - 1; // Nothing allowed inside of an image
     }
 
@@ -4483,7 +4492,7 @@ class Image extends Url
     constructor(start, end, altText, url, width, height, parent)
     {
         super(start, end, url, parent);
-        this.altText = altText.substring(1);
+        this.altText = altText;
         this.state = State.Image; // Override parent's State.Url
         this.width = width;
         this.height = height;
@@ -4506,7 +4515,8 @@ class Image extends Url
         }
 
         let fullLink = this._realLink();
-        let base = `<img src="${fullLink}" alt="${super.transform(this.altText)}"`;
+        let alt = super.transform(this.altText);
+        let base = `<img src="${fullLink}"${alt ? ' alt="' + alt + '"' : ''}`;
 
         let widthP = this._parseDimension(true /*width*/);
         if (!isNaN(this.width))

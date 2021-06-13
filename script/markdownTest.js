@@ -307,6 +307,10 @@ class MarkdownTestSuite
     {
         let tests = this._buildTests(
             [
+                '![](poster/movieDefault.svg)',
+                this._divWrap('<img src="poster/movieDefault.svg">')
+            ],
+            [
                 '![Alt](poster/movieDefault.svg)',
                 this._divWrap('<img src="poster/movieDefault.svg" alt="Alt">')
             ],
@@ -321,6 +325,67 @@ class MarkdownTestSuite
             [
                 '![Alt2](external.com/image.png)',
                 this._divWrap('<img src="https://external.com/image.png" alt="Alt2">')
+            ],
+            [
+                '![w=300](poster/movieDefault.svg)',
+                this._divWrap('<img src="poster/movieDefault.svg" width="300px">')
+            ],
+            [
+                '![h=300](poster/movieDefault.svg)',
+                this._divWrap('<img src="poster/movieDefault.svg" height="300px">')
+            ],
+            [
+                '![w=300,h=400](poster/movieDefault.svg)',
+                this._divWrap('<img src="poster/movieDefault.svg" width="300px" height="400px">')
+            ],
+            [
+                '![Alt Text w=300](poster/movieDefault.svg)',
+                this._divWrap('<img src="poster/movieDefault.svg" alt="Alt Text" width="300px">')
+            ],
+            [
+                '![Alt Text h=300](poster/movieDefault.svg)',
+                this._divWrap('<img src="poster/movieDefault.svg" alt="Alt Text" height="300px">')
+            ],
+            [
+                '![Alt Text w=300,h=400](poster/movieDefault.svg)',
+                this._divWrap('<img src="poster/movieDefault.svg" alt="Alt Text" width="300px" height="400px">')
+            ],
+            [
+                '![Alt Text w=50%](poster/movieDefault.svg)',
+                this._divWrap('<img src="poster/movieDefault.svg" alt="Alt Text" width="50%">')
+            ],
+            [
+                '![Alt Text h=50%](poster/movieDefault.svg)',
+                this._divWrap('<img src="poster/movieDefault.svg" alt="Alt Text" height="50%">')
+            ],
+            [
+                '![Alt Text w=20%,h=50%](poster/movieDefault.svg)',
+                this._divWrap('<img src="poster/movieDefault.svg" alt="Alt Text" width="20%" height="50%">')
+            ],
+            [
+                '![Alt Text w=200,h=50%](poster/movieDefault.svg)',
+                this._divWrap('<img src="poster/movieDefault.svg" alt="Alt Text" width="200px" height="50%">')
+            ],
+            [
+                '![Alt Text w=20%,h=500](poster/movieDefault.svg)',
+                this._divWrap('<img src="poster/movieDefault.svg" alt="Alt Text" width="20%" height="500px">')
+            ],
+            [
+                // Width has to come before height
+                '![Alt Text h=20%,w=500](poster/movieDefault.svg)',
+                this._divWrap('<img src="poster/movieDefault.svg" alt="Alt Text h=20%,w=500">')
+            ],
+            [
+                '![Alt Text w=300 ](poster/movieDefault.svg)',
+                this._divWrap('<img src="poster/movieDefault.svg" alt="Alt Text w=300 ">')
+            ],
+            [
+                '![Alt Text w=300,h=400 ](poster/movieDefault.svg)',
+                this._divWrap('<img src="poster/movieDefault.svg" alt="Alt Text w=300,h=400 ">')
+            ],
+            [
+                '![Alt Text w=300 h=400](poster/movieDefault.svg)',
+                this._divWrap('<img src="poster/movieDefault.svg" alt="Alt Text w=300" height="400px">')
             ]
         );
 
