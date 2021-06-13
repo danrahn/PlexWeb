@@ -1361,7 +1361,7 @@ class MarkdownTestSuite
     }
 
     /// <summary>
-    /// Returns the message an callstack for the given exception, with the message
+    /// Returns the message and callstack for the given exception, with the message
     /// highlighted for printing to the console.
     /// </summary>
     static _exceptionText(ex)

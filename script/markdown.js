@@ -3172,6 +3172,7 @@ class Run
         this.start = start;
         this.end = end;
         this.parent = parent;
+        this.attributes = {};
         if (parent !== null)
         {
             parent.innerRuns.push(this);
@@ -3779,11 +3780,27 @@ class Run
     }
 
     /// <summary>
+    /// Returns an attribute string of the form ' attr1="value1" attr2="value2"',
+    /// to be appended to the opening tag of the current element.
+    /// </summary>
+    _getAttributes()
+    {
+        let result = '';
+        /* eslint-disable-next-line guard-for-in */ // Object.entries explicitly ignores the prototype chain
+        for (const [attribute, value] of Object.entries(this.attributes))
+        {
+            result += ` ${attribute}="${value}"`;
+        }
+
+        return result;
+    }
+
+    /// <summary>
     /// Helper for runs that have basic <X> </X> tags
     /// </summary>
-    static basicTag(tag, end)
+    basicTag(tag, end)
     {
-        return `<${end ? '/' : ''}${tag}>`;
+        return `<${end ? '/' : ''}${tag}${end ? '' : this._getAttributes()}>`;
     }
 }
 
@@ -3846,21 +3863,14 @@ class Div extends Run
         // add ourselves to its innerRuns, but we've already done that
         super(State.Div, start, end, null /*parent*/);
         this.text = text.substring(start, end);
+        this.attributes.class = 'mdDiv';
         this.parent = parent;
     }
 
     /// <summary>
     /// Div tag adds the mdDiv class
     /// </summary>
-    tag(end)
-    {
-        if (end)
-        {
-            return '</div>';
-        }
-
-        return '<div class="mdDiv">';
-    }
+    tag(end) { return this.basicTag('div', end); }
 
     startContextLength()
     {
@@ -4043,7 +4053,7 @@ class BlockQuote extends Run
     startContextLength() { return 1; }
     endContextLength() { return 0; }
 
-    tag(end) { return Run.basicTag('blockquote', end); }
+    tag(end) { return this.basicTag('blockquote', end); }
 
     /// <summary>
     /// Remove the necessary number of quote indicators ('>')
@@ -4107,7 +4117,7 @@ class UnorderedList extends Run
     startContextLength() { return 0; }
     endContextLength() { return 0; }
 
-    tag(end) { return Run.basicTag('ul', end); }
+    tag(end) { return this.basicTag('ul', end); }
 
     /// <summary>
     /// Nothing is allowed inside of lists other than
@@ -4130,27 +4140,17 @@ class OrderedList extends Run
     {
         super(State.OrderedList, start, end, parent);
         this.nestLevel = nestLevel;
-        this.listStart = listStart;
+        if (listStart != 1)
+        {
+            // start="X" is unnecessary when the list starts with 1
+            this.attributes.start = listStart;
+        }
     }
 
     startContextLength() { return 0; }
     endContextLength() { return 0; }
 
-    tag(end)
-    {
-        if (end)
-        {
-            return '</ol>';
-        }
-
-        if (this.listStart == 1)
-        {
-            // start="X" is unnecessary when the list starts with 1
-            return '<ol>';
-        }
-
-        return `<ol start="${this.listStart}">`;
-    }
+    tag(end) { return this.basicTag('ol', end); }
 
     /// <summary>
     /// Nothing is allowed inside of lists other than
@@ -4177,7 +4177,7 @@ class ListItem extends Run
     startContextLength() { return this.startContext; }
     endContextLength() { return 0; }
 
-    tag(end) { return Run.basicTag('li', end); }
+    tag(end) { return this.basicTag('li', end); }
 
     /// <summary>
     /// Bypass the core transform method and parse it ourselves.
@@ -4241,7 +4241,7 @@ class ListItem extends Run
 /// </summary>
 class Url extends Run
 {
-    constructor(start, end, url, parent)
+    constructor(start, end, url, parent, setAttributes=true)
     {
         super(State.Url, start, end, parent);
         this.url = url;
@@ -4253,6 +4253,11 @@ class Url extends Run
         {
             this.url = this.url.toLowerCase();
         }
+
+        if (setAttributes)
+        {
+            this._setAttributes();
+        }
     }
 
     startContextLength() { return 1; }
@@ -4260,22 +4265,7 @@ class Url extends Run
     // The url should be stripped here, so subtract its length and ']()'
     endContextLength() { return this.url.length + 3; }
 
-    tag(end)
-    {
-        if (end)
-        {
-            return '</a>';
-        }
-
-        let realLink = this._realLink();
-        let startTag = `<a href="${realLink}"`;
-        if (this._external())
-        {
-            return startTag + ` target="_blank" rel="noopener">`;
-        }
-
-        return startTag + '>';
-    }
+    tag(end) { return this.basicTag('a', end); }
 
     /// <summary>
     /// Call our parent transform method after first un-escaping some
@@ -4366,6 +4356,19 @@ class Url extends Run
         let windowStart = windowHost.lastIndexOf('.', windowHost.lastIndexOf('.') - 1);
         return this.hostname.substring(thisStart + 1) != windowHost.substring(windowStart + 1);
     }
+
+    /// <summary>
+    /// Set all the relevant tag attributes for a link
+    /// </summary>
+    _setAttributes()
+    {
+        this.attributes.href = this._realLink();
+        if (this._external())
+        {
+            this.attributes.target = '_blank';
+            this.attributes.rel = 'noopener';
+        }
+    }
 }
 
 /// <summary>
@@ -4378,7 +4381,8 @@ class ReferenceUrl extends Url
     /// <param name="urls">The dictionary mapping url identifiers with their urls</param>
     constructor(start, end, url, urls, parent)
     {
-        super(start, end, url, parent);
+        // We need to wait until we parse everything before setting attributes
+        super(start, end, url, parent, false /*setAttributes*/);
         this.urls = urls;
         this.urlLink = url;
         this.converted = false;
@@ -4398,6 +4402,7 @@ class ReferenceUrl extends Url
         if (this.url in this.urls)
         {
             this.url = this.urls[this.url];
+            this._setAttributes();
         }
         else
         {
@@ -4467,9 +4472,7 @@ class ImplicitUrl extends Url
             return '</a>';
         }
 
-        let fullLink = this._realLink();
-        let extra = this._external() ? ' target="_blank" rel="noopener"' : '';
-        return `<a href="${fullLink}"${extra}>${super.transform(this.url)}`;
+        return this.basicTag('a', end) + super.transform(this.url);
     }
 
     /// <summary>
@@ -4489,11 +4492,9 @@ class Image extends Url
 {
     constructor(start, end, altText, url, width, height, parent)
     {
-        super(start, end, url, parent);
-        this.altText = altText;
+        super(start, end, url, parent, false /*setAttributes*/);
+        this._setImageAttributes(altText, width, height);
         this.state = State.Image; // Override parent's State.Url
-        this.width = width;
-        this.height = height;
     }
 
     // Nothing can be inside of images. The entire content is either
@@ -4512,33 +4513,38 @@ class Image extends Url
             return '';
         }
 
-        let fullLink = this._realLink();
-        let alt = super.transform(this.altText);
-        let base = `<img src="${fullLink}"${alt ? ' alt="' + alt + '"' : ''}`;
+        return this.basicTag('img', end);
+    }
 
-        let widthP = this._parseDimension(true /*width*/);
-        if (!isNaN(this.width))
+    _setImageAttributes(altText, width, height)
+    {
+        this.attributes.src = this._realLink();
+        let alt = super.transform(altText);
+        if (alt.length > 0)
         {
-            base += ` width="${this.width}${widthP ? '%' : 'px'}"`;
+            this.attributes.alt = alt;
         }
 
-        let heightP = this._parseDimension(false /*width*/);
-        if (!isNaN(this.height))
+        width = this._parseDimension(width);
+        height = this._parseDimension(height);
+        if (!isNaN(width.value))
         {
-            base += ` height="${this.height}${heightP ? '%' : 'px'}"`;
+            this.attributes.width = width.value + width.unit;
         }
 
-        return base + '>';
+        if (!isNaN(height.value))
+        {
+            this.attributes.height = height.value + height.unit;
+        }
     }
 
     /// <summary>
     /// Parses the string width/height and converts it to an integer
     /// </summary>
     /// <returns>true if the dimension is given in percentage, false if pixels</returns>
-    _parseDimension(width)
+    _parseDimension(dimen)
     {
-        let dimen = width ? this.width : this.height;
-        let percentage = false;
+        let unit = 'px';
         if (dimen.endsWith('px'))
         {
             dimen = parseInt(dimen.substring(0, dimen.length - 2));
@@ -4546,23 +4552,14 @@ class Image extends Url
         else if (dimen.endsWith('%'))
         {
             dimen = parseInt(dimen.substring(0, dimen.length - 1));
-            percentage = true;
+            unit = '%';
         }
         else
         {
             dimen = parseInt(dimen);
         }
 
-        if (width)
-        {
-            this.width = dimen;
-        }
-        else
-        {
-            this.height = dimen;
-        }
-
-        return percentage;
+        return { value : dimen, unit : unit };
     }
 
     // Inline tag, no actual content
@@ -4583,7 +4580,7 @@ class CodeBlock extends Run
         super(State.CodeBlock, start, end, parent);
     }
 
-    tag(end) { return Run.basicTag('pre', end); }
+    tag(end) { return this.basicTag('pre', end); }
 
     /// <summary>
     /// Returns a span containing the current code block line number
@@ -4785,7 +4782,7 @@ class Table extends Run
     startContextLength() { return 0; }
     endContextLength() { return 0; }
 
-    tag(end) { return Run.basicTag('table', end); }
+    tag(end) { return this.basicTag('table', end); }
 
     /// <summary>
     /// Builds and returns the <table> content from this.table
@@ -4848,7 +4845,7 @@ class InlineCodeRun extends Run
     startContextLength() { return this._backticks; }
     endContextLength() { return this._backticks; }
 
-    tag(end) { return Run.basicTag('code', end); }
+    tag(end) { return this.basicTag('code', end); }
 
     /// <summary>
     /// Transform the inline code snippet by removing a leading or trailing space
@@ -4898,7 +4895,7 @@ class Bold extends InlineFormat
     startContextLength() { return 2; }
     endContextLength() { return 2; }
 
-    tag(end) { return Run.basicTag('strong', end); }
+    tag(end) { return this.basicTag('strong', end); }
 }
 
 /// <summary>
@@ -4914,7 +4911,7 @@ class Italic extends InlineFormat
     startContextLength() { return 1; }
     endContextLength() { return 1; }
 
-    tag(end) { return Run.basicTag('em', end); }
+    tag(end) { return this.basicTag('em', end); }
 }
 
 /// <summary>
@@ -4930,7 +4927,7 @@ class Underline extends InlineFormat
     startContextLength() { return 2; }
     endContextLength() { return 2; }
 
-    tag(end) { return Run.basicTag('ins', end); }
+    tag(end) { return this.basicTag('ins', end); }
 }
 
 /// <summary>
@@ -4946,7 +4943,7 @@ class Strikethrough extends InlineFormat
     startContextLength() { return 2; }
     endContextLength() { return 2; }
 
-    tag(end) { return Run.basicTag('s', end); }
+    tag(end) { return this.basicTag('s', end); }
 }
 
 /// <summary>
@@ -4969,7 +4966,7 @@ class SuperSub extends InlineFormat
 /// </summary>
 class Superscript extends SuperSub
 {
-    tag(end) { return Run.basicTag('sup', end); }
+    tag(end) { return this.basicTag('sup', end); }
 }
 
 /// <summary>
@@ -4977,7 +4974,7 @@ class Superscript extends SuperSub
 /// </summary>
 class Subscript extends SuperSub
 {
-    tag(end) { return Run.basicTag('sub', end); }
+    tag(end) { return this.basicTag('sub', end); }
 }
 
 /// <summary>
