@@ -2800,6 +2800,30 @@ class Markdown
             return -1;
         }
 
+        if (domainEnd <= max && this.text[domainEnd] == ':')
+        {
+            // Check for a valid port
+            let portStart = domainEnd + 1;
+            let portEnd = portStart;
+            while (portEnd <= max && /\d/.test(this.text[portEnd]))
+            {
+                ++portEnd;
+            }
+
+            if (portStart == portEnd)
+            {
+                return domainEnd;
+            }
+
+            let port = parseInt(this.text.substring(portStart, portEnd));
+            if (port < 1 || port > 65535)
+            {
+                return domainEnd;
+            }
+
+            return portEnd;
+        }
+
         return domainEnd;
     }
 

@@ -261,11 +261,34 @@ class MarkdownTestSuite
                 'danrahn.plex.com',
                 this._divWrap(this._href('https://danrahn.plex.com', 'danrahn.plex.com', true))
             ],
-            // TODO: implicit URLs don't handle ports.
-            // [
-            //     'danrahn.com:32400',
-            //     this._divWrap(this._href('https://danrahn.com:32400', 'danrahn.com:32400'))
-            // ]
+            [
+                'danrahn.com:32400',
+                this._divWrap(this._href('https://danrahn.com:32400', 'danrahn.com:32400'))
+            ],
+            [
+                'https://danrahn.com:32400',
+                this._divWrap(this._href('https://danrahn.com:32400', 'https:&#x2f;&#x2f;danrahn.com:32400'))
+            ],
+            [
+                'github.com:443',
+                this._divWrap(this._href('https://github.com:443', 'github.com:443', true))
+            ],
+            [
+                'danrahn.com:',
+                this._divWrap(this._href('https://danrahn.com', 'danrahn.com') + ':')
+            ],
+            [
+                'danrahn.com:324000',
+                this._divWrap(this._href('https://danrahn.com', 'danrahn.com') + ':324000')
+            ],
+            [
+                'danrahn.com:65535',
+                this._divWrap(this._href('https://danrahn.com:65535', 'danrahn.com:65535'))
+            ],
+            [
+                'danrahn.com:65536',
+                this._divWrap(this._href('https://danrahn.com', 'danrahn.com') + ':65536')
+            ]
         );
 
         return this._runSingleSuite(tests, 'Implicit Urls');
