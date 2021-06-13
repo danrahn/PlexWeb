@@ -1270,7 +1270,16 @@ class MarkdownTestSuite
             }
             else
             {
-                MarkdownTestSuite._validateTest(test, new Markdown().parse(test.input), colors, stats);
+                let result;
+                try
+                {
+                    result = new Markdown().parse(test.input);
+                }
+                catch (e)
+                {
+                    result = e;
+                }
+                MarkdownTestSuite._validateTest(test, result, colors, stats);
             }
         });
 
@@ -1291,14 +1300,23 @@ class MarkdownTestSuite
         let md = new Markdown();
 
         // Enter each character one by one, parsing after every step
-        let run = '';
-        for (let i = 0; i < test.input.length - 1; ++i)
+        let result;
+        try
         {
-            run += test.input[i];
-            md.parse(run);
+            let run = '';
+            for (let i = 0; i < test.input.length - 1; ++i)
+            {
+                run += test.input[i];
+                md.parse(run);
+            }
+
+            result = md.parse(test.input);
+        }
+        catch (e)
+        {
+            result = e;
         }
 
-        let result = md.parse(test.input);
         MarkdownTestSuite._validateTest(test, result, colors, stats);
         localStorage.setItem('mdCache', cacheSav);
     }
@@ -1320,14 +1338,18 @@ class MarkdownTestSuite
         else
         {
             let diffIndex = 0;
-            for (let i = 0; i < result.length; ++i)
+            if (typeof(result) == 'string')
             {
-                if (result[i] != test.expected[i])
+                for (let i = 0; i < result.length; ++i)
                 {
-                    diffIndex = i;
-                    break;
+                    if (result[i] != test.expected[i])
+                    {
+                        diffIndex = i;
+                        break;
+                    }
                 }
             }
+
             let fixedIndent = ' '.repeat(36); // Indent from the consolelog header
             let logString = `   %cFAIL!\n` +
                 `${fixedIndent}%cInput:    %c[%c${displayInput}%c]%c\n` +
@@ -1336,6 +1358,15 @@ class MarkdownTestSuite
             Log.formattedText(Log.Level.Warn, logString, ...colors.failure);
             ++stats.failed;
         }
+    }
+
+    /// <summary>
+    /// Returns the message an callstack for the given exception, with the message
+    /// highlighted for printing to the console.
+    /// </summary>
+    static _exceptionText(ex)
+    {
+        return `\n%c${ex.message}%c\n${ex.stack.substring(ex.stack.indexOf('\n') + 1)}`;
     }
 
     /// <summary>
@@ -1362,11 +1393,16 @@ class MarkdownTestSuite
         return str.replace(/\n/g, '\\n');
     }
 
-    static _errorString(str, diffIndex)
+    static _errorString(result, diffIndex)
     {
-        let left = str.substring(0, diffIndex);
-        let right = str.substring(diffIndex + 1);
-        let middle = `%c${str[diffIndex]}%c`;
+        if (typeof(result) != 'string')
+        {
+            return MarkdownTestSuite._exceptionText(result);
+        }
+
+        let left = result.substring(0, diffIndex);
+        let right = result.substring(diffIndex + 1);
+        let middle = `%c${result[diffIndex]}%c`;
         return (left + middle + right).replace(/\n/g, '\\n');
 
     }
