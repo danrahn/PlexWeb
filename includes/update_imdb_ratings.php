@@ -112,6 +112,7 @@ SQL;
     $success = TRUE;
 }
 
+$total = count($rows);
 if (!$success)
 {
     // Either we failed to import the tsv directly, or we never tried in the first place.
@@ -121,7 +122,6 @@ if (!$success)
 
     // Couldn't find a place for MySQL to read our file, import manually
     update_status("In Progress", "Starting Inserts");
-    $total = count($rows);
     $query_base = "INSERT INTO `imdb_ratings` (`imdbid`, `rating`, `votes`) VALUES ";
     $update_threshold = 100000;
     $current_threshold = $update_threshold;

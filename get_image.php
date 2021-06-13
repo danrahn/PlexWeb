@@ -152,6 +152,7 @@ function serve_new_image($img_path, $filename, $type, $large)
     file_put_contents($filename, $img->getImageBlob());
     header('Content-Length: '. filesize($filename));
     header("Content-Type: " . mime_content_type($filename));
+    header('X-Content-Type-Options: nosniff');
     header('Etag: ' . md5_file($filename));
     echo $img->getImageBlob();
 }

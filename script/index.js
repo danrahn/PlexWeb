@@ -356,7 +356,7 @@ function addAudioStats(data, audioType, audioCategories)
     {
         ul.appendChild(
             buildNode("li").appendChildren(
-                buildNode("strong", {}, `${type}`),
+                buildNode("strong", {}, `${type}: `),
                 buildNode("span", {}, data[type])
             )
         );

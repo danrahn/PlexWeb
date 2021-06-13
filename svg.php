@@ -68,6 +68,7 @@ if (isset($headers['If-Modified-Since']))
 if (isset($headers['If-Modified-Since']) && (strtotime($headers['If-Modified-Since']) >= $file_time))
 {
     header('HTTP/1.1 304 Not Modified');
+    header('X-Content-Type-Options: nosniff');
     header('Connection: close');
 }
 else

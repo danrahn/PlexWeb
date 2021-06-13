@@ -344,13 +344,14 @@ def check_long_words(min_letters, files):
         lines = get_lines(file)
         for match in re.findall(r'\b[$_a-zA-Z][\w]{' + str(int(min_letters) - 1) + r',}\b', lines):
             if not match in words:
-                words[match] = 0
-            words[match] += len(match)
+                words[match] = { 'count' : 0, 'bytes' : 0 }
+            words[match]['bytes'] += len(match)
+            words[match]['count'] += 1
 
-    sorted_words = sorted(words.items(), reverse=True, key=lambda x: x[1])
+    sorted_words = sorted(words.items(), reverse=True, key=lambda x: x[1]['bytes'])
     i = 0
     for e in sorted_words:
-        print(e[0],'-',e[1],'bytes')
+        print(f'{e[0]} - {e[1]["bytes"]} bytes ({e[1]["count"]} instances)')
         i += 1
         if i == 20:
             break
