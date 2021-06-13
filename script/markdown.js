@@ -2819,18 +2819,11 @@ class Markdown
                 ++portEnd;
             }
 
-            if (portStart == portEnd)
-            {
-                return domainEnd;
-            }
-
             let port = parseInt(this.text.substring(portStart, portEnd));
-            if (port < 1 || port > 65535)
+            if (!isNaN(port) && port > 0 && port < 65536)
             {
-                return domainEnd;
+                return portEnd;
             }
-
-            return portEnd;
         }
 
         return domainEnd;
@@ -4395,7 +4388,7 @@ class ReferenceUrl extends Url
     /// Called once the full markdown text has been parsed and
     /// replaces the url identifier with the actual url
     /// </summary>
-    _convertUrl()
+    _convertUrl(end)
     {
         if (this.converted)
         {
@@ -4408,7 +4401,12 @@ class ReferenceUrl extends Url
         }
         else
         {
-            Log.error('Could not find link match for ' + this.url);
+            // We'll hit this for the start and end tag, only show it the first time around
+            if (!end)
+            {
+                Log.warn('Could not find link match for ' + this.url);
+            }
+
             return;
         }
 
@@ -4423,7 +4421,7 @@ class ReferenceUrl extends Url
 
     tag(end)
     {
-        this._convertUrl();
+        this._convertUrl(end);
         return super.tag(end);
     }
 }
