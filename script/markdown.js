@@ -4219,6 +4219,8 @@ class Url extends Run
     {
         super(State.Url, start, end, parent);
         this.url = url;
+        this.relative = true;
+        this.hostname = '';
 
         // Links within the document should be all lowercase for consistency
         if (this.url.startsWith('#'))
@@ -4240,8 +4242,28 @@ class Url extends Run
         }
 
         // Don't do any encoding on the URL, assume the user has done all necessary escaping,
-        // as otherwise we might accidentally double-encode something'
-        return `<a href="${this.url}">`;
+        // as otherwise we might accidentally double-encode something.
+        let realLink = this._realLink();
+        let startTag = `<a href="${realLink}"`;
+
+        // If we're directed to the same host, open in the same window.
+        // Otherwise open in a new window.
+        let windowHost = window.location.hostname.toLowerCase();
+        if (this.relative ||
+            this.hostname == windowHost)
+        {
+            return startTag + '>';
+        }
+
+        // Also do a subdomain check
+        let thisStart = this.hostname.lastIndexOf('.', this.hostname.lastIndexOf('.') - 1);
+        let windowStart = windowHost.lastIndexOf('.', windowHost.lastIndexOf('.') - 1);
+        if (this.hostname.substring(thisStart + 1) == windowHost.substring(windowStart + 1))
+        {
+            return startTag + '>';
+        }
+
+        return startTag + ` target="_blank" rel="noopener">`;
     }
 
     /// <summary>
@@ -4251,6 +4273,57 @@ class Url extends Run
     transform(newText, /*side*/)
     {
         return super.transform(this.escapeChars(newText, '[]'));
+    }
+
+    /// <summary>
+    /// Determine whether we should make the url an absolute or relative
+    /// link. Helpful for cases like [Google](google.com), which obviously
+    /// should link to https://google.com, not https://mysite.com/google.com
+    /// </summary>
+    _realLink()
+    {
+        if (/^[a-zA-Z]{3,5}:\/\//.test(this.url))
+        {
+            this.relative = false;
+            try
+            {
+                this.hostname = new URL(this.url).hostname.toLowerCase();
+            }
+            // eslint-disable-next-line no-empty
+            catch {}
+
+            return this.url;
+        }
+
+        let domain = this.url;
+        let domainEnd = this.url.indexOf('/');
+        if (domainEnd != -1)
+        {
+            domain = this.url.substring(0, domainEnd);
+        }
+
+        if (!/^[a-z0-9-.]+$/i.test(domain))
+        {
+            return this.url;
+        }
+
+        let tldStart = domain.lastIndexOf('.');
+        if (tldStart == -1)
+        {
+            return this.url;
+        }
+
+        // Only check common TLDs. Worst case the user has to be
+        // explicit about their links with uncommon TLDs.
+        let tld = domain.substring(tldStart + 1);
+        if (/^(?:com|org|net|edu|gov|de|ru|uk|jp|it|fr|nl|ca|au|es|ch|se|us|no|mil)$/.test(tld))
+        {
+            this.relative = false;
+            this.hostname = domain.toLowerCase();
+            return 'https://' + this.url;
+        }
+
+        return this.url;
     }
 }
 
@@ -4360,7 +4433,33 @@ class ImplicitUrl extends Run
             fullLink = 'https://' + this.url;
         }
 
-        return `<a href="${fullLink}">${super.transform(this.url)}`;
+        let hostname = '';
+        try
+        {
+            hostname = new URL(fullLink).hostname.toLowerCase();
+        }
+        // eslint-disable-next-line no-empty
+        catch {}
+
+        // Open in a new window if the link is external to the current site
+        let extra = ' target="_blank" rel="noopener"';
+        let windowHost = window.location.hostname.toLowerCase();
+        if (hostname == windowHost)
+        {
+            extra = '';
+        }
+        else
+        {
+            // Subdomain check
+            let thisStart = hostname.lastIndexOf('.', hostname.lastIndexOf('.') - 1);
+            let windowStart = windowHost.lastIndexOf('.', windowHost.lastIndexOf('.') - 1);
+            if (hostname.substring(thisStart + 1) == windowHost.substring(windowStart + 1))
+            {
+                extra = '';
+            }
+        }
+
+        return `<a href="${fullLink}"${extra}>${super.transform(this.url)}`;
     }
 
     /// <summary>
