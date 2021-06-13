@@ -1221,11 +1221,20 @@ class MarkdownTestSuite
         }
         else
         {
+            let diffIndex = 0;
+            for (let i = 0; i < result.length; ++i)
+            {
+                if (result[i] != test.expected[i])
+                {
+                    diffIndex = i;
+                    break;
+                }
+            }
             let fixedIndent = ' '.repeat(36); // Indent from the consolelog header
             let logString = `   %cFAIL!\n` +
                 `${fixedIndent}%cInput:    %c[%c${displayInput}%c]%c\n` +
-                `${fixedIndent}Expected: %c[%c${MarkdownTestSuite._escapeTestString(displayExpected)}%c]%c\n` +
-                `${fixedIndent}Actual:   %c[%c${MarkdownTestSuite._escapeTestString(result)}%c]`;
+                `${fixedIndent}Expected: %c[%c${MarkdownTestSuite._errorString(displayExpected, diffIndex)}%c]%c\n` +
+                `${fixedIndent}Actual:   %c[%c${MarkdownTestSuite._errorString(result, diffIndex)}%c]`;
             Log.formattedText(Log.Level.Warn, logString, ...colors.failure);
             ++stats.failed;
         }
@@ -1252,8 +1261,16 @@ class MarkdownTestSuite
     /// </summary>
     static _escapeTestString(str)
     {
-        str = str.replace(/\n/g, '\\n');
-        return str;
+        return str.replace(/\n/g, '\\n');
+    }
+
+    static _errorString(str, diffIndex)
+    {
+        let left = str.substring(0, diffIndex);
+        let right = str.substring(diffIndex + 1);
+        let middle = `%c${str[diffIndex]}%c`;
+        return (left + middle + right).replace(/\n/g, '\\n');
+
     }
 
     /// <summary>
@@ -1266,21 +1283,26 @@ class MarkdownTestSuite
         let arrowClr = `color: ${dark ? 'orange' : 'orangered'}`;
         let passClr = `color: ${dark ? '#00C000' : '#006000'}`;
         let failClr = `color: ${dark ? 'tomato' : 'red'}`;
+        let diffClr = `color: ${dark ? 'black' : 'white'}; background-color: ${dark ? 'white' : 'black'}`;
         let successColors = [passClr, bracketClr, textClr, bracketClr, arrowClr, bracketClr, textClr, bracketClr];
         let failureColors =
         [
-            failClr,
-            arrowClr,
+            failClr, // Fail!
+            arrowClr, // Input label
             bracketClr,
-            textClr,
+            textClr, // Input
             bracketClr,
-            arrowClr,
+            arrowClr, // Expected label
             bracketClr,
-            textClr,
+            textClr, // Expected start
+            diffClr, // Expected diff
+            textClr, // Expected end
             bracketClr,
-            arrowClr,
+            arrowClr, // Actual label
             bracketClr,
-            textClr,
+            textClr, // Actual start
+            diffClr, // Actual diff
+            textClr, // Actual end
             bracketClr
         ];
 
