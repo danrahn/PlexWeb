@@ -27,6 +27,7 @@ class MarkdownTestSuite
         addResult(this.testUrl()); // TODO: URL tests will fail if not run from danrahn.com domain.
         addResult(this.testReferenceUrl());
         addResult(this.testImplicitUrl());
+        addResult(this.testImage());
         addResult(this.testInline());
         addResult(this.testBold());
         addResult(this.testItalic());
@@ -139,6 +140,14 @@ class MarkdownTestSuite
             [
                 '[GH3](github.com/danrahn.com/plex/index.php)',
                 this._divWrap(this._href('https://github.com/danrahn.com/plex/index.php', 'GH3', true))
+            ],
+            [
+                '[GH4](github.com:443)',
+                this._divWrap(this._href('https://github.com:443', 'GH4', true))
+            ],
+            [
+                '[GH5](github.com:443/danrahn)',
+                this._divWrap(this._href('https://github.com:443/danrahn', 'GH5', true))
             ]
         );
 
@@ -292,6 +301,30 @@ class MarkdownTestSuite
         );
 
         return this._runSingleSuite(tests, 'Implicit Urls');
+    }
+
+    static testImage()
+    {
+        let tests = this._buildTests(
+            [
+                '![Alt](poster/movieDefault.svg)',
+                this._divWrap('<img src="poster/movieDefault.svg" alt="Alt">')
+            ],
+            [
+                '![Alt](danrahn.com/plex/poster/movieDefault.svg)',
+                this._divWrap('<img src="https://danrahn.com/plex/poster/movieDefault.svg" alt="Alt">')
+            ],
+            [
+                '![Alt](danrahn.com:443/plex/poster/movieDefault.svg)',
+                this._divWrap('<img src="https://danrahn.com:443/plex/poster/movieDefault.svg" alt="Alt">')
+            ],
+            [
+                '![Alt2](external.com/image.png)',
+                this._divWrap('<img src="https://external.com/image.png" alt="Alt2">')
+            ]
+        );
+
+        return this._runSingleSuite(tests, 'Images');
     }
 
     static testInline()

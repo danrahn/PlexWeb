@@ -4265,29 +4265,14 @@ class Url extends Run
             return '</a>';
         }
 
-        // Don't do any encoding on the URL, assume the user has done all necessary escaping,
-        // as otherwise we might accidentally double-encode something.
         let realLink = this._realLink();
         let startTag = `<a href="${realLink}"`;
-
-        // If we're directed to the same host, open in the same window.
-        // Otherwise open in a new window.
-        let windowHost = window.location.hostname.toLowerCase();
-        if (this.relative ||
-            this.hostname == windowHost)
+        if (this._external())
         {
-            return startTag + '>';
+            return startTag + ` target="_blank" rel="noopener">`;
         }
 
-        // Also do a subdomain check
-        let thisStart = this.hostname.lastIndexOf('.', this.hostname.lastIndexOf('.') - 1);
-        let windowStart = windowHost.lastIndexOf('.', windowHost.lastIndexOf('.') - 1);
-        if (this.hostname.substring(thisStart + 1) == windowHost.substring(windowStart + 1))
-        {
-            return startTag + '>';
-        }
-
-        return startTag + ` target="_blank" rel="noopener">`;
+        return startTag + '>';
     }
 
     /// <summary>
@@ -4306,6 +4291,8 @@ class Url extends Run
     /// </summary>
     _realLink()
     {
+        // Don't do any encoding on the URL, assume the user has done all necessary escaping,
+        // as otherwise we might accidentally double-encode something.
         if (/^[a-zA-Z]{3,5}:\/\//.test(this.url))
         {
             this.relative = false;
@@ -4324,6 +4311,12 @@ class Url extends Run
         if (domainEnd != -1)
         {
             domain = this.url.substring(0, domainEnd);
+        }
+
+        let portStart = domain.lastIndexOf(':');
+        if (portStart != -1)
+        {
+            domain = domain.substring(0, portStart);
         }
 
         if (!/^[a-z0-9-.]+$/i.test(domain))
@@ -4348,6 +4341,28 @@ class Url extends Run
         }
 
         return this.url;
+    }
+
+    /// <summary>
+    /// Returns whether we think this URL is to an external website
+    /// </summary>
+    /// <remarks>
+    /// WARNING: It is required to call _realLink before calling _external
+    /// </remarks>
+    _external()
+    {
+        // If we're directed to the same host, open in the same window.
+        // Otherwise open in a new window.
+        let windowHost = window.location.hostname.toLowerCase();
+        if (this.relative || this.hostname == windowHost)
+        {
+            return false;
+        }
+
+        // Subdomain check
+        let thisStart = this.hostname.lastIndexOf('.', this.hostname.lastIndexOf('.') - 1);
+        let windowStart = windowHost.lastIndexOf('.', windowHost.lastIndexOf('.') - 1);
+        return this.hostname.substring(thisStart + 1) != windowHost.substring(windowStart + 1);
     }
 }
 
@@ -4430,11 +4445,11 @@ class ReferenceUrlDefinition extends Run
 /// <summary>
 /// Implicit URLs that capture raw links the user provides
 /// </summary>
-class ImplicitUrl extends Run
+class ImplicitUrl extends Url
 {
     constructor(start, end, url, parent)
     {
-        super(State.Url, start, end, parent);
+        super(start, end, url, parent);
         this.url = url;
     }
 
@@ -4445,44 +4460,8 @@ class ImplicitUrl extends Run
             return '</a>';
         }
 
-        let fullLink;
-        // If there's something protocol-like, leave it alone
-        if (/^[a-zA-Z]{3,5}:\/\//.test(this.url))
-        {
-            fullLink = this.url;
-        }
-        // Otherwise default to https
-        else
-        {
-            fullLink = 'https://' + this.url;
-        }
-
-        let hostname = '';
-        try
-        {
-            hostname = new URL(fullLink).hostname.toLowerCase();
-        }
-        // eslint-disable-next-line no-empty
-        catch {}
-
-        // Open in a new window if the link is external to the current site
-        let extra = ' target="_blank" rel="noopener"';
-        let windowHost = window.location.hostname.toLowerCase();
-        if (hostname == windowHost)
-        {
-            extra = '';
-        }
-        else
-        {
-            // Subdomain check
-            let thisStart = hostname.lastIndexOf('.', hostname.lastIndexOf('.') - 1);
-            let windowStart = windowHost.lastIndexOf('.', windowHost.lastIndexOf('.') - 1);
-            if (hostname.substring(thisStart + 1) == windowHost.substring(windowStart + 1))
-            {
-                extra = '';
-            }
-        }
-
+        let fullLink = this._realLink();
+        let extra = this._external() ? ' target="_blank" rel="noopener"' : '';
         return `<a href="${fullLink}"${extra}>${super.transform(this.url)}`;
     }
 
@@ -4499,13 +4478,13 @@ class ImplicitUrl extends Run
 /// <summary>
 /// Images - <img src="url" alt="altText" width="x(%|px)" height="y(%|px)">
 /// </summary>
-class Image extends Run
+class Image extends Url
 {
     constructor(start, end, altText, url, width, height, parent)
     {
-        super(State.Image, start, end, parent);
+        super(start, end, url, parent);
         this.altText = altText.substring(1);
-        this.url = url;
+        this.state = State.Image; // Override parent's State.Url
         this.width = width;
         this.height = height;
     }
@@ -4526,7 +4505,8 @@ class Image extends Run
             return '';
         }
 
-        let base = `<img src="${encodeURI(this.url)}" alt="${super.transform(this.altText)}"`;
+        let fullLink = this._realLink();
+        let base = `<img src="${fullLink}" alt="${super.transform(this.altText)}"`;
 
         let widthP = this._parseDimension(true /*width*/);
         if (!isNaN(this.width))
