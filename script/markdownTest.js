@@ -7,20 +7,32 @@
 // The only methods (currently) over the maximum are just lists of relevant tests
 /* eslint-disable max-lines-per-function */
 
-// Constants based on the current host location
-let _host = window.location.hostname;
-let _sld = _host.substring(0, _host.lastIndexOf('.'));
-let _tld = _host.substring(_sld.length);
-let _alwaysExternal = false;
-
 class MarkdownTestSuite
 {
+    constructor()
+    {
+        this.host = window.location.hostname;
+        this.sld = this.host.substring(0, this.host.lastIndexOf('.'));
+        this.tld = this.host.substring(this.sld.length);
+        this.alwaysExternal = false;
+        if (this.sld.length == 0 || !isNaN(parseFloat(this.tld)))
+        {
+            // Running from a tld-less host (e.g. localhost or a direct IP)? Get the tests to
+            // pass, but we'll lose some target="_blank" test coverage
+            Log.warn(`Tests are being run from a tld-less host (${window.location.hostname}). Some coverage may be missing`);
+            this.sld = 'hostOverride';
+            this.tld = '.com';
+            this.host = this.sld + this.tld;
+            this.alwaysExternal = true;
+        }
+    }
+
     /// <summary>
     /// Runs all available tests
     /// </summary>
-    static runSuite(testCache = false)
+    runSuite(testCache = false)
     {
-        MarkdownTestSuite.testCache = testCache;
+        this.testCache = testCache;
         let overallResults = { passed : 0, failed : 0 };
         const addResult = (suiteResults) =>
         {
@@ -28,21 +40,9 @@ class MarkdownTestSuite
             overallResults.failed += suiteResults.failed;
         };
 
-        if (_sld.length == 0 || !isNaN(parseFloat(_tld)))
-        {
-            // Running from a tld-less host (e.g. localhost or a direct IP)? Get the tests to
-            // pass, but we'll lose some target="_blank" test coverage
-            _host = 'hostOverride.com';
-            _sld = 'hostOverride';
-            _tld = '.com';
-            _host = _sld + _tld;
-            _alwaysExternal = true;
-            Log.warn(`Tests are being run from a tld-less host (${window.location.hostname}). Some coverage may be missing`);
-        }
-
         // Simple tests for non-nested scenarios
         addResult(this.testHeaders());
-        addResult(this.testUrl()); // TODO: URL tests will fail if not run from danrahn.com domain.
+        addResult(this.testUrl());
         addResult(this.testReferenceUrl());
         addResult(this.testImplicitUrl());
         addResult(this.testImage());
@@ -74,7 +74,7 @@ class MarkdownTestSuite
         return overallResults;
     }
 
-    static testHeaders()
+    testHeaders()
     {
         let tests = this._buildTests(
             ['# Header 1', '<h1 id="header-1">Header 1</h1>'],
@@ -91,8 +91,8 @@ class MarkdownTestSuite
             [' ## Header 2 ###  ', '<h2 id="header-2">Header 2</h2>'],
             ['# _Header_ ~~With~~ ++Formatting++', '<h1 id="header-with-formatting"><em>Header</em> <s>With</s> <ins>Formatting</ins></h1>'],
             [
-                `# [Header With Link](https://${_host})`,
-                `<h1 id="header-with-link">${MarkdownTestSuite._href('https://' + _host, 'Header With Link')}</h1>`
+                `# [Header With Link](https://${this.host})`,
+                `<h1 id="header-with-link">${this._href('https://' + this.host, 'Header With Link')}</h1>`
             ],
             ['1. # Header in list', '<ol><li><h1 id="header-in-list">Header in list</h1></li></ol>'],
             ['* # Header in list', '<ul><li><h1 id="header-in-list">Header in list</h1></li></ul>'],
@@ -103,22 +103,22 @@ class MarkdownTestSuite
         return this._runSingleSuite(tests, 'Basic Header Functionality');
     }
 
-    static testUrl()
+    testUrl()
     {
         let tests = this._buildTests(
             [
                 // Domains should have https prepended if a protocol is not specified
-                `[Link](${_host})`,
-                this._divWrap(this._href(`https://${_host}`, 'Link'))
+                `[Link](${this.host})`,
+                this._divWrap(this._href(`https://${this.host}`, 'Link'))
             ],
             [
                 // And the protocol should be left alone otherwise
-                `[Add some text here](http://${_host})`,
-                this._divWrap(this._href(`http://${_host}`, 'Add some text here'))
+                `[Add some text here](http://${this.host})`,
+                this._divWrap(this._href(`http://${this.host}`, 'Add some text here'))
             ],
             [
-                `[Link[](${_host})`,
-                this._divWrap(`[Link${this._href(`https://${_host}`, '')}`)
+                `[Link[](${this.host})`,
+                this._divWrap(`[Link${this._href(`https://${this.host}`, '')}`)
             ],
             [
                 // External links open in a new window
@@ -127,18 +127,18 @@ class MarkdownTestSuite
             ],
             [
                 // Different protocols/ports should still open internally
-                `[Link](http://${_host}:32400)`,
-                this._divWrap(this._href(`http://${_host}:32400`, 'Link'))
+                `[Link](http://${this.host}:32400)`,
+                this._divWrap(this._href(`http://${this.host}:32400`, 'Link'))
             ],
             [
                 // Subdomains should open internally as well
-                `[Link](plex.${_host}/r/100)`,
-                this._divWrap(this._href(`https://plex.${_host}/r/100`, 'Link'))
+                `[Link](plex.${this.host}/r/100)`,
+                this._divWrap(this._href(`https://plex.${this.host}/r/100`, 'Link'))
             ],
             [
                 // danrahn.plex.com is not a subset of danrahn.com
-                `[Link](${_sld}.plex${_tld})`,
-                this._divWrap(this._href(`https://${_sld}.plex${_tld}`, 'Link', true))
+                `[Link](${this.sld}.plex${this.tld})`,
+                this._divWrap(this._href(`https://${this.sld}.plex${this.tld}`, 'Link', true))
             ],
             [
                 // Even without a protocol, we should figure out whether something is an external or relative reference
@@ -146,26 +146,26 @@ class MarkdownTestSuite
                 this._divWrap(this._href('https://github.com', 'Github', true))
             ],
             [
-                `[More Github](github.com/${_sld})`,
-                this._divWrap(this._href(`https://github.com/${_sld}`, 'More Github', true))
+                `[More Github](github.com/${this.sld})`,
+                this._divWrap(this._href(`https://github.com/${this.sld}`, 'More Github', true))
             ],
             [
-                `[GH3](github.com/${_host}/plex/index.php)`,
-                this._divWrap(this._href(`https://github.com/${_host}/plex/index.php`, 'GH3', true))
+                `[GH3](github.com/${this.host}/plex/index.php)`,
+                this._divWrap(this._href(`https://github.com/${this.host}/plex/index.php`, 'GH3', true))
             ],
             [
                 '[GH4](github.com:443)',
                 this._divWrap(this._href('https://github.com:443', 'GH4', true))
             ],
             [
-                `[GH5](github.com:443/${_sld})`,
-                this._divWrap(this._href(`https://github.com:443/${_sld}`, 'GH5', true))
+                `[GH5](github.com:443/${this.sld})`,
+                this._divWrap(this._href(`https://github.com:443/${this.sld}`, 'GH5', true))
             ]
         );
 
         // We keep invalid links internal, so override our override (ugh.)
-        let overrideSav = _alwaysExternal;
-        _alwaysExternal = false;
+        let overrideSav = this.alwaysExternal;
+        this.alwaysExternal = false;
         tests.push(...this._buildTests(
             [
                 // Don't encode href
@@ -177,12 +177,12 @@ class MarkdownTestSuite
                 this._divWrap(this._href('hello%20world', 'https:&#x2f;&#x2f;backwards.com'))
             ]
         ));
-        _alwaysExternal = overrideSav;
+        this.alwaysExternal = overrideSav;
 
         return this._runSingleSuite(tests, 'Basic Url Functionality');
     }
 
-    static testReferenceUrl()
+    testReferenceUrl()
     {
         // Real sparse testing. Needs to be expanded
         let tests = this._buildTests(
@@ -199,93 +199,93 @@ class MarkdownTestSuite
         return this._runSingleSuite(tests, 'Reference Urls');
     }
 
-    static testImplicitUrl()
+    testImplicitUrl()
     {
         let tests = this._buildTests(
             [
-                _host,
-                this._divWrap(this._href(`https://${_host}`, _host))
+                this.host,
+                this._divWrap(this._href(`https://${this.host}`, this.host))
             ],
             [
-                `Welcome to ${_host}!`,
-                this._divWrap(`Welcome to ${this._href(`https://${_host}`, _host)}!`)
+                `Welcome to ${this.host}!`,
+                this._divWrap(`Welcome to ${this._href(`https://${this.host}`, this.host)}!`)
             ],
             [
-                `Welcome to ${_host}.`,
-                this._divWrap(`Welcome to ${this._href(`https://${_host}`, _host)}.`)
+                `Welcome to ${this.host}.`,
+                this._divWrap(`Welcome to ${this._href(`https://${this.host}`, this.host)}.`)
             ],
             [
-                `Welcome to ${_sld}.org!`,
-                this._divWrap(`Welcome to ${this._href(`https://${_sld}.org`, `${_sld}.org`, true)}!`)
+                `Welcome to ${this.sld}.org!`,
+                this._divWrap(`Welcome to ${this._href(`https://${this.sld}.org`, `${this.sld}.org`, true)}!`)
             ],
             [
-                `Welcome to ${_sld}.net!`,
-                this._divWrap(`Welcome to ${this._href(`https://${_sld}.net`, `${_sld}.net`, true)}!`)
+                `Welcome to ${this.sld}.net!`,
+                this._divWrap(`Welcome to ${this._href(`https://${this.sld}.net`, `${this.sld}.net`, true)}!`)
             ],
             [
-                `Welcome to ${_sld}.de!`,
-                this._divWrap(`Welcome to ${this._href(`https://${_sld}.de`, `${_sld}.de`, true)}!`)
+                `Welcome to ${this.sld}.de!`,
+                this._divWrap(`Welcome to ${this._href(`https://${this.sld}.de`, `${this.sld}.de`, true)}!`)
             ],
             [
-                `Welcome to ${_sld}.bad!`,
-                this._divWrap(`Welcome to ${_sld}.bad!`)
+                `Welcome to ${this.sld}.bad!`,
+                this._divWrap(`Welcome to ${this.sld}.bad!`)
             ],
             [
-                `Welcome to https://${_host}!`,
-                this._divWrap(`Welcome to ${this._href(`https://${_host}`, `https:&#x2f;&#x2f;${_host}`)}!`)
+                `Welcome to https://${this.host}!`,
+                this._divWrap(`Welcome to ${this._href(`https://${this.host}`, `https:&#x2f;&#x2f;${this.host}`)}!`)
             ],
             [
-                `Welcome to http://${_host}!`,
-                this._divWrap(`Welcome to ${this._href(`http://${_host}`, `http:&#x2f;&#x2f;${_host}`)}!`)
+                `Welcome to http://${this.host}!`,
+                this._divWrap(`Welcome to ${this._href(`http://${this.host}`, `http:&#x2f;&#x2f;${this.host}`)}!`)
             ],
             [
-                `Welcome to ftp://${_host}!`,
-                this._divWrap(`Welcome to ${this._href(`ftp://${_host}`, `ftp:&#x2f;&#x2f;${_host}`)}!`)
+                `Welcome to ftp://${this.host}!`,
+                this._divWrap(`Welcome to ${this._href(`ftp://${this.host}`, `ftp:&#x2f;&#x2f;${this.host}`)}!`)
             ],
             [
-                `Welcome to ht://${_host}!`,
-                this._divWrap(`Welcome to ht:&#x2f;&#x2f;${this._href(`https://${_host}`, _host)}!`)
+                `Welcome to ht://${this.host}!`,
+                this._divWrap(`Welcome to ht:&#x2f;&#x2f;${this._href(`https://${this.host}`, this.host)}!`)
             ],
             [
-                `Welcome to HTTTPS://${_host}!`,
-                this._divWrap(`Welcome to HTTTPS:&#x2f;&#x2f;${this._href(`https://${_host}`, _host)}!`)
+                `Welcome to HTTTPS://${this.host}!`,
+                this._divWrap(`Welcome to HTTTPS:&#x2f;&#x2f;${this._href(`https://${this.host}`, this.host)}!`)
             ],
             [
                 // Don't parse links that are part of explicit URLs
-                `[link.com](${_host})`,
-                this._divWrap(this._href(`https://${_host}`, 'link.com'))
+                `[link.com](${this.host})`,
+                this._divWrap(this._href(`https://${this.host}`, 'link.com'))
             ],
             [
-                `${_host}/plex`,
-                this._divWrap(this._href(`https://${_host}/plex`, `${_host}&#x2f;plex`))
+                `${this.host}/plex`,
+                this._divWrap(this._href(`https://${this.host}/plex`, `${this.host}&#x2f;plex`))
             ],
             [
-                `${_host}/plex/`,
-                this._divWrap(this._href(`https://${_host}/plex/`, `${_host}&#x2f;plex&#x2f;`))
+                `${this.host}/plex/`,
+                this._divWrap(this._href(`https://${this.host}/plex/`, `${this.host}&#x2f;plex&#x2f;`))
             ],
             [
-                `${_host}/plex/requests.php`,
-                this._divWrap(this._href(`https://${_host}/plex/requests.php`, `${_host}&#x2f;plex&#x2f;requests.php`))
+                `${this.host}/plex/requests.php`,
+                this._divWrap(this._href(`https://${this.host}/plex/requests.php`, `${this.host}&#x2f;plex&#x2f;requests.php`))
             ],
             [
-                `${_host}!A`,
-                this._divWrap(`${this._href(`https://${_host}`, `${_host}`)}!A`)
+                `${this.host}!A`,
+                this._divWrap(`${this._href(`https://${this.host}`, `${this.host}`)}!A`)
             ],
             [
-                `plex.${_host}`,
-                this._divWrap(this._href(`https://plex.${_host}`, `plex.${_host}`))
+                `plex.${this.host}`,
+                this._divWrap(this._href(`https://plex.${this.host}`, `plex.${this.host}`))
             ],
             [
-                `http://plex.${_host}/r/100`,
-                this._divWrap(this._href(`http://plex.${_host}/r/100`, `http:&#x2f;&#x2f;plex.${_host}&#x2f;r&#x2f;100`))
+                `http://plex.${this.host}/r/100`,
+                this._divWrap(this._href(`http://plex.${this.host}/r/100`, `http:&#x2f;&#x2f;plex.${this.host}&#x2f;r&#x2f;100`))
             ],
             [
-                `.${_host}`,
-                this._divWrap('.' + this._href(`https://${_host}`, `${_host}`))
+                `.${this.host}`,
+                this._divWrap('.' + this._href(`https://${this.host}`, `${this.host}`))
             ],
             [
-                `--${_host}`,
-                this._divWrap('--' + this._href(`https://${_host}`, `${_host}`))
+                `--${this.host}`,
+                this._divWrap('--' + this._href(`https://${this.host}`, `${this.host}`))
             ],
             [
                 'example.com',
@@ -296,39 +296,39 @@ class MarkdownTestSuite
                 this._divWrap(this._href('https://danrahn.plex.com', 'danrahn.plex.com', true))
             ],
             [
-                `${_host}:32400`,
-                this._divWrap(this._href(`https://${_host}:32400`, `${_host}:32400`))
+                `${this.host}:32400`,
+                this._divWrap(this._href(`https://${this.host}:32400`, `${this.host}:32400`))
             ],
             [
-                `https://${_host}:32400`,
-                this._divWrap(this._href(`https://${_host}:32400`, `https:&#x2f;&#x2f;${_host}:32400`))
+                `https://${this.host}:32400`,
+                this._divWrap(this._href(`https://${this.host}:32400`, `https:&#x2f;&#x2f;${this.host}:32400`))
             ],
             [
                 'github.com:443',
                 this._divWrap(this._href('https://github.com:443', 'github.com:443', true))
             ],
             [
-                `${_host}:`,
-                this._divWrap(this._href(`https://${_host}`, _host) + ':')
+                `${this.host}:`,
+                this._divWrap(this._href(`https://${this.host}`, this.host) + ':')
             ],
             [
-                `${_host}:324000`,
-                this._divWrap(this._href(`https://${_host}`, _host) + ':324000')
+                `${this.host}:324000`,
+                this._divWrap(this._href(`https://${this.host}`, this.host) + ':324000')
             ],
             [
-                `${_host}:65535`,
-                this._divWrap(this._href(`https://${_host}:65535`, `${_host}:65535`))
+                `${this.host}:65535`,
+                this._divWrap(this._href(`https://${this.host}:65535`, `${this.host}:65535`))
             ],
             [
-                `${_host}:65536`,
-                this._divWrap(this._href(`https://${_host}`, _host) + ':65536')
+                `${this.host}:65536`,
+                this._divWrap(this._href(`https://${this.host}`, this.host) + ':65536')
             ]
         );
 
         return this._runSingleSuite(tests, 'Implicit Urls');
     }
 
-    static testImage()
+    testImage()
     {
         let tests = this._buildTests(
             [
@@ -340,12 +340,12 @@ class MarkdownTestSuite
                 this._divWrap('<img src="poster/movieDefault.svg" alt="Alt">')
             ],
             [
-                `![Alt](${_host}/plex/poster/movieDefault.svg)`,
-                this._divWrap(`<img src="https://${_host}/plex/poster/movieDefault.svg" alt="Alt">`)
+                `![Alt](${this.host}/plex/poster/movieDefault.svg)`,
+                this._divWrap(`<img src="https://${this.host}/plex/poster/movieDefault.svg" alt="Alt">`)
             ],
             [
-                `![Alt](${_host}:443/plex/poster/movieDefault.svg)`,
-                this._divWrap(`<img src="https://${_host}:443/plex/poster/movieDefault.svg" alt="Alt">`)
+                `![Alt](${this.host}:443/plex/poster/movieDefault.svg)`,
+                this._divWrap(`<img src="https://${this.host}:443/plex/poster/movieDefault.svg" alt="Alt">`)
             ],
             [
                 '![Alt2](external.com/image.png)',
@@ -417,7 +417,7 @@ class MarkdownTestSuite
         return this._runSingleSuite(tests, 'Images');
     }
 
-    static testInline()
+    testInline()
     {
         let tests = this._buildTests(
             ['`Inline Code`', this._divWrap('<code>Inline Code</code>')],
@@ -440,7 +440,7 @@ class MarkdownTestSuite
         return this._runSingleSuite(tests, 'Basic Inline Functionality');
     }
 
-    static testBold()
+    testBold()
     {
         let tests = this._buildTests(
             ['**This is bold text**', this._divWrap('<strong>This is bold text</strong>')],
@@ -469,7 +469,7 @@ class MarkdownTestSuite
         return this._runSingleSuite(tests, 'Basic Bold Functionality');
     }
 
-    static testStrikethrough()
+    testStrikethrough()
     {
         let tests = this._buildTests(
             ['~~This text has a line going through it~~', this._divWrap('<s>This text has a line going through it</s>')],
@@ -490,7 +490,7 @@ class MarkdownTestSuite
         return this._runSingleSuite(tests, 'Basic Strikethrough Functionality');
     }
 
-    static testUnderline()
+    testUnderline()
     {
         let tests = this._buildTests(
             ['++This text is underlined++', this._divWrap('<ins>This text is underlined</ins>')],
@@ -511,7 +511,7 @@ class MarkdownTestSuite
         return this._runSingleSuite(tests, 'Basic Strikethrough Functionality');
     }
 
-    static testSuperscript()
+    testSuperscript()
     {
         let tests = this._buildTests(
             ['A^B', this._divWrap('A<sup>B</sup>')],
@@ -543,7 +543,7 @@ class MarkdownTestSuite
         return this._runSingleSuite(tests, 'Superscript Functionality');
     }
 
-    static testSubscript()
+    testSubscript()
     {
         let tests = this._buildTests(
             ['A~(B)', this._divWrap('A<sub>B</sub>')],
@@ -575,7 +575,7 @@ class MarkdownTestSuite
         return this._runSingleSuite(tests, 'Subscript Functionality');
     }
 
-    static testItalic()
+    testItalic()
     {
         let tests = this._buildTests(
             ['*This is italic text*', this._divWrap('<em>This is italic text</em>')],
@@ -602,7 +602,7 @@ class MarkdownTestSuite
         return this._runSingleSuite(tests, 'Basic Italic Functionality');
     }
 
-    static testHr()
+    testHr()
     {
         let tests = this._buildTests(
             ['---', '<hr />'],
@@ -616,7 +616,7 @@ class MarkdownTestSuite
         return this._runSingleSuite(tests, 'Basic Horizontal Rule Functionality');
     }
 
-    static testBr()
+    testBr()
     {
         let tests = this._buildTests(
             ['A\nB', this._divWrap('A<br />B')],
@@ -632,7 +632,7 @@ class MarkdownTestSuite
         return this._runSingleSuite(tests, 'Basic Line Break Functionality');
     }
 
-    static testTable()
+    testTable()
     {
         let tests = this._buildTests(
             [
@@ -685,7 +685,7 @@ class MarkdownTestSuite
         return this._runSingleSuite(tests, 'Basic Table Functionality');
     }
 
-    static testUnorderedList()
+    testUnorderedList()
     {
         let tests = this._buildTests(
             [
@@ -749,7 +749,7 @@ class MarkdownTestSuite
         return this._runSingleSuite(tests, 'List Functionality');
     }
 
-    static testOrderedList()
+    testOrderedList()
     {
         let tests = this._buildTests(
             [
@@ -813,17 +813,17 @@ class MarkdownTestSuite
         return this._runSingleSuite(tests, 'List Functionality');
     }
 
-    static testBacktickCodeBlock()
+    testBacktickCodeBlock()
     {
         return this._testTickTildeBlockCore('```');
     }
 
-    static testTildeCodeBlock()
+    testTildeCodeBlock()
     {
         return this._testTickTildeBlockCore('~~~');
     }
 
-    static testMixedBacktickTildeCodeBlock()
+    testMixedBacktickTildeCodeBlock()
     {
         let tests = this._buildTests(
             [
@@ -852,7 +852,7 @@ class MarkdownTestSuite
         return this._runSingleSuite(tests, 'Mixed tilde/backtick code blocks');
     }
 
-    static _testTickTildeBlockCore(marker)
+    _testTickTildeBlockCore(marker)
     {
         let tests = this._buildTests(
             [
@@ -958,7 +958,7 @@ class MarkdownTestSuite
         return this._runSingleSuite(tests, (marker == '```' ? 'Backtick' : 'Tilde') + ' code blocks');
     }
 
-    static testIndentCodeBlock()
+    testIndentCodeBlock()
     {
         let tests = this._buildTests(
             [
@@ -1088,7 +1088,7 @@ class MarkdownTestSuite
         return this._runSingleSuite(tests, 'Indented code blocks');
     }
 
-    static testMixed()
+    testMixed()
     {
         let tests = this._buildTests(
             [
@@ -1116,7 +1116,7 @@ class MarkdownTestSuite
     /// Tests various BlockQuote and (Un)OrderedList nesting possibilities
     /// All these cases are issues that have (hopefully) been fixed
     /// </summary>
-    static testQuoteListNest()
+    testQuoteListNest()
     {
         let tests = this._buildTests(
             [
@@ -1184,7 +1184,7 @@ class MarkdownTestSuite
     /// <summary>
     /// Tests to ensure that bugs that were previously fixed no longer repro
     /// </summary>
-    static testBugFixes()
+    testBugFixes()
     {
         let tests = this._buildTests(
             [
@@ -1262,7 +1262,7 @@ class MarkdownTestSuite
     /// <summary>
     /// Manually test a single string to see its markdown output
     /// </summary>
-    static testString(testStr)
+    testString(testStr)
     {
         Log.info(`Testing : ${testStr}`);
         return new Markdown().parse(testStr);
@@ -1271,7 +1271,7 @@ class MarkdownTestSuite
     /// <summary>
     /// Runs a single test suite denoted by the given testName
     /// </summary>
-    static _runSingleSuite(tests, testName)
+    _runSingleSuite(tests, testName)
     {
         Log.info(`Running suite: ${testName}`);
         return this._runCore(tests);
@@ -1280,7 +1280,7 @@ class MarkdownTestSuite
     /// <summary>
     /// Core routine that actually runs the tests
     /// </summary>
-    static _runCore(tests)
+    _runCore(tests)
     {
         let stats = { passed : 0, failed : 0 };
         let logSav = Log.getLevel();
@@ -1289,9 +1289,9 @@ class MarkdownTestSuite
 
         tests.forEach(function(test)
         {
-            if (MarkdownTestSuite.testCache)
+            if (this.testCache)
             {
-                MarkdownTestSuite._testCache(test, colors, stats);
+                this._testCache(test, colors, stats);
             }
             else
             {
@@ -1304,9 +1304,9 @@ class MarkdownTestSuite
                 {
                     result = e;
                 }
-                MarkdownTestSuite._validateTest(test, result, colors, stats);
+                this._validateTest(test, result, colors, stats);
             }
-        });
+        }, this);
 
         Log.setLevel(logSav);
         Log.info(`Ran ${stats.passed + stats.failed} Tests: Passed: ${stats.passed}  -  Failed: ${stats.failed}`);
@@ -1318,7 +1318,7 @@ class MarkdownTestSuite
     /// character by character until finally parsing the entire input, then
     /// comparing it against the expected output
     /// </summary>
-    static _testCache(test, colors, stats)
+    _testCache(test, colors, stats)
     {
         let cacheSav = localStorage.getItem('mdCache');
         localStorage.setItem('mdCache', 1);
@@ -1342,7 +1342,7 @@ class MarkdownTestSuite
             result = e;
         }
 
-        MarkdownTestSuite._validateTest(test, result, colors, stats);
+        this._validateTest(test, result, colors, stats);
         localStorage.setItem('mdCache', cacheSav);
     }
 
@@ -1350,10 +1350,10 @@ class MarkdownTestSuite
     /// Compares the given test result with the expected result, printing
     /// out a message indicating whether the test passed or failed
     /// </summary>
-    static _validateTest(test, result, colors, stats)
+    _validateTest(test, result, colors, stats)
     {
-        let displayInput = MarkdownTestSuite._escapeTestString(test.input);
-        let displayExpected = MarkdownTestSuite._escapeTestString(test.expected);
+        let displayInput = this._escapeTestString(test.input);
+        let displayExpected = this._escapeTestString(test.expected);
         if (result == test.expected)
         {
             let logString = `    %cPassed!%c [%c${displayInput}%c]%c => %c[%c${displayExpected}%c]`;
@@ -1378,8 +1378,8 @@ class MarkdownTestSuite
             let fixedIndent = ' '.repeat(36); // Indent from the consolelog header
             let logString = `   %cFAIL!\n` +
                 `${fixedIndent}%cInput:    %c[%c${displayInput}%c]%c\n` +
-                `${fixedIndent}Expected: %c[%c${MarkdownTestSuite._errorString(displayExpected, diffIndex)}%c]%c\n` +
-                `${fixedIndent}Actual:   %c[%c${MarkdownTestSuite._errorString(result, diffIndex)}%c]`;
+                `${fixedIndent}Expected: %c[%c${this._errorString(displayExpected, diffIndex)}%c]%c\n` +
+                `${fixedIndent}Actual:   %c[%c${this._errorString(result, diffIndex)}%c]`;
             Log.formattedText(Log.Level.Warn, logString, ...colors.failure);
             ++stats.failed;
         }
@@ -1389,7 +1389,7 @@ class MarkdownTestSuite
     /// Returns the message and callstack for the given exception, with the message
     /// highlighted for printing to the console.
     /// </summary>
-    static _exceptionText(ex)
+    _exceptionText(ex)
     {
         return `\n%c${ex.message}%c\n${ex.stack.substring(ex.stack.indexOf('\n') + 1)}`;
     }
@@ -1398,7 +1398,7 @@ class MarkdownTestSuite
     /// Creates an array of { input, expected } pairs from the
     /// given array of [input, expected] arrays
     /// </summary>
-    static _buildTests(...tests)
+    _buildTests(...tests)
     {
         let testStrings = [];
         for (let i = 0; i < tests.length; ++i)
@@ -1413,16 +1413,16 @@ class MarkdownTestSuite
     /// Returns the given string with backslashes and newlines escaped, as it can be
     /// confusing to get actual newlines/backslashes in the input/expected strings
     /// </summary>
-    static _escapeTestString(str)
+    _escapeTestString(str)
     {
         return str.replace(/\n/g, '\\n');
     }
 
-    static _errorString(result, diffIndex)
+    _errorString(result, diffIndex)
     {
         if (typeof(result) != 'string')
         {
-            return MarkdownTestSuite._exceptionText(result);
+            return this._exceptionText(result);
         }
 
         let left = result.substring(0, diffIndex);
@@ -1435,7 +1435,7 @@ class MarkdownTestSuite
     /// <summary>
     /// Returns the ordered array of color formatting for successful and failed tests
     /// </summary>
-    static _consoleColors(dark)
+    _consoleColors(dark)
     {
         let bracketClr = 'color: inherit';
         let textClr = `color: ${dark ? '#D1977F' : '#9E3379'}`;
@@ -1471,7 +1471,7 @@ class MarkdownTestSuite
     /// <summary>
     /// Helper to add the containing mdDiv div that `parse` returns
     /// </summary>
-    static _divWrap(str)
+    _divWrap(str)
     {
         return `<div class="mdDiv">${str}</div>`;
     }
@@ -1479,7 +1479,7 @@ class MarkdownTestSuite
     /// <summary>
     /// Helper to add the line number span to code block tests
     /// </summary>
-    static _preWrap(...lines)
+    _preWrap(...lines)
     {
         let result = '';
         lines.forEach(function(line, lineNumber)
@@ -1490,9 +1490,9 @@ class MarkdownTestSuite
         return result;
     }
 
-    static _href(href, text, external=false)
+    _href(href, text, external=false)
     {
-        external = external || _alwaysExternal;
+        external = external || this.alwaysExternal;
         return `<a href="${href}"${external ? ' target="_blank" rel="noopener"' : ''}>${text}</a>`;
     }
 }

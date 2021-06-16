@@ -49,7 +49,7 @@ $('#query').parentNode.insertBefore(MarkdownEditor.getToolbar($('#query')), $('#
 $('#markdownTestSuite').addEventListener('click', function()
 {
     let testCache = $('#testcache').checked;
-    let testResults = MarkdownTestSuite.runSuite(testCache);
+    let testResults = new MarkdownTestSuite().runSuite(testCache);
     let totalTests = testResults.passed + testResults.failed;
     let passRate = ((testResults.passed / totalTests) * 100).toFixed(2);
     let auxText = (totalTests == testResults.passed ? '. Yay!' : '') + '\n\nSee the console (F12) for more details';
