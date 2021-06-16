@@ -7,6 +7,12 @@
 // The only methods (currently) over the maximum are just lists of relevant tests
 /* eslint-disable max-lines-per-function */
 
+// Constants based on the current host location
+let _host = window.location.hostname;
+let _sld = _host.substring(0, _host.lastIndexOf('.'));
+let _tld = _host.substring(_sld.length);
+let _alwaysExternal = false;
+
 class MarkdownTestSuite
 {
     /// <summary>
@@ -21,6 +27,18 @@ class MarkdownTestSuite
             overallResults.passed += suiteResults.passed;
             overallResults.failed += suiteResults.failed;
         };
+
+        if (_sld.length == 0 || !isNaN(parseFloat(_tld)))
+        {
+            // Running from a tld-less host (e.g. localhost or a direct IP)? Get the tests to
+            // pass, but we'll lose some target="_blank" test coverage
+            _host = 'hostOverride.com';
+            _sld = 'hostOverride';
+            _tld = '.com';
+            _host = _sld + _tld;
+            _alwaysExternal = true;
+            Log.warn(`Tests are being run from a tld-less host (${window.location.hostname}). Some coverage may be missing`);
+        }
 
         // Simple tests for non-nested scenarios
         addResult(this.testHeaders());
@@ -72,7 +90,10 @@ class MarkdownTestSuite
             ['  ##   Header 2', '<h2 id="header-2">Header 2</h2>'],
             [' ## Header 2 ###  ', '<h2 id="header-2">Header 2</h2>'],
             ['# _Header_ ~~With~~ ++Formatting++', '<h1 id="header-with-formatting"><em>Header</em> <s>With</s> <ins>Formatting</ins></h1>'],
-            ['# [Header With Link](https://danrahn.com)', '<h1 id="header-with-link"><a href="https://danrahn.com">Header With Link</a></h1>'],
+            [
+                `# [Header With Link](https://${_host})`,
+                `<h1 id="header-with-link">${MarkdownTestSuite._href('https://' + _host, 'Header With Link')}</h1>`
+            ],
             ['1. # Header in list', '<ol><li><h1 id="header-in-list">Header in list</h1></li></ol>'],
             ['* # Header in list', '<ul><li><h1 id="header-in-list">Header in list</h1></li></ul>'],
             ['> # Header in quote', '<blockquote><h1 id="header-in-quote">Header in quote</h1></blockquote>'],
@@ -87,26 +108,17 @@ class MarkdownTestSuite
         let tests = this._buildTests(
             [
                 // Domains should have https prepended if a protocol is not specified
-                '[Link](danrahn.com)',
-                this._divWrap(this._href('https://danrahn.com', 'Link'))
+                `[Link](${_host})`,
+                this._divWrap(this._href(`https://${_host}`, 'Link'))
             ],
             [
                 // And the protocol should be left alone otherwise
-                '[Add some text here](http://danrahn.com)',
-                this._divWrap(this._href('http://danrahn.com', 'Add some text here'))
+                `[Add some text here](http://${_host})`,
+                this._divWrap(this._href(`http://${_host}`, 'Add some text here'))
             ],
             [
-                // Don't encode href
-                '[https://backwards.com](Uh oh!)',
-                this._divWrap(this._href('Uh oh!', 'https:&#x2f;&#x2f;backwards.com'))
-            ],
-            [
-                '[https://backwards.com](hello%20world)',
-                this._divWrap(this._href('hello%20world', 'https:&#x2f;&#x2f;backwards.com'))
-            ],
-            [
-                '[Link[](danrahn.com)',
-                this._divWrap(`[Link${this._href('https://danrahn.com', '')}`)
+                `[Link[](${_host})`,
+                this._divWrap(`[Link${this._href(`https://${_host}`, '')}`)
             ],
             [
                 // External links open in a new window
@@ -115,18 +127,18 @@ class MarkdownTestSuite
             ],
             [
                 // Different protocols/ports should still open internally
-                '[Link](http://danrahn.com:32400)',
-                this._divWrap(this._href('http://danrahn.com:32400', 'Link'))
+                `[Link](http://${_host}:32400)`,
+                this._divWrap(this._href(`http://${_host}:32400`, 'Link'))
             ],
             [
                 // Subdomains should open internally as well
-                '[Link](plex.danrahn.com/r/100)',
-                this._divWrap(this._href('https://plex.danrahn.com/r/100', 'Link'))
+                `[Link](plex.${_host}/r/100)`,
+                this._divWrap(this._href(`https://plex.${_host}/r/100`, 'Link'))
             ],
             [
                 // danrahn.plex.com is not a subset of danrahn.com
-                '[Link](danrahn.plex.com)',
-                this._divWrap(this._href('https://danrahn.plex.com', 'Link', true))
+                `[Link](${_sld}.plex${_tld})`,
+                this._divWrap(this._href(`https://${_sld}.plex${_tld}`, 'Link', true))
             ],
             [
                 // Even without a protocol, we should figure out whether something is an external or relative reference
@@ -134,22 +146,38 @@ class MarkdownTestSuite
                 this._divWrap(this._href('https://github.com', 'Github', true))
             ],
             [
-                '[More Github](github.com/danrahn)',
-                this._divWrap(this._href('https://github.com/danrahn', 'More Github', true))
+                `[More Github](github.com/${_sld})`,
+                this._divWrap(this._href(`https://github.com/${_sld}`, 'More Github', true))
             ],
             [
-                '[GH3](github.com/danrahn.com/plex/index.php)',
-                this._divWrap(this._href('https://github.com/danrahn.com/plex/index.php', 'GH3', true))
+                `[GH3](github.com/${_host}/plex/index.php)`,
+                this._divWrap(this._href(`https://github.com/${_host}/plex/index.php`, 'GH3', true))
             ],
             [
                 '[GH4](github.com:443)',
                 this._divWrap(this._href('https://github.com:443', 'GH4', true))
             ],
             [
-                '[GH5](github.com:443/danrahn)',
-                this._divWrap(this._href('https://github.com:443/danrahn', 'GH5', true))
+                `[GH5](github.com:443/${_sld})`,
+                this._divWrap(this._href(`https://github.com:443/${_sld}`, 'GH5', true))
             ]
         );
+
+        // We keep invalid links internal, so override our override (ugh.)
+        let overrideSav = _alwaysExternal;
+        _alwaysExternal = false;
+        tests.push(...this._buildTests(
+            [
+                // Don't encode href
+                '[https://backwards.com](Uh oh!)',
+                this._divWrap(this._href('Uh oh!', 'https:&#x2f;&#x2f;backwards.com'))
+            ],
+            [
+                '[https://backwards.com](hello%20world)',
+                this._divWrap(this._href('hello%20world', 'https:&#x2f;&#x2f;backwards.com'))
+            ]
+        ));
+        _alwaysExternal = overrideSav;
 
         return this._runSingleSuite(tests, 'Basic Url Functionality');
     }
@@ -175,92 +203,89 @@ class MarkdownTestSuite
     {
         let tests = this._buildTests(
             [
-                'danrahn.com',
-                this._divWrap(this._href('https://danrahn.com', 'danrahn.com'))
+                _host,
+                this._divWrap(this._href(`https://${_host}`, _host))
             ],
             [
-                'Welcome to danrahn.com!',
-                this._divWrap(`Welcome to ${this._href('https://danrahn.com', 'danrahn.com')}!`)
+                `Welcome to ${_host}!`,
+                this._divWrap(`Welcome to ${this._href(`https://${_host}`, _host)}!`)
             ],
             [
-                'Welcome to danrahn.com.',
-                this._divWrap(`Welcome to ${this._href('https://danrahn.com', 'danrahn.com')}.`)
+                `Welcome to ${_host}.`,
+                this._divWrap(`Welcome to ${this._href(`https://${_host}`, _host)}.`)
             ],
             [
-                'Welcome to danrahn.org!',
-                this._divWrap(`Welcome to ${this._href('https://danrahn.org', 'danrahn.org', true)}!`)
+                `Welcome to ${_sld}.org!`,
+                this._divWrap(`Welcome to ${this._href(`https://${_sld}.org`, `${_sld}.org`, true)}!`)
             ],
             [
-                'Welcome to danrahn.net!',
-                this._divWrap(`Welcome to ${this._href('https://danrahn.net', 'danrahn.net', true)}!`)
+                `Welcome to ${_sld}.net!`,
+                this._divWrap(`Welcome to ${this._href(`https://${_sld}.net`, `${_sld}.net`, true)}!`)
             ],
             [
-                'Welcome to danrahn.de!',
-                this._divWrap(`Welcome to ${this._href('https://danrahn.de', 'danrahn.de', true)}!`)
+                `Welcome to ${_sld}.de!`,
+                this._divWrap(`Welcome to ${this._href(`https://${_sld}.de`, `${_sld}.de`, true)}!`)
             ],
             [
-                'Welcome to danrahn.bad!',
-                this._divWrap('Welcome to danrahn.bad!')
+                `Welcome to ${_sld}.bad!`,
+                this._divWrap(`Welcome to ${_sld}.bad!`)
             ],
             [
-                'Welcome to https://danrahn.com!',
-                this._divWrap(`Welcome to ${this._href('https://danrahn.com', 'https:&#x2f;&#x2f;danrahn.com')}!`)
+                `Welcome to https://${_host}!`,
+                this._divWrap(`Welcome to ${this._href(`https://${_host}`, `https:&#x2f;&#x2f;${_host}`)}!`)
             ],
             [
-                'Welcome to http://danrahn.com!',
-                this._divWrap(`Welcome to ${this._href('http://danrahn.com', 'http:&#x2f;&#x2f;danrahn.com')}!`)
+                `Welcome to http://${_host}!`,
+                this._divWrap(`Welcome to ${this._href(`http://${_host}`, `http:&#x2f;&#x2f;${_host}`)}!`)
             ],
             [
-                'Welcome to file://danrahn.com!',
-                this._divWrap(`Welcome to ${this._href('file://danrahn.com', 'file:&#x2f;&#x2f;danrahn.com')}!`)
+                `Welcome to ftp://${_host}!`,
+                this._divWrap(`Welcome to ${this._href(`ftp://${_host}`, `ftp:&#x2f;&#x2f;${_host}`)}!`)
             ],
             [
-                'Welcome to ftp://danrahn.com!',
-                this._divWrap(`Welcome to ${this._href('ftp://danrahn.com', 'ftp:&#x2f;&#x2f;danrahn.com')}!`)
+                `Welcome to ht://${_host}!`,
+                this._divWrap(`Welcome to ht:&#x2f;&#x2f;${this._href(`https://${_host}`, _host)}!`)
             ],
             [
-                'Welcome to ht://danrahn.com!',
-                this._divWrap(`Welcome to ht:&#x2f;&#x2f;${this._href('https://danrahn.com', 'danrahn.com')}!`)
+                `Welcome to HTTTPS://${_host}!`,
+                this._divWrap(`Welcome to HTTTPS:&#x2f;&#x2f;${this._href(`https://${_host}`, _host)}!`)
             ],
             [
-                'Welcome to HTTTPS://danrahn.com!',
-                this._divWrap(`Welcome to HTTTPS:&#x2f;&#x2f;${this._href('https://danrahn.com', 'danrahn.com')}!`)
+                // Don't parse links that are part of explicit URLs
+                `[link.com](${_host})`,
+                this._divWrap(this._href(`https://${_host}`, 'link.com'))
             ],
             [
-                '[link.com](danrahn.com)',
-                this._divWrap(this._href('https://danrahn.com', 'link.com'))
+                `${_host}/plex`,
+                this._divWrap(this._href(`https://${_host}/plex`, `${_host}&#x2f;plex`))
             ],
             [
-                'danrahn.com/plex',
-                this._divWrap(this._href('https://danrahn.com/plex', 'danrahn.com&#x2f;plex'))
+                `${_host}/plex/`,
+                this._divWrap(this._href(`https://${_host}/plex/`, `${_host}&#x2f;plex&#x2f;`))
             ],
             [
-                'danrahn.com/plex/',
-                this._divWrap(this._href('https://danrahn.com/plex/', 'danrahn.com&#x2f;plex&#x2f;'))
+                `${_host}/plex/requests.php`,
+                this._divWrap(this._href(`https://${_host}/plex/requests.php`, `${_host}&#x2f;plex&#x2f;requests.php`))
             ],
             [
-                'danrahn.com/plex/requests.php',
-                this._divWrap(this._href('https://danrahn.com/plex/requests.php', 'danrahn.com&#x2f;plex&#x2f;requests.php'))
+                `${_host}!A`,
+                this._divWrap(`${this._href(`https://${_host}`, `${_host}`)}!A`)
             ],
             [
-                'danrahn.com!A',
-                this._divWrap(`${this._href('https://danrahn.com', 'danrahn.com')}!A`)
+                `plex.${_host}`,
+                this._divWrap(this._href(`https://plex.${_host}`, `plex.${_host}`))
             ],
             [
-                'plex.danrahn.com',
-                this._divWrap(this._href('https://plex.danrahn.com', 'plex.danrahn.com'))
+                `http://plex.${_host}/r/100`,
+                this._divWrap(this._href(`http://plex.${_host}/r/100`, `http:&#x2f;&#x2f;plex.${_host}&#x2f;r&#x2f;100`))
             ],
             [
-                'http://plex.danrahn.com/r/100',
-                this._divWrap(this._href('http://plex.danrahn.com/r/100', 'http:&#x2f;&#x2f;plex.danrahn.com&#x2f;r&#x2f;100'))
+                `.${_host}`,
+                this._divWrap('.' + this._href(`https://${_host}`, `${_host}`))
             ],
             [
-                '.danrahn.com',
-                this._divWrap('.' + this._href('https://danrahn.com', 'danrahn.com'))
-            ],
-            [
-                '--danrahn.com',
-                this._divWrap('--' + this._href('https://danrahn.com', 'danrahn.com'))
+                `--${_host}`,
+                this._divWrap('--' + this._href(`https://${_host}`, `${_host}`))
             ],
             [
                 'example.com',
@@ -271,32 +296,32 @@ class MarkdownTestSuite
                 this._divWrap(this._href('https://danrahn.plex.com', 'danrahn.plex.com', true))
             ],
             [
-                'danrahn.com:32400',
-                this._divWrap(this._href('https://danrahn.com:32400', 'danrahn.com:32400'))
+                `${_host}:32400`,
+                this._divWrap(this._href(`https://${_host}:32400`, `${_host}:32400`))
             ],
             [
-                'https://danrahn.com:32400',
-                this._divWrap(this._href('https://danrahn.com:32400', 'https:&#x2f;&#x2f;danrahn.com:32400'))
+                `https://${_host}:32400`,
+                this._divWrap(this._href(`https://${_host}:32400`, `https:&#x2f;&#x2f;${_host}:32400`))
             ],
             [
                 'github.com:443',
                 this._divWrap(this._href('https://github.com:443', 'github.com:443', true))
             ],
             [
-                'danrahn.com:',
-                this._divWrap(this._href('https://danrahn.com', 'danrahn.com') + ':')
+                `${_host}:`,
+                this._divWrap(this._href(`https://${_host}`, _host) + ':')
             ],
             [
-                'danrahn.com:324000',
-                this._divWrap(this._href('https://danrahn.com', 'danrahn.com') + ':324000')
+                `${_host}:324000`,
+                this._divWrap(this._href(`https://${_host}`, _host) + ':324000')
             ],
             [
-                'danrahn.com:65535',
-                this._divWrap(this._href('https://danrahn.com:65535', 'danrahn.com:65535'))
+                `${_host}:65535`,
+                this._divWrap(this._href(`https://${_host}:65535`, `${_host}:65535`))
             ],
             [
-                'danrahn.com:65536',
-                this._divWrap(this._href('https://danrahn.com', 'danrahn.com') + ':65536')
+                `${_host}:65536`,
+                this._divWrap(this._href(`https://${_host}`, _host) + ':65536')
             ]
         );
 
@@ -315,12 +340,12 @@ class MarkdownTestSuite
                 this._divWrap('<img src="poster/movieDefault.svg" alt="Alt">')
             ],
             [
-                '![Alt](danrahn.com/plex/poster/movieDefault.svg)',
-                this._divWrap('<img src="https://danrahn.com/plex/poster/movieDefault.svg" alt="Alt">')
+                `![Alt](${_host}/plex/poster/movieDefault.svg)`,
+                this._divWrap(`<img src="https://${_host}/plex/poster/movieDefault.svg" alt="Alt">`)
             ],
             [
-                '![Alt](danrahn.com:443/plex/poster/movieDefault.svg)',
-                this._divWrap('<img src="https://danrahn.com:443/plex/poster/movieDefault.svg" alt="Alt">')
+                `![Alt](${_host}:443/plex/poster/movieDefault.svg)`,
+                this._divWrap(`<img src="https://${_host}:443/plex/poster/movieDefault.svg" alt="Alt">`)
             ],
             [
                 '![Alt2](external.com/image.png)',
@@ -1467,6 +1492,7 @@ class MarkdownTestSuite
 
     static _href(href, text, external=false)
     {
+        external = external || _alwaysExternal;
         return `<a href="${href}"${external ? ' target="_blank" rel="noopener"' : ''}>${text}</a>`;
     }
 }
