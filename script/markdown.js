@@ -658,6 +658,13 @@ class Markdown
         }
         else
         {
+            // Workaround for html comments adding a div/too many breaks: if we're surrounded by
+            // newlines, ignore one of them by including it in the run's span
+            if (result.end < this.text.length && this.text[result.end] == '\n' && (i == 0 || this.text[i - 1] == '\n'))
+            {
+                ++result.end;
+            }
+
             url = new ReferenceUrlDefinition(i, result.end, this.currentRun);
             i = result.end - 1;
         }
@@ -1217,8 +1224,13 @@ class Markdown
     /// <returns>The position we should continue parsing from</returns>
     _checkLessThan(i)
     {
+        if (this._isEscaped(i))
+        {
+            return i;
+        }
+
         // Allow two things. Line breaks and comments
-        if (!this._isEscaped(i) && /^<br ?\/?>/.test(this.text.substring(i, i + 6)))
+        if (/^<br ?\/?>/.test(this.text.substring(i, i + 6)))
         {
             let br = new Break(i, this.text.indexOf('>') + 1, this.currentRun, true /*needsInsert*/);
             br.end = this.text.indexOf('>', i) + 1;
@@ -3432,7 +3444,6 @@ class Run
             case State.CodeBlock:
             case State.Header:
             case State.Hr:
-            case State.HtmlComment:
                 return true;
             default:
                 return false;
@@ -4446,11 +4457,11 @@ class ReferenceUrlDefinition extends Run
     tag(end) { return end ? ' -->' : '<!-- '; }
 
     /// <summary>
-    /// No transformation necessary, return without modification
+    /// No transformation necessary other than trimming
     /// </summary>
     transform(newText, /*side*/)
     {
-        return newText;
+        return newText.trim();
     }
 }
 

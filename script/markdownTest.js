@@ -62,6 +62,7 @@ class MarkdownTestSuite
         addResult(this.testIndentCodeBlock());
         addResult(this.testOrderedList());
         addResult(this.testUnorderedList());
+        addResult(this.testHTMLComment());
 
         addResult(this.testMixed());
         addResult(this.testQuoteListNest());
@@ -188,11 +189,11 @@ class MarkdownTestSuite
         let tests = this._buildTests(
             [
                 '[A][1]\n[1]: b.com',
-                `${this._href('https://b.com', 'A', true)}<!-- [1]: b.com -->` // This should be divWrapped. Bug?
+                this._divWrap(`${this._href('https://b.com', 'A', true)}<br /><!-- [1]: b.com -->`)
             ],
             [
                 '[1]: b.com\n[A][1]',
-                `<!-- [1]: b.com -->${this._divWrap(this._href('https://b.com', 'A', true))}`
+                this._divWrap(`<!-- [1]: b.com -->${this._href('https://b.com', 'A', true)}`)
             ]
         );
 
@@ -1086,6 +1087,26 @@ class MarkdownTestSuite
         );
 
         return this._runSingleSuite(tests, 'Indented code blocks');
+    }
+
+    testHTMLComment()
+    {
+        let tests = this._buildTests(
+            [
+                '<!-- Comment Test -->',
+                this._divWrap('<!-- Comment Test -->')
+            ],
+            [
+                'Hello, <!-- Comment Test -->There',
+                this._divWrap('Hello, <!-- Comment Test -->There')
+            ],
+            [
+                '\\<!-- Comment Test -->',
+                this._divWrap('&lt;!-- Comment Test --&gt;')
+            ]
+        );
+
+        return this._runSingleSuite(tests, 'HTML Comments');
     }
 
     testMixed()
