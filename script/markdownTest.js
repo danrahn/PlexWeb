@@ -1380,6 +1380,10 @@ class MarkdownTestSuite
                 '1\n| `` A ` | `` \\| ` B ` | C |\n| --- | --- |',
                 '1<table><thead><tr><td><code> A ` | </code> | <code> B </code></td><td>C</td></tr></thead><tbody></tbody></table>'
             ],
+            [
+                '< `<!--` `-->`',
+                this._divWrap('&lt; <code>&lt;!--</code> <code>--&gt;</code>')
+            ]
         );
 
         return this._runSingleSuite(tests, 'Fixed Bugs');

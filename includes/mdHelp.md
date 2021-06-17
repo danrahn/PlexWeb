@@ -6,6 +6,7 @@ Table of Contents
 * [Basic Syntax](#basic-syntax)
   * [Inline Elements](#inline-elements)
   * [Block Elements](#block-elements)
+  * [HTML Elements](#html-elements)
 * [Inline Element Details](#inline-element-details)
 * [Block Element Details](#block-element-details)
 * [Miscellaneous](#miscellaneous)
@@ -127,6 +128,27 @@ For more details on inline elements, see [Inline Element Details](#inline-elemen
   Cell 4 | Cell 5 | Cell 6
 
 For more details on block elements, see [Block Element Details](#block-element-details)
+
+<br>
+---
+<br>
+
+## HTML Elements
+
+While many Markdown parsers allow for arbitrary HTML insertion, this parser is more locked down to prevent creating documents that could ruin the flow of a webpage. That said, there are several "raw" HTML elements that are allowed:
+
+1. **Line Breaks** - `<br>` or `<br />` - Insert additional line breaks
+
+2. **Spans** - `<span[ style="..."]>...</span>` - Allows for additional styling that is otherwise unavailable with regular Markdown syntax. Unlike a "real" span though, attributes are limited, with only `style="attr1:val1;attr2:val2"` being parsed, and only a limited set of style properties are allowed. That said, it's still comprehensive enough to make significant style changes:
+  * <span style="color:green;background-color:#123456">Text color</span> - `<span style="color:green;background-color:#123456">Text color</span>`
+  * <span style="font-family:serif">Font family/face</span> - `<span style="font-family:serif">Font family/face</span>`
+  * <span style="text-decoration:underline overline">Text decoration</span> - `<span style="text-decoration:underline overline">Text decoration</span>`
+  * <span style="letter-spacing:5px;word-spacing:10px">Text spacing</span> - `<span style="letter-spacing:5px;word-spacing:10px">Text spacing</span>`
+  * **++<span style="color:green">_Combined with regular Markdown_</span>++** - `**++<span style="color:green">_Combined with regular Markdown_</span>++**`
+
+  As an inline element, spans can also only be defined on a single line. To have a single span affect multiple lines, you can insert breaks inline.
+
+3. **Comments** - Anything between `<!--` and `-->` will be ignored and unescaped, acting exactly like a regular HTML comment.
 
 <br>
 ---
@@ -347,11 +369,7 @@ Pipes at the start | and end | are optional
 ---
 
 ## Miscellaneous
-1. A very limited number of "raw" HTML tags are allowed:
-  1. Line Breaks - `<br>` or `<br />` will insert an additional line break
-  2. Spans - `<span[ style="..."]>...</span>` - Allows for additional styling that is otherwise unavailable with regular Markdown syntax. Allowed styling includes color, font, decoration, and spacing (within reason).
-  3. HTML comments - Anything between `<!--` and `-->` will be ignored and unescaped, acting exactly like an HTML comment
-2. Potential improvements:
+1. Potential improvements:
   1. Processing lists could be more efficient. Currently we first look for the bounds of the entire table, then go through all the same text again looking for the individual ListItems. Would be better to cache the ListItems along the way
 
 ## Issues

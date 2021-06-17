@@ -1256,7 +1256,7 @@ class Markdown
         }
 
 
-        if (!this.text.substring(i, i + 4) == '<!--')
+        if (this.text.substring(i, i + 4) != '<!--')
         {
             return i;
         }
