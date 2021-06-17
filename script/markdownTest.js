@@ -63,6 +63,7 @@ class MarkdownTestSuite
         addResult(this.testOrderedList());
         addResult(this.testUnorderedList());
         addResult(this.testHTMLComment());
+        addResult(this.testHtmlSpan());
 
         addResult(this.testMixed());
         addResult(this.testQuoteListNest());
@@ -1107,6 +1108,70 @@ class MarkdownTestSuite
         );
 
         return this._runSingleSuite(tests, 'HTML Comments');
+    }
+
+    testHtmlSpan()
+    {
+        let tests = this._buildTests(
+            [
+                '<span>Hello</span>',
+                this._divWrap('<span>Hello</span>')
+            ],
+            [
+                'Hello, <span>World</span>',
+                this._divWrap('Hello, <span>World</span>')
+            ],
+            [
+                'Hello, <span>Worl</span>d',
+                this._divWrap('Hello, <span>Worl</span>d')
+            ],
+            [
+                '<span style="color:red;">Hello</span>',
+                this._divWrap('<span style="color:red;">Hello</span>')
+            ],
+            [
+                '<span style="color:red">Hello</span>',
+                this._divWrap('<span style="color:red;">Hello</span>')
+            ],
+            [
+                '<span style="color:red;background-color:blue">Hello</span>',
+                this._divWrap('<span style="color:red;background-color:blue;">Hello</span>')
+            ],
+            [
+                '<span style="background-color:blue;' +
+                    'color:red;font-family:serif;font-style:bold;letter-spacing:5px;' +
+                    'text-decoration:underline overline;word-spacing:10px">Hello</span>',
+                this._divWrap('<span style="background-color:blue;' +
+                    'color:red;font-family:serif;font-style:bold;letter-spacing:5px;' +
+                    'text-decoration:underline overline;word-spacing:10px;">Hello</span>')
+            ],
+            [
+                '<span style="color:red;" width="100px">Hello</span>',
+                this._divWrap('<span style="color:red;">Hello</span>')
+            ],
+            [
+                '<span width="100px" style="color:red;">Hello</span>',
+                this._divWrap('<span style="color:red;">Hello</span>')
+            ],
+            [
+                '\\<span>Hello</span>',
+                this._divWrap('&lt;span&gt;Hello&lt;&#x2f;span&gt;')
+            ],
+            [
+                '<span>Hello\\</span>',
+                this._divWrap('&lt;span&gt;Hello&lt;&#x2f;span&gt;')
+            ],
+            [
+                '<span\\>Hello</span>',
+                this._divWrap('&lt;span&gt;Hello&lt;&#x2f;span&gt;')
+            ],
+            [
+                '<span>Hello\\</span></span>',
+                this._divWrap('<span>Hello&lt;&#x2f;span&gt;</span>')
+            ]
+        );
+
+        return this._runSingleSuite(tests, 'HTML Spans');
     }
 
     testMixed()

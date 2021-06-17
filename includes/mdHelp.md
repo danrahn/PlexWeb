@@ -347,9 +347,10 @@ Pipes at the start | and end | are optional
 ---
 
 ## Miscellaneous
-1. HTML tags are generally not allowed, but two are allowed:
+1. A very limited number of "raw" HTML tags are allowed:
   1. Line Breaks - `<br>` or `<br />` will insert an additional line break
-  2. HTML comments - Anything between `<!--` and `-->` will be ignored and unescaped, acting exactly like an HTML comment
+  2. Spans - `<span[ style="..."]>...</span>` - Allows for additional styling that is otherwise unavailable with regular Markdown syntax. Allowed styling includes color, font, decoration, and spacing.
+  3. HTML comments - Anything between `<!--` and `-->` will be ignored and unescaped, acting exactly like an HTML comment
 2. Potential improvements:
   1. Processing lists could be more efficient. Currently we first look for the bounds of the entire table, then go through all the same text again looking for the individual ListItems. Would be better to cache the ListItems along the way
 

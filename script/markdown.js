@@ -38,12 +38,13 @@ const State =
     HtmlComment : 18,
     Superscript : 19,
     Subscript : 20,
+    HtmlSpan : 21,
 };
 
 /// <summary>
 /// Maps a given State to its string representation. Used for logging only
 /// </summary>
-/* eslint-disable-next-line complexity */ // Breaking up a switch is pointless
+/* eslint-disable-next-line complexity, max-lines-per-function */ // Breaking up a switch is pointless
 const stateToStr = function(state)
 {
     switch (state)
@@ -90,6 +91,8 @@ const stateToStr = function(state)
             return 'Superscript';
         case State.Subscript:
             return 'Subscript';
+        case State.HtmlSpan:
+            return 'HtmlSpan';
         default:
             return 'Unknown state: ' + state;
     }
@@ -121,7 +124,8 @@ const stateAllowedInState = function(state, current, index)
         case State.Table:
             return !blockMarkdown(state); // Only inline features allowed
         case State.Url:
-            // Can still have inline stuff here. Though not in the url itself so be careful
+        case State.HtmlSpan:
+            // Can have inline stuff here, though not in the internal context, so be careful
             if (blockMarkdown(state))
             {
                 return false;
@@ -1219,7 +1223,12 @@ class Markdown
     }
 
     /// <summary>
-    /// Process a less-than character, which could be part of an HTML tag that we want to keep track of
+    /// Process a less-than character, which could be a raw HTML element.
+    ///
+    /// Currently supported:
+    ///  * Line break - <br> or <br />
+    ///  * Span - <span ...>...</span>
+    ///  * Comment - <!-- ... -->
     /// </summary>
     /// <returns>The position we should continue parsing from</returns>
     _checkLessThan(i)
@@ -1229,13 +1238,23 @@ class Markdown
             return i;
         }
 
-        // Allow two things. Line breaks and comments
         if (/^<br ?\/?>/.test(this.text.substring(i, i + 6)))
         {
             let br = new Break(i, this.text.indexOf('>') + 1, this.currentRun, true /*needsInsert*/);
             br.end = this.text.indexOf('>', i) + 1;
             return i;
         }
+
+        // <span...>...</span>
+        if (/^<span ?/i.test(this.text.substring(i, i + 6)))
+        {
+            let spanEnd = this._checkSpan(i);
+            if (spanEnd != -1)
+            {
+                return spanEnd;
+            }
+        }
+
 
         if (!this.text.substring(i, i + 4) == '<!--')
         {
@@ -1252,6 +1271,81 @@ class Markdown
 
         new HtmlComment(i, endComment, this.currentRun);
         return endComment - 1;
+    }
+
+    /// <summary>
+    /// Check whether we have a valid span starting at the given position,
+    /// adding it to the Run list if found.
+    ///
+    /// Rules:
+    ///  * A "raw" HTML span consists of the following elements:
+    ///     1. '<span'
+    ///     2. 0 or more X="Y" attribute pairs
+    ///     3. '>'
+    ///     4. Span content
+    ///     5. '</span>'
+    ///  * Only the 'style' attribute is parsed, all others are discarded
+    ///  * When parsing the style attribute, only whitelisted styling is allowed
+    ///    (e.g. can't set font size to 200pt and overrun the document)
+    /// </summary>
+    /// <returns>
+    /// The start of the span content if a valid span was found, otherwise -1
+    /// </returns>
+    _checkSpan(start)
+    {
+        let line = this.text.substring(start, this._indexOrParentEnd('\n', start));
+        let endSpan = line.indexOf('</span>');
+        while (this._isEscaped(endSpan + start))
+        {
+            endSpan = line.indexOf('</span>', endSpan + 1);
+        }
+
+        if (endSpan == -1)
+        {
+            return -1;
+        }
+
+        // Only allow 'style' attribute
+        let parsed = /^<span ?((?!style)\w+="[^"]*")* *(style="[^"]*")? *(\w+="[^"]*")* *>/.exec(line);
+        if (!parsed)
+        {
+            return -1;
+        }
+
+        let attr = {};
+        if (parsed[2])
+        {
+            attr = this._parseStyle(parsed[2]);
+        }
+
+        let spanTextStart = parsed[0].length;
+        let span = new HtmlSpan(start, start + endSpan + 7, spanTextStart, attr, this.currentRun);
+        this.currentRun = span;
+
+        return start + spanTextStart - 1;
+    }
+
+    /// <summary>
+    /// Parses a style="xyz" attribute tag
+    /// </summary>
+    /// <returns>
+    /// A dictionary mapping style attributes to their values
+    /// </returns>
+    _parseStyle(style)
+    {
+        let attr = {};
+        style = style.substring(style.indexOf('"') + 1, style.length - 1);
+        let args = style.split(';');
+        args.forEach(arg =>
+        {
+            let split = arg.indexOf(':');
+            if (split != -1)
+            {
+                attr[arg.substring(0, split).trim()] = arg.substring(split + 1).trim();
+            }
+        });
+
+        return attr;
     }
 
     /// <summary>
@@ -3422,6 +3516,7 @@ class Run
             case State.CodeBlock:
             case State.Superscript:
             case State.Subscript:
+            case State.HtmlSpan:
                 return false;
             default:
                 Log.warn('Unknown state: ' + this.state);
@@ -5009,5 +5104,63 @@ class HtmlComment extends Run
     {
         // Leave exactly as-is, we want it to be parsed as an HTML comment
         return newText;
+    }
+}
+
+/// <summary>
+/// Raw HTML span - <span[ style="xyz"]>...</span>
+///
+/// Allows for additional text styling outside of explicit Markdown notation
+/// </summary>
+class HtmlSpan extends Run
+{
+    constructor(start, end, textStart, style, parent)
+    {
+        super(State.HtmlSpan, start, end, parent);
+        this.textStart = textStart;
+        this.styleString = '';
+        for (const [key, value] of Object.entries(style))
+        {
+            if (this._allowedAttr(key))
+            {
+                this.styleString += `${key}:${value};`;
+            }
+        }
+
+        if (this.styleString.length != 0)
+        {
+            this.styleString = `style="${this.styleString}"`;
+        }
+    }
+
+    startContextLength() { return this.textStart; }
+    endContextLength() { return 7; }
+
+    tag(end)
+    {
+        if (end || this.styleString.length == 0)
+        {
+            return this.basicTag('span', end);
+        }
+
+        return `<span ${this.styleString}>`;
+    }
+
+    _allowedAttr(attr)
+    {
+        switch (attr)
+        {
+            case 'background-color':
+            case 'color':
+            case 'font-family':
+            case 'font-style':
+            case 'font-weight':
+            case 'letter-spacing':
+            case 'text-decoration':
+            case 'word-spacing':
+                return true;
+            default:
+                return false;
+        }
     }
 }
