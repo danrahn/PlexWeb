@@ -1146,6 +1146,46 @@ class MarkdownTestSuite
                     'text-decoration:underline overline;word-spacing:10px;">Hello</span>')
             ],
             [
+                '<span style="letter-spacing:200px">Hello</span>',
+                this._divWrap('<span style="letter-spacing:100px;">Hello</span>')
+            ],
+            [
+                '<span style="letter-spacing:200pt">Hello</span>',
+                this._divWrap('<span style="letter-spacing:75pt;">Hello</span>')
+            ],
+            [
+                '<span style="letter-spacing:200em">Hello</span>',
+                this._divWrap('<span style="letter-spacing:7em;">Hello</span>')
+            ],
+            [
+                '<span style="letter-spacing:-200px">Hello</span>',
+                this._divWrap('<span style="letter-spacing:-7px;">Hello</span>')
+            ],
+            [
+                '<span style="letter-spacing:-200pt">Hello</span>',
+                this._divWrap('<span style="letter-spacing:-5pt;">Hello</span>')
+            ],
+            [
+                '<span style="letter-spacing:-200em">Hello</span>',
+                this._divWrap('<span style="letter-spacing:-1em;">Hello</span>')
+            ],
+            [
+                '<span style="letter-spacing:20.0px">Hello</span>',
+                this._divWrap('<span style="letter-spacing:20px;">Hello</span>')
+            ],
+            [
+                '<span style="letter-spacing:20.1px">Hello</span>',
+                this._divWrap('<span style="letter-spacing:20.1px;">Hello</span>')
+            ],
+            [
+                '<span style="letter-spacing:.5em">Hello</span>',
+                this._divWrap('<span style="letter-spacing:0.5em;">Hello</span>')
+            ],
+            [
+                '<span style="font-size:200pt">Hello</span>',
+                this._divWrap('<span>Hello</span>')
+            ],
+            [
                 '<span style="color:red;" width="100px">Hello</span>',
                 this._divWrap('<span style="color:red;">Hello</span>')
             ],

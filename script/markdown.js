@@ -5123,7 +5123,7 @@ class HtmlSpan extends Run
         {
             if (this._allowedAttr(key))
             {
-                this.styleString += `${key}:${value};`;
+                this.styleString += `${key}:${this._mutateAttr(key, value)};`;
             }
         }
 
@@ -5161,6 +5161,50 @@ class HtmlSpan extends Run
                 return true;
             default:
                 return false;
+        }
+    }
+
+    /// <summary>
+    /// Map of letter/word spacing limits
+    /// </summary>
+    static spaceLimits = {
+        neg : {
+            px : 7,
+            pt : 5,
+            em : 1
+        },
+        pos : {
+            px : 100,
+            pt : 75,
+            em : 7
+        }
+    };
+
+    /// <summary>
+    /// Ensure attributes have reasonable values
+    /// </summary>
+    _mutateAttr(attr, value)
+    {
+        switch (attr)
+        {
+            case 'letter-spacing':
+            case 'word-spacing':
+            {
+                // Don't let things get too crazy
+                let parts = /^(-?)(\d*\.?\d+)(px|pt|em)$/.exec(value.trim());
+                if (!parts)
+                {
+                    // Doesn't fit the mold, let it exists as-is, since
+                    // the browser probably can't do anything with it anyway
+                    return value;
+                }
+
+                let sign = parts[1] ? -1 : 1;
+                let newVal = parseFloat(parts[2]);
+                return (sign * Math.min(newVal, HtmlSpan.spaceLimits[parts[1] ? 'neg' : 'pos'][parts[3]])) + parts[3];
+            }
+            default:
+                return value;
         }
     }
 }
