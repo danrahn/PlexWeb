@@ -80,6 +80,7 @@ CREATE TABLE `imdb_tv_cache` (
  `show_id` int(11) NOT NULL,
  `season` int(11) NOT NULL,
  `episode` int(11) NOT NULL,
+ `episode_id` int(11) DEFAULT NULL,
  `imdb_link` varchar(32) COLLATE utf8_unicode_ci NOT NULL,
  `date_added` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
  PRIMARY KEY (`entry`)

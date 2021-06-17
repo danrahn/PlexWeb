@@ -74,6 +74,7 @@ class Episode extends Media
         $this->episode = $data['airedEpisodeNumber'];
         $this->name = $data['episodeName'] ?? "";
         $this->imdb = $data['imdbId'] ?? "";
+        $this->series_id = $data['seriesId'] ?? "";
 
         // If we have no imdbId, attempt to get the imdbId of the series to at
         // least link to something
@@ -106,6 +107,11 @@ class Episode extends Media
     public function getImdbLink()
     {
         return $this->imdb;
+    }
+
+    public function getSeriesId()
+    {
+        return $this->series_id;
     }
 
     /// <summary>
@@ -219,6 +225,19 @@ class Tvdb
     }
 
     /// <summary>
+    /// Get a single episode given the episode id
+    /// </summary>
+    function get_episode_from_id($episode_id)
+    {
+        $response = json_decode($this->apiCall('GET', "episodes/$episode_id", []), true);
+
+        // episodes/{id} returns { "data" : { ... } }, but
+        // Episode expects { "data" : [ { ... } ] }
+        $mutated = [ "data" => [$response["data"]]];
+        return new Episode($this, $mutated);
+    }
+
+    /// <summary>
     /// Get information for an entire series
     /// </summary>
     function get_series($showId)
@@ -246,7 +265,7 @@ class Tvdb
         $url = self::BASE_URI . $path;
         if (strtolower($method) == "get")
         {
-            return $this->curl_get($url . "?" . http_build_query($data));
+            return $this->curl_get($url . (count($data) > 0 ? "?" . http_build_query($data) : ""));
         }
         else
         {

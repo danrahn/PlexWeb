@@ -704,7 +704,7 @@ function get_hyperlink($sesh, $type)
 
     if ($tvdb_backup)
     {
-        return get_tv_hyperlink($tvdb_backup);
+        return 'https://imdb.com/title/' . get_tv_hyperlink($tvdb_backup);
     }
 
     return '#';
@@ -757,7 +757,16 @@ function get_tv_hyperlink($show_guid)
         }
     }
 
-    $episode = $tvdb_client->get_episode($arr[0], $arr[1], $arr[2]);
+    $episode = NULL;
+    if (count($arr) === 1)
+    {
+        $episode = $tvdb_client->get_episode_from_id($arr[0]);
+    }
+    else
+    {
+        $episode = $tvdb_client->get_episode($arr[0], $arr[1], $arr[2]);
+    }
+
     if ($episode->isError())
     {
         // As a backup, attempt to grab the IMDb id for the series as a whole
@@ -774,7 +783,7 @@ function get_tv_hyperlink($show_guid)
     }
     else
     {
-        set_imdb_link($arr[0], $arr[1], $arr[2], $episode->getImdbLink());
+        set_imdb_link($episode->getSeriesId(), $episode->getSeason(), $episode->getEpisodeNumber(), $episode->getId(), $episode->getImdbLink());
         return $episode->getImdbLink();
     }
 }
@@ -786,14 +795,24 @@ function get_cached_link($info, $check_date)
 {
     global $db;
 
-    $show = (int)$info[0];
-    $season = (int)$info[1];
-    $episode = (int)$info[2];
+    $query = "";
+    if (count($info) === 1)
+    {
+        $episode_id = (int)$info[0];
+        $query = "SELECT imdb_link, CONVERT_TZ(date_added, @@session.time_zone, '+00:00') AS `date_added_utc` FROM imdb_tv_cache WHERE episode_id=$episode_id";
+    }
+    else
+    {
+        $show = (int)$info[0];
+        $season = (int)$info[1];
+        $episode = (int)$info[2];
+    
+        // TODO: re-grab the id if stale, or, cache whether we fell back to the show id, and only retry those
+        $query = "SELECT imdb_link, CONVERT_TZ(date_added, @@session.time_zone, '+00:00') AS `date_added_utc` FROM imdb_tv_cache WHERE show_id=$show AND season=$season AND episode=$episode";
+    }
 
-    // TODO: re-grab the id if stale, or, cache whether we fell back to the show id, and only retry those
-    $query = "SELECT imdb_link, CONVERT_TZ(date_added, @@session.time_zone, '+00:00') AS `date_added_utc` FROM imdb_tv_cache WHERE show_id=$show AND season=$season AND episode=$episode";
     $result = $db->query($query);
-    if (!$result)
+    if (!$result || $result->num_rows === 0)
     {
         return FALSE;
     }
@@ -821,10 +840,9 @@ function get_cached_link($info, $check_date)
 /// <summary>
 /// Returns the imdb link to the given tv episode, or FALSE if it doesn't exist
 /// </summary>
-function set_imdb_link($show, $season, $episode, $link)
+function set_imdb_link($show, $season, $episode, $episode_id, $link)
 {
     global $db;
-
     // If the link is empty, don't do anything
     if (strlen($link) == 0)
     {
@@ -834,6 +852,7 @@ function set_imdb_link($show, $season, $episode, $link)
     $show = (int)$show;
     $season = (int)$season;
     $episode = (int)$episode;
+    $id = (int)$episode_id;
     $link = $db->real_escape_string($link);
     $query = "";
 
@@ -842,12 +861,12 @@ function set_imdb_link($show, $season, $episode, $link)
     if ($cached !== FALSE && strcmp($cached, $link) !== 0)
     {
         // the entry exists but our value is different. Update it
-        $query = "UPDATE imdb_tv_cache SET imdb_link='$link' WHERE show_id=$show AND season=$season AND episode=$episode";
+        $query = "UPDATE imdb_tv_cache SET imdb_link='$link' WHERE ((show_id=$show AND season=$season AND episode=$episode) OR episode_id=$id)";
     }
     else if (!$cached)
     {
         // Our value doesn't exist yet
-        $query = "INSERT INTO imdb_tv_cache (show_id, season, episode, imdb_link) VALUES ($show, $season, $episode, '$link')";
+        $query = "INSERT INTO imdb_tv_cache (show_id, season, episode, episode_id, imdb_link) VALUES ($show, $season, $episode, $id, '$link')";
     }
 
     if (strlen($query) > 0)
