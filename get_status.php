@@ -57,17 +57,20 @@ abstract class MediaType {
     /// <summary>
     /// Converts the Plex library name to its MediaType
     /// </summary>
-    static function get_media_type($type)
+    static function get_media_type($library)
     {
-        switch ($type)
+        switch ($library->type)
         {
-            case "Movies":
+            case "movie":
                 return MediaType::Movie;
-            case "TV Shows":
+            case "show":
                 return MediaType::TVShow;
-            case "Audiobooks":
-                return MediaType::Audiobook;
-            case "Music":
+            case "artist":
+                if (preg_match("/\baudio\s*book/i", $library->name) == 1)
+                {
+                    return MediaType::Audiobook;
+                }
+
                 return MediaType::Music;
             default:
                 return MediaType::Unknown;
@@ -273,7 +276,7 @@ function get_single_session($sid)
 }
 
 /// <summary>
-/// Return an array of all the plex library sections
+/// Return an array of all the plex library section names and types
 /// </summary>
 function get_library_names()
 {
@@ -281,7 +284,10 @@ function get_library_names()
     $sections = simplexml_load_string(curl(PLEX_SERVER . '/library/sections?' . PLEX_TOKEN));
     foreach ($sections as $section)
     {
-        $names[(string)$section['key']] = (string)$section['title'];
+        $library = new \stdClass();
+        $library->title = (string)$section['title'];
+        $library->type = (string)$section['type'];
+        $names[(string)$section['key']] = $library;
     }
 
     return $names;
@@ -324,8 +330,12 @@ function get_machine_identifier()
 function build_sesh($sesh, $library_names)
 {
     $section_id = (string)$sesh['librarySectionID'];
-    $validKey = array_key_exists($section_id, $library_names);
-    $sesh_type = MediaType::get_media_type($validKey ? $library_names[$section_id] : "Other");
+    $sesh_type = MediaType::Unknown;
+    if (array_key_exists($section_id, $library_names))
+    {
+        $sesh_type = MediaType::get_media_type($library_names[$section_id]);
+    }
+
     if ($sesh_type == MediaType::Unknown)
     {
         if ($sesh['subtype'])
