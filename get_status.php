@@ -220,7 +220,7 @@ function get_all_progress()
         $transcode = $sesh->xpath("TranscodeSession");
         if ($transcode)
         {
-            $entry->transcode_progress = (float)$transcode[0]['progress'];
+            $entry->transcode_progress = min(100.0, (float)$transcode[0]['progress']);
         }
 
         array_push($progress, $entry);
@@ -542,7 +542,7 @@ function build_sesh($sesh, $library_names)
     $transcode = $sesh->xpath("TranscodeSession");
     if ($transcode)
     {
-        $slim_sesh->transcode_progress = (float)$transcode[0]['progress'];
+        $slim_sesh->transcode_progress = min(100.0, (float)$transcode[0]['progress']);
         if (isset($transcode[0]['transcodeHwEncoding']))
         {
             $slim_sesh->video->hw_transcode = (string)$transcode[0]['transcodeHwEncoding'];
