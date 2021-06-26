@@ -4249,6 +4249,8 @@ class Header extends Run
                     return this.text.substring(run.start - this.start, run.end - run.endContextLength() - this.start);
                 case State.Image:
                     return run.altText;
+                case State.HtmlSpan:
+                    return this.text.substring(run.start + run.startContextLength() - this.start, run.end - run.endContextLength() - this.start);
                 default:
                     return this.text.substring(run.start - this.start, run.end - this.start);
             }
