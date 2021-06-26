@@ -236,6 +236,8 @@ class Markdown
         this._resetCore(text, inlineOnly);
         if (diffStart <= 0 || this.topRun === null || parseInt(localStorage.getItem('mdCache')) == 0)
         {
+            this._urls = {};
+            this._classes = {};
             this.topRun = new Run(State.None, 0, null);
             this.topRun.end = this.text.length;
             this.currentRun = this.topRun;
@@ -343,8 +345,6 @@ class Markdown
     _parseCore(start)
     {
         let perfStart = window.performance.now();
-        this._urls = {};
-        this._classes = {};
 
         // Here we go...
         for (let i = start; i < this.text.length; ++i)
@@ -1342,7 +1342,7 @@ class Markdown
             start + spanBounds.endSpan + 7,
             spanBounds.endStart,
             attr,
-            attrs.class,
+            attrs.class || null,
             attrs.class ? this._classes : null,
             this.currentRun);
         this.currentRun = span;
@@ -3457,6 +3457,9 @@ class Run
         // HTML representation of this Run, generated after the run is `convert`ed.
         this.cached = '';
 
+        // Some runs need to be recomputed regardless of whether they're cached
+        this.volatile = false;
+
         Log.tmi(`Added ${stateToStr(state)}: start=${start}, end=${end}`);
     }
 
@@ -3470,7 +3473,7 @@ class Run
     /// </param>
     convert(initialText, inlineOnly)
     {
-        if (this.cached.length != 0)
+        if (this.cached.length != 0 && !this.volatile)
         {
             return this.cached;
         }
@@ -3647,6 +3650,22 @@ class Run
         }
 
         return newText;
+    }
+
+    /// <summary>
+    /// Mark an element as volatile, which in turn forces
+    /// all parent nodes to be volatile as well to ensure
+    /// no cached values are used.
+    /// <summary>
+    _setVolatile()
+    {
+        this.volatile = true;
+        let parent = this.parent;
+        while (parent != null)
+        {
+            parent.volatile = true;
+            parent = parent.parent;
+        }
     }
 
     /// <summary>
@@ -4146,6 +4165,13 @@ class Div extends Run
         this.text = text.substring(start, end);
         this.attributes.class = 'mdDiv';
         this.parent = parent;
+
+        // As Divs are awkwardly inserted into our  tree,
+        // make sure its volatile state matches its parent
+        if (this.parent && this.parent.volatile)
+        {
+            this.volatile = true;
+        }
     }
 
     /// <summary>
@@ -4666,7 +4692,10 @@ class ReferenceUrl extends Url
         super(start, end, url, parent, false /*setAttributes*/);
         this.urls = urls;
         this.urlLink = url;
-        this.converted = false;
+
+        // If the reference is defined after its first use, changes to the URL won't
+        // be picked up if the URL is cached.
+        this._setVolatile();
     }
 
     /// <summary>
@@ -4675,14 +4704,9 @@ class ReferenceUrl extends Url
     /// </summary>
     _convertUrl(end)
     {
-        if (this.converted)
+        if (this.urlLink in this.urls)
         {
-            return;
-        }
-
-        if (this.url in this.urls)
-        {
-            this.url = this.urls[this.url];
+            this.url = this.urls[this.urlLink];
             this._setAttributes();
         }
         else
@@ -4695,8 +4719,6 @@ class ReferenceUrl extends Url
 
             return;
         }
-
-        this.converted = true;
     }
 
 
@@ -5308,6 +5330,13 @@ class HtmlSpan extends Run
         this.className = className;
         this.inlineStyle = style;
         this.classStyles = classStyles;
+
+        // If we have a class definition, mark this as volatile
+        // so changes to the class are always picked up.
+        if (this.className != null)
+        {
+            this._setVolatile();
+        }
     }
 
     startContextLength() { return this.textStart; }

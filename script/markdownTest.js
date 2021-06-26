@@ -1532,6 +1532,12 @@ class MarkdownTestSuite
             [
                 '<style>\n\n</style>',
                 '<!-- <style>\n\n</style> -->'
+            ],
+            [
+                '[A][1]\n\n.\n\n[1]: example.com',
+                this._divWrap(`${this._href('https://example.com', 'A', true)}`) +
+                this._divWrap('.') +
+                this._divWrap('<!-- [1]: example.com -->')
             ]
         );
 
