@@ -3707,6 +3707,7 @@ class Run
             case State.CodeBlock:
             case State.Header:
             case State.Hr:
+            case State.HtmlStyle:
                 return true;
             default:
                 return false;
