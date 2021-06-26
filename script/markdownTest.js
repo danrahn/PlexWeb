@@ -1262,13 +1262,12 @@ class MarkdownTestSuite
                 '  color : red;\n' +
                 '}\n' +
                 '</style>',
-                this._divWrap(
-                    '<span style="color:red;">A</span><br />' +
-                    '<!-- <style>\n' +
-                    '.header {\n' +
-                    '  color : red;\n' +
-                    '}\n' +
-                    '</style> -->')
+                '<span style="color:red;">A</span>' +
+                '<!-- <style>\n' +
+                '.header {\n' +
+                '  color : red;\n' +
+                '}\n' +
+                '</style> -->'
             ],
             [
                 '<span class="header" style="color:blue">A</span>\n' +
@@ -1277,13 +1276,12 @@ class MarkdownTestSuite
                 '  color : red;\n' +
                 '}\n' +
                 '</style>',
-                this._divWrap(
-                    '<span style="color:blue;">A</span><br />' +
-                    '<!-- <style>\n' +
-                    '.header {\n' +
-                    '  color : red;\n' +
-                    '}\n' +
-                    '</style> -->')
+                '<span style="color:blue;">A</span>' +
+                '<!-- <style>\n' +
+                '.header {\n' +
+                '  color : red;\n' +
+                '}\n' +
+                '</style> -->'
             ],
             [
                 '<span class="header" style="color:blue">A</span>\n' +
@@ -1293,14 +1291,13 @@ class MarkdownTestSuite
                 '  background-color : green;\n' +
                 '}\n' +
                 '</style>',
-                this._divWrap(
-                    '<span style="color:blue;background-color:green;">A</span><br />' +
-                    '<!-- <style>\n' +
-                    '.header {\n' +
-                    '  color : red;\n' +
-                    '  background-color : green;\n' +
-                    '}\n' +
-                    '</style> -->')
+                '<span style="color:blue;background-color:green;">A</span>' +
+                '<!-- <style>\n' +
+                '.header {\n' +
+                '  color : red;\n' +
+                '  background-color : green;\n' +
+                '}\n' +
+                '</style> -->'
             ],
             [
                 '<span class="header2">A</span>\n' +
@@ -1309,13 +1306,12 @@ class MarkdownTestSuite
                 '  color : red;\n' +
                 '}\n' +
                 '</style>',
-                this._divWrap(
-                    '<span>A</span><br />' +
-                    '<!-- <style>\n' +
-                    '.header {\n' +
-                    '  color : red;\n' +
-                    '}\n' +
-                    '</style> -->')
+                '<span>A</span>' +
+                '<!-- <style>\n' +
+                '.header {\n' +
+                '  color : red;\n' +
+                '}\n' +
+                '</style> -->'
             ],
             [
                 '<span class="header">A</span>\n' +
@@ -1329,18 +1325,17 @@ class MarkdownTestSuite
                 '  color : blue;\n' +
                 '}\n' +
                 '</style>',
-                this._divWrap(
-                    '<span style="color:blue;">A</span><br />' +
-                    '<!-- <style>\n' +
-                    '.header {\n' +
-                    '  color : red;\n' +
-                    '}\n' +
-                    '</style> --><br />' +
-                    '<!-- <style>\n' +
-                    '.header {\n' +
-                    '  color : blue;\n' +
-                    '}\n' +
-                    '</style> -->')
+                '<span style="color:blue;">A</span>' +
+                '<!-- <style>\n' +
+                '.header {\n' +
+                '  color : red;\n' +
+                '}\n' +
+                '</style> -->' +
+                '<!-- <style>\n' +
+                '.header {\n' +
+                '  color : blue;\n' +
+                '}\n' +
+                '</style> -->'
             ]
         );
         return this._runSingleSuite(tests, 'HTML Style');
@@ -1533,6 +1528,10 @@ class MarkdownTestSuite
                 '}\n' +
                 '</style> -->' +
                 '<h1 id="hello">Hello!</h1>'
+            ],
+            [
+                '<style>\n\n</style>',
+                '<!-- <style>\n\n</style> -->'
             ]
         );
 
@@ -1642,10 +1641,11 @@ class MarkdownTestSuite
         }
         else
         {
-            let displayResult = this._escapeTestString(result);
+            let displayResult = result;
             let diffIndex = 0;
             if (typeof(result) == 'string')
             {
+                displayResult = this._escapeTestString(result);
                 for (let i = 0; i < displayResult.length; ++i)
                 {
                     if (displayResult[i] != displayExpected[i])
