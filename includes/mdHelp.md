@@ -139,7 +139,7 @@ While many Markdown parsers allow for arbitrary HTML insertion, this parser is m
 
 1. **Line Breaks** - `<br>` or `<br />` - Insert additional line breaks
 
-2. **Spans** - `<span[ style="..."]>...</span>` - Allows for additional styling that is otherwise unavailable with regular Markdown syntax. Unlike a "real" span though, attributes are limited, with only `style="attr1:val1;attr2:val2"` being parsed, and only a limited set of style properties are allowed. That said, it's still comprehensive enough to make significant style changes:
+2. **Spans** - `<span[ style="..."]>...</span>` - Allows for additional styling that is otherwise unavailable with regular Markdown syntax. Unlike a "real" span though, attributes are limited, with only `style` and `class` being parsed, and only a limited set of style properties are allowed. That said, it's still comprehensive enough to make significant style changes:
   * <span style="color:green;background-color:#123456">Text color</span> - `<span style="color:green;background-color:#123456">Text color</span>`
   * <span style="font-family:serif">Font family/face</span> - `<span style="font-family:serif">Font family/face</span>`
   * <span style="text-decoration:underline overline">Text decoration</span> - `<span style="text-decoration:underline overline">Text decoration</span>`
@@ -148,7 +148,21 @@ While many Markdown parsers allow for arbitrary HTML insertion, this parser is m
 
   As an inline element, spans can also only be defined on a single line. To have a single span affect multiple lines, you can insert breaks inline.
 
-3. **Comments** - Anything between `<!--` and `-->` will be ignored and unescaped, acting exactly like a regular HTML comment.
+3. **Style** - `<style>...</style>` - Allows for spans to reference a class style instead of repeating the same inline definition:
+  * ```
+    # <span class="header">Header1</span>
+    ...
+    ## <span class="header">Header2</span>
+    <style>
+    .header {
+      color : blue;
+      background-color: green;
+    }
+    </span>
+    ```
+  * Like regular styling, any inline styles will override class-defined styles. For now, only a single class can be defined per span.
+
+4. **Comments** - Anything between `<!--` and `-->` will be ignored and unescaped, acting exactly like a regular HTML comment.
 
 <br>
 ---

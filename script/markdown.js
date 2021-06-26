@@ -39,6 +39,7 @@ const State =
     Superscript : 19,
     Subscript : 20,
     HtmlSpan : 21,
+    HtmlStyle : 22,
 };
 
 /// <summary>
@@ -93,6 +94,8 @@ const stateToStr = function(state)
             return 'Subscript';
         case State.HtmlSpan:
             return 'HtmlSpan';
+        case State.HtmlStyle:
+            return 'HtmlStyle';
         default:
             return 'Unknown state: ' + state;
     }
@@ -113,6 +116,7 @@ const stateAllowedInState = function(state, current, index)
         case State.LineBreak:
         case State.Hr:
         case State.HtmlComment:
+        case State.HtmlStyle:
             return false;
         case State.Header:
         case State.Bold:
@@ -340,6 +344,7 @@ class Markdown
     {
         let perfStart = window.performance.now();
         this._urls = {};
+        this._classes = {};
 
         // Here we go...
         for (let i = start; i < this.text.length; ++i)
@@ -1228,6 +1233,7 @@ class Markdown
     /// Currently supported:
     ///  * Line break - <br> or <br />
     ///  * Span - <span ...>...</span>
+    ///  * Style - <style>...</style> - limited to classes defined in spans
     ///  * Comment - <!-- ... -->
     /// </summary>
     /// <returns>The position we should continue parsing from</returns>
@@ -1252,6 +1258,15 @@ class Markdown
             if (spanEnd != -1)
             {
                 return spanEnd;
+            }
+        }
+
+        if (/^<style>/i.test(this.text.substring(i, i + 7)))
+        {
+            let styleEnd = this._checkStyle(i);
+            if (styleEnd != -1)
+            {
+                return styleEnd;
             }
         }
 
@@ -1319,10 +1334,17 @@ class Markdown
         let attr = {};
         if (attrs.style)
         {
-            attr = this._parseStyle(attrs.style);
+            attr = this._parseInlineStyle(attrs.style);
         }
 
-        let span = new HtmlSpan(start, start + spanBounds.endSpan + 7, spanBounds.endStart, attr, attrs.class, this.currentRun);
+        let span = new HtmlSpan(
+            start,
+            start + spanBounds.endSpan + 7,
+            spanBounds.endStart,
+            attr,
+            attrs.class,
+            attrs.class ? this._classes : null,
+            this.currentRun);
         this.currentRun = span;
 
         return start + spanBounds.endStart - 1;
@@ -1414,7 +1436,7 @@ class Markdown
     /// <returns>
     /// A dictionary mapping style attributes to their values
     /// </returns>
-    _parseStyle(style)
+    _parseInlineStyle(style)
     {
         let attr = {};
         let args = style.split(';');
@@ -1428,6 +1450,68 @@ class Markdown
         });
 
         return attr;
+    }
+
+    /// <summary>
+    /// Returns the first index of 'find' in 'text', where 'find' is not
+    /// escaped (i.e. preceded by an unescaped backslash)
+    /// </summary>
+    _unescapedIndex(text, find, start=0)
+    {
+        let index = text.indexOf(find, start);
+        while (this._isEscapedText(text, index))
+        {
+            index = text.indexOf(find, index + 1);
+        }
+
+        return index;
+    }
+
+    /// <summary>
+    /// Check whether we have a valid <style> tag starting at the given index
+    ///
+    /// Rules:
+    ///  * Line starts with <style>
+    ///  * Each style definition starts on its own line
+    ///  * Only classes (".XYZ") are parsed
+    ///  * Classes must start with a letter, and only contains letters and numbers
+    ///  * Rules must be enclosed in curly braces
+    ///  * Curly braces are not allowed in the definitions themselves
+    ///  * Each class style must be on its own line, and be of the form 'key : value;'
+    /// </summary>
+    _checkStyle(start)
+    {
+        if (start != 0 && !/^\s*$/.test(this.text.substring(this._lastNewline(start), start)))
+        {
+            return -1;
+        }
+
+        let context = this.text.substring(start, this.currentRun.end - this.currentRun.endContextLength());
+        let endStyle = this._unescapedIndex(context, '</style>');
+        if (endStyle == -1)
+        {
+            return -1;
+        }
+
+        let text = context.substring(7, endStyle);
+
+        for (const match of text.matchAll(/\s*\.([a-zA-Z][a-zA-Z0-9]*)\s*{([^}]*)}/g))
+        {
+            let className = match[1].toLowerCase();
+            if (!this._classes[className])
+            {
+                this._classes[className] = {};
+            }
+
+            for (const style of match[2].matchAll(/\n\s*([a-zA-Z][a-zA-Z\-]*)\s*:\s*([^;]+);/g))
+            {
+                this._classes[className][style[1]] = style[2];
+            }
+        }
+
+        // Can't have anything nested, don't set current run, return the end of the style tag
+        new HtmlStyle(start, start + endStyle + 8, this.currentRun);
+        return start + endStyle + 7;
     }
 
     /// <summary>
@@ -3600,6 +3684,7 @@ class Run
             case State.Superscript:
             case State.Subscript:
             case State.HtmlSpan:
+            case State.HtmlStyle:
                 return false;
             default:
                 Log.warn('Unknown state: ' + this.state);
@@ -5191,30 +5276,19 @@ class HtmlComment extends Run
 }
 
 /// <summary>
-/// Raw HTML span - <span[ style="xyz"]>...</span>
+/// Raw HTML span - <span[[ class="abc"] style="xyz"]>...</span>
 ///
 /// Allows for additional text styling outside of explicit Markdown notation
 /// </summary>
 class HtmlSpan extends Run
 {
-    constructor(start, end, textStart, style, className, parent)
+    constructor(start, end, textStart, style, className, classStyles, parent)
     {
         super(State.HtmlSpan, start, end, parent);
         this.textStart = textStart;
-        this.styleString = '';
         this.className = className;
-        for (const [key, value] of Object.entries(style))
-        {
-            if (this._allowedAttr(key))
-            {
-                this.styleString += `${key}:${this._mutateAttr(key, value)};`;
-            }
-        }
-
-        if (this.styleString.length != 0)
-        {
-            this.styleString = `style="${this.styleString}"`;
-        }
+        this.inlineStyle = style;
+        this.classStyles = classStyles;
     }
 
     startContextLength() { return this.textStart; }
@@ -5222,12 +5296,49 @@ class HtmlSpan extends Run
 
     tag(end)
     {
-        if (end || this.styleString.length == 0)
+        if (end)
         {
             return this.basicTag('span', end);
         }
 
-        return `<span ${this.styleString}>`;
+        return `<span${this._computeStyleString()}>`;
+    }
+
+    _computeStyleString()
+    {
+        let styles = {};
+
+        // Populate class styles first, as they will be overridden
+        // by any inline styles present
+        if (this.className && this.classStyles[this.className])
+        {
+            this._populateStyles(this.classStyles[this.className], styles);
+        }
+
+        this._populateStyles(this.inlineStyle, styles);
+        let styleString = '';
+        for (const [key, value] of Object.entries(styles))
+        {
+            styleString += `${key}:${value};`;
+        }
+
+        if (styleString.length == 0)
+        {
+            return '';
+        }
+
+        return ` style="${styleString}"`;
+    }
+
+    _populateStyles(styles, newStyles)
+    {
+        for (const [key, value] of Object.entries(styles))
+        {
+            if (this._allowedAttr(key))
+            {
+                newStyles[key] = this._mutateAttr(key, value);
+            }
+        }
     }
 
     _allowedAttr(attr)
@@ -5290,5 +5401,23 @@ class HtmlSpan extends Run
             default:
                 return value;
         }
+    }
+}
+
+/// <summary>
+/// Handles custom <style>s by wrapping it in an HTML comment
+/// </summary>
+class HtmlStyle extends Run
+{
+    constructor(start, end, parent)
+    {
+        super(State.HtmlStyle, start, end, parent);
+    }
+
+    tag(end) { return end ? '-->' : '<!--'; }
+
+    transform(newText, /*side*/)
+    {
+        return newText.trim();
     }
 }

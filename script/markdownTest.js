@@ -64,6 +64,7 @@ class MarkdownTestSuite
         addResult(this.testUnorderedList());
         addResult(this.testHTMLComment());
         addResult(this.testHtmlSpan());
+        addResult(this.testHtmlStyle());
 
         addResult(this.testMixed());
         addResult(this.testQuoteListNest());
@@ -1249,6 +1250,100 @@ class MarkdownTestSuite
         );
 
         return this._runSingleSuite(tests, 'HTML Spans');
+    }
+
+    testHtmlStyle()
+    {
+        let tests = this._buildTests(
+            [
+                '<span class="header">A</span>\n' +
+                '<style>\n' +
+                '.header {\n' +
+                '  color : red;\n' +
+                '}\n' +
+                '</style>',
+                this._divWrap(
+                    '<span style="color:red;">A</span><br />' +
+                    '<!--<style>\n' +
+                    '.header {\n' +
+                    '  color : red;\n' +
+                    '}\n' +
+                    '</style>-->')
+            ],
+            [
+                '<span class="header" style="color:blue">A</span>\n' +
+                '<style>\n' +
+                '.header {\n' +
+                '  color : red;\n' +
+                '}\n' +
+                '</style>',
+                this._divWrap(
+                    '<span style="color:blue;">A</span><br />' +
+                    '<!--<style>\n' +
+                    '.header {\n' +
+                    '  color : red;\n' +
+                    '}\n' +
+                    '</style>-->')
+            ],
+            [
+                '<span class="header" style="color:blue">A</span>\n' +
+                '<style>\n' +
+                '.header {\n' +
+                '  color : red;\n' +
+                '  background-color : green;\n' +
+                '}\n' +
+                '</style>',
+                this._divWrap(
+                    '<span style="color:blue;background-color:green;">A</span><br />' +
+                    '<!--<style>\n' +
+                    '.header {\n' +
+                    '  color : red;\n' +
+                    '  background-color : green;\n' +
+                    '}\n' +
+                    '</style>-->')
+            ],
+            [
+                '<span class="header2">A</span>\n' +
+                '<style>\n' +
+                '.header {\n' +
+                '  color : red;\n' +
+                '}\n' +
+                '</style>',
+                this._divWrap(
+                    '<span>A</span><br />' +
+                    '<!--<style>\n' +
+                    '.header {\n' +
+                    '  color : red;\n' +
+                    '}\n' +
+                    '</style>-->')
+            ],
+            [
+                '<span class="header">A</span>\n' +
+                '<style>\n' +
+                '.header {\n' +
+                '  color : red;\n' +
+                '}\n' +
+                '</style>\n' +
+                '<style>\n' +
+                '.header {\n' +
+                '  color : blue;\n' +
+                '}\n' +
+                '</style>',
+                this._divWrap(
+                    '<span style="color:blue;">A</span><br />' +
+                    '<!--<style>\n' +
+                    '.header {\n' +
+                    '  color : red;\n' +
+                    '}\n' +
+                    '</style>--><br />' +
+                    '<!--<style>\n' +
+                    '.header {\n' +
+                    '  color : blue;\n' +
+                    '}\n' +
+                    '</style>-->')
+            ]
+        );
+        return this._runSingleSuite(tests, 'HTML Style');
     }
 
     testMixed()
