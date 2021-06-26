@@ -1208,6 +1208,43 @@ class MarkdownTestSuite
             [
                 '<span>Hello\\</span></span>',
                 this._divWrap('<span>Hello&lt;&#x2f;span&gt;</span>')
+            ],
+            // Begin nested/multiple span tests
+            [
+                '<span>A</span>B<span>C</span>',
+                this._divWrap('<span>A</span>B<span>C</span>')
+            ],
+            [
+                '<span>A<span>B</span></span>',
+                this._divWrap('<span>A<span>B</span></span>')
+            ],
+            [
+                '<span>A<span>B</span>C<span>D</span></span>',
+                this._divWrap('<span>A<span>B</span>C<span>D</span></span>')
+            ],
+            [
+                '<span style="color:red">A<span style="color:green">B</span><span style="color:blue">C</span></span>',
+                this._divWrap('<span style="color:red;">A<span style="color:green;">B</span><span style="color:blue;">C</span></span>')
+            ],
+            [
+                '<span><span><span>A</span>B</span>C</span>',
+                this._divWrap('<span><span><span>A</span>B</span>C</span>')
+            ],
+            [
+                '<span>A<span>B</span>',
+                this._divWrap('&lt;span&gt;A<span>B</span>')
+            ],
+            [
+                '<span>A<span>B</span>\\</span>',
+                this._divWrap('&lt;span&gt;A<span>B</span>&lt;&#x2f;span&gt;')
+            ],
+            [
+                '<span>A<span>B\\</span></span>',
+                this._divWrap('&lt;span&gt;A<span>B&lt;&#x2f;span&gt;</span>')
+            ],
+            [
+                '<span>A\\<span>B</span></span>',
+                this._divWrap('<span>A&lt;span&gt;B</span>&lt;&#x2f;span&gt;')
             ]
         );
 

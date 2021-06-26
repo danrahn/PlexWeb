@@ -1284,7 +1284,7 @@ class Markdown
     ///     3. '>'
     ///     4. Span content
     ///     5. '</span>'
-    ///  * Only the 'style' attribute is parsed, all others are discarded
+    ///  * Only the 'style' and 'class' attributes are parsed, all others are discarded
     ///  * When parsing the style attribute, only whitelisted styling is allowed
     ///    (e.g. can't set font size to 200pt and overrun the document)
     /// </summary>
@@ -1294,33 +1294,27 @@ class Markdown
     _checkSpan(start)
     {
         let line = this.text.substring(start, this._indexOrParentEnd('\n', start));
-        let endSpan = line.indexOf('</span>');
-        while (this._isEscaped(endSpan + start))
-        {
-            endSpan = line.indexOf('</span>', endSpan + 1);
-        }
 
-        if (endSpan == -1)
+        let spanBounds = this._spanBounds(line);
+        if (!spanBounds)
         {
             return -1;
         }
 
         // Things will go poorly if there are escaped double-quotes, or
         // someone tries to use single-quotes instead.
-        let spanTextStart = 0;
         let attrs = {};
         let attrPair = / *([a-zA-Z]\w*)="([^"]+)"/g
-        for (const match of line.matchAll(attrPair))
+        let attrText = line.substring(0, spanBounds.endStart);
+        for (const match of attrText.matchAll(attrPair))
         {
             attrs[match[1].toLowerCase()] = match[2];
-            spanTextStart = match.index + match[0].length;
         }
-        if (Object.keys(attrs).length == 0 && !/^<span>/.test(line))
+
+        if (Object.keys(attrs).length == 0 && !/^<span>/.test(attrText))
         {
             return -1;
         }
-
-        spanTextStart += (line.indexOf('>', spanTextStart) - spanTextStart) + 1;
 
         let attr = {};
         if (attrs.style)
@@ -1328,10 +1322,90 @@ class Markdown
             attr = this._parseStyle(attrs.style);
         }
 
-        let span = new HtmlSpan(start, start + endSpan + 7, spanTextStart, attr, attrs.class, this.currentRun);
+        let span = new HtmlSpan(start, start + spanBounds.endSpan + 7, spanBounds.endStart, attr, attrs.class, this.currentRun);
         this.currentRun = span;
 
-        return start + spanTextStart - 1;
+        return start + spanBounds.endStart - 1;
+    }
+
+    /// <summary>
+    /// Returns the bounds for the span that starts at the beginning
+    /// of the given line, accounting for nested and escaped spans.
+    /// </summary>
+    /// <returns>
+    /// An object containing the bounds of the start and end span tags, or null
+    /// if we don't have a valid span that starts at the beginning of the line
+    /// </returns>
+    _spanBounds(line)
+    {
+        let balance = 0;
+        let bounds = {
+            endStart : 0,
+            endSpan : 0
+        };
+
+        let startSpans = [];
+        for (const match of line.matchAll(/<span( +[A-Za-z]\w*="[^"]*" *)*>/g))
+        {
+            if (!this._isEscapedText(line, match.index))
+            {
+                startSpans.push(match);
+            }
+        }
+
+        let endSpans = [];
+        for (const match of line.matchAll(/<\/span>/g))
+        {
+            if (!this._isEscapedText(line, match.index))
+            {
+                endSpans.push(match);
+            }
+        }
+
+        if (startSpans.length == 0 || endSpans.length == 0)
+        {
+            return null;
+        }
+
+        bounds.endStart = startSpans[0][0].length;
+
+        let ssIndex = 0;
+        let esIndex = 0;
+        while (true)
+        {
+            if (ssIndex == startSpans.length)
+            {
+                if (endSpans.length - esIndex >= balance)
+                {
+                    bounds.endSpan = endSpans[esIndex + balance - 1].index;
+                    return bounds;
+                }
+
+                return null;
+            }
+
+            if (esIndex == endSpans.length)
+            {
+                return null;
+            }
+
+            if (startSpans[ssIndex].index < endSpans[esIndex].index)
+            {
+                ++balance;
+                ++ssIndex;
+            }
+            else // Assume >, since == should be impossible
+            {
+                --balance;
+                if (balance == 0)
+                {
+                    bounds.endSpan = endSpans[esIndex].index;
+                    return bounds;
+                }
+
+                ++esIndex;
+            }
+        }
     }
 
     /// <summary>
@@ -2302,12 +2376,13 @@ class Markdown
     /// <summary>
     /// Helper method that returns the first occurrence of str in the
     /// current text, starting at `start`. If not found, returns the
-    /// end of the containing run.
+    /// end of the containing run (minus its end context length).
     /// </summary>
     _indexOrParentEnd(str, start)
     {
         let i = this.text.indexOf(str, start);
-        return i == -1 || i > this.currentRun.end ? this.currentRun.end : i;
+        let pe = this.currentRun.end - this.currentRun.endContextLength();
+        return i == -1 || i > pe ? pe : i;
     }
 
     /// <summary>
