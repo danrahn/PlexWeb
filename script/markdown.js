@@ -4705,26 +4705,38 @@ class ReferenceUrl extends Url
     }
 }
 
+
+/// <summary>
+/// Common class for elements that won't be rendered in the final
+/// document, but will still be present in an HTML comment
+/// </summary>
+class HiddenElement extends Run
+{
+    constructor(state, start, end, parent)
+    {
+        super(state, start, end, parent);
+    }
+
+    tag(end) { return end ? ' -->' : '<!-- '; }
+
+    // No transformation is necessary, other than ensuring
+    // that the element doesn't try to escape it's comment
+    transform(newText, /*side*/)
+    {
+        return newText.replace('-->', '--&gt;').trim();
+    }
+}
+
 /// <summary>
 /// Handles the reference link definition '[identifier]: url'.
 /// Keeps the text around, but surrounds it in an HTML comment
 /// so it isn't displayed.
 /// </summary>
-class ReferenceUrlDefinition extends Run
+class ReferenceUrlDefinition extends HiddenElement
 {
     constructor(start, end, parent)
     {
         super(State.HtmlComment, start, end, parent);
-    }
-
-    tag(end) { return end ? ' -->' : '<!-- '; }
-
-    /// <summary>
-    /// No transformation necessary other than trimming
-    /// </summary>
-    transform(newText, /*side*/)
-    {
-        return newText.trim();
     }
 }
 
@@ -5407,17 +5419,10 @@ class HtmlSpan extends Run
 /// <summary>
 /// Handles custom <style>s by wrapping it in an HTML comment
 /// </summary>
-class HtmlStyle extends Run
+class HtmlStyle extends HiddenElement
 {
     constructor(start, end, parent)
     {
         super(State.HtmlStyle, start, end, parent);
-    }
-
-    tag(end) { return end ? '-->' : '<!--'; }
-
-    transform(newText, /*side*/)
-    {
-        return newText.trim();
     }
 }

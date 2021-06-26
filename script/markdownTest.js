@@ -1264,11 +1264,11 @@ class MarkdownTestSuite
                 '</style>',
                 this._divWrap(
                     '<span style="color:red;">A</span><br />' +
-                    '<!--<style>\n' +
+                    '<!-- <style>\n' +
                     '.header {\n' +
                     '  color : red;\n' +
                     '}\n' +
-                    '</style>-->')
+                    '</style> -->')
             ],
             [
                 '<span class="header" style="color:blue">A</span>\n' +
@@ -1279,11 +1279,11 @@ class MarkdownTestSuite
                 '</style>',
                 this._divWrap(
                     '<span style="color:blue;">A</span><br />' +
-                    '<!--<style>\n' +
+                    '<!-- <style>\n' +
                     '.header {\n' +
                     '  color : red;\n' +
                     '}\n' +
-                    '</style>-->')
+                    '</style> -->')
             ],
             [
                 '<span class="header" style="color:blue">A</span>\n' +
@@ -1295,12 +1295,12 @@ class MarkdownTestSuite
                 '</style>',
                 this._divWrap(
                     '<span style="color:blue;background-color:green;">A</span><br />' +
-                    '<!--<style>\n' +
+                    '<!-- <style>\n' +
                     '.header {\n' +
                     '  color : red;\n' +
                     '  background-color : green;\n' +
                     '}\n' +
-                    '</style>-->')
+                    '</style> -->')
             ],
             [
                 '<span class="header2">A</span>\n' +
@@ -1311,11 +1311,11 @@ class MarkdownTestSuite
                 '</style>',
                 this._divWrap(
                     '<span>A</span><br />' +
-                    '<!--<style>\n' +
+                    '<!-- <style>\n' +
                     '.header {\n' +
                     '  color : red;\n' +
                     '}\n' +
-                    '</style>-->')
+                    '</style> -->')
             ],
             [
                 '<span class="header">A</span>\n' +
@@ -1331,16 +1331,16 @@ class MarkdownTestSuite
                 '</style>',
                 this._divWrap(
                     '<span style="color:blue;">A</span><br />' +
-                    '<!--<style>\n' +
+                    '<!-- <style>\n' +
                     '.header {\n' +
                     '  color : red;\n' +
                     '}\n' +
-                    '</style>--><br />' +
-                    '<!--<style>\n' +
+                    '</style> --><br />' +
+                    '<!-- <style>\n' +
                     '.header {\n' +
                     '  color : blue;\n' +
                     '}\n' +
-                    '</style>-->')
+                    '</style> -->')
             ]
         );
         return this._runSingleSuite(tests, 'HTML Style');
@@ -1515,6 +1515,24 @@ class MarkdownTestSuite
             [
                 '< `<!--` `-->`',
                 this._divWrap('&lt; <code>&lt;!--</code> <code>--&gt;</code>')
+            ],
+            [
+                '<style>\n' +
+                '-->\n' +
+                '<style>\n' +
+                'h1 {\n' +
+                '  color: blue;\n' +
+                '}\n' +
+                '</style>\n' +
+                '# Hello!',
+                '<!-- <style>\n' +
+                '--&gt;\n' +
+                '<style>\n' +
+                'h1 {\n' +
+                '  color: blue;\n' +
+                '}\n' +
+                '</style> -->' +
+                '<h1 id="hello">Hello!</h1>'
             ]
         );
 
@@ -1624,12 +1642,13 @@ class MarkdownTestSuite
         }
         else
         {
+            let displayResult = this._escapeTestString(result);
             let diffIndex = 0;
             if (typeof(result) == 'string')
             {
-                for (let i = 0; i < result.length; ++i)
+                for (let i = 0; i < displayResult.length; ++i)
                 {
-                    if (result[i] != test.expected[i])
+                    if (displayResult[i] != displayExpected[i])
                     {
                         diffIndex = i;
                         break;
@@ -1641,7 +1660,7 @@ class MarkdownTestSuite
             let logString = `   %cFAIL!\n` +
                 `${fixedIndent}%cInput:    %c[%c${displayInput}%c]%c\n` +
                 `${fixedIndent}Expected: %c[%c${this._errorString(displayExpected, diffIndex)}%c]%c\n` +
-                `${fixedIndent}Actual:   %c[%c${this._errorString(result, diffIndex)}%c]`;
+                `${fixedIndent}Actual:   %c[%c${this._errorString(displayResult, diffIndex)}%c]`;
             Log.formattedText(Log.Level.Warn, logString, ...colors.failure);
             ++stats.failed;
         }
