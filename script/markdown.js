@@ -1305,21 +1305,30 @@ class Markdown
             return -1;
         }
 
-        // Only allow 'style' attribute
-        let parsed = /^<span ?((?!style)\w+="[^"]*")* *(style="[^"]*")? *(\w+="[^"]*")* *>/.exec(line);
-        if (!parsed)
+        // Things will go poorly if there are escaped double-quotes, or
+        // someone tries to use single-quotes instead.
+        let spanTextStart = 0;
+        let attrs = {};
+        let attrPair = / *([a-zA-Z]\w*)="([^"]+)"/g
+        for (const match of line.matchAll(attrPair))
+        {
+            attrs[match[1].toLowerCase()] = match[2];
+            spanTextStart = match.index + match[0].length;
+        }
+        if (Object.keys(attrs).length == 0 && !/^<span>/.test(line))
         {
             return -1;
         }
 
+        spanTextStart += (line.indexOf('>', spanTextStart) - spanTextStart) + 1;
+
         let attr = {};
-        if (parsed[2])
+        if (attrs.style)
         {
-            attr = this._parseStyle(parsed[2]);
+            attr = this._parseStyle(attrs.style);
         }
 
-        let spanTextStart = parsed[0].length;
-        let span = new HtmlSpan(start, start + endSpan + 7, spanTextStart, attr, this.currentRun);
+        let span = new HtmlSpan(start, start + endSpan + 7, spanTextStart, attr, attrs.class, this.currentRun);
         this.currentRun = span;
 
         return start + spanTextStart - 1;
@@ -1334,7 +1343,6 @@ class Markdown
     _parseStyle(style)
     {
         let attr = {};
-        style = style.substring(style.indexOf('"') + 1, style.length - 1);
         let args = style.split(';');
         args.forEach(arg =>
         {
@@ -5114,11 +5122,12 @@ class HtmlComment extends Run
 /// </summary>
 class HtmlSpan extends Run
 {
-    constructor(start, end, textStart, style, parent)
+    constructor(start, end, textStart, style, className, parent)
     {
         super(State.HtmlSpan, start, end, parent);
         this.textStart = textStart;
         this.styleString = '';
+        this.className = className;
         for (const [key, value] of Object.entries(style))
         {
             if (this._allowedAttr(key))
