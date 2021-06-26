@@ -234,7 +234,7 @@ class Markdown
     _reset(text, inlineOnly, diffStart)
     {
         this._resetCore(text, inlineOnly);
-        if (diffStart == 0 || this.topRun === null || parseInt(localStorage.getItem('mdCache')) == 0)
+        if (diffStart <= 0 || this.topRun === null || parseInt(localStorage.getItem('mdCache')) == 0)
         {
             this.topRun = new Run(State.None, 0, null);
             this.topRun.end = this.text.length;
@@ -3964,6 +3964,12 @@ class Run
             {
                 ++splice;
             }
+        }
+
+        if (splice == 1 && this.innerRuns[insert].state == State.Div)
+        {
+            // Don't wrap a div in a div
+            return 0;
         }
 
         let div = new Div(start, end, text, this);
