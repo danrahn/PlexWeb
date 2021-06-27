@@ -1342,7 +1342,7 @@ class Markdown
             start + spanBounds.endSpan + 7,
             spanBounds.endStart,
             attr,
-            attrs.class || null,
+            attrs.class ? attrs.class.toLowerCase() : null,
             attrs.class ? this._classes : null,
             this.currentRun);
         this.currentRun = span;

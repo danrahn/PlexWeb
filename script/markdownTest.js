@@ -1336,6 +1336,20 @@ class MarkdownTestSuite
                 '  color : blue;\n' +
                 '}\n' +
                 '</style> -->'
+            ],
+            [
+                '<span class="HEADER">A</span>\n' +
+                '<style>\n' +
+                '.header {\n' +
+                '  color : red;\n' +
+                '}\n' +
+                '</style>',
+                '<span style="color:red;">A</span>' +
+                '<!-- <style>\n' +
+                '.header {\n' +
+                '  color : red;\n' +
+                '}\n' +
+                '</style> -->'
             ]
         );
         return this._runSingleSuite(tests, 'HTML Style');
@@ -1538,6 +1552,15 @@ class MarkdownTestSuite
                 this._divWrap(`${this._href('https://example.com', 'A', true)}`) +
                 this._divWrap('.') +
                 this._divWrap('<!-- [1]: example.com -->')
+            ],
+            [
+                '# <span class="header">Test</span>',
+                '<h1 id="test"><span>Test</span></h1>'
+            ],
+            [
+                '<style>\n.errorHeader {\n  color: #D15141;\n}\n</style>\n<span class="errorHeader">Test</span>',
+                '<!-- <style>\n.errorHeader {\n  color: #D15141;\n}\n</style> -->' +
+                this._divWrap('<span style="color:#D15141;">Test</span>')
             ]
         );
 
