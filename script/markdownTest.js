@@ -1262,6 +1262,7 @@ class MarkdownTestSuite
                 '  color : red;\n' +
                 '}\n' +
                 '</style>',
+
                 '<span style="color:red;">A</span>' +
                 '<!-- <style>\n' +
                 '.header {\n' +
@@ -1276,6 +1277,7 @@ class MarkdownTestSuite
                 '  color : red;\n' +
                 '}\n' +
                 '</style>',
+
                 '<span style="color:blue;">A</span>' +
                 '<!-- <style>\n' +
                 '.header {\n' +
@@ -1291,6 +1293,7 @@ class MarkdownTestSuite
                 '  background-color : green;\n' +
                 '}\n' +
                 '</style>',
+
                 '<span style="color:blue;background-color:green;">A</span>' +
                 '<!-- <style>\n' +
                 '.header {\n' +
@@ -1306,6 +1309,7 @@ class MarkdownTestSuite
                 '  color : red;\n' +
                 '}\n' +
                 '</style>',
+
                 '<span>A</span>' +
                 '<!-- <style>\n' +
                 '.header {\n' +
@@ -1325,6 +1329,7 @@ class MarkdownTestSuite
                 '  color : blue;\n' +
                 '}\n' +
                 '</style>',
+
                 '<span style="color:blue;">A</span>' +
                 '<!-- <style>\n' +
                 '.header {\n' +
@@ -1344,12 +1349,59 @@ class MarkdownTestSuite
                 '  color : red;\n' +
                 '}\n' +
                 '</style>',
+
                 '<span style="color:red;">A</span>' +
                 '<!-- <style>\n' +
                 '.header {\n' +
                 '  color : red;\n' +
                 '}\n' +
                 '</style> -->'
+            ],
+            [
+                '<style>\n.a{\ncolor:blue;\n}\n.b{\ncolor:red;\n}\n</style>\n' +
+                '<span class="a b">c</span>',
+
+                '<!-- <style>\n.a{\ncolor:blue;\n}\n.b{\ncolor:red;\n}\n</style> -->' +
+                this._divWrap('<span style="color:red;">c</span>')
+            ],
+            [
+                '<style>\n.b{\ncolor:red;\n}\n.a{\ncolor:blue;\n}\n</style>\n' +
+                '<span class="a b">c</span>',
+
+                '<!-- <style>\n.b{\ncolor:red;\n}\n.a{\ncolor:blue;\n}\n</style> -->' +
+                this._divWrap('<span style="color:blue;">c</span>')
+            ],
+            [
+                '<style>\n.a{\ncolor:blue;\n}\n.b{\ncolor:red;\n}\n</style>\n' +
+                '<span class="a b" style="color:green">c</span>',
+
+                '<!-- <style>\n.a{\ncolor:blue;\n}\n.b{\ncolor:red;\n}\n</style> -->' +
+                this._divWrap('<span style="color:green;">c</span>')
+            ],
+            [
+                '<style>\n' +
+                '.header {\n' +
+                '  word-spacing: 10px;\n' +
+                '  letter-spacing: 5px;\n' +
+                '  color: white;\n' +
+                '}\n' +
+                '.error {\n' +
+                '  color: #D15141;\n' +
+                '}\n' +
+                '</style>\n' +
+                '# <span class="error header">Header</span>',
+
+                '<!-- <style>\n' +
+                '.header {\n' +
+                '  word-spacing: 10px;\n' +
+                '  letter-spacing: 5px;\n' +
+                '  color: white;\n' +
+                '}\n' +
+                '.error {\n' +
+                '  color: #D15141;\n' +
+                '}\n' +
+                '</style> -->' +
+                '<h1 id="header"><span style="color:#D15141;letter-spacing:5px;word-spacing:10px;">Header</span></h1>'
             ]
         );
         return this._runSingleSuite(tests, 'HTML Style');

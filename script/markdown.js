@@ -237,7 +237,7 @@ class Markdown
         if (diffStart <= 0 || this.topRun === null || parseInt(localStorage.getItem('mdCache')) == 0)
         {
             this._urls = {};
-            this._classes = {};
+            this._classes = { _count : 0 };
             this.topRun = new Run(State.None, 0, null);
             this.topRun.end = this.text.length;
             this.currentRun = this.topRun;
@@ -1337,13 +1337,19 @@ class Markdown
             attr = this._parseInlineStyle(attrs.style);
         }
 
+        let classes = [];
+        if (attrs.class)
+        {
+            classes = attrs.class.toLowerCase().split(/\s+/);
+        }
+
         let span = new HtmlSpan(
             start,
             start + spanBounds.endSpan + 7,
             spanBounds.endStart,
             attr,
-            attrs.class ? attrs.class.toLowerCase() : null,
-            attrs.class ? this._classes : null,
+            classes,
+            classes.length ? this._classes : null,
             this.currentRun);
         this.currentRun = span;
 
@@ -1505,7 +1511,7 @@ class Markdown
 
             for (const style of match[2].matchAll(/\n\s*([a-zA-Z][a-zA-Z\-]*)\s*:\s*([^;]+);/g))
             {
-                this._classes[className][style[1]] = style[2];
+                this._classes[className][style[1]] = { order : this._classes._count++, value : style[2] };
             }
         }
 
@@ -5323,19 +5329,25 @@ class HtmlComment extends Run
 ///
 /// Allows for additional text styling outside of explicit Markdown notation
 /// </summary>
+/// <param name="style">Inline styles defined on the span itself</param>
+/// <param name="classes">An array (potentially empty) containing the class names for the span</param>
+/// <param name="classStyles">
+/// The global style object that contains all styles defined in an HtmlStyle element. This may be
+/// incomplete when the HtmlSpan is constructed, so it should only be accessed at conversion time.
+/// </param>
 class HtmlSpan extends Run
 {
-    constructor(start, end, textStart, style, className, classStyles, parent)
+    constructor(start, end, textStart, style, classes, classStyles, parent)
     {
         super(State.HtmlSpan, start, end, parent);
         this.textStart = textStart;
-        this.className = className;
+        this.classes = classes;
         this.inlineStyle = style;
         this.classStyles = classStyles;
 
         // If we have a class definition, mark this as volatile
         // so changes to the class are always picked up.
-        if (this.className != null)
+        if (this.classes.length != 0)
         {
             this._setVolatile();
         }
@@ -5354,22 +5366,32 @@ class HtmlSpan extends Run
         return `<span${this._computeStyleString()}>`;
     }
 
+    /// <summary>
+    /// Computes and returns the finalized style for the span.
+    /// Inline styles take precedence over class styles, and
+    /// duplicate class styles are won by the most recently defined value.
+    /// </summary>
     _computeStyleString()
     {
-        let styles = {};
-
-        // Populate class styles first, as they will be overridden
-        // by any inline styles present
-        if (this.className && this.classStyles[this.className])
-        {
-            this._populateStyles(this.classStyles[this.className], styles);
-        }
-
-        this._populateStyles(this.inlineStyle, styles);
+        let classStyles = this._populateClassStyles();
+        let inline = this._populateInlineStyles();
+        let added = {};
         let styleString = '';
-        for (const [key, value] of Object.entries(styles))
+        for (const [key,  value] of Object.entries(inline))
         {
             styleString += `${key}:${value};`;
+            added[key] = true;
+        }
+
+        for (const style of classStyles)
+        {
+            if (added[style.key])
+            {
+                continue;
+            }
+
+            styleString += `${style.key}:${style.value};`;
+            added[style.key] = true;
         }
 
         if (styleString.length == 0)
@@ -5380,15 +5402,44 @@ class HtmlSpan extends Run
         return ` style="${styleString}"`;
     }
 
-    _populateStyles(styles, newStyles)
+    /// <summary>
+    /// Determine the order of class styles to apply and return it as an array
+    /// </summary>
+    /// <returns>
+    /// An array of styles ordered from most- to least-recently defined, ensuring
+    /// styles declared later in the file overwrite previously defined values.
+    /// </returns>
+    _populateClassStyles()
     {
-        for (const [key, value] of Object.entries(styles))
+        let styleList = [];
+        for (let className of this.classes)
+        {
+            if (!this.classStyles[className])
+            {
+                continue;
+            }
+
+            for (const [key, value] of Object.entries(this.classStyles[className]))
+            {
+                styleList.push({ key : key, value : value.value, order : value.order });
+            }
+        }
+
+        styleList.sort((a, b) => b.order - a.order);
+        return styleList;
+    }
+
+    _populateInlineStyles()
+    {
+        let newStyles = {};
+        for (const [key, value] of Object.entries(this.inlineStyle))
         {
             if (this._allowedAttr(key))
             {
                 newStyles[key] = this._mutateAttr(key, value);
             }
         }
+        return newStyles;
     }
 
     _allowedAttr(attr)
