@@ -1470,6 +1470,14 @@ class MarkdownTestSuite
                 '<style>\ncode{\nletter-spacing:3px!important;\n}\ncode{\nletter-spacing:4px;\n}\n</style>\n`A`',
                 '<!-- <style>\ncode{\nletter-spacing:3px!important;\n}\ncode{\nletter-spacing:4px;\n}\n</style> -->' +
                 this._divWrap('<code style="letter-spacing:3px;">A</code>')
+            ],
+            [
+                '<style>\nh1,h2,h3,.header{\ncolor:red;\n}\n</style>\n# A\n## B\n### C\n<span class="header">D</span>',
+                '<!-- <style>\nh1,h2,h3,.header{\ncolor:red;\n}\n</style> -->' +
+                '<h1 id="a" style="color:red;">A</h1>' +
+                '<h2 id="b" style="color:red;">B</h2>' +
+                '<h3 id="c" style="color:red;">C</h3>' +
+                this._divWrap('<span style="color:red;">D</span>')
             ]
         );
 

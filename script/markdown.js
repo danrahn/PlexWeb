@@ -285,6 +285,7 @@ class Markdown
         // Make sure we don't persist cached styles
         for (let dict of [this._classes, this._globalStyle])
         {
+            let maxOrder = 0;
             for (const [styleKey, styles] of Object.entries(dict))
             {
                 if (styleKey == '_count')
@@ -298,8 +299,14 @@ class Markdown
                     {
                         delete dict[styleKey][key];
                     }
+                    else
+                    {
+                        maxOrder = Math.max(maxOrder, dict[styleKey][key].order);
+                    }
                 }
             }
+
+            dict._count = maxOrder;
         }
 
         // Also trim invalidated URLs from our URL cache
@@ -1597,30 +1604,63 @@ class Markdown
 
         let text = context.substring(7, endStyle);
 
-        for (const match of text.matchAll(/\s*(\.)?([a-zA-Z][a-zA-Z0-9]*)\s*{([^}]*)}/g))
+        for (const match of text.matchAll(/\s*((?:(?:\s*,\s*)?\.?(?:[a-zA-Z][a-zA-Z0-9]*))+)\s*{([^}]*)}/g))
         {
-            let dict = match[1] ? this._classes : this._globalStyle;
-            let identifier = match[2].toLowerCase();
-            if (!dict[identifier])
+            let identifiers = match[1].split(/\s*,\s*/);
+            for (let identifier of identifiers)
             {
-                dict[identifier] = {};
-            }
-
-            let thisRule = dict[identifier];
-            for (const style of match[3].matchAll(/\n\s*([a-zA-Z][a-zA-Z-]*)\s*:\s*([^;]+);/g))
-            {
-                let kvp = this._parseStyleKV(style[1], style[2], start);
-                if (!thisRule[kvp.key] || kvp.value.important || !thisRule[kvp.key].important)
+                identifier = identifier.toLowerCase();
+                let dict = this._globalStyle;
+                if (identifier.startsWith('.'))
                 {
-                    thisRule[kvp.key] =
+                    identifier = identifier.substring(1);
+                    dict = this._classes;
+                }
+
+                if (!dict[identifier])
+                {
+                    dict[identifier] = {};
+                }
+
+                let thisRule = dict[identifier];
+                for (const style of match[2].matchAll(/\n\s*([a-zA-Z][a-zA-Z-]*)\s*:\s*([^;]+);/g))
+                {
+                    let kvp = this._parseStyleKV(style[1], style[2], start);
+                    if (!thisRule[kvp.key] || kvp.value.important || !thisRule[kvp.key].important)
                     {
-                        order : dict._count++,
-                        value : kvp.value.style,
-                        important : kvp.value.important,
-                        start : kvp.value.start
-                    };
+                        thisRule[kvp.key] =
+                        {
+                            order : dict._count++,
+                            value : kvp.value.style,
+                            important : kvp.value.important,
+                            start : kvp.value.start
+                        };
+                    }
                 }
             }
+
+            // let dict = match[1] ? this._classes : this._globalStyle;
+            // let identifier = match[2].toLowerCase();
+            // if (!dict[identifier])
+            // {
+            //     dict[identifier] = {};
+            // }
+
+            // let thisRule = dict[identifier];
+            // for (const style of match[3].matchAll(/\n\s*([a-zA-Z][a-zA-Z-]*)\s*:\s*([^;]+);/g))
+            // {
+            //     let kvp = this._parseStyleKV(style[1], style[2], start);
+            //     if (!thisRule[kvp.key] || kvp.value.important || !thisRule[kvp.key].important)
+            //     {
+            //         thisRule[kvp.key] =
+            //         {
+            //             order : dict._count++,
+            //             value : kvp.value.style,
+            //             important : kvp.value.important,
+            //             start : kvp.value.start
+            //         };
+            //     }
+            // }
         }
 
         // Can't have anything nested, don't set current run, return the end of the style tag
@@ -3837,9 +3877,11 @@ class Run
 
         if (style.length == 0)
         {
+            this.volatile = false;
             return '';
         }
 
+        this.volatile = true;
         return ` style="${style}"`;
     }
 
