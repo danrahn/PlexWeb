@@ -238,7 +238,8 @@ class Markdown
         {
             this._urls = {};
             this._classes = { _count : 0 };
-            this.topRun = new Run(State.None, 0, null);
+            this._globalStyle = { _count : 0 };
+            this.topRun = new Run(State.None, 0 /*start*/, null /*end*/, null /*parent*/, this._globalStyle);
             this.topRun.end = this.text.length;
             this.currentRun = this.topRun;
             return 0;
@@ -282,18 +283,21 @@ class Markdown
     _trimCaches(cutoffRun)
     {
         // Make sure we don't persist cached styles
-        for (const [className, styles] of Object.entries(this._classes))
+        for (let dict of [this._classes, this._globalStyle])
         {
-            if (className == '_count')
+            for (const [styleKey, styles] of Object.entries(dict))
             {
-                continue;
-            }
-
-            for (const [key, value] of Object.entries(styles))
-            {
-                if (value.start >= this.topRun.innerRuns[cutoffRun].start)
+                if (styleKey == '_count')
                 {
-                    delete this._classes[className][key];
+                    continue;
+                }
+
+                for (const [key, value] of Object.entries(styles))
+                {
+                    if (value.start >= this.topRun.innerRuns[cutoffRun].start)
+                    {
+                        delete dict[styleKey][key];
+                    }
                 }
             }
         }
@@ -1593,23 +1597,24 @@ class Markdown
 
         let text = context.substring(7, endStyle);
 
-        for (const match of text.matchAll(/\s*\.([a-zA-Z][a-zA-Z0-9]*)\s*{([^}]*)}/g))
+        for (const match of text.matchAll(/\s*(\.)?([a-zA-Z][a-zA-Z0-9]*)\s*{([^}]*)}/g))
         {
-            let className = match[1].toLowerCase();
-            if (!this._classes[className])
+            let dict = match[1] ? this._classes : this._globalStyle;
+            let identifier = match[2].toLowerCase();
+            if (!dict[identifier])
             {
-                this._classes[className] = {};
+                dict[identifier] = {};
             }
 
-            for (const style of match[2].matchAll(/\n\s*([a-zA-Z][a-zA-Z-]*)\s*:\s*([^;]+);/g))
+            let thisRule = dict[identifier];
+            for (const style of match[3].matchAll(/\n\s*([a-zA-Z][a-zA-Z-]*)\s*:\s*([^;]+);/g))
             {
                 let kvp = this._parseStyleKV(style[1], style[2], start);
-                let thisClass = this._classes[className];
-                if (!thisClass[kvp.key] || kvp.value.important || !thisClass[kvp.key].important)
+                if (!thisRule[kvp.key] || kvp.value.important || !thisRule[kvp.key].important)
                 {
-                    thisClass[kvp.key] =
+                    thisRule[kvp.key] =
                     {
-                        order : this._classes._count++,
+                        order : dict._count++,
                         value : kvp.value.style,
                         important : kvp.value.important,
                         start : kvp.value.start
@@ -3554,7 +3559,7 @@ class Run
     /// The Run that holds this run. Should never be null
     /// outside of the top-level Run
     /// </params>
-    constructor(state, start, end, parent=null)
+    constructor(state, start, end, parent=null, globalStyle=null)
     {
         this.state = state;
         this.start = start;
@@ -3564,6 +3569,17 @@ class Run
         if (parent !== null)
         {
             parent.innerRuns.push(this);
+        }
+
+        // A bit hacky, but we only set the optional style dictionary in
+        // the core Run, and make other classes access it via _globalStyle()
+        if (!globalStyle && parent && parent.globalStyle)
+        {
+            this.globalStyle = parent.globalStyle;
+        }
+        else
+        {
+            this.globalStyle = globalStyle;
         }
 
         // List of Runs that are contained inside of this Run
@@ -3781,6 +3797,50 @@ class Run
             parent.volatile = true;
             parent = parent.parent;
         }
+    }
+
+    /// <summary>
+    /// Returns the dictionary of globally defined styles, or null
+    /// if none was set.
+    /// </summary>
+    _globalStyle()
+    {
+        let current = this;
+        while (current && !current.globalStyle)
+        {
+            current = current.parent;
+        }
+
+        return (current && current.globalStyle) ? current.globalStyle : null;
+    }
+
+    /// <summary>
+    /// Returns a 'style="..."' string with the styles for the given
+    /// tag, or an empty string if none are present.
+    /// </summary>
+    _addStyle(tag)
+    {
+        let styles = this._globalStyle();
+        if (!styles || !styles[tag])
+        {
+            return '';
+        }
+
+        let style = '';
+        for (const [attribute, styleInfo] of Object.entries(styles[tag]))
+        {
+            if (StyleHelper.allowedAttribute(attribute))
+            {
+                style += `${attribute}:${StyleHelper.limitAttribute(attribute, styleInfo.value)};`;
+            }
+        }
+
+        if (style.length == 0)
+        {
+            return '';
+        }
+
+        return ` style="${style}"`;
     }
 
     /// <summary>
@@ -4215,7 +4275,7 @@ class Run
     /// </summary>
     basicTag(tag, end)
     {
-        return `<${end ? '/' : ''}${tag}${end ? '' : this._getAttributes()}>`;
+        return `<${end ? '/' : ''}${tag}${end ? '' : this._getAttributes() + this._addStyle(tag)}>`;
     }
 }
 
@@ -4323,6 +4383,90 @@ class Div extends Run
 }
 
 /// <summary>
+/// Helper class with static methods that restricts available CSS styles that can be applied
+/// </summary>
+class StyleHelper
+{
+    /// <summary>
+    /// Map of letter/word spacing limits
+    /// </summary>
+    static limits =
+    {
+        spacing :
+        {
+            neg : { px :   7, pt :  5, em : 1 },
+            pos : { px : 100, pt : 75, em : 7 }
+        },
+        font :
+        {
+            lower : { px :  8, pt :  6, em : 0.7 },
+            upper : { px : 44, pt : 33, em : 3   }
+        }
+    };
+
+    /// <summary>
+    /// Return whether the given attribute can be added to an element's style
+    /// </summary>
+    static allowedAttribute(attribute)
+    {
+        switch (attribute)
+        {
+            case 'background-color':
+            case 'color':
+            case 'font-family':
+            case 'font-size':
+            case 'font-style':
+            case 'font-weight':
+            case 'letter-spacing':
+            case 'text-decoration':
+            case 'word-spacing':
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    /// <summary>
+    /// Ensure attributes have reasonable values
+    /// </summary>
+    static limitAttribute(attribute, value)
+    {
+        switch (attribute)
+        {
+            case 'letter-spacing':
+            case 'word-spacing':
+            case 'font-size':
+            {
+                // Don't let things get too crazy
+                let parts = /^(-?)(\d*\.?\d+)(px|pt|em)$/.exec(value.trim());
+                if (!parts)
+                {
+                    // Doesn't fit the mold, let it exists as-is, since
+                    // the browser probably can't do anything with it anyway
+                    return value;
+                }
+
+                let sign = parts[1] ? -1 : 1;
+                let newVal = parseFloat(parts[2]);
+                if (attribute == 'font-size')
+                {
+                    let limits = StyleHelper.limits.font;
+                    newVal = Math.min(limits.upper[parts[3]], Math.max(limits.lower[parts[3]], newVal * sign));
+                }
+                else
+                {
+                    newVal = sign * Math.min(newVal, StyleHelper.limits.spacing[parts[1] ? 'neg' : 'pos'][parts[3]]);
+                }
+
+                return newVal + parts[3];
+            }
+            default:
+                return value;
+        }
+    }
+}
+
+/// <summary>
 /// Header - <h1-6>Content</h1-6>
 /// </summary>
 class Header extends Run
@@ -4409,9 +4553,10 @@ class Header extends Run
     /// </summary>
     tag(end)
     {
+        const hTag = `h${this.headerLevel}`;
         if (end)
         {
-            let endTag = `</h${this.headerLevel}>`;
+            let endTag = `</${hTag}>`;
 
             let id = this._id(this);
             id = id.replace(/[^ a-z0-9]/gi, '').trim().replace(/ +/g, '-').toLowerCase();
@@ -4424,7 +4569,7 @@ class Header extends Run
             return endTag;
         }
 
-        return `<h${this.headerLevel} id="__ID__">`;
+        return `<${hTag} id="__ID__"${this._addStyle(hTag)}>`;
     }
 
     /// <summary>
@@ -5532,7 +5677,12 @@ class HtmlSpan extends Run
                     importantStyles[key] = true;
                 }
 
-                styleList.push({ key : key, value : this._mutateAttr(key, value.value), order : value.order, important : value.important });
+                styleList.push({
+                    key : key,
+                    value : StyleHelper.limitAttribute(key, value.value),
+                    order : value.order,
+                    important : value.important
+                });
             }
         }
 
@@ -5546,9 +5696,9 @@ class HtmlSpan extends Run
         let newStyles = {};
         for (const [key, value] of Object.entries(this.inlineStyle))
         {
-            if (this._allowedAttr(key))
+            if (StyleHelper.allowedAttribute(key))
             {
-                newStyles[key] = { value : this._mutateAttr(key, value.value), important : value.important };
+                newStyles[key] = { value : StyleHelper.limitAttribute(key, value.value), important : value.important };
             }
         }
         return newStyles;
@@ -5570,62 +5720,6 @@ class HtmlSpan extends Run
                 return true;
             default:
                 return false;
-        }
-    }
-
-    /// <summary>
-    /// Map of letter/word spacing limits
-    /// </summary>
-    static limits =
-    {
-        spacing :
-        {
-            neg : { px :   7, pt :  5, em : 1 },
-            pos : { px : 100, pt : 75, em : 7 }
-        },
-        font :
-        {
-            lower : { px :  8, pt :  6, em : 0.7 },
-            upper : { px : 44, pt : 33, em : 3   }
-        }
-    };
-
-    /// <summary>
-    /// Ensure attributes have reasonable values
-    /// </summary>
-    _mutateAttr(attr, value)
-    {
-        switch (attr)
-        {
-            case 'letter-spacing':
-            case 'word-spacing':
-            case 'font-size':
-            {
-                // Don't let things get too crazy
-                let parts = /^(-?)(\d*\.?\d+)(px|pt|em)$/.exec(value.trim());
-                if (!parts)
-                {
-                    // Doesn't fit the mold, let it exists as-is, since
-                    // the browser probably can't do anything with it anyway
-                    return value;
-                }
-
-                let sign = parts[1] ? -1 : 1;
-                let newVal = parseFloat(parts[2]);
-                if (attr == 'font-size')
-                {
-                    let limits = HtmlSpan.limits.font;
-                    newVal = Math.min(limits.upper[parts[3]], Math.max(limits.lower[parts[3]], newVal * sign));
-                }
-                else
-                {
-                    newVal = sign * Math.min(newVal, HtmlSpan.limits.spacing[parts[1] ? 'neg' : 'pos'][parts[3]]);
-                }
-
-                return newVal + parts[3];
-            }
-            default:
-                return value;
         }
     }
 }

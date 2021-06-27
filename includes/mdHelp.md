@@ -148,7 +148,7 @@ While many Markdown parsers allow for arbitrary HTML insertion, this parser is m
 
   As an inline element, spans can also only be defined on a single line. To have a single span affect multiple lines, you can insert breaks inline.
 
-3. **Style** - `<style>...</style>` - Allows for spans to reference a class style instead of repeating the same inline definition:
+3. **Style** - `<style>...</style>` - Allows for custom styling of the document via both class and element definitions:
   * ```
     # <span class="header">Header1</span>
     ...
@@ -158,11 +158,22 @@ While many Markdown parsers allow for arbitrary HTML insertion, this parser is m
       color : blue;
       background-color: green;
     }
+    h1 {
+      letter-spacing: 4px;
+    }
     </span>
     ```
-  * Like regular styling, any inline styles will override class-defined styles. For now, only a single class can be defined per span.
+  * Like regular styling, any inline styles will override class-defined styles. Similarly, multiple classes can be defined using a space delimiter (`class="class1 class2"`), and `!important` attributes take precedence over any non-!important definition.
 
 4. **Comments** - Anything between `<!--` and `-->` will be ignored and unescaped, acting exactly like a regular HTML comment.
+
+5. Note: HTML elements are greedy, meaning that if you have a `<style> ... </style>` pair, nothing inside of that pair will be parsed as markdown.  So something like
+  ```
+  <style>
+  ++Markdown!++
+  `Inline code </style>`
+  ```
+  will be rendered as a single `` ` ``, as that's all that exists outside of the `<style></style>` tag.
 
 <br>
 ---

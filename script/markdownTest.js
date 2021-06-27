@@ -65,6 +65,7 @@ class MarkdownTestSuite
         addResult(this.testHTMLComment());
         addResult(this.testHtmlSpan());
         addResult(this.testHtmlStyle());
+        addResult(this.testElementStyle());
 
         addResult(this.testMixed());
         addResult(this.testQuoteListNest());
@@ -1452,6 +1453,29 @@ class MarkdownTestSuite
         return this._runSingleSuite(tests, 'HTML Style');
     }
 
+    testElementStyle()
+    {
+        let tests = this._buildTests(
+            [
+                '<style>\nh1{\ncolor:blue;\n}\n</style>\n# A\n\n# B',
+                '<!-- <style>\nh1{\ncolor:blue;\n}\n</style> -->' +
+                '<h1 id="a" style="color:blue;">A</h1><h1 id="b" style="color:blue;">B</h1>'
+            ],
+            [
+                '<style>\ncode{\nletter-spacing:3px;\n}\n</style>\n`A`',
+                '<!-- <style>\ncode{\nletter-spacing:3px;\n}\n</style> -->' +
+                this._divWrap('<code style="letter-spacing:3px;">A</code>')
+            ],
+            [
+                '<style>\ncode{\nletter-spacing:3px!important;\n}\ncode{\nletter-spacing:4px;\n}\n</style>\n`A`',
+                '<!-- <style>\ncode{\nletter-spacing:3px!important;\n}\ncode{\nletter-spacing:4px;\n}\n</style> -->' +
+                this._divWrap('<code style="letter-spacing:3px;">A</code>')
+            ]
+        );
+
+        return this._runSingleSuite(tests, 'Non-class-based HTML style');
+    }
+
     testMixed()
     {
         let tests = this._buildTests(
@@ -1631,6 +1655,7 @@ class MarkdownTestSuite
                 '}\n' +
                 '</style>\n' +
                 '# Hello!',
+
                 '<!-- <style>\n' +
                 '--&gt;\n' +
                 '<style>\n' +
@@ -1638,7 +1663,7 @@ class MarkdownTestSuite
                 '  color: blue;\n' +
                 '}\n' +
                 '</style> -->' +
-                '<h1 id="hello">Hello!</h1>'
+                '<h1 id="hello" style="color:blue;">Hello!</h1>'
             ],
             [
                 '<style>\n\n</style>',
