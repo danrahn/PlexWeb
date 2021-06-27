@@ -281,7 +281,7 @@ class Markdown
     /// </summary>
     _trimCaches(cutoffRun)
     {
-        // Make sure we don't persist cached styles 
+        // Make sure we don't persist cached styles
         for (const [className, styles] of Object.entries(this._classes))
         {
             if (className == '_count')
@@ -1369,7 +1369,7 @@ class Markdown
         // Things will go poorly if there are escaped double-quotes, or
         // someone tries to use single-quotes instead.
         let attrs = {};
-        let attrPair = / *([a-zA-Z]\w*)="([^"]+)"/g
+        let attrPair = / *([a-zA-Z]\w*)="([^"]+)"/g;
         let attrText = line.substring(0, spanBounds.endStart);
         for (const match of attrText.matchAll(attrPair))
         {
@@ -1422,6 +1422,58 @@ class Markdown
             endSpan : 0
         };
 
+        let spans = this._collectSpans(line);
+        if (spans.start.length == 0 || spans.end.length == 0)
+        {
+            return null;
+        }
+
+        bounds.endStart = spans.start[0][0].length;
+
+        let ssIndex = 0;
+        let esIndex = 0;
+        while (true)
+        {
+            if (ssIndex == spans.start.length)
+            {
+                if (spans.end.length - esIndex >= balance)
+                {
+                    bounds.endSpan = spans.end[esIndex + balance - 1].index;
+                    return bounds;
+                }
+
+                return null;
+            }
+
+            if (esIndex == spans.end.length)
+            {
+                return null;
+            }
+
+            if (spans.start[ssIndex].index < spans.end[esIndex].index)
+            {
+                ++balance;
+                ++ssIndex;
+            }
+            else // Assume >, since == should be impossible
+            {
+                --balance;
+                if (balance == 0)
+                {
+                    bounds.endSpan = spans.end[esIndex].index;
+                    return bounds;
+                }
+
+                ++esIndex;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Find all start and end span indicators in the given line
+    /// </summary>
+    _collectSpans(line)
+    {
         let startSpans = [];
         for (const match of line.matchAll(/<span( +[A-Za-z]\w*="[^"]*" *)*>/g))
         {
@@ -1440,50 +1492,10 @@ class Markdown
             }
         }
 
-        if (startSpans.length == 0 || endSpans.length == 0)
-        {
-            return null;
-        }
-
-        bounds.endStart = startSpans[0][0].length;
-
-        let ssIndex = 0;
-        let esIndex = 0;
-        while (true)
-        {
-            if (ssIndex == startSpans.length)
-            {
-                if (endSpans.length - esIndex >= balance)
-                {
-                    bounds.endSpan = endSpans[esIndex + balance - 1].index;
-                    return bounds;
-                }
-
-                return null;
-            }
-
-            if (esIndex == endSpans.length)
-            {
-                return null;
-            }
-
-            if (startSpans[ssIndex].index < endSpans[esIndex].index)
-            {
-                ++balance;
-                ++ssIndex;
-            }
-            else // Assume >, since == should be impossible
-            {
-                --balance;
-                if (balance == 0)
-                {
-                    bounds.endSpan = endSpans[esIndex].index;
-                    return bounds;
-                }
-
-                ++esIndex;
-            }
-        }
+        return {
+            start : startSpans,
+            end : endSpans
+        };
     }
 
     /// <summary>
@@ -1589,13 +1601,19 @@ class Markdown
                 this._classes[className] = {};
             }
 
-            for (const style of match[2].matchAll(/\n\s*([a-zA-Z][a-zA-Z\-]*)\s*:\s*([^;]+);/g))
+            for (const style of match[2].matchAll(/\n\s*([a-zA-Z][a-zA-Z-]*)\s*:\s*([^;]+);/g))
             {
                 let kvp = this._parseStyleKV(style[1], style[2], start);
                 let thisClass = this._classes[className];
                 if (!thisClass[kvp.key] || kvp.value.important || !thisClass[kvp.key].important)
                 {
-                    thisClass[kvp.key] = { order : this._classes._count++, value : kvp.value.style, important : kvp.value.important, start : kvp.value.start };
+                    thisClass[kvp.key] =
+                    {
+                        order : this._classes._count++,
+                        value : kvp.value.style,
+                        important : kvp.value.important,
+                        start : kvp.value.start
+                    };
                 }
             }
         }
@@ -3758,7 +3776,7 @@ class Run
     {
         this.volatile = true;
         let parent = this.parent;
-        while (parent != null)
+        while (parent !== null)
         {
             parent.volatile = true;
             parent = parent.parent;
@@ -4809,15 +4827,10 @@ class ReferenceUrl extends Url
             this.url = urlList[urlList.length - 1].url;
             this._setAttributes();
         }
-        else
+        else if (!end)
         {
             // We'll hit this for the start and end tag, only show it the first time around
-            if (!end)
-            {
-                Log.warn('Could not find link match for ' + this.url);
-            }
-
-            return;
+            Log.warn('Could not find link match for ' + this.url);
         }
     }
 
@@ -4841,11 +4854,6 @@ class ReferenceUrl extends Url
 /// </summary>
 class HiddenElement extends Run
 {
-    constructor(state, start, end, parent)
-    {
-        super(state, start, end, parent);
-    }
-
     tag(end) { return end ? ' -->' : '<!-- '; }
 
     // No transformation is necessary, other than ensuring
@@ -5528,7 +5536,7 @@ class HtmlSpan extends Run
             }
         }
 
-        styleList.sort((a, b) => a.important == b.important ? b.order - a.order  : b.important ? 1 : -1);
+        styleList.sort((a, b) => a.important == b.important ? b.order - a.order : b.important ? 1 : -1);
 
         return styleList;
     }
