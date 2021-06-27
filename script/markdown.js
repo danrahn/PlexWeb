@@ -1437,6 +1437,30 @@ class Markdown
     }
 
     /// <summary>
+    /// Parses a raw style value and returns an object containing whether it's
+    /// important and the base value (i.e. !important stripped away if needed)
+    /// </summary>
+    _parseStyleKV(key, value)
+    {
+        let ret =
+        {
+            key : key.toLowerCase().trim(),
+            value : {
+                style : value.trim(),
+                important : false
+            }
+        };
+
+        if (value.toLowerCase().endsWith('!important'))
+        {
+            ret.value.important = true;
+            ret.value.style = value.substring(0, value.length - 10).trim();
+        }
+
+        return ret;
+    }
+
+    /// <summary>
     /// Parses a style="xyz" attribute tag
     /// </summary>
     /// <returns>
@@ -1451,7 +1475,12 @@ class Markdown
             let split = arg.indexOf(':');
             if (split != -1)
             {
-                attr[arg.substring(0, split).trim()] = arg.substring(split + 1).trim();
+                let kvp = this._parseStyleKV(arg.substring(0, split).trim(), arg.substring(split + 1).trim());
+
+                if (!attr[kvp.key] || kvp.important || !attr[kvp.key].important)
+                {
+                    attr[kvp.key] = { value : kvp.value.style, important : kvp.value.important };
+                }
             }
         });
 
@@ -1511,7 +1540,12 @@ class Markdown
 
             for (const style of match[2].matchAll(/\n\s*([a-zA-Z][a-zA-Z\-]*)\s*:\s*([^;]+);/g))
             {
-                this._classes[className][style[1]] = { order : this._classes._count++, value : style[2] };
+                let kvp = this._parseStyleKV(style[1], style[2]);
+                let thisClass = this._classes[className];
+                if (!thisClass[kvp.key] || kvp.value.important || !thisClass[kvp.key].important)
+                {
+                    thisClass[kvp.key] = { order : this._classes._count++, value : kvp.value.style, important : kvp.value.important };
+                }
             }
         }
 
@@ -5373,13 +5407,19 @@ class HtmlSpan extends Run
     /// </summary>
     _computeStyleString()
     {
-        let classStyles = this._populateClassStyles();
+        let importantStyles = {};
+        let classStyles = this._populateClassStyles(importantStyles);
         let inline = this._populateInlineStyles();
         let added = {};
         let styleString = '';
-        for (const [key,  value] of Object.entries(inline))
+        for (const [key, value] of Object.entries(inline))
         {
-            styleString += `${key}:${value};`;
+            if (key in importantStyles && !value.important)
+            {
+                continue;
+            }
+
+            styleString += `${key}:${value.value};`;
             added[key] = true;
         }
 
@@ -5409,7 +5449,7 @@ class HtmlSpan extends Run
     /// An array of styles ordered from most- to least-recently defined, ensuring
     /// styles declared later in the file overwrite previously defined values.
     /// </returns>
-    _populateClassStyles()
+    _populateClassStyles(importantStyles)
     {
         let styleList = [];
         for (let className of this.classes)
@@ -5421,11 +5461,17 @@ class HtmlSpan extends Run
 
             for (const [key, value] of Object.entries(this.classStyles[className]))
             {
-                styleList.push({ key : key, value : value.value, order : value.order });
+                if (value.important)
+                {
+                    importantStyles[key] = true;
+                }
+
+                styleList.push({ key : key, value : value.value, order : value.order, important : value.important });
             }
         }
 
-        styleList.sort((a, b) => b.order - a.order);
+        styleList.sort((a, b) => a.important == b.important ? b.order - a.order  : b.important ? 1 : -1);
+
         return styleList;
     }
 
@@ -5436,7 +5482,7 @@ class HtmlSpan extends Run
         {
             if (this._allowedAttr(key))
             {
-                newStyles[key] = this._mutateAttr(key, value);
+                newStyles[key] = { value : this._mutateAttr(key, value.value), important : value.important };
             }
         }
         return newStyles;
