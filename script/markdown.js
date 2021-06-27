@@ -262,7 +262,7 @@ class Markdown
             --i;
         }
 
-        this._trimCaches();
+        this._trimCaches(i);
 
         this.topRun.cached = '';
         if (i != this.topRun.innerRuns.length)
@@ -291,7 +291,7 @@ class Markdown
 
             for (const [key, value] of Object.entries(styles))
             {
-                if (value.start >= this.topRun.innerRuns[i].start)
+                if (value.start >= this.topRun.innerRuns[cutoffRun].start)
                 {
                     delete this._classes[className][key];
                 }
