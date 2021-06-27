@@ -52,7 +52,8 @@ abstract class MediaType {
     const Featurette = 5;
     const Trailer = 6;
     const Preroll = 7;
-    const Unknown = 8;
+    const Photo = 8;
+    const Unknown = 9;
 
     /// <summary>
     /// Converts the Plex library name to its MediaType
@@ -72,6 +73,8 @@ abstract class MediaType {
                 }
 
                 return MediaType::Music;
+            case "photo":
+                return MediaType::Photo;
             default:
                 return MediaType::Unknown;
         }
@@ -305,8 +308,11 @@ function get_all_sessions()
     foreach ($sessions as $sesh)
     {
         $slim = build_sesh($sesh, $library_names);
-        $slim->machine_id = $plex_server_id;
-        array_push($slim_sessions, $slim);
+        if ($slim)
+        {
+            $slim->machine_id = $plex_server_id;
+            array_push($slim_sessions, $slim);
+        }
     }
 
     usort($slim_sessions, "session_sort");
@@ -334,6 +340,12 @@ function build_sesh($sesh, $library_names)
     if (array_key_exists($section_id, $library_names))
     {
         $sesh_type = MediaType::get_media_type($library_names[$section_id]);
+    }
+
+    if ($sesh_type == MediaType::Photo)
+    {
+        // Don't treat viewing photo libraries as active streams.
+        return FALSE;
     }
 
     if ($sesh_type == MediaType::Unknown)
