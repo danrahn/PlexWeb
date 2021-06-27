@@ -118,6 +118,60 @@ let MarkdownEditor = new function()
     };
 
     /// <summary>
+    /// Automatically insert end tags for some HTML elements
+    /// </summary>
+    let autoCompleteHandler = function(event)
+    {
+        if (event.key != ">" || event.ctrlKey || event.altKey)
+        {
+            return;
+        }
+
+        const patterns = [
+            { search : "<style", insert : ">\n\n</style>", offset : 2 },
+            { search : "<span", insert : "></span>", offset : 1 }
+        ];
+
+        let text = this;
+        for (const pattern of patterns)
+        {
+            let start = text.selectionStart;
+            let len = pattern.search.length;
+            if (start < len || text.value.substring(start - len, start).toLowerCase() != pattern.search)
+            {
+                continue;
+            }
+
+            let current = start - len - 1;
+            let bs = 0;
+            while (current > 0 && text.value[current--])
+            {
+                ++bs;
+            }
+
+            if (bs % 2 == 1)
+            {
+                continue;
+            }
+
+            event.preventDefault();
+
+            if (_supportsInsertText())
+            {
+                document.execCommand("insertText", false, pattern.insert);
+            }
+            else
+            {
+                text.value = text.value.substring(0, start) + pattern.insert + text.value.substring(start);
+            }
+
+            text.selectionStart = start + pattern.offset;
+            text.selectionEnd = start + pattern.offset;
+            return;
+        }
+    };
+
+    /// <summary>
     /// Listens for keyboard shortcuts that insert markdown formatting
     /// </summary>
     let formatHandler = function(e)
@@ -210,6 +264,14 @@ let MarkdownEditor = new function()
     this.addTabHandler = function(element)
     {
         element.addEventListener("keydown", captureTab);
+    };
+
+    /// <summary>
+    /// Adds the autocomplete handler to the given text input
+    /// </summary>
+    this.addAutoCompleteHandler = function(element)
+    {
+        element.addEventListener("keydown", autoCompleteHandler);
     };
 
     /// <summary>

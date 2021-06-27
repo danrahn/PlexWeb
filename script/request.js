@@ -103,6 +103,7 @@ function setupMarkdown()
     comment.addEventListener("change", parseMarkdown);
     comment.addEventListener("keyup", parseMarkdown);
     MarkdownEditor.addTabHandler(comment);
+    MarkdownEditor.addAutoCompleteHandler(comment);
     MarkdownEditor.addFormatHandler(comment);
 }
 
@@ -1479,6 +1480,7 @@ function editComment()
 
     editorHolder.appendChildren(MarkdownEditor.getToolbar(editor), editor);
     MarkdownEditor.addTabHandler(editor);
+    MarkdownEditor.addAutoCompleteHandler(editor);
     MarkdownEditor.addFormatHandler(editor);
     holder.insertBefore(editorHolder, holder.children[1]);
 

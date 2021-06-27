@@ -43,6 +43,7 @@ $('#query').addEventListener('keyup', parseMarkdown);
 
 $('#query').addEventListener('keydown', parseShortcuts);
 MarkdownEditor.addTabHandler($('#query'));
+MarkdownEditor.addAutoCompleteHandler($('#query'));
 MarkdownEditor.addFormatHandler($('#query'));
 $('#query').parentNode.insertBefore(MarkdownEditor.getToolbar($('#query')), $('#query'));
 
