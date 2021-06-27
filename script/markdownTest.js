@@ -1671,7 +1671,7 @@ class MarkdownTestSuite
                 '  color: blue;\n' +
                 '}\n' +
                 '</style> -->' +
-                '<h1 id="hello" style="color:blue;">Hello!</h1>'
+                '<h1 id="hello">Hello!</h1>'
             ],
             [
                 '<style>\n\n</style>',

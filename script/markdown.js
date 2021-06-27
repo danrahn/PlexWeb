@@ -1602,7 +1602,20 @@ class Markdown
             return -1;
         }
 
-        let text = context.substring(7, endStyle);
+        let text = context.substring(0, endStyle + 8);
+
+        // Can't have anything nested, don't set current run, return the end of the style tag
+        new HtmlStyle(start, start + endStyle + 8, this.currentRun);
+        let newStart = start + endStyle + 7;
+
+        // The matchAll regex below is extremely inefficient on invalid input (e.g. starting a <style> tag, and there's a </style>
+        // tag thousands of characters later in the document, and nothing in between the tags is actually a style). First check
+        // that we start with something that resembles a valid start tag, which combined with autocomplete of MarkdownEditor
+        // should mitigate most issues.
+        if (!/^<style>\s*(\/\*(?!\*\/).*\*\/)*\s*(((?:(?:\s*,\s*)?\.?(?:[a-zA-Z][a-zA-Z0-9]*))+)\s*{|\s*<\/style>)/g.test(text))
+        {
+            return newStart;
+        }
 
         for (const match of text.matchAll(/\s*((?:(?:\s*,\s*)?\.?(?:[a-zA-Z][a-zA-Z0-9]*))+)\s*{([^}]*)}/g))
         {
@@ -1639,33 +1652,9 @@ class Markdown
                 }
             }
 
-            // let dict = match[1] ? this._classes : this._globalStyle;
-            // let identifier = match[2].toLowerCase();
-            // if (!dict[identifier])
-            // {
-            //     dict[identifier] = {};
-            // }
 
-            // let thisRule = dict[identifier];
-            // for (const style of match[3].matchAll(/\n\s*([a-zA-Z][a-zA-Z-]*)\s*:\s*([^;]+);/g))
-            // {
-            //     let kvp = this._parseStyleKV(style[1], style[2], start);
-            //     if (!thisRule[kvp.key] || kvp.value.important || !thisRule[kvp.key].important)
-            //     {
-            //         thisRule[kvp.key] =
-            //         {
-            //             order : dict._count++,
-            //             value : kvp.value.style,
-            //             important : kvp.value.important,
-            //             start : kvp.value.start
-            //         };
-            //     }
-            // }
         }
-
-        // Can't have anything nested, don't set current run, return the end of the style tag
-        new HtmlStyle(start, start + endStyle + 8, this.currentRun);
-        return start + endStyle + 7;
+        return newStart;
     }
 
     /// <summary>
