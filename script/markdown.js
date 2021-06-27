@@ -262,6 +262,8 @@ class Markdown
             --i;
         }
 
+        this._trimCaches();
+
         this.topRun.cached = '';
         if (i != this.topRun.innerRuns.length)
         {
@@ -271,6 +273,54 @@ class Markdown
         this.topRun.end = this.text.length;
         this.currentRun = this.topRun;
         return this.topRun.innerRuns.length == 0 ? 0 : this.topRun.innerRuns[this.topRun.innerRuns.length - 1].end;
+    }
+
+    /// <summary>
+    /// Ensures that any cached styles or reference URLs that were defined
+    /// past the new run cutoff are culled.
+    /// </summary>
+    _trimCaches(cutoffRun)
+    {
+        // Make sure we don't persist cached styles 
+        for (const [className, styles] of Object.entries(this._classes))
+        {
+            if (className == '_count')
+            {
+                continue;
+            }
+
+            for (const [key, value] of Object.entries(styles))
+            {
+                if (value.start >= this.topRun.innerRuns[i].start)
+                {
+                    delete this._classes[className][key];
+                }
+            }
+        }
+
+        // Also trim invalidated URLs from our URL cache
+        for (const [urlRef, urls] of Object.entries(this._urls))
+        {
+            let cutoff = 0;
+            for (let i = urls.length - 1; i >= 0; --i)
+            {
+                if (urls[i].start < this.topRun.innerRuns[cutoffRun].start)
+                {
+                    break;
+                }
+
+                ++cutoff;
+            }
+
+            if (cutoff == urls.length)
+            {
+                delete this._urls[urlRef];
+            }
+            else if (cutoff > 0)
+            {
+                urls.splice(urls.length - cutoff, cutoff);
+            }
+        }
     }
 
     /// <summary>
@@ -1334,7 +1384,7 @@ class Markdown
         let attr = {};
         if (attrs.style)
         {
-            attr = this._parseInlineStyle(attrs.style);
+            attr = this._parseInlineStyle(attrs.style, start);
         }
 
         let classes = [];
@@ -1440,14 +1490,15 @@ class Markdown
     /// Parses a raw style value and returns an object containing whether it's
     /// important and the base value (i.e. !important stripped away if needed)
     /// </summary>
-    _parseStyleKV(key, value)
+    _parseStyleKV(key, value, start)
     {
         let ret =
         {
             key : key.toLowerCase().trim(),
             value : {
                 style : value.trim(),
-                important : false
+                important : false,
+                start : start
             }
         };
 
@@ -1466,7 +1517,7 @@ class Markdown
     /// <returns>
     /// A dictionary mapping style attributes to their values
     /// </returns>
-    _parseInlineStyle(style)
+    _parseInlineStyle(style, start)
     {
         let attr = {};
         let args = style.split(';');
@@ -1475,11 +1526,11 @@ class Markdown
             let split = arg.indexOf(':');
             if (split != -1)
             {
-                let kvp = this._parseStyleKV(arg.substring(0, split).trim(), arg.substring(split + 1).trim());
+                let kvp = this._parseStyleKV(arg.substring(0, split).trim(), arg.substring(split + 1).trim(), start);
 
                 if (!attr[kvp.key] || kvp.important || !attr[kvp.key].important)
                 {
-                    attr[kvp.key] = { value : kvp.value.style, important : kvp.value.important };
+                    attr[kvp.key] = { value : kvp.value.style, important : kvp.value.important, start : kvp.value.start };
                 }
             }
         });
@@ -1540,11 +1591,11 @@ class Markdown
 
             for (const style of match[2].matchAll(/\n\s*([a-zA-Z][a-zA-Z\-]*)\s*:\s*([^;]+);/g))
             {
-                let kvp = this._parseStyleKV(style[1], style[2]);
+                let kvp = this._parseStyleKV(style[1], style[2], start);
                 let thisClass = this._classes[className];
                 if (!thisClass[kvp.key] || kvp.value.important || !thisClass[kvp.key].important)
                 {
-                    thisClass[kvp.key] = { order : this._classes._count++, value : kvp.value.style, important : kvp.value.important };
+                    thisClass[kvp.key] = { order : this._classes._count++, value : kvp.value.style, important : kvp.value.important, start : kvp.value.start };
                 }
             }
         }
@@ -2969,7 +3020,13 @@ class Markdown
             return true;
         }
 
-        this._urls[urlParse.ret.text.substring(1)] = this.text.substring(i + 2, urlEnd);
+        let ref = urlParse.ret.text.substring(1);
+        if (!this._urls[ref])
+        {
+            this._urls[ref] = [];
+        }
+
+        this._urls[ref].push({ url : this.text.substring(i + 2, urlEnd), start : i });
         urlParse.ret.type = 2;
         urlParse.ret.end = urlEnd;
         return true;
@@ -4748,7 +4805,8 @@ class ReferenceUrl extends Url
     {
         if (this.urlLink in this.urls)
         {
-            this.url = this.urls[this.urlLink];
+            let urlList = this.urls[this.urlLink];
+            this.url = urlList[urlList.length - 1].url;
             this._setAttributes();
         }
         else
