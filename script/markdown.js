@@ -5524,7 +5524,7 @@ class HtmlSpan extends Run
                     importantStyles[key] = true;
                 }
 
-                styleList.push({ key : key, value : value.value, order : value.order, important : value.important });
+                styleList.push({ key : key, value : this._mutateAttr(key, value.value), order : value.order, important : value.important });
             }
         }
 
@@ -5553,6 +5553,7 @@ class HtmlSpan extends Run
             case 'background-color':
             case 'color':
             case 'font-family':
+            case 'font-size':
             case 'font-style':
             case 'font-weight':
             case 'letter-spacing':
@@ -5567,16 +5568,17 @@ class HtmlSpan extends Run
     /// <summary>
     /// Map of letter/word spacing limits
     /// </summary>
-    static spaceLimits = {
-        neg : {
-            px : 7,
-            pt : 5,
-            em : 1
+    static limits =
+    {
+        spacing :
+        {
+            neg : { px :   7, pt :  5, em : 1 },
+            pos : { px : 100, pt : 75, em : 7 }
         },
-        pos : {
-            px : 100,
-            pt : 75,
-            em : 7
+        font :
+        {
+            lower : { px :  8, pt :  6, em : 0.7 },
+            upper : { px : 44, pt : 33, em : 3   }
         }
     };
 
@@ -5589,6 +5591,7 @@ class HtmlSpan extends Run
         {
             case 'letter-spacing':
             case 'word-spacing':
+            case 'font-size':
             {
                 // Don't let things get too crazy
                 let parts = /^(-?)(\d*\.?\d+)(px|pt|em)$/.exec(value.trim());
@@ -5601,7 +5604,17 @@ class HtmlSpan extends Run
 
                 let sign = parts[1] ? -1 : 1;
                 let newVal = parseFloat(parts[2]);
-                return (sign * Math.min(newVal, HtmlSpan.spaceLimits[parts[1] ? 'neg' : 'pos'][parts[3]])) + parts[3];
+                if (attr == 'font-size')
+                {
+                    let limits = HtmlSpan.limits.font;
+                    newVal = Math.min(limits.upper[parts[3]], Math.max(limits.lower[parts[3]], newVal * sign));
+                }
+                else
+                {
+                    newVal = sign * Math.min(newVal, HtmlSpan.limits.spacing[parts[1] ? 'neg' : 'pos'][parts[3]]);
+                }
+
+                return newVal + parts[3];
             }
             default:
                 return value;

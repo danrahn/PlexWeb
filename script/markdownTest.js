@@ -1184,6 +1184,10 @@ class MarkdownTestSuite
             ],
             [
                 '<span style="font-size:200pt">Hello</span>',
+                this._divWrap('<span style="font-size:33pt;">Hello</span>')
+            ],
+            [
+                '<span style="background-image:example.jpg">Hello</span>',
                 this._divWrap('<span>Hello</span>')
             ],
             [
@@ -1436,6 +1440,13 @@ class MarkdownTestSuite
 
                 '<!-- <style>\n.a{\ncolor:blue!important;\n}\n.a{\ncolor:red;\n}\n</style> -->' +
                 this._divWrap('<span style="color:blue;">A</span>')
+            ],
+            [
+                '<style>\n.a{\nfont-size:400px;\n}\n</style>\n' +
+                '<span class="a">A</span>',
+
+                '<!-- <style>\n.a{\nfont-size:400px;\n}\n</style> -->' +
+                this._divWrap('<span style="font-size:44px;">A</span>')
             ]
         );
         return this._runSingleSuite(tests, 'HTML Style');
