@@ -256,11 +256,24 @@ class Markdown
             }
         }
 
-        // In some cases inserted text is the bridge that connects two runs that are currently distinct.
-        // To get around this, be on the safe side and also remove the previous run from the cache
-        if (i != 0)
+        // Now that we've found the run we're interrupting, we have to keep
+        // going until we hit a block element, since the character we entered might
+        // be what makes previous inline runs join into a block element
+        if (i < this.topRun.innerRuns.length && !this.topRun.innerRuns[i].isBlockElement())
         {
-            --i;
+            while (i > 0 && !this.topRun.innerRuns[i].isBlockElement())
+            {
+                --i;
+            }
+        }
+        else
+        {
+            // In some cases inserted text is the bridge that connects two runs that are currently distinct.
+            // To get around this, be on the safe side and also remove the previous run from the cache
+            if (i != 0)
+            {
+                --i;
+            }
         }
 
         this._trimCaches(i);
@@ -1622,39 +1635,46 @@ class Markdown
             let identifiers = match[1].split(/\s*,\s*/);
             for (let identifier of identifiers)
             {
-                identifier = identifier.toLowerCase();
-                let dict = this._globalStyle;
-                if (identifier.startsWith('.'))
-                {
-                    identifier = identifier.substring(1);
-                    dict = this._classes;
-                }
-
-                if (!dict[identifier])
-                {
-                    dict[identifier] = {};
-                }
-
-                let thisRule = dict[identifier];
-                for (const style of match[2].matchAll(/\n\s*([a-zA-Z][a-zA-Z-]*)\s*:\s*([^;]+);/g))
-                {
-                    let kvp = this._parseStyleKV(style[1], style[2], start);
-                    if (!thisRule[kvp.key] || kvp.value.important || !thisRule[kvp.key].important)
-                    {
-                        thisRule[kvp.key] =
-                        {
-                            order : dict._count++,
-                            value : kvp.value.style,
-                            important : kvp.value.important,
-                            start : kvp.value.start
-                        };
-                    }
-                }
+                this._addRulesToStyleCache(identifier, match[2], start);
             }
-
-
         }
+
         return newStart;
+    }
+
+    /// <summary>
+    /// Parse a string of CSS rules and add them to the appropriate cache.
+    /// </summary>
+    _addRulesToStyleCache(identifier, rules, start)
+    {
+        identifier = identifier.toLowerCase();
+        let dict = this._globalStyle;
+        if (identifier.startsWith('.'))
+        {
+            identifier = identifier.substring(1);
+            dict = this._classes;
+        }
+
+        if (!dict[identifier])
+        {
+            dict[identifier] = {};
+        }
+
+        let thisRule = dict[identifier];
+        for (const style of rules.matchAll(/\n\s*([a-zA-Z][a-zA-Z-]*)\s*:\s*([^;]+);/g))
+        {
+            let kvp = this._parseStyleKV(style[1], style[2], start);
+            if (!thisRule[kvp.key] || kvp.value.important || !thisRule[kvp.key].important)
+            {
+                thisRule[kvp.key] =
+                {
+                    order : dict._count++,
+                    value : kvp.value.style,
+                    important : kvp.value.important,
+                    start : kvp.value.start
+                };
+            }
+        }
     }
 
     /// <summary>
@@ -3761,7 +3781,7 @@ class Run
             case RunSide.Right:
                 return text.replace(/\s+$/gm, '');
             case RunSide.Middle:
-                return text;
+                return text.replace(/\n+$/gm, ''); // Don't clear out spaces, but remove newlines
             default:
                 Log.error('Unknown side: ' + side);
                 return text;
@@ -3932,7 +3952,23 @@ class Run
             case State.CodeBlock:
             case State.Header:
             case State.Hr:
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    /// <summary>
+    /// Returns whether the element is hidden/semi-block, in the sense
+    /// that we don't want to count it as a block element when calculating
+    /// divs/breaks, but do want to allow arbitrary newlines within them.
+    /// </summary>
+    isHiddenElement()
+    {
+        switch (this.state)
+        {
             case State.HtmlStyle:
+            case State.HtmlComment:
                 return true;
             default:
                 return false;
@@ -4075,13 +4111,41 @@ class Run
         {
             if ((!atTop && !atBottom) || cNewlines > 2)
             {
-                doubles.push([newline, newline + offset]);
+                // Some states are "semi-block" elements, meaning that while
+                // we don't want to treat them like full block elements, we also
+                // don't want to parse any newlines they contain.
+                if (!this._inSemiBlockState(newline))
+                {
+                    doubles.push([newline, newline + offset]);
+                }
+
                 return parseResult;
             }
         }
 
         parseResult.breaks = this._addBreaks(newline, cNewlines, previousRun, nextRun, atTop, atBottom);
         return parseResult;
+    }
+
+    /// <summary>
+    /// Returns whether the given index is in the middle of a semi-block/hidden element
+    /// </summary>
+    _inSemiBlockState(index)
+    {
+        if (this.isHiddenElement() && index > this.start && index < this.end)
+        {
+            return true;
+        }
+
+        for (const ele of this.innerRuns)
+        {
+            if (index >= ele.start && index <= ele.end && ele._inSemiBlockState(index))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /// <summary>
@@ -4208,13 +4272,19 @@ class Run
     /// </summary>
     _insertBreak(index)
     {
+        if (this._inSemiBlockState(index))
+        {
+            return 0;
+        }
+
         if (this.innerRuns.length == 0 || this.innerRuns[0].start >= index)
         {
             this.innerRuns.splice(0, 0, new ImplicitBreak(index, this));
             return 1;
         }
 
-        if (index >= this.innerRuns[this.innerRuns.length - 1].end)
+        let lastRun = this.innerRuns[this.innerRuns.length - 1];
+        if (index > lastRun.end || (index == lastRun.end && !lastRun.isHiddenElement()))
         {
             this.innerRuns.push(new ImplicitBreak(index, this));
             return 1;
@@ -4224,6 +4294,14 @@ class Run
         {
             if (this.innerRuns[i].start >= index)
             {
+                if (this.innerRuns[i].start == index + 1 &&
+                    this.innerRuns[i].isHiddenElement() &&
+                    this.innerRuns[i - 1].end == index &&
+                    this.innerRuns[i - 1].isHiddenElement())
+                {
+                    return 0;
+                }
+
                 if (index < this.innerRuns[i - 1].end)
                 {
                     // Some inline elements can extend multiple lines. If we're
@@ -4450,6 +4528,7 @@ class StyleHelper
             case 'font-weight':
             case 'letter-spacing':
             case 'text-decoration':
+            case 'text-transform':
             case 'word-spacing':
                 return true;
             default:
@@ -5733,25 +5812,6 @@ class HtmlSpan extends Run
             }
         }
         return newStyles;
-    }
-
-    _allowedAttr(attr)
-    {
-        switch (attr)
-        {
-            case 'background-color':
-            case 'color':
-            case 'font-family':
-            case 'font-size':
-            case 'font-style':
-            case 'font-weight':
-            case 'letter-spacing':
-            case 'text-decoration':
-            case 'word-spacing':
-                return true;
-            default:
-                return false;
-        }
     }
 }
 
