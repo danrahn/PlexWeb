@@ -237,7 +237,6 @@ class Markdown
         if (diffStart <= 0 || this.topRun === null || parseInt(localStorage.getItem('mdCache')) == 0)
         {
             this._urls = {};
-            this._classes = { _count : 0 };
             this._globalStyle = { _count : 0 };
             this.topRun = new Run(State.None, 0 /*start*/, null /*end*/, null /*parent*/, this._globalStyle);
             this.topRun.end = this.text.length;
@@ -303,41 +302,38 @@ class Markdown
     /// </summary>
     _trimStyleCaches(cutoffIndex)
     {
-        for (let dict of [this._classes, this._globalStyle])
+        let dict = this._globalStyle;
+        let maxOrder = 0;
+        for (const [styleKey, styles] of Object.entries(dict))
         {
-            let maxOrder = 0;
-            for (const [styleKey, styles] of Object.entries(dict))
+            if (styleKey == '_count')
             {
-                if (styleKey == '_count')
+                continue;
+            }
+
+            for (const [key, definitions] of Object.entries(styles))
+            {
+                if (definitions.length == 0 || cutoffIndex < definitions[0].start)
                 {
+                    delete dict[styleKey][key];
                     continue;
                 }
 
-                for (const [key, definitions] of Object.entries(styles))
+                for (let i = definitions.length - 1; i >= 0; --i)
                 {
-                    if (definitions.length == 0 || cutoffIndex < definitions[0].start)
+                    if (definitions[i].start >= cutoffIndex)
                     {
-                        delete dict[styleKey][key];
-                        continue;
+                        --definitions.length;
                     }
-
-                    for (let i = definitions.length - 1; i >= 0; --i)
+                    else
                     {
-                        // eslint-disable-next-line max-depth
-                        if (definitions[i].start >= cutoffIndex)
-                        {
-                            --definitions.length;
-                        }
-                        else
-                        {
-                            maxOrder = Math.max(maxOrder, definitions[i].order + 1);
-                        }
+                        maxOrder = Math.max(maxOrder, definitions[i].order + 1);
                     }
                 }
             }
-
-            dict._count = maxOrder;
         }
+
+        dict._count = maxOrder;
     }
 
     /// <summary>
@@ -1445,7 +1441,6 @@ class Markdown
             spanBounds.endStart,
             attr,
             classes,
-            classes.length ? this._classes : null,
             this.currentRun);
         this.currentRun = span;
 
@@ -1676,12 +1671,6 @@ class Markdown
     {
         identifier = identifier.toLowerCase();
         let dict = this._globalStyle;
-        if (identifier.startsWith('.'))
-        {
-            identifier = identifier.substring(1);
-            dict = this._classes;
-        }
-
         if (!dict[identifier])
         {
             dict[identifier] = {};
@@ -3796,6 +3785,11 @@ class Run
     tag(/*end*/) { return ''; }
 
     /// <summary>
+    /// Returns only the tag itself, without attributes or <>
+    /// </summary>
+    baseTag() { return '*'; }
+
+    /// <summary>
     /// Trims whitespace from the given text
     /// </summary>
     /// <param name="text">The text to trim</param>
@@ -4418,9 +4412,9 @@ class Run
     /// <summary>
     /// Helper for runs that have basic <X> </X> tags
     /// </summary>
-    basicTag(tag, end)
+    basicTag(end)
     {
-        return `<${end ? '/' : ''}${tag}${end ? '' : this._getAttributes() + this._addStyle(tag)}>`;
+        return `<${end ? '/' : ''}${this.baseTag()}${end ? '' : this._getAttributes() + this._addStyle(this.baseTag())}>`;
     }
 }
 
@@ -4468,6 +4462,8 @@ class Hr extends Run
 
     tag(end) { return end ? '' : '<hr />'; }
 
+    baseTag() { return 'hr'; }
+
     // Indicators can have a variable number of characters, but we never want to actually print anything
     transform(/*newText,*/ /*side*/) { return ''; }
 }
@@ -4497,7 +4493,9 @@ class Div extends Run
     /// <summary>
     /// Div tag adds the mdDiv class
     /// </summary>
-    tag(end) { return this.basicTag('div', end); }
+    tag(end) { return this.basicTag(end); }
+
+    baseTag() { return 'div'; }
 
     startContextLength()
     {
@@ -4611,6 +4609,18 @@ class StyleHelper
         }
     }
 
+    /*
+    1. Consolidate style dictionary
+       * add '.' before classes, i.e. { h1 { attr1 : [...], attr2 : [...] }, .className { attr1 : [...], attr2: [...] } }
+    2. getWinner:
+        Take in the style dict, the current run, the attribute, and, if needed, the child run
+        Return as soon as we come across an important attribute
+        Make three iterations
+            Does run.inlineStyles exist? If so, parse that.
+            Does run.classes exist (rename to classList?)? If so, parse that.
+            Does the run's baseTag() exist in our style dictionary? If so, parse that.
+    */
+
     /// <summary>
     /// Given a list of style definitions, pick and return the winner
     /// </summary>
@@ -4720,7 +4730,7 @@ class Header extends Run
     /// </summary>
     tag(end)
     {
-        const hTag = `h${this.headerLevel}`;
+        const hTag = this.baseTag();
         if (end)
         {
             let endTag = `</${hTag}>`;
@@ -4738,6 +4748,8 @@ class Header extends Run
 
         return `<${hTag} id="__ID__"${this._addStyle(hTag)}>`;
     }
+
+    baseTag() { return `h${this.headerLevel}`; }
 
     /// <summary>
     /// Strips trailing '#' before calling the core transform routine
@@ -4789,7 +4801,9 @@ class BlockQuote extends Run
     startContextLength() { return 1; }
     endContextLength() { return 0; }
 
-    tag(end) { return this.basicTag('blockquote', end); }
+    tag(end) { return this.basicTag(end); }
+
+    baseTag() { return 'blockquote'; }
 
     /// <summary>
     /// Remove the necessary number of quote indicators ('>')
@@ -4853,7 +4867,9 @@ class UnorderedList extends Run
     startContextLength() { return 0; }
     endContextLength() { return 0; }
 
-    tag(end) { return this.basicTag('ul', end); }
+    tag(end) { return this.basicTag(end); }
+
+    baseTag() { return 'ul'; }
 
     /// <summary>
     /// Nothing is allowed inside of lists other than
@@ -4886,7 +4902,9 @@ class OrderedList extends Run
     startContextLength() { return 0; }
     endContextLength() { return 0; }
 
-    tag(end) { return this.basicTag('ol', end); }
+    tag(end) { return this.basicTag(end); }
+
+    baseTag() { return 'ol'; }
 
     /// <summary>
     /// Nothing is allowed inside of lists other than
@@ -4913,7 +4931,9 @@ class ListItem extends Run
     startContextLength() { return this.startContext; }
     endContextLength() { return 0; }
 
-    tag(end) { return this.basicTag('li', end); }
+    tag(end) { return this.basicTag(end); }
+
+    baseTag() { return 'li'; }
 
     /// <summary>
     /// Bypass the core transform method and parse it ourselves.
@@ -5001,7 +5021,9 @@ class Url extends Run
     // The url should be stripped here, so subtract its length and ']()'
     endContextLength() { return this.url.length + 3; }
 
-    tag(end) { return this.basicTag('a', end); }
+    tag(end) { return this.basicTag(end); }
+
+    baseTag() { return 'a'; }
 
     /// <summary>
     /// Call our parent transform method after first un-escaping some
@@ -5168,6 +5190,8 @@ class HiddenElement extends Run
 {
     tag(end) { return end ? ' -->' : '<!-- '; }
 
+    baseTag() { return ''; }
+
     // No transformation is necessary, other than ensuring
     // that the element doesn't try to escape it's comment
     transform(newText, /*side*/)
@@ -5207,7 +5231,7 @@ class ImplicitUrl extends Url
             return '</a>';
         }
 
-        return this.basicTag('a', end) + super.transform(this.url);
+        return this.basicTag(end) + super.transform(this.url);
     }
 
     /// <summary>
@@ -5248,8 +5272,10 @@ class Image extends Url
             return '';
         }
 
-        return this.basicTag('img', end);
+        return this.basicTag(end);
     }
+
+    baseTag() { return 'img'; }
 
     _setImageAttributes(altText, width, height)
     {
@@ -5315,7 +5341,9 @@ class CodeBlock extends Run
         super(State.CodeBlock, start, end, parent);
     }
 
-    tag(end) { return this.basicTag('pre', end); }
+    tag(end) { return this.basicTag(end); }
+
+    baseTag() { return 'pre'; }
 
     /// <summary>
     /// Returns a span containing the current code block line number
@@ -5517,7 +5545,9 @@ class Table extends Run
     startContextLength() { return 0; }
     endContextLength() { return 0; }
 
-    tag(end) { return this.basicTag('table', end); }
+    tag(end) { return this.basicTag(end); }
+
+    baseTag() { return 'table'; }
 
     /// <summary>
     /// Builds and returns the <table> content from this.table
@@ -5580,7 +5610,9 @@ class InlineCodeRun extends Run
     startContextLength() { return this._backticks; }
     endContextLength() { return this._backticks; }
 
-    tag(end) { return this.basicTag('code', end); }
+    tag(end) { return this.basicTag(end); }
+
+    baseTag() { return 'code'; }
 
     /// <summary>
     /// Transform the inline code snippet by removing a leading or trailing space
@@ -5630,7 +5662,9 @@ class Bold extends InlineFormat
     startContextLength() { return 2; }
     endContextLength() { return 2; }
 
-    tag(end) { return this.basicTag('strong', end); }
+    tag(end) { return this.basicTag(end); }
+
+    baseTag() { return 'strong'; }
 }
 
 /// <summary>
@@ -5646,7 +5680,9 @@ class Italic extends InlineFormat
     startContextLength() { return 1; }
     endContextLength() { return 1; }
 
-    tag(end) { return this.basicTag('em', end); }
+    tag(end) { return this.basicTag(end); }
+
+    baseTag() { return 'em'; }
 }
 
 /// <summary>
@@ -5662,7 +5698,9 @@ class Underline extends InlineFormat
     startContextLength() { return 2; }
     endContextLength() { return 2; }
 
-    tag(end) { return this.basicTag('ins', end); }
+    tag(end) { return this.basicTag(end); }
+
+    baseTag() { return 'ins'; }
 }
 
 /// <summary>
@@ -5678,7 +5716,9 @@ class Strikethrough extends InlineFormat
     startContextLength() { return 2; }
     endContextLength() { return 2; }
 
-    tag(end) { return this.basicTag('s', end); }
+    tag(end) { return this.basicTag(end); }
+
+    baseTag() { return 's'; }
 }
 
 /// <summary>
@@ -5701,7 +5741,8 @@ class SuperSub extends InlineFormat
 /// </summary>
 class Superscript extends SuperSub
 {
-    tag(end) { return this.basicTag('sup', end); }
+    tag(end) { return this.basicTag(end); }
+    baseTag() { return 'sup'; }
 }
 
 /// <summary>
@@ -5709,7 +5750,8 @@ class Superscript extends SuperSub
 /// </summary>
 class Subscript extends SuperSub
 {
-    tag(end) { return this.basicTag('sub', end); }
+    tag(end) { return this.basicTag(end); }
+    baseTag() { return 'sub'; }
 }
 
 /// <summary>
@@ -5724,6 +5766,7 @@ class HtmlComment extends Run
     }
 
     tag(/*end*/) { return ''; }
+    baseTag() { return ''; }
 
     /// <summary>
     /// Technically no harm in removing (returning ''), but no harm
@@ -5749,13 +5792,12 @@ class HtmlComment extends Run
 /// </param>
 class HtmlSpan extends Run
 {
-    constructor(start, end, textStart, style, classes, classStyles, parent)
+    constructor(start, end, textStart, style, classes, parent)
     {
         super(State.HtmlSpan, start, end, parent);
         this.textStart = textStart;
         this.classes = classes;
         this.inlineStyle = style;
-        this.classStyles = classStyles;
 
         // If we have a class definition, mark this as volatile
         // so changes to the class are always picked up.
@@ -5772,11 +5814,13 @@ class HtmlSpan extends Run
     {
         if (end)
         {
-            return this.basicTag('span', end);
+            return this.basicTag(end);
         }
 
         return `<span${this._computeStyleString()}>`;
     }
+
+    baseTag() { return 'span'; }
 
     /// <summary>
     /// Computes and returns the finalized style for the span.
@@ -5830,14 +5874,16 @@ class HtmlSpan extends Run
     _populateClassStyles(importantStyles)
     {
         let styleList = [];
+        let styles = this._globalStyle();
         for (let className of this.classes)
         {
-            if (!this.classStyles[className])
+            className = '.' + className;
+            if (!styles[className])
             {
                 continue;
             }
 
-            for (const [key, value] of Object.entries(this.classStyles[className]))
+            for (const [key, value] of Object.entries(styles[className]))
             {
                 let winner = StyleHelper.getWinner(value);
                 if (!winner)
