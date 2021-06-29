@@ -384,7 +384,7 @@ class Markdown
         {
             this._resetCore(text, inlineOnly);
             this.text = text;
-            this.topRun = new Run(State.None, 0 /*start*/, this.text.length, null /*parent*/);
+            this.topRun = new Run(State.None, 0 /*start*/, this.text.length, null /*parent*/, this._globalStyle);
             this.currentRun = this.topRun;
             this._inlineOnly = inlineOnly;
             i = 0;
@@ -2155,19 +2155,21 @@ class Markdown
     /// </summary>
     _parseTableCells(table)
     {
+        let md = new Markdown();
+        md._globalStyle = this._globalStyle;
         // Normal rows
         for (let row = 0; row < table.rows.length; ++row)
         {
             for (let col = 0; col < table.rows[row].length; ++col)
             {
-                table.rows[row][col] = new Markdown().parse(table.rows[row][col], true /*inlineOnly*/);
+                table.rows[row][col] = md.parse(table.rows[row][col], true /*inlineOnly*/);
             }
         }
 
         // Header row
         for (let col = 0; col < table.header.length; ++col)
         {
-            table.header[col] = new Markdown().parse(table.header[col], true /*inlineOnly*/);
+            table.header[col] = md.parse(table.header[col], true /*inlineOnly*/);
         }
     }
 
