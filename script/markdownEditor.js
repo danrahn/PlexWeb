@@ -144,7 +144,7 @@ let MarkdownEditor = new function()
 
             let current = start - len - 1;
             let bs = 0;
-            while (current > 0 && text.value[current--])
+            while (current >= 0 && text.value[current--] == "\\")
             {
                 ++bs;
             }
