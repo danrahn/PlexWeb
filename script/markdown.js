@@ -276,7 +276,7 @@ class Markdown
             }
         }
 
-        this._trimCaches(i);
+        this._trimCaches(this.topRun.innerRuns[i].start);
 
         this.topRun.cached = '';
         if (i != this.topRun.innerRuns.length)
@@ -290,12 +290,19 @@ class Markdown
     }
 
     /// <summary>
-    /// Ensures that any cached styles or reference URLs that were defined
-    /// past the new run cutoff are culled.
+    /// Trims cached state that was defined after the given cutoff
     /// </summary>
-    _trimCaches(cutoffRun)
+    _trimCaches(cutoffIndex)
     {
-        // Make sure we don't persist cached styles
+        this._trimStyleCaches(cutoffIndex);
+        this._trimUrlCache(cutoffIndex);
+    }
+
+    /// <summary>
+    /// Remove style entries that were defined after the given cutoff.
+    /// </summary>
+    _trimStyleCaches(cutoffIndex)
+    {
         for (let dict of [this._classes, this._globalStyle])
         {
             let maxOrder = 0;
@@ -306,29 +313,44 @@ class Markdown
                     continue;
                 }
 
-                for (const [key, value] of Object.entries(styles))
+                for (const [key, definitions] of Object.entries(styles))
                 {
-                    if (value.start >= this.topRun.innerRuns[cutoffRun].start)
+                    if (definitions.length == 0 || cutoffIndex < definitions[0].start)
                     {
                         delete dict[styleKey][key];
+                        continue;
                     }
-                    else
+
+                    for (let i = definitions.length - 1; i >= 0; --i)
                     {
-                        maxOrder = Math.max(maxOrder, dict[styleKey][key].order);
+                        // eslint-disable-next-line max-depth
+                        if (definitions[i].start >= cutoffIndex)
+                        {
+                            --definitions.length;
+                        }
+                        else
+                        {
+                            maxOrder = Math.max(maxOrder, definitions[i].order + 1);
+                        }
                     }
                 }
             }
 
             dict._count = maxOrder;
         }
+    }
 
-        // Also trim invalidated URLs from our URL cache
+    /// <summary>
+    /// Remove cached URL references that were defined after the given cutoff.
+    /// </summary>
+    _trimUrlCache(cutoffIndex)
+    {
         for (const [urlRef, urls] of Object.entries(this._urls))
         {
             let cutoff = 0;
             for (let i = urls.length - 1; i >= 0; --i)
             {
-                if (urls[i].start < this.topRun.innerRuns[cutoffRun].start)
+                if (urls[i].start < cutoffIndex)
                 {
                     break;
                 }
@@ -1564,9 +1586,14 @@ class Markdown
             {
                 let kvp = this._parseStyleKV(arg.substring(0, split).trim(), arg.substring(split + 1).trim(), start);
 
+                if (!attr[kvp.key])
+                {
+                    attr[kvp.key] = [];
+                }
+
                 if (!attr[kvp.key] || kvp.important || !attr[kvp.key].important)
                 {
-                    attr[kvp.key] = { value : kvp.value.style, important : kvp.value.important, start : kvp.value.start };
+                    attr[kvp.key].push({ value : kvp.value.style, important : kvp.value.important, start : kvp.value.start });
                 }
             }
         });
@@ -1661,19 +1688,20 @@ class Markdown
         }
 
         let thisRule = dict[identifier];
-        for (const style of rules.matchAll(/\n\s*([a-zA-Z][a-zA-Z-]*)\s*:\s*([^;]+);/g))
+        for (const style of rules.matchAll(/\s*([a-zA-Z][a-zA-Z-]*)\s*:\s*([^;]+);/g))
         {
             let kvp = this._parseStyleKV(style[1], style[2], start);
-            if (!thisRule[kvp.key] || kvp.value.important || !thisRule[kvp.key].important)
+            if (!thisRule[kvp.key])
             {
-                thisRule[kvp.key] =
-                {
-                    order : dict._count++,
-                    value : kvp.value.style,
-                    important : kvp.value.important,
-                    start : kvp.value.start
-                };
+                thisRule[kvp.key] = [];
             }
+
+            thisRule[kvp.key].push({
+                order : dict._count++,
+                value : kvp.value.style,
+                important : kvp.value.important,
+                start : kvp.value.start
+            });
         }
     }
 
@@ -3878,8 +3906,14 @@ class Run
         }
 
         let style = '';
-        for (const [attribute, styleInfo] of Object.entries(styles[tag]))
+        for (const [attribute, definitions] of Object.entries(styles[tag]))
         {
+            let styleInfo = StyleHelper.getWinner(definitions);
+            if (!styleInfo)
+            {
+                continue;
+            }
+
             if (StyleHelper.allowedAttribute(attribute))
             {
                 style += `${attribute}:${StyleHelper.limitAttribute(attribute, styleInfo.value)};`;
@@ -4575,6 +4609,27 @@ class StyleHelper
             default:
                 return value;
         }
+    }
+
+    /// <summary>
+    /// Given a list of style definitions, pick and return the winner
+    /// </summary>
+    static getWinner(definitions)
+    {
+        if (!definitions || definitions.length == 0)
+        {
+            return null;
+        }
+
+        for (let i = definitions.length - 1; i >= 0; --i)
+        {
+            if (definitions[i].important)
+            {
+                return definitions[i];
+            }
+        }
+
+        return definitions[definitions.length - 1];
     }
 }
 
@@ -5784,16 +5839,22 @@ class HtmlSpan extends Run
 
             for (const [key, value] of Object.entries(this.classStyles[className]))
             {
-                if (value.important)
+                let winner = StyleHelper.getWinner(value);
+                if (!winner)
+                {
+                    continue;
+                }
+
+                if (winner.important)
                 {
                     importantStyles[key] = true;
                 }
 
                 styleList.push({
                     key : key,
-                    value : StyleHelper.limitAttribute(key, value.value),
-                    order : value.order,
-                    important : value.important
+                    value : StyleHelper.limitAttribute(key, winner.value),
+                    order : winner.order,
+                    important : winner.important
                 });
             }
         }
@@ -5808,9 +5869,15 @@ class HtmlSpan extends Run
         let newStyles = {};
         for (const [key, value] of Object.entries(this.inlineStyle))
         {
+            let winner = StyleHelper.getWinner(value);
+            if (!winner)
+            {
+                continue;
+            }
+
             if (StyleHelper.allowedAttribute(key))
             {
-                newStyles[key] = { value : StyleHelper.limitAttribute(key, value.value), important : value.important };
+                newStyles[key] = { value : StyleHelper.limitAttribute(key, winner.value), important : winner.important };
             }
         }
         return newStyles;
