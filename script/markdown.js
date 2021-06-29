@@ -5524,15 +5524,15 @@ class Table extends Run
     /// </summary>
     transform(/*newText,*/ /*side*/)
     {
-        const wrap = (text, wrapper) => `<${wrapper}>${text}</${wrapper}>`;
-        const td = function(text, align)
+        const wrap = (text, wrapper) => `<${wrapper}${this._addStyle(wrapper)}>${text}</${wrapper}>`;
+        const td = (text, align) =>
         {
             if (align == -2)
             {
-                return `<td>${text}</td>`;
+                return wrap(text, 'td');
             }
 
-            return '<td align="' + (align == -1 ? 'left' : align == 0 ? 'center' : 'right') + `">${text}</td>`;
+            return '<td align="' + (align == -1 ? 'left' : align == 0 ? 'center' : 'right') + `"${this._addStyle('td')}>${text}</td>`;
         };
 
         // Ignore the text and use our table to build this up

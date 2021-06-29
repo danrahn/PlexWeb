@@ -1731,6 +1731,11 @@ class MarkdownTestSuite
             [
                 'A\n<!--\nB\n\nC-->',
                 this._divWrap('A<br /><!--\nB\n\nC-->')
+            ],
+            [
+                '<style>\ntd{color:red;}\n</style>\nA|\n---|',
+                '<!-- <style>\ntd{color:red;}\n</style> -->' +
+                '<table><thead><tr><td style="color:red;">A</td></tr></thead><tbody></tbody></table>'
             ]
         );
 
