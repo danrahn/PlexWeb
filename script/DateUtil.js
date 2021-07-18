@@ -25,21 +25,19 @@ let DateUtil = new function()
             return "Just Now";
         }
 
-        let underOneWeek = _checkDate(dateDiff /= 1000, 60, "second") ||
+        let underTwoWeeks = _checkDate(dateDiff /= 1000, 60, "second") ||
             _checkDate(dateDiff /= 60, 60, "minute") ||
             _checkDate(dateDiff /= 60, 24, "hour") ||
-            _checkDate(dateDiff /= 24, 7, "day");
+            _checkDate(dateDiff /= 24, 14, "day");
 
-        if (underOneWeek)
+        if (underTwoWeeks)
         {
-            return underOneWeek;
+            return underTwoWeeks;
         }
 
         if (dateDiff <= 28)
         {
-            // For weeks do some extra approximation, as it's odd to see
-            // "1 week ago" for something created 13 days ago
-            let weeks = Math.floor((dateDiff + 3) / 7);
+            let weeks = Math.floor(dateDiff / 7);
             return `${weeks} week${weeks == 1 ? "" : "s"} ago`;
         }
 
