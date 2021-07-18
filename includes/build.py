@@ -398,7 +398,8 @@ def get_deps(file, deps):
     raw = file[:file.rfind('.')]
     if not raw in deps:
         return res
-    get_deps_core(raw, deps, res)
+    get_deps_core(raw, deps, 0, res)
+    res = flatten_deps(res)
     res.append(raw) # Always add the page's core js file last
 
     # Order doesn't matter too much, but consolelog and common
@@ -414,13 +415,25 @@ def get_deps(file, deps):
         res.insert(1 if has_consolelog else 0, "common")
     return res
 
-def get_deps_core(dep, deps, res):
+def get_deps_core(dep, deps, depth, res):
     '''Recursively add dependencies if they're not already part of the result'''
+    while len(res) <= depth:
+        res.append([])
     for include in deps[dep]['js']:
-        if not include in res:
-            res.append(include)
-            get_deps_core(include, deps, res)
+        if not include in res[depth]:
+            res[depth].insert(0, include)
+            get_deps_core(include, deps, depth + 1, res)
+        else:
+            res[depth].remove(include)
+            res[depth].insert(0, include)
 
+def flatten_deps(deps):
+    res = []
+    for depLevel in reversed(deps):
+        for dep in depLevel:
+            if dep not in res:
+                res.append(dep)
+    return res
 
 
 def needs_parse(file, includes, modified_dates, min_file):
@@ -476,7 +489,7 @@ def create_temp(includes, rem_log, ultra):
         if include == "markdown" and ultra:
             # Very hacky,  but minifiers aren't great at minifying classes/enums, but in
             # this specific case we know it's okay to do so do some pre-minification
-            lines = preminify_markdown(lines, rem_log == 4)
+            lines = preminify_markdown(lines, rem_log)
         combined += '/* ' + include + '*/\n' + lines + '\n\n'
 
     combined += '})();'
@@ -564,7 +577,7 @@ def get_modified_dates(filter):
     return last_modified
 
 
-def preminify_markdown(lines, rem_tmi):
+def preminify_markdown(lines, rem_log):
     '''
     We can save a few extra KBs by doing some targeted minification on
     markdown.js that our minification tools would otherwise overlook
@@ -581,9 +594,17 @@ def preminify_markdown(lines, rem_tmi):
         if end != -1:
             lines = lines.replace(lines[start:end], 'let stateToStr = (state) => state;')
 
+    if rem_log != 0:
+        start = lines.find('const shouldLogTmi = ')
+        if start == -1:
+            print('WARN: could not find "shouldLogTmi" for removal')
+        else:
+            end = lines.find('}\n', start) + 2
+            lines = lines.replace(lines[start:end], '')
+
     # Check whether we should remove TMI logging. There is a
     # separate flag for markdown-specific removal, since it's especially noisy
-    if rem_tmi:
+    if rem_log == 4:
         lines = re.sub(r'(\/\*@__PURE__\*\/)?\blogTmi\(.*\); *\n', '', lines)
 
     # currentRun is used quite a bit

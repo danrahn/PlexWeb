@@ -250,40 +250,77 @@ function get_includes($file)
 {
     $deps = json_decode(file_get_contents('includes/deps.json'));
     $result = [];
-    get_includes_core($file, $deps, $result);
-    array_push($result, $file);
+    get_includes_core($file, $deps, 0, $result);
+    $flattened = flatten_includes($result);
+    echo "<!--\n";
+    print_r($result);
+    echo "\n\n";
+    print_r($flattened);
+    echo "\n-->";
+    array_push($flattened, $file);
 
-    $has_consolelog = array_search("consolelog", $result);
+    $has_consolelog = array_search("consolelog", $flattened);
     
     if ($has_consolelog != FALSE)
     {
-        array_splice($result, $has_consolelog, 1);
-        array_splice($result, 0, 0, "consolelog");
+        array_splice($flattened, $has_consolelog, 1);
+        array_splice($flattened, 0, 0, "consolelog");
     }
 
-    $has_common = array_search("common", $result);
+    $has_common = array_search("common", $flattened);
     if ($has_common !== FALSE && $has_common != ($has_consolelog === FALSE ? 0 : 1))
     {
-        array_splice($result, $has_common, 1);
-        array_splice($result, $has_consolelog === FALSE ? 0 : 1, 0, "common");
+        array_splice($flattened, $has_common, 1);
+        array_splice($flattened, $has_consolelog === FALSE ? 0 : 1, 0, "common");
     }
 
-    return $result;
+    return $flattened;
 }
 
 /// <summary>
 /// Recursively add dependencies to the result list
 /// </summary>
-function get_includes_core($dep, $deps, &$result)
+function get_includes_core($dep, $deps, $depth, &$result)
 {
+    if (!array_key_exists($depth, $result))
+    {
+        $result[$depth] = [];
+    }
     foreach ($deps->$dep->js as $include)
     {
-        if (!in_array($include, $result))
+        if (!in_array($include, $result[$depth]))
         {
-            array_push($result, $include);
-            get_includes_core($include, $deps, $result);
+            array_unshift($result[$depth], $include);
+            get_includes_core($include, $deps, $depth + 1, $result);
+        }
+        else
+        {
+            array_splice($result[$depth], array_search($include, $result[$depth]), 1);
+            array_unshift($result[$depth], $include);
         }
     }
+}
+
+/// <summary>
+/// Given a list of dependencies bucketed by dependency
+/// depth, return a flattened list in order of deepest to
+/// shallowest dependency depth
+/// </summary>
+function flatten_includes($includes)
+{
+    $flattened = [];
+    for ($i = count($includes) - 1; $i >= 0; --$i)
+    {
+        foreach ($includes[$i] as $dep)
+        {
+            if (!in_array($dep, $flattened))
+            {
+                array_push($flattened, $dep);
+            }
+        }
+    }
+
+    return $flattened;
 }
 
 /// <summary>
