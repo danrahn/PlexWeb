@@ -2,9 +2,20 @@
 /// Displays information about libraries on the plex server. Implements tableCommon
 /// </summary>
 
+/* eslint-disable class-methods-use-this */
+
+class LibraryTable extends Table
+{
+    supportsSearch() { return false; }
+    identifier() { return "library"; }
+    updateFunc() { return () => sendHtmlJsonRequest("administration.php", { type : "sections" }, buildSections); }
+}
+
+let libraryTable;
 window.addEventListener("load", function()
 {
-    Table.update();
+    libraryTable = new LibraryTable();
+    libraryTable.update();
 });
 
 /// <summary>
@@ -28,7 +39,7 @@ function buildSection(section)
     section.created = new Date(section.created * 1000);
     section.updated = new Date(section.updated * 1000);
     section.last_scanned = new Date(section.last_scanned * 1000);
-    let div = Table.itemHolder();
+    let div = libraryTable.itemHolder();
     let list = buildNode("ul");
     for (let [key, value] of Object.entries(section))
     {
@@ -110,27 +121,3 @@ function refreshNode()
 
     sendHtmlJsonRequest("administration.php", { type : "refresh", section : key }, successFunc, failureFunc);
 }
-
-/// <summary>
-/// Unique identifier for this table. Used by tableCommon
-/// </summary>
-Table.identifier = function()
-{
-    return "library";
-};
-
-/// <summary>
-/// Returns the function that will update this table. Used by tableCommon
-/// </summary>
-Table.updateFunc = function()
-{
-    return () => sendHtmlJsonRequest("administration.php", { type : "sections" }, buildSections);
-};
-
-/// <summary>
-/// Returns whether we support table search. We don't for libraries
-/// </summary>
-Table.supportsSearch = function()
-{
-    return false;
-};

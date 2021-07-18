@@ -9,6 +9,7 @@
             "nav",
             "queryStatus",
             "tableCommon",
+            "ActivityFilter",
             "tooltip"
         ],
         "css" :
@@ -16,6 +17,17 @@
             "style",
             "activity"
         ]
+    },
+    "ActivityFilter" :
+    {
+        "js" :
+        [
+            "common",
+            "consolelog",
+            "FilterUIBuilder",
+            "UserFilter"
+        ],
+        "css" : []
     },
     "administration" :
     {
@@ -62,6 +74,19 @@
     },
     "consolelog" : { "js" : [], "css" : [] },
     "DateUtil" : { "js" : [], "css" : [] },
+    "Filter" :
+    {
+        "js" :
+        [
+            "animate",
+            "common",
+            "consolelog",
+            "FilterUIBuilder",
+            "tableCommon"
+        ],
+        "css" : []
+    },
+    "FilterUIBuilder" : { "js" : [], "css" : [] },
     "forgot" :
     {
         "js" :
@@ -185,6 +210,16 @@
             "markdown_sandbox"
         ]
     },
+    "MemberFilter" :
+    {
+        "js" :
+        [
+            "common",
+            "consolelog",
+            "Filter"
+        ],
+        "css" : []
+    },
     "members" :
     {
         "js" :
@@ -195,6 +230,7 @@
             "nav",
             "queryStatus",
             "tableCommon",
+            "MemberFilter",
             "tooltip"
         ],
         "css" :
@@ -305,6 +341,17 @@
             "request"
         ]
     },
+    "RequestFilter" :
+    {
+        "js" :
+        [
+            "common",
+            "consolelog",
+            "FilterUIBuilder",
+            "UserFilter"
+        ],
+        "css" : []
+    },
     "remote" :
     {
         "js" :
@@ -334,6 +381,7 @@
             "nav",
             "queryStatus",
             "tableCommon",
+            "RequestFilter",
             "tooltip"
         ],
         "css" :
@@ -395,5 +443,15 @@
             "style",
             "user_settings"
         ]
+    },
+    "UserFilter" :
+    {
+        "js" :
+        [
+            "animate",
+            "common",
+            "Filter"
+        ],
+        "css" : []
     }
 }

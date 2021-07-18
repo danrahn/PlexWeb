@@ -1,27 +1,22 @@
 /// <summary>
-/// Logic to display the list of registered users. Implements tableCommon
+/// Logic to display the list of registered users.
 /// </summary>
 
+/* eslint-disable class-methods-use-this */
+
+class MemberTable extends Table
+{
+    supportsSearch() { return true; }
+    identifier() { return "members"; }
+    updateFunc() { return getMembers; }
+}
+
+let memberTable;
 window.addEventListener("load", function()
 {
-    Table.update();
+    memberTable = new MemberTable(new MemberFilter());
+    memberTable.update();
 });
-
-/// <summary>
-/// Unique identifier for this table. Used by tableCommon
-/// </summary>
-Table.identifier = function()
-{
-    return "members";
-};
-
-/// <summary>
-/// The function to call that will update this table. Used by tableCommon
-/// </summary>
-Table.updateFunc = function()
-{
-    return getMembers;
-};
 
 /// <summary>
 /// Get list of members from the server, based on the current filter
@@ -32,18 +27,17 @@ function getMembers(searchValue="")
     let parameters =
     {
         type : ProcessRequest.GetMembers,
-        num : Table.getPerPage(),
-        page : Table.getPage(),
+        num : memberTable.getPerPage(),
+        page : memberTable.getPage(),
         search : searchValue,
-        filter : JSON.stringify(Table.Filter.get())
+        filter : JSON.stringify(memberTable.filter.get())
     };
 
-    Table.displayInfoMessage("Loading...");
+    memberTable.displayInfoMessage("Loading...");
     let successFunc = function(response)
     {
-
         buildMembers(response.data);
-        Table.setPageInfo(response.total);
+        memberTable.setPageInfo(response.total);
 
         if (searchValue.length != 0)
         {
@@ -53,7 +47,7 @@ function getMembers(searchValue="")
 
     let failureFunc = function()
     {
-        Table.displayInfoMessage("Something went wrong :(");
+        memberTable.displayInfoMessage("Something went wrong :(");
     };
 
     sendHtmlJsonRequest("process_request.php", parameters, successFunc, failureFunc);
@@ -83,7 +77,7 @@ function getUsernameSpan(member)
 /// </summary>
 function buildMember(member)
 {
-    let holder = Table.itemHolder();
+    let holder = memberTable.itemHolder();
     let title = buildNode("div", { class : "memberTitle" });
     title.appendChild(buildNode(
         "span",
@@ -132,16 +126,16 @@ function buildMember(member)
 /// </summary>
 function buildMembers(members)
 {
-    Table.clear();
+    memberTable.clear();
     if (members.length == 0)
     {
-        Table.displayInfoMessage("No members returned. That can't be right!");
+        memberTable.displayInfoMessage("No members returned. That can't be right!");
         return;
     }
 
     members.forEach(function(member)
     {
-        Table.addItem(buildMember(member));
+        memberTable.addItem(buildMember(member));
     });
 }
 
@@ -161,188 +155,3 @@ function expandContractMember()
         this.parentNode.parentNode.$$(".memberDetails").style.display = "none";
     }
 }
-
-/// <summary>
-/// Modifies the filter HTML to reflect the current filter settings
-/// </summary>
-Table.Filter.populate = function()
-{
-    let filter = Table.Filter.get();
-    $("#showNew").checked = filter.type.new;
-    $("#showRegular").checked = filter.type.regular;
-    $("#showAdmin").checked = filter.type.admin;
-    $("#hasPII").value = filter.pii;
-    $("#sortBy").value = filter.sort;
-    $("#sortOrder").value = filter.order == "desc" ? "sortDesc" : "sortAsc";
-
-    setSortOrderValues();
-    $("#sortBy").addEventListener("change", setSortOrderValues);
-};
-
-/// <summary>
-/// Returns the new filter definition based on the state of the filter HTML
-/// </summary>
-Table.Filter.getFromDialog = function()
-{
-    return {
-        type :
-        {
-            new : $("#showNew").checked,
-            regular : $("#showRegular").checked,
-            admin : $("#showAdmin").checked
-        },
-        pii : $("#hasPII").value,
-        sort : $("#sortBy").value,
-        order : $("#sortOrder").value == "sortDesc" ? "desc" : "asc"
-    };
-};
-
-/// <summary>
-/// Handler that modifies the sort order strings based on the sort criteria
-/// </summary>
-function setSortOrderValues()
-{
-    let sortBy = $("#sortBy").value;
-    if (sortBy == "level")
-    {
-        $("#sortDesc").text = "Highest to Lowest";
-        $("#sortAsc").text = "Lowest to Highest";
-    }
-    else if (sortBy == "name")
-    {
-        $("#sortDesc").text = "A-Z";
-        $("#sortAsc").text = "Z-A";
-    }
-    else if (sortBy == "seen")
-    {
-        $("#sortDesc").text = "Descending";
-        $("#sortAsc").text = "Ascending";
-    }
-    else
-    {
-        $("#sortDesc").text = "Newest First";
-        $("#sortAsc").text = "Oldest First";
-    }
-}
-
-/// <summary>
-/// Builds and returns the HTML for the filter dialog
-/// </summary>
-Table.Filter.html = function()
-{
-    let options = [];
-
-    let checkboxes =
-    {
-        "New Members" : "showNew",
-        Regulars : "showRegular",
-        Admins : "showAdmin"
-    };
-
-    for (let [label, name] of Object.entries(checkboxes))
-    {
-        options.push(Table.Filter.buildCheckbox(label, name));
-    }
-
-    options.push(buildNode("hr"));
-
-    options.push(Table.Filter.buildDropdown(
-        "Has PII",
-        {
-            All : "all",
-            Yes : "yes",
-            No : "no"
-        }));
-    options.push(buildNode("hr"));
-
-    options.push(Table.Filter.buildDropdown(
-        "Sort By",
-        {
-            "Account Age" : "id",
-            Name : "name",
-            "Last Login" : "seen",
-            Level : "level",
-        }));
-
-    options.push(Table.Filter.buildDropdown(
-        "Sort Order",
-        {
-            "Newest First" : "sortDesc",
-            "Oldest First" : "sortAsc"
-        },
-        true /*addId*/));
-    options.push(buildNode("hr"));
-
-    return Table.Filter.htmlCommon(options);
-};
-
-/// <summary>
-/// Shorthand for the verbose Object's hasOwnProperty call
-/// </summary>
-function hasProp(item, property)
-{
-    return Object.prototype.hasOwnProperty.call(item, property);
-}
-
-/// <summary>
-/// Retrieves the stored user filter (persists across page navigation, for better or worse)
-/// </summary>
-Table.Filter.get = function()
-{
-    let filter = null;
-    try
-    {
-        filter = JSON.parse(localStorage.getItem(Table.idCore() + "_filter"));
-    }
-    catch (e)
-    {
-        Log.error("Unable to parse stored filter, resetting");
-    }
-
-    if (filter === null ||
-        !hasProp(filter, "type") ||
-            !hasProp(filter.type, "new") ||
-            !hasProp(filter.type, "regular") ||
-            !hasProp(filter.type, "admin") ||
-        !hasProp(filter, "pii") ||
-        !hasProp(filter, "sort") ||
-        !hasProp(filter, "order"))
-    {
-        if (filter !== null)
-        {
-            Log.error(filter, "Bad filter, resetting");
-        }
-
-        filter = Table.Filter.default();
-        Table.Filter.set(filter, false);
-    }
-
-    Log.verbose(filter, "Got Filter");
-    return filter;
-};
-
-/// <summary>
-/// Returns the default filter for the member table (i.e. nothing filtered)
-/// </summary>
-Table.Filter.default = function()
-{
-    return {
-        type :
-        {
-            new : true,
-            regular : true,
-            admin : true
-        },
-        pii : "all",
-        sort : "id",
-        order : "asc"
-    };
-};
-
-/// <summary>
-/// Returns whether we support table search. We do for members
-/// </summary>
-Table.supportsSearch = function()
-{
-    return true;
-};

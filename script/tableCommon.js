@@ -5,62 +5,65 @@
 /// 1. identifier() - Returns a string that identifies this table (required)
 /// 2. updateFunc() - Returns a function to call when updating the table (required)
 /// 3. supportsSearch() - Returns whether searching the table is supported (optional, default=false)
-/// 4. Filter - optional
-///    a. html() - The filter dialog UI
-///    b. populate() - Populate the filter dialog with the current values
-///    c. get() - Retrieves the current filter from localStorage
-///    d. default() - Returns the default filter state
-///    b. getFromDialog() - Returns the new filter based on the current state of the filter dialog
 /// </summary>
 
-/* exported Table */
+/* exported Table, Filter */
 
-// eslint-disable-next-line max-lines-per-function
-let Table = new function()
+/*eslint-disable class-methods-use-this */
+
+class Table
 {
-    /// <summary>
-    /// On load set up all the handlers we need
-    /// </summary>
-    window.addEventListener("load", function()
+    constructor(tableFilter=null)
     {
-        setupPerPage();
-        setupNavigation();
-        setupTableSearch();
-        Table.Filter.setup();
-        setupKeyboardNavigation();
-        setupDirectPageNavigation();
-    });
 
-    /// <summary>
-    /// Global containing the total number of pages in the table
-    /// </summary>
-    let tablePages = 0;
+        window.addEventListener("load", function()
+        {
+            Log.error("Table constructed before DOM was loaded. This shouldn't happen!");
+        });
+
+        /// <summary>Total number of pages in the table</summary>
+        this.tablePages = 0;
+
+        /// <summary>Custom filter options that can be applied to this table</summary>
+        this.filter = tableFilter;
+        this.filter.setTable(this);
+
+        /// <summary>List of current DOM table entries</summary>
+        this.tableEntries = $("#tableEntries");
+
+        this.setupPerPage();
+        this.setupNavigation();
+        this.setupTableSearch();
+        this.setupFilter();
+        this.setupKeyboardNavigation();
+        this.setupDirectPageNavigation();
+    }
 
     /// <summary>
     /// Clear out the current contents of the request table and replace it
     /// with a single informational message
     /// </summary>
-    this.displayInfoMessage = function(message)
+    displayInfoMessage(message)
     {
-        Table.clear();
+        this.clear();
         $("#tableEntries").appendChild(buildNode("div", { id : "resultInfo" }, message));
-    };
+    }
 
     /// <summary>
     /// Set up click handlers for previous/next buttons
     /// </summary>
-    let setupNavigation = function()
+    setupNavigation()
     {
         $(".previousPage").forEach(function(e)
         {
-            e.addEventListener("click", Table.previousPage);
-        });
+            e.addEventListener("click", this.previousPage.bind(this));
+        }, this);
 
         $(".nextPage").forEach(function(e)
         {
-            e.addEventListener("click", Table.nextPage);
-        });
-    };
+            e.addEventListener("click", this.nextPage.bind(this));
+        }, this);
+    }
 
     /// <summary>
     /// Set up general keyboard navigation, and the handler for
@@ -69,7 +72,7 @@ let Table = new function()
     /// SHIFT + LEFT_ARROW - Previous Page
     /// SHIFT + RIGHT_ARROW - Next Page
     /// </summary>
-    let setupKeyboardNavigation = function()
+    setupKeyboardNavigation()
     {
         document.addEventListener("keyup", function(e)
         {
@@ -89,10 +92,10 @@ let Table = new function()
                     default:
                         break;
                     case KEY.LEFT:
-                        Table.previousPage();
+                        this.previousPage();
                         break;
                     case KEY.RIGHT:
-                        Table.nextPage();
+                        this.nextPage();
                         break;
                     case KEY.F:
                         if ($$(".filterBtn"))
@@ -103,49 +106,65 @@ let Table = new function()
                         break;
                 }
             }
-        });
-    };
+        }.bind(this));
+    }
 
     /// <summary>
     /// Sets up listeners for the direct page select text boxes
     /// </summary>
-    let setupDirectPageNavigation = function()
+    setupDirectPageNavigation()
     {
         $(".pageSelect").forEach(function(input)
         {
             input.addEventListener("keyup", function(e)
             {
                 let key = e.keyCode ? e.keyCode : e.which;
+                let src = e.srcElement;
                 if (key == KEY.ENTER)
                 {
-                    let page = parseInt(this.value);
-                    if (isNaN(page) || page <= 0 || page > tablePages)
+                    let page = parseInt(src.value);
+                    if (isNaN(page) || page <= 0 || page > this.tablePages)
                     {
-                        this.value = Table.getPage() + 1;
-                        this.select();
+                        src.value = this.getPage() + 1;
+                        src.select();
                         return;
                     }
 
-                    Table.setPage(page - 1, true);
-                    this.select();
+                    this.setPage(page - 1, true /*update*/);
+                    src.select();
                 }
-            });
+            }.bind(this));
 
             input.addEventListener("focus", function()
             {
-                this.select();
+                input.select();
             });
-        });
-    };
+        }, this);
+    }
+
+    setupFilter()
+    {
+        if (!this.filter)
+        {
+            $(".filterBtn").forEach(function(filterBtn)
+            {
+                filterBtn.style.display = "none";
+            });
+
+            return;
+        }
+
+        this.filter.setup();
+    }
 
     /// <summary>
     /// Setup listeners for searching the table
     /// </summary>
-    let setupTableSearch = function()
+    setupTableSearch()
     {
         // If the table does not have a search function,
         // don't show anything. Might mess up CSS
-        if (typeof(Table.supportsSearch) == "undefined" || !Table.supportsSearch())
+        if (!this.supportsSearch())
         {
             $(".searchBtn").forEach(function(btn)
             {
@@ -157,22 +176,22 @@ let Table = new function()
 
         $(".searchBtn").forEach(function(btn)
         {
-            btn.addEventListener("click", searchBtnClick);
-        });
+            btn.addEventListener("click", this.searchBtnClick.bind(this));
+        }, this);
 
         $(".searchGo").forEach(function(btn)
         {
-            btn.addEventListener("click", startTableSearch);
-        });
+            btn.addEventListener("click", this.startTableSearch.bind(this));
+        }, this);
 
-        _setupSearchListeners();
-    };
+        this._setupSearchListeners();
+    }
 
     /// <summary>
     /// Sets up search listeners to commit on enter/cancel on escape
     /// as well as setting up the click handler for the cancel button
     /// </summary>
-    let _setupSearchListeners = function()
+    _setupSearchListeners()
     {
         $(".searchInput").forEach(function(input)
         {
@@ -207,15 +226,15 @@ let Table = new function()
 
         $("#clearSearch").addEventListener("click", function()
         {
-            $(".searchInput").forEach(function() { this.value = ""; });
-            Table.update();
-        });
-    };
+            $(".searchInput").forEach(function(input) { input.value = ""; });
+            this.update();
+        }.bind(this));
+    }
 
     /// <summary>
     /// Listener fired when the search button is clicked
     /// </summary>
-    let searchBtnClick = function()
+    searchBtnClick(event)
     {
         let show = !$$(".pageStatus").style.display || $$(".pageStatus").style.display != "none";
         $(".pageStatus").forEach(function(ele)
@@ -230,378 +249,68 @@ let Table = new function()
 
         if (show)
         {
-            this.parentNode.$$(".searchInput").focus();
+            event.srcElement.parentNode.parentNode.$$(".searchInput").focus();
         }
-    };
+    }
 
     /// <summary>
     /// Initiates a search. If the owner hasn't defined
     /// a search function, warn the user.
     /// </summary>
-    let startTableSearch = function()
+    startTableSearch(event)
     {
         try
         {
-            Table.update(this.parentNode.$$(".searchInput").value);
+            this.update(event.srcElement.parentNode.$$(".searchInput").value);
         }
         catch (e)
         {
             Overlay.show("This table doesn't have search enabled (yet)", "OK", Overlay.dismiss);
         }
-    };
-
-    // eslint-disable-next-line max-lines-per-function
-    this.Filter = new function()
-    {
-        /// <summary>
-        /// Sets the current filter. No validation, but some basic validation
-        /// should exist when grabbing the filter from localStorage
-        /// </summary>
-        /// <param name="update">
-        /// If true, applies the new filter.
-        /// False if we aren't ready to query the server for updated items yet
-        /// </param>
-        this.set = function(filter, update)
-        {
-            Log.verbose(filter, "Setting filter to");
-            localStorage.setItem(Table.idCore() + "_filter", JSON.stringify(filter));
-            if (update)
-            {
-                Table.clear();
-                Table.update();
-            }
-        };
-
-        /// <summary>
-        /// Setup filter button listeners. If no filter is found, hide the filter icons
-        /// </summary>
-        this.setup = function()
-        {
-            if (typeof(Table.Filter.html) == "undefined")
-            {
-                $(".filterBtn").forEach(function(filter)
-                {
-                    filter.style.display = "none";
-                });
-
-                return;
-            }
-
-            $(".filterBtn").forEach(function(filter)
-            {
-                filter.addEventListener("click", launch);
-            });
-
-            document.body.addEventListener("keyup", tableFilterKeyHandler);
-        };
-
-        /// <summary>
-        /// Wraps the given options in a common filter UI container
-        /// </summary>
-        this.htmlCommon = function(options)
-        {
-            let container = buildNode("div", { id : "filterContainer" }).appendChildren(
-                buildNode("h3", {}, "Filter Options"),
-                buildNode("hr")
-            );
-
-            options.forEach(function(option)
-            {
-                container.appendChild(option);
-            });
-
-            _checkPerPageInFilter(container);
-
-            const buildButton = (text, id, style="") => buildNode("input", {
-                type : "button",
-                value : text,
-                id : id,
-                style : style
-            });
-
-            let buttonHolder = buildNode("div", { class : "formInput" });
-            let innerButtonHolder = buildNode("div", { class : "filterButtons" });
-            innerButtonHolder.appendChildren(
-                buildButton("Cancel", "cancelFilter", "margin-right: 10px"),
-                buildButton("Reset", "resetFilter", "margin-right: 10px"),
-                buildButton("Apply", "applyFilter")
-            );
-
-            return container.appendChildren(buttonHolder.appendChildren(innerButtonHolder));
-        };
-
-        /// <summary>
-        /// In mobile view we don't show 'per page' directly in the table
-        /// header to save space. Move it into the filter UI
-        /// </summary>
-        let _checkPerPageInFilter = function(container)
-        {
-            if (getComputedStyle($$(".nomobile")).display != "inline")
-            {
-                container.appendChild(Table.Filter.buildDropdown(
-                    "Show Per Page",
-                    {
-                        25 : "25",
-                        50 : "50",
-                        100 : "100",
-                        All : "0"
-                    }));
-
-                container.appendChild(buildNode("hr"));
-            }
-        };
-
-        /// <summary>
-        /// Handle keystrokes
-        /// </summary>
-        let tableFilterKeyHandler = function(e)
-        {
-            let key = e.keyCode ? e.keyCode : e.which;
-            if (key == KEY.ESC)
-            {
-                dismiss();
-            }
-            else if (key == KEY.ENTER && e.ctrlKey)
-            {
-                let overlay = $("#filterOverlay");
-                if (overlay && overlay.style.opacity == "1")
-                {
-                    $("#applyFilter").click();
-                }
-            }
-        };
-
-        /// <summary>
-        /// Launch the filter dialog and set up applicable event handlers
-        /// </summary>
-        let launch = function()
-        {
-            let overlay = _buildAndAttachFilterOverlay();
-
-            // Somewhat hacky to do this here, but query selection doesn't
-            // work until the item is actually added to the DOM
-            let perPage = $("#showPerPage");
-            if (perPage)
-            {
-                perPage.value = Table.getPerPage();
-            }
-
-            Table.Filter.populate();
-            $("#applyFilter").addEventListener("click", function()
-            {
-                Table.setPage(0);
-                let applyPerPage = !!$("#showPerPage");
-                Table.Filter.set(Table.Filter.getFromDialog(), !applyPerPage /*update*/);
-                if (applyPerPage)
-                {
-                    setPerPage($("#showPerPage").value, true /*update*/);
-                }
-
-                dismiss();
-            });
-
-            $("#cancelFilter").addEventListener("click", dismiss);
-            $("#resetFilter").addEventListener("click", function()
-            {
-                Table.setPage(0);
-                Table.Filter.set(Table.Filter.default(), true);
-                dismiss();
-            });
-
-            Animation.queue({ opacity : 1 }, overlay, 250);
-
-            // Set focus to the first input
-            overlay.$$("input").focus();
-        };
-
-        /// <summary>
-        /// Dismisses the filter overlay with an animation if it's present
-        /// </summary>
-        let dismiss = function()
-        {
-            let overlay = $("#filterOverlay");
-            if (overlay && overlay.style.opacity == "1")
-            {
-                Animation.queue({ opacity : 0 }, overlay, 250, true);
-            }
-        };
-
-        /// <summary>
-        /// Build and return the filter dialog element
-        /// </summary>
-        let _buildAndAttachFilterOverlay = function()
-        {
-            let overlay = buildNode(
-                "div",
-                { id : "filterOverlay", style : "opacity: 0" },
-                Table.Filter.html().outerHTML,
-                {
-                    click : function(e)
-                    {
-                        // A click outside the main dialog will dismiss it
-                        if (e.target.id == "filterOverlay")
-                        {
-                            dismiss();
-                        }
-                    }
-                }
-            );
-
-            document.body.appendChild(overlay);
-            return overlay;
-        };
-
-        /// <summary>
-        /// Get a list of all the users to populate the admin-only filter option
-        /// </summary>
-        this.populateUserFilter = function()
-        {
-            let params = { type : ProcessRequest.GetAllMembers };
-            let successFunc = function(response)
-            {
-                let select = $("#filterTo");
-                response.forEach(function(user)
-                {
-                    select.appendChild(buildNode("option", { value : user.id }, user.username));
-                });
-
-                select.value = Table.Filter.get().user;
-            };
-
-            let failureFunc = function()
-            {
-                Animation.queue({ backgroundColor : "rgb(100, 66, 69)" }, $("#filterTo"), 500);
-                Animation.queueDelayed({ backgroundColor : "rgb(63, 66, 69)" }, $("#filterTo"), 1000, 500, true);
-            };
-
-            sendHtmlJsonRequest("process_request.php", params, successFunc, failureFunc);
-        };
-
-        /// <summary>
-        /// Returns a checkbox filter item with the given label and name
-        /// If the name is empty, return an hr instead
-        /// </summary>
-        this.buildCheckbox = function(label, name)
-        {
-            if (name == "")
-            {
-                return buildNode("hr");
-            }
-
-            let div = buildNode(
-                "div",
-                { class : "formInput" },
-                0,
-                {
-                    click : function(e)
-                    {
-                        // If we clicked the filter item but not directly on the label.checkbox, pretend we did
-                        if (e.target == this)
-                        {
-                            this.$$("input").click();
-                        }
-                    }
-                }
-            );
-
-            return div.appendChildren(
-                buildNode("label", { for : name }, label + ": "),
-                buildNode(
-                    "input",
-                    {
-                        type : "checkbox",
-                        name : name,
-                        id : name
-                    }
-                )
-            );
-        };
-
-        /// <summary>
-        /// Builds a filter dropdown
-        /// </summary>
-        /// <param name="title">The label for the dropdown</param>
-        /// <param name="options">A dictionary of options mapping labels to their associated values</param>
-        /// <param name="addId">If true, adds an id to each option that equals the option's value</param>
-        this.buildDropdown = function(title, options, addId=false)
-        {
-            // Make the name the camelCase version of the title
-            let name = title.split(" ");
-            name = name.splice(0, 1)[0].toLowerCase() + name.join("");
-            let container = buildNode("div", { class : "formInput" });
-            container.appendChild(buildNode("label", { for : name }, title + ": "));
-            let select = buildNode("select", { name : name, id : name });
-            for (let [label, value] of Object.entries(options))
-            {
-                let option = buildNode("option", { value : value }, label);
-                if (addId)
-                {
-                    option.id = value;
-                }
-
-                select.appendChild(option);
-            }
-
-            return container.appendChildren(select);
-        };
-    }();
+    }
 
     /// <summary>
     /// Navigate to the previous page if we're not on the first page
     /// </summary>
-    this.previousPage = function()
+    previousPage()
     {
-        let page = Table.getPage();
+        let page = this.getPage();
         if (page <= 0)
         {
             return;
         }
 
-        Table.setPage(page - 1, true);
-    };
+        this.setPage(page - 1, true);
+    }
 
     /// <summary>
     /// Navigate to the next page if we're not on the last page
     /// </summary>
-    this.nextPage = function()
+    nextPage()
     {
-        let page = Table.getPage();
-        if (page == tablePages - 1)
+        let page = this.getPage();
+        if (page == this.tablePages - 1)
         {
             return;
         }
 
-        Table.setPage(page + 1, true);
-    };
-
-    /// <summary>
-    /// Returns the identifier for this table, or a 'shared' id
-    /// if no id has been provided
-    /// </summary>
-    this.idCore = function()
-    {
-        if (typeof(Table.identifier) == "undefined")
-        {
-            return "table_shared";
-        }
-
-        return "table_" + Table.identifier();
-    };
+        this.setPage(page + 1, true);
+    }
 
     /// <summary>
     /// Returns the user's current page
     /// </summary>
-    this.getPage = function()
+    getPage()
     {
-        let page = parseInt(localStorage.getItem(Table.idCore() + "_page"));
+        let page = parseInt(localStorage.getItem(this.idCore() + "_page"));
         if (page === null || isNaN(page) || page < 0)
         {
             page = 0;
-            Table.setPage(page);
+            this.setPage(page);
         }
 
         return page;
-    };
+    }
 
     /// <summary>
     /// Set the number of items to show per page
@@ -610,13 +319,13 @@ let Table = new function()
     /// If true, applies the new perPage setting
     /// False if we aren't ready to change pages yet
     /// </param>
-    this.setPage = function(page, update)
+    setPage(page, update)
     {
-        localStorage.setItem(Table.idCore() + "_page", page);
+        localStorage.setItem(this.idCore() + "_page", page);
         if (update)
         {
-            Table.clear();
-            Table.update();
+            this.clear();
+            this.update();
         }
 
         if (page == 0)
@@ -636,7 +345,7 @@ let Table = new function()
             });
         }
 
-        if (page == tablePages - 1)
+        if (page == this.tablePages - 1)
         {
             $(".nextPage").forEach(function(button)
             {
@@ -652,14 +361,14 @@ let Table = new function()
                 button.disabled = false;
             });
         }
-    };
+    }
 
     /// <summary>
     /// Returns the number of items per page the user wants to see
     /// </summary>
-    this.getPerPage = function()
+    getPerPage()
     {
-        let storage = Table.idCore() + "_perPage";
+        let storage = this.idCore() + "_perPage";
         let perPage = parseInt(localStorage.getItem(storage));
         if (perPage === null || isNaN(perPage) || perPage % 25 != 0 || perPage < 0)
         {
@@ -668,7 +377,7 @@ let Table = new function()
         }
 
         return perPage;
-    };
+    }
 
     /// <summary>
     /// Set the number of items to show per page
@@ -677,9 +386,9 @@ let Table = new function()
     /// If true, applies the new perPage setting
     /// False if we aren't ready to query the server for updated items yet
     /// </param>
-    let setPerPage = function(newPerPage, update)
+    setPerPage(newPerPage, update)
     {
-        localStorage.setItem(Table.idCore() + "_perPage", newPerPage);
+        localStorage.setItem(this.idCore() + "_perPage", newPerPage);
         $(".perPageButton").forEach((btn) =>
         {
             btn.classList.remove("selected");
@@ -692,17 +401,17 @@ let Table = new function()
 
         if (update)
         {
-            Table.clear();
-            Table.update();
+            this.clear();
+            this.update();
         }
-    };
+    }
 
     /// <summary>
     /// Sets up click handlers for per-page options
     /// </summary>
-    let setupPerPage = function()
+    setupPerPage()
     {
-        if (typeof(Table.getPerPage) == "undefined")
+        if (!this.supportsPages())
         {
             $(".perPageHolder").forEach(function(holder)
             {
@@ -712,8 +421,8 @@ let Table = new function()
             return;
         }
 
-        let perPage = Table.getPerPage();
-
+        let perPage = this.getPerPage();
+        let self = this;
         $(".perPageButton").forEach((btn) =>
         {
             btn.addEventListener("click", function()
@@ -724,36 +433,36 @@ let Table = new function()
                     newPerPage = 25;
                 }
 
-                setPerPage(newPerPage, true);
+                self.setPerPage(newPerPage, true /*update*/);
             });
         });
 
-        setPerPage(perPage, false);
-    };
+        this.setPerPage(perPage, false);
+    }
 
     /// <summary>
     /// Update the "Page X of Y" strings in the table
     /// </summary>
-    this.setPageInfo = function(totalRequests)
+    setPageInfo(totalRequests)
     {
-        tablePages = Table.getPerPage() == 0 ? 1 : Math.ceil(totalRequests / Table.getPerPage());
+        this.tablePages = this.getPerPage() == 0 ? 1 : Math.ceil(totalRequests / this.getPerPage());
         $(".pageSelect").forEach(function(e)
         {
-            e.value = Table.getPage() + 1;
-        });
+            e.value = this.getPage() + 1;
+        }, this);
 
         $(".pageCount").forEach(function(e)
         {
-            e.innerHTML = tablePages;
-        });
+            e.innerHTML = this.tablePages;
+        }, this);
 
-        Table.setPage(Table.getPage(), false);
-    };
+        this.setPage(this.getPage(), false);
+    }
 
     /// <summary>
     /// Invokes the table update callback and sets the search string header visibility
     /// </summary>
-    this.update = function(searchValue="")
+    update(searchValue="")
     {
         let header = $("#requestSearch");
         if (searchValue.length == 0)
@@ -766,34 +475,45 @@ let Table = new function()
             $("#searchTerm").innerHTML = searchValue;
         }
 
-        Table.updateFunc()(searchValue);
-    };
-
-    // Store tableEntries outside of addItem so we don't
-    // have to continuously query for it when bulk adding table entries
-    let tableEntries = $("#tableEntries");
-    this.addItem = function(element)
-    {
-        tableEntries.appendChild(element);
-    };
+        this.updateFunc()(searchValue);
+    }
 
     /// <summary>
-    /// Return a table entry's holder element
+    /// Add the given element to our table
     /// </summary>
-    this.itemHolder = function()
+    addItem(element)
+    {
+        this.tableEntries.appendChild(element);
+    }
+
+    /// <summary>
+    /// Returns the common div that all table items must be within
+    /// </summary>
+    itemHolder()
     {
         return buildNode("div", { class : "tableEntryHolder" });
-    };
+    }
 
     /// <summary>
     /// Remove all entries from the table
     /// </summary>
-    this.clear = function()
+    clear()
     {
-        let entries = $("#tableEntries");
-        while (entries.firstChild)
+        while (this.tableEntries.firstChild)
         {
-            entries.removeChild(entries.firstChild);
+            this.tableEntries.removeChild(this.tableEntries.firstChild);
         }
-    };
-}();
+    }
+
+    /// <summary> Return whether this table supports searching </summary>
+    supportsSearch() { return false; }
+
+    /// <summary> Returns whether this table supports page navigation </summary>
+    supportsPages() { return true; }
+
+    /// <summary> Returns the unique identifier for this table </summary>
+    identifier() { return "shared"; }
+
+    /// <summary> Returns the core ID of the table (i.e. the unique identifier prefixed with "table_")
+    idCore() { return "table_" + this.identifier(); }
+}

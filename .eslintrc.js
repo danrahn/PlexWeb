@@ -77,7 +77,7 @@ module.exports = {
         "guard-for-in" : "error",
         "handle-callback-err" : "error",
         "id-blacklist" : "error",
-        "id-length" : ["error", { "exceptions" : ["$", "$$", "i", "j", "e", "x", "y"] }],
+        "id-length" : ["error", { "exceptions" : ["$", "$$", "i", "j", "e", "x", "y", "a", "b"] }],
         "id-match" : "error",
         "implicit-arrow-linebreak" : [
             "error",
@@ -343,8 +343,15 @@ module.exports = {
         "Tooltip" : "readonly",
         // iconMap.js
         "Icons" : "readonly",
-        // tableCommon.js
+        // Table base classes
         "Table" : "readonly",
+        "Filter" : "readonly",
+        "FilterUIBuilder" : "readonly",
+        "UserFilter" : "readonly",
+        // Custom Filters
+        "RequestFilter" : "readonly",
+        "ActivityFilter" : "readonly",
+        "MemberFilter" : "readonly",
         // DateUtil.js
         "DateUtil" : "readonly",
         // Markdown.js

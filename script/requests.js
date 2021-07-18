@@ -1,13 +1,23 @@
 /// <summary>
-/// Builds a table of current requests. Implements tableCommon
+/// Builds a table of current requests.
 /// </summary>
+
+/* eslint-disable class-methods-use-this */
+class RequestTable extends Table
+{
+    supportsSearch() { return true; }
+    identifier() { return "requests"; }
+    updateFunc() { return getRequests; }
+}
+
+let requestTable;
 
 window.addEventListener("load", function()
 {
-    Table.setPage(0);
-    Table.update();
+    requestTable = new RequestTable(new RequestFilter());
+    requestTable.setPage(0);
+    requestTable.update();
 });
-
 
 /// <summary>
 /// Ask the server for user requests dependent on the current page and filter
@@ -18,17 +28,17 @@ function getRequests(searchValue="")
     let parameters =
     {
         type : ProcessRequest.GetRequests,
-        num : Table.getPerPage(),
-        page : Table.getPage(),
+        num : requestTable.getPerPage(),
+        page : requestTable.getPage(),
         search : searchValue,
-        filter : JSON.stringify(Table.Filter.get())
+        filter : JSON.stringify(requestTable.filter.get())
     };
 
-    Table.displayInfoMessage("Loading...");
+    requestTable.displayInfoMessage("Loading...");
 
     let successFunc = function(response)
     {
-        Table.clear();
+        requestTable.clear();
         buildRequests(response);
         if (searchValue.length != 0)
         {
@@ -38,7 +48,7 @@ function getRequests(searchValue="")
 
     let failureFunc = function()
     {
-        Table.displayInfoMessage("Error loading requests. Please try again later. If this problem persists, contact the site administrator");
+        requestTable.displayInfoMessage("Error loading requests. Please try again later. If this problem persists, contact the site administrator");
     };
 
     sendHtmlJsonRequest("process_request.php", parameters, successFunc, failureFunc);
@@ -62,17 +72,18 @@ function buildRequests(requests)
     if (requests.count == 0)
     {
         Log.warn("No results, likely due to bad page index or filter");
-        Table.displayInfoMessage("No requests found with the current filter");
+        requestTable.displayInfoMessage("No requests found with the current filter");
+        requestTable.setPageInfo(0);
         return;
     }
 
     Log.info(`Building ${requests.count} requests`);
-    let sortOrder = Table.Filter.get().sort;
+    let sortOrder = requestTable.filter.get().sort;
     document.body.setAttribute("mid", requests.machine_id);
     for (let i = 0; i < requests.count; ++i)
     {
         const request = requests.entries[i];
-        Table.addItem(buildRequest(request, sortOrder));
+        requestTable.addItem(buildRequest(request, sortOrder));
 
         if (isAdmin())
         {
@@ -81,7 +92,7 @@ function buildRequests(requests)
         }
     }
 
-    Table.setPageInfo(requests.total);
+    requestTable.setPageInfo(requests.total);
 }
 
 function px(dimen)
@@ -244,7 +255,7 @@ function navigateToPlex()
 /// </summary>
 function buildRequest(request, sortOrder)
 {
-    let holder = Table.itemHolder();
+    let holder = requestTable.itemHolder();
 
     let imgHolder = buildRequestPoster(request);
     let textHolder = buildRequestBody(request, sortOrder, holder);
@@ -376,8 +387,8 @@ function updateStatusSuccess(response, request)
 
     setTimeout(function()
     {
-        Table.clear();
-        Table.update();
+        requestTable.clear();
+        requestTable.update();
     }, 2000);
 }
 
@@ -423,254 +434,3 @@ function updateStatus()
         { ridList : ridList },
         true /*dataIsString*/);
 }
-
-/// <summary>
-/// Modifies the filter HTML to reflect the current filter settings
-/// </summary>
-Table.Filter.populate = function()
-{
-    let filter = Table.Filter.get();
-    $("#showPending").checked = filter.status.pending;
-    $("#showComplete").checked = filter.status.complete;
-    $("#showDeclined").checked = filter.status.declined;
-    $("#showInProgress").checked = filter.status.inprogress;
-    $("#showWaiting").checked = filter.status.waiting;
-    $("#showDeleted").checked = isAdmin() && filter.status.deleted;
-    $("#showMovies").checked = filter.type.movies;
-    $("#showTV").checked = filter.type.tv;
-    $("#showAudiobooks").checked = filter.type.audiobooks;
-    $("#showOther").checked = filter.type.other;
-    $("#sortBy").value = filter.sort;
-    $("#sortOrder").value = filter.order == "desc" ? "sortDesc" : "sortAsc";
-
-    if (isAdmin())
-    {
-        Table.Filter.populateUserFilter();
-    }
-    else
-    {
-        $("#showDeleted").parentNode.style.display = "none";
-    }
-
-    setSortOrderValues();
-    $("#sortBy").addEventListener("change", setSortOrderValues);
-};
-
-/// <summary>
-/// Returns the new filter definition based on the state of the filter HTML
-/// </summary>
-Table.Filter.getFromDialog = function()
-{
-    return {
-        status :
-        {
-            pending : $("#showPending").checked,
-            complete : $("#showComplete").checked,
-            declined : $("#showDeclined").checked,
-            inprogress : $("#showInProgress").checked,
-            waiting : $("#showWaiting").checked,
-            deleted : isAdmin() && $("#showDeleted").checked,
-        },
-        type :
-        {
-            movies : $("#showMovies").checked,
-            tv : $("#showTV").checked,
-            audiobooks : $("#showAudiobooks").checked,
-            other : $("#showOther").checked,
-        },
-        sort : $("#sortBy").value,
-        order : $("#sortOrder").value == "sortDesc" ? "desc" : "asc",
-        user : isAdmin() ? $("#filterTo").value : "-1"
-    };
-};
-
-/// <summary>
-/// Adjusts the sort order text depending on the sort field
-/// </summary>
-function setSortOrderValues()
-{
-    if ($("#sortBy").value == "title")
-    {
-        $("#sortDesc").text = "A-Z";
-        $("#sortAsc").text = "Z-A";
-    }
-    else
-    {
-        $("#sortDesc").text = "Newest First";
-        $("#sortAsc").text = "Oldest First";
-    }
-}
-
-/// <summary>
-/// Adds checkbox options to the requests table filter
-/// </summary>
-function addFilterCheckboxes(options)
-{
-    let checkboxes =
-    {
-        "Show Pending" : "showPending",
-        "Show Waiting" : "showWaiting",
-        "Show In Progress" : "showInProgress",
-        "Show Complete" : "showComplete",
-        "Show Declined" : "showDeclined",
-        "Show Deleted" : "showDeleted",
-        "" : "",
-        "Show Movies" : "showMovies",
-        "Show TV" : "showTV",
-        "Show Audiobooks" : "showAudiobooks",
-        "Show Other" : "showOther"
-    };
-
-    for (let [label, name] of Object.entries(checkboxes))
-    {
-        options.push(Table.Filter.buildCheckbox(label, name));
-    }
-}
-
-/// <summary>
-/// HTML for the filter overlay/dialog. Should probably be part of the initial DOM
-/// </summary>
-Table.Filter.html = function()
-{
-    let options = [];
-
-    // Statuses + request types
-    addFilterCheckboxes(options);
-
-    options.push(buildNode("hr"));
-
-    options.push(Table.Filter.buildDropdown(
-        "Sort By",
-        {
-            "Request Date" : "request",
-            "Update Date" : "update",
-            Title : "title"
-        }));
-
-    options.push(Table.Filter.buildDropdown(
-        "Sort Order",
-        {
-            "Newest First" : "sortDesc",
-            "Oldest First" : "sortAsc"
-        },
-        true /*addId*/));
-
-    options.push(buildNode("hr"));
-
-    if (isAdmin())
-    {
-        options.push(Table.Filter.buildDropdown(
-            "Filter To",
-            {
-                All : -1
-            }));
-        options.push(buildNode("hr"));
-    }
-
-    return Table.Filter.htmlCommon(options);
-};
-
-/// <summary>
-/// Returns whether we support table search. We do for requests
-/// </summary>
-Table.supportsSearch = function()
-{
-    return true;
-};
-
-/// <summary>
-/// Unique identifier for this table
-/// </summary>
-Table.identifier = function()
-{
-    return "requests";
-};
-
-/// <summary>
-/// Function to invoke when updating the table
-/// </summary>
-Table.updateFunc = function()
-{
-    return getRequests;
-};
-
-/// <summary>
-/// Retrieves the stored user filter (persists across page navigation, for better or worse)
-/// </summary>
-Table.Filter.get = function()
-{
-    let filter = null;
-    try
-    {
-        filter = JSON.parse(localStorage.getItem(Table.idCore() + "_filter"));
-    }
-    catch (e)
-    {
-        Log.error("Unable to parse stored filter");
-    }
-
-    if (filter === null ||
-        !Object.prototype.hasOwnProperty.call(filter, "status") ||
-            !Object.prototype.hasOwnProperty.call(filter.status, "pending") ||
-            !Object.prototype.hasOwnProperty.call(filter.status, "complete") ||
-            !Object.prototype.hasOwnProperty.call(filter.status, "declined") ||
-            !Object.prototype.hasOwnProperty.call(filter.status, "inprogress") ||
-            !Object.prototype.hasOwnProperty.call(filter.status, "waiting") ||
-            !Object.prototype.hasOwnProperty.call(filter.status, "deleted") ||
-        !Object.prototype.hasOwnProperty.call(filter, "type") ||
-            !Object.prototype.hasOwnProperty.call(filter.type, "movies") ||
-            !Object.prototype.hasOwnProperty.call(filter.type, "tv") ||
-            !Object.prototype.hasOwnProperty.call(filter.type, "audiobooks") ||
-            !Object.prototype.hasOwnProperty.call(filter.type, "other") ||
-        !Object.prototype.hasOwnProperty.call(filter, "sort") ||
-        !Object.prototype.hasOwnProperty.call(filter, "order") ||
-        !Object.prototype.hasOwnProperty.call(filter, "user"))
-    {
-        if (filter === null)
-        {
-            Log.info("No filter found, creating default filter");
-        }
-        else
-        {
-            Log.error("Bad filter, resetting: ");
-            Log.error(filter);
-        }
-
-        filter = Table.Filter.default();
-        Table.Filter.set(filter, false);
-    }
-
-    Log.verbose(filter, "Got Filter");
-    return filter;
-};
-
-/// <summary>
-/// Returns the default filter for the requests table (i.e. nothing filtered)
-/// </summary>
-Table.Filter.default = function()
-{
-    let filter =
-    {
-        status :
-        {
-            pending : true,
-            complete : true,
-            declined : true,
-            inprogress : true,
-            waiting : true,
-            deleted : false,
-        },
-        type :
-        {
-            movies : true,
-            tv : true,
-            audiobooks : true,
-            other : true
-        },
-        sort : "request",
-        order : "desc",
-        user : -1
-    };
-
-    return filter;
-};
