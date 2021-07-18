@@ -1444,7 +1444,7 @@ function buildActiveStreamPoster(sesh)
             alt : "thumbnail"
         });
 
-    if (!sesh.hyperlink)
+    if (!sesh.hyperlink || sesh.hyperlink == "#")
     {
         return poster;
     }
@@ -1815,14 +1815,14 @@ function hoverFormat(title, data, id)
 function getVideoString(video)
 {
     let videoString = "";
-    if (video.transcode)
+    if (video.transcode == "transcode")
     {
         let hw = video.hw_transcode ? " HW" : "";
         videoString = `${video.original} &#8594;${hw} ${video.transcoded_codec} ${video.transcoded_resolution}`;
     }
     else
     {
-        videoString = "Direct Play: " + video.original;
+        videoString = `Direct ${video.transcode ? "Stream" : "Play"}: ${video.original}`;
     }
 
     return `${videoString} (${video.bitrate} kbps)`;
@@ -1834,13 +1834,13 @@ function getVideoString(video)
 function getAudioString(audio)
 {
     let audioString = "";
-    if (audio.transcode)
+    if (audio.transcode == "transcode")
     {
         audioString = `${audio.original} &#8594; ${audio.transcoded_codec} ${audio.transcoded_channels}`;
     }
     else
     {
-        audioString = `Direct Play: ${audio.original}`;
+        audioString = `Direct ${audio.transcode ? "Stream" : "Play"}: ${audio.original}`;
     }
 
     if (parseInt(audio.bitrate) === 0)

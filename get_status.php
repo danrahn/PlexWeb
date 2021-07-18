@@ -512,7 +512,7 @@ function build_sesh($sesh, $library_names)
     }
 
     $slim_sesh->audio = new \stdClass();
-    $slim_sesh->audio->transcode = strcmp($audio['decision'], 'transcode') === 0;
+    $slim_sesh->audio->transcode = (string)$audio['decision'];
     $slim_sesh->audio->original = (string)$audio['displayTitle'];
     $slim_sesh->audio->bitrate = (int)$audio['bitrate'];
     $slim_sesh->parts = array();
@@ -533,7 +533,7 @@ function build_sesh($sesh, $library_names)
     if ($video)
     {
         $slim_sesh->video = new \stdClass();
-        $slim_sesh->video->transcode = strcmp($video['decision'], 'transcode') == 0;
+        $slim_sesh->video->transcode = (string)$video['decision'];
         $slim_sesh->video->original = (string)($video['displayTitle']);
         $slim_sesh->video->bitrate = (int)$video['bitrate'];
         if ($slim_sesh->video->transcode)
