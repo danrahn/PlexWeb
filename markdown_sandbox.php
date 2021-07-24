@@ -36,9 +36,6 @@ session_start();
                     <label for="testcache">Test Cache: 
                         <input type="checkbox" name="testcache" id="testcache">
                     </label>
-                    <label for="sideBySide">SxS: 
-                        <input type="checkbox" id="sideBySide">
-                    </label>
                 </div>
             </form>
         </div>
