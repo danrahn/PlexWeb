@@ -15,7 +15,6 @@ class Table
 {
     constructor(tableFilter=null)
     {
-
         window.addEventListener("load", function()
         {
             Log.error("Table constructed before DOM was loaded. This shouldn't happen!");

@@ -2,12 +2,23 @@
 /// Logic to display notification/activities relevant to the current user. Implements tableCommon
 /// </summary>
 
+/* eslint-disable class-methods-use-this */
+class ActivityTable extends Table
+{
+    supportsSearch() { return true; }
+    identifier() { return "activity"; }
+    updateFunc() { return getActivities; }
+}
+
+let activityTable;
 window.addEventListener("load", function()
 {
+    activityTable = new ActivityTable(new ActivityFilter());
+
     // For activities, reset the filter on page load
-    Table.Filter.set(Table.Filter.default(), false /*update*/);
-    Table.setPage(0);
-    Table.update();
+    activityTable.filter.set(activityTable.filter.default(), false /*update*/);
+    activityTable.setPage(0);
+    activityTable.update();
 });
 
 /// <summary>
@@ -20,15 +31,15 @@ function getActivities(searchValue="")
     let parameters =
     {
         type : ProcessRequest.GetActivities,
-        num : Table.getPerPage(),
-        page : Table.getPage(),
+        num : activityTable.getPerPage(),
+        page : activityTable.getPage(),
         search : searchValue,
-        filter : JSON.stringify(Table.Filter.get())
+        filter : JSON.stringify(activityTable.filter.get())
     };
 
     let successFunc = function(message)
     {
-        Table.clear();
+        activityTable.clear();
         buildActivities(message);
 
         if (searchValue.length != 0)
@@ -39,19 +50,12 @@ function getActivities(searchValue="")
 
     let failureFunc = function()
     {
-        Table.displayInfoMessage("Error loading activities. Pleases try again later. If this problem persists, contact the site administrator");
+        activityTable.displayInfoMessage(
+            "Error loading activities. Pleases try again later. If this problem persists, contact the site administrator");
     };
 
     sendHtmlJsonRequest("process_request.php", parameters, successFunc, failureFunc);
 }
-
-/// <summary>
-/// Returns whether we support table search. We do for activities
-/// </summary>
-Table.supportsSearch = function()
-{
-    return true;
-};
 
 /// <summary>
 /// Types of activities that are shown
@@ -136,7 +140,7 @@ function onPosterLoaded()
 /// <param name="newActivity">True if the user has not seen this request yet</param>
 function buildActivity(activity, newActivity)
 {
-    let holder = Table.itemHolder();
+    let holder = activityTable.itemHolder();
     if (newActivity)
     {
         holder.classList.add("newActivity");
@@ -201,7 +205,7 @@ function buildActivities(response)
     if (response.count == 0)
     {
         Log.warn("No results, likely due to bad page index or filter");
-        Table.displayInfoMessage("No requests found with the current filter");
+        activityTable.displayInfoMessage("No requests found with the current filter");
         return;
     }
 
@@ -213,10 +217,10 @@ function buildActivities(response)
 
     for (let i = 0; i < activities.length; ++i)
     {
-        Table.addItem(buildActivity(activities[i], i < newActivities));
+        activityTable.addItem(buildActivity(activities[i], i < newActivities));
     }
 
-    Table.setPageInfo(total);
+    activityTable.setPageInfo(total);
 }
 
 /// <summary>
@@ -226,183 +230,3 @@ function attrib(attribute)
 {
     return document.body.getAttribute(attribute);
 }
-
-/// <summary>
-/// Returns whether the current session user is an admin. Easily bypassed
-/// by modifying the DOM, but the backend is the source of truth and will block
-/// any unauthorized actions.
-/// </summary>
-function isAdmin()
-{
-    return parseInt(attrib("admin")) === 1;
-}
-
-/// <summary>
-/// HTML for the filter overlay/dialog
-/// </summary>
-Table.Filter.html = function()
-{
-    let options = [];
-
-    // Statuses + request types
-    let checkboxes =
-    {
-        "Show New Requests" : "showNew",
-        "Show Comments" : "showComment",
-        "Show Status Changes" : "showStatus",
-        "Show My Actions" : "showMine"
-    };
-
-    for (let [label, name] of Object.entries(checkboxes))
-    {
-        options.push(Table.Filter.buildCheckbox(label, name));
-    }
-
-    options.push(Table.Filter.buildDropdown(
-        "Sort By",
-        {
-            Date : "request"
-        }));
-
-    options.push(Table.Filter.buildDropdown(
-        "Sort Order",
-        {
-            "Newest First" : "sortDesc",
-            "Oldest First" : "sortAsc"
-        },
-        true /*addId*/));
-
-    options.push(buildNode("hr"));
-
-    if (isAdmin())
-    {
-        options.push(Table.Filter.buildDropdown(
-            "Filter To",
-            {
-                All : -1
-            }));
-
-        options.push(buildNode("hr"));
-    }
-
-    return Table.Filter.htmlCommon(options);
-};
-
-/// <summary>
-/// Modifies the filter HTML to reflect the current filter settings
-/// </summary>
-Table.Filter.populate = function()
-{
-    let filter = Table.Filter.get();
-    $("#showNew").checked = filter.type.new;
-    $("#showComment").checked = filter.type.comment;
-    $("#showStatus").checked = filter.type.status;
-    $("#showMine").checked = filter.type.mine;
-    $("#sortBy").value = filter.sort;
-    $("#sortOrder").value = filter.order == "desc" ? "sortDesc" : "sortAsc";
-
-    if (isAdmin())
-    {
-        Table.Filter.populateUserFilter();
-    }
-};
-
-/// <summary>
-/// Returns the new filter definition based on the state of the filter HTML
-/// </summary>
-Table.Filter.getFromDialog = function()
-{
-    return {
-        type :
-        {
-            new : $("#showNew").checked,
-            comment : $("#showComment").checked,
-            status : $("#showStatus").checked,
-            mine : $("#showMine").checked
-        },
-        sort : $("#sortBy").value,
-        order : $("#sortOrder").value == "sortDesc" ? "desc" : "asc",
-        user : isAdmin() ? $("#filterTo").value : "-1"
-    };
-};
-
-/// <summary>
-/// Unique identifier for this table. Used by tableCommon
-/// </summary>
-Table.identifier = function()
-{
-    return "activity";
-};
-
-/// <summary>
-/// The function to call that will update this table. Used by tableCommon
-/// </summary>
-Table.updateFunc = function()
-{
-    return getActivities;
-};
-
-/// <summary>
-/// Retrieves the stored user filter (persists across page navigation, for better or worse)
-/// </summary>
-Table.Filter.get = function()
-{
-    let filter = null;
-    try
-    {
-        filter = JSON.parse(localStorage.getItem(Table.idCore() + "_filter"));
-    }
-    catch (exception)
-    {
-        Log.error("Unable to parse stored filter");
-    }
-
-    if (filter === null ||
-        !hasProp(filter, "type") ||
-            !hasProp(filter.type, "new") ||
-            !hasProp(filter.type, "comment") ||
-            !hasProp(filter.type, "status") ||
-            !hasProp(filter.type, "mine") ||
-        !hasProp(filter, "sort") ||
-        !hasProp(filter, "order") ||
-        !hasProp(filter, "user"))
-    {
-        Log.error("Bad filter, resetting: ");
-        Log.error(filter);
-        filter = Table.Filter.default();
-        Table.Filter.set(filter, false);
-    }
-
-    Log.verbose(filter, "Got Filter");
-    return filter;
-};
-
-/// <summary>
-/// Shorthand for the verbose Object's hasOwnProperty call
-/// </summary>
-function hasProp(item, property)
-{
-    return Object.prototype.hasOwnProperty.call(item, property);
-}
-
-/// <summary>
-/// Returns the default filter for the activity table (i.e. nothing filtered)
-/// </summary>
-Table.Filter.default = function()
-{
-    let filter =
-    {
-        type :
-        {
-            new : true,
-            comment : true,
-            status : true,
-            mine : true
-        },
-        sort : "request",
-        order : "desc",
-        user : -1
-    };
-
-    return filter;
-};
