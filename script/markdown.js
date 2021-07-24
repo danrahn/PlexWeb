@@ -1432,7 +1432,7 @@ class Markdown
         let classes = [];
         if (attrs.class)
         {
-            classes = attrs.class.toLowerCase().split(/\s+/);
+            classes = attrs.class.toLowerCase().split(/\s+/).map(className => '.' + className);
         }
 
         let span = new HtmlSpan(
@@ -1588,7 +1588,13 @@ class Markdown
 
                 if (!attr[kvp.key] || kvp.important || !attr[kvp.key].important)
                 {
-                    attr[kvp.key].push({ value : kvp.value.style, important : kvp.value.important, start : kvp.value.start });
+                    attr[kvp.key].push({
+                        value : kvp.value.style,
+                        important : kvp.value.important,
+                        start : kvp.value.start,
+                        inline : true,
+                        order : Object.keys(attr).length
+                    });
                 }
             }
         });
@@ -3899,20 +3905,8 @@ class Run
             return '';
         }
 
-        let style = '';
-        for (const [attribute, definitions] of Object.entries(styles[tag]))
-        {
-            let styleInfo = StyleHelper.getWinner(definitions);
-            if (!styleInfo)
-            {
-                continue;
-            }
-
-            if (StyleHelper.allowedAttribute(attribute))
-            {
-                style += `${attribute}:${StyleHelper.limitAttribute(attribute, styleInfo.value)};`;
-            }
-        }
+        this.computedStyle = StyleHelper.computeStyle(this, this._globalStyle());
+        let style = StyleHelper.getStyleString(this.computedStyle);
 
         if (style.length == 0)
         {
@@ -3921,7 +3915,7 @@ class Run
         }
 
         this.volatile = true;
-        return ` style="${style}"`;
+        return style;
     }
 
     /// <summary>
@@ -4621,25 +4615,146 @@ class StyleHelper
             Does the run's baseTag() exist in our style dictionary? If so, parse that.
     */
 
+    static computeStyle(run, styles, computedStyle={})
+    {
+        if (!run)
+        {
+            return computedStyle;
+        }
+
+        if (run.computedStyle)
+        {
+            return run.computedStyle;
+        }
+
+        if (run.inlineStyle)
+        {
+            for (const [attribute, values] of Object.entries(run.inlineStyle))
+            {
+                if (values && values.length && StyleHelper.allowedAttribute(attribute))
+                {
+                    computedStyle[attribute] = StyleHelper._winner(values, computedStyle[attribute]);
+                }
+            }
+        }
+
+        if (run.classNames)
+        {
+            StyleHelper._computeClassStyles(run, styles, computedStyle);
+        }
+
+        let tag = run.baseTag();
+        if (tag in styles)
+        {
+            for (const [attribute, values] of Object.entries(styles[tag]))
+            {
+                if (values && values.length && StyleHelper.allowedAttribute(attribute))
+                {
+                    computedStyle[attribute] = StyleHelper._winner(values, computedStyle[attribute]);
+                }
+            }
+        }
+
+        if (run.parent && run.parent.computedStyle)
+        {
+            StyleHelper._mergeStyles(computedStyle, run.parent.computedStyle);
+        }
+        else
+        {
+            StyleHelper.computeStyle(run.parent, styles, computedStyle);
+        }
+
+        return computedStyle;
+    }
+
+    static _computeClassStyles(run, styles, computedStyle)
+    {
+        for (const className of run.classNames)
+        {
+            if (!styles[className])
+            {
+                continue;
+            }
+
+            for (const [attribute, values] of Object.entries(styles[className]))
+            {
+                if (values && values.length && StyleHelper.allowedAttribute(attribute))
+                {
+                    computedStyle[attribute] = StyleHelper._winner(values, computedStyle[attribute]);
+                }
+            }
+        }
+    }
+
+    static getStyleString(style)
+    {
+        let styleString = '';
+        for (const [attribute, value] of Object.entries(style))
+        {
+            styleString += `${attribute}:${StyleHelper.limitAttribute(attribute, value.value)};`;
+        }
+
+        return styleString.length ? ` style="${styleString}"` : styleString;
+    }
+
     /// <summary>
     /// Given a list of style definitions, pick and return the winner
     /// </summary>
-    static getWinner(definitions)
+    static _winner(definitions, previous=null)
     {
-        if (!definitions || definitions.length == 0)
-        {
-            return null;
-        }
-
         for (let i = definitions.length - 1; i >= 0; --i)
         {
-            if (definitions[i].important)
+            if (definitions[i].important && (!previous || !previous.important || (!previous.inline && previous.order < definitions[i].order)))
             {
                 return definitions[i];
             }
         }
 
-        return definitions[definitions.length - 1];
+        let last = definitions[definitions.length - 1];
+        if (!previous)
+        {
+            return last;
+        }
+
+        let orderWinner = (left, right) => left.order > right.order ? left : right;
+
+        if (previous.inline)
+        {
+            if (previous.important)
+            {
+                return last.important ? orderWinner(last, previous) : previous;
+            }
+
+            return last.important ? last : last.inline ? orderWinner(last, previous) : previous;
+        }
+
+        if (previous.important)
+        {
+            if (last.important)
+            {
+                return last.inline ? last : orderWinner(last, previous);
+            }
+
+            return previous;
+        }
+
+        if (last.important || last.inline)
+        {
+            return last;
+        }
+
+        return orderWinner(last, previous);
+    }
+
+    static _mergeStyles(childStyles, parentStyles)
+    {
+        for (const [attribute, value] of Object.entries(parentStyles))
+        {
+            if (!childStyles[attribute] || (!childStyles[attribute].important && value.important))
+            {
+                childStyles[attribute] = value;
+            }
+        }
     }
 }
 
@@ -5796,12 +5911,12 @@ class HtmlSpan extends Run
     {
         super(State.HtmlSpan, start, end, parent);
         this.textStart = textStart;
-        this.classes = classes;
+        this.classNames = classes;
         this.inlineStyle = style;
 
         // If we have a class definition, mark this as volatile
         // so changes to the class are always picked up.
-        if (this.classes.length != 0)
+        if (this.classNames.length != 0)
         {
             this._setVolatile();
         }
@@ -5829,39 +5944,8 @@ class HtmlSpan extends Run
     /// </summary>
     _computeStyleString()
     {
-        let importantStyles = {};
-        let classStyles = this._populateClassStyles(importantStyles);
-        let inline = this._populateInlineStyles();
-        let added = {};
-        let styleString = '';
-        for (const [key, value] of Object.entries(inline))
-        {
-            if (key in importantStyles && !value.important)
-            {
-                continue;
-            }
-
-            styleString += `${key}:${value.value};`;
-            added[key] = true;
-        }
-
-        for (const style of classStyles)
-        {
-            if (added[style.key])
-            {
-                continue;
-            }
-
-            styleString += `${style.key}:${style.value};`;
-            added[style.key] = true;
-        }
-
-        if (styleString.length == 0)
-        {
-            return '';
-        }
-
-        return ` style="${styleString}"`;
+        this.computedStyle = StyleHelper.computeStyle(this, this._globalStyle());
+        return StyleHelper.getStyleString(this.computedStyle);
     }
 
     /// <summary>
@@ -5875,9 +5959,8 @@ class HtmlSpan extends Run
     {
         let styleList = [];
         let styles = this._globalStyle();
-        for (let className of this.classes)
+        for (let className of this.classNames)
         {
-            className = '.' + className;
             if (!styles[className])
             {
                 continue;
