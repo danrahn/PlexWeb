@@ -252,11 +252,6 @@ function get_includes($file)
     $result = [];
     get_includes_core($file, $deps, 0, $result);
     $flattened = flatten_includes($result);
-    echo "<!--\n";
-    print_r($result);
-    echo "\n\n";
-    print_r($flattened);
-    echo "\n-->";
     array_push($flattened, $file);
 
     $has_consolelog = array_search("consolelog", $flattened);
