@@ -4303,6 +4303,13 @@ class Run
 
         if (this.innerRuns.length == 0 || this.innerRuns[0].start >= index)
         {
+            if (this.innerRuns != 0 && this.innerRuns[0].cached)
+            {
+                // We have a cached value, indicating that we've already
+                // gone through this before
+                return 0;
+            }
+
             this.innerRuns.splice(0, 0, new ImplicitBreak(index, this));
             return 1;
         }
@@ -4336,6 +4343,11 @@ class Run
                         Log.warn('Only inline elements should be hitting this');
                     }
 
+                    return 0;
+                }
+
+                if (this.innerRuns[i].cached)
+                {
                     return 0;
                 }
 
