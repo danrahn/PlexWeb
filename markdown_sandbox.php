@@ -1,5 +1,6 @@
 <?php
 require_once "includes/common.php";
+requireSSL();
 session_start();
 ?>
 
@@ -12,6 +13,7 @@ session_start();
     <link rel="icon" type="image/svg+xml" href="mdfav.svg">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#3C5260" />
+    <meta name="Description" content="A place to test the Markdown parser used for danrahn.com" />
     <title>Markdown Sandbox</title>
     <?php build_css(); ?>
 </head>
@@ -27,13 +29,16 @@ session_start();
             <input type="button" value="Test" id="markdownSubmit" />
             <input type="button" value="Run Test Suite" id="markdownTestSuite" />
             <div id="info" style="text-align: center; margin: auto">
-                <div class="formInput" style="color: #c1c1c1; text-align: center; width: 150px; margin: auto">
-                    <label for="liveupdate">Live updates: </label>
-                    <input type="checkbox" name="liveupdate" id="liveupdate" checked="checked">
-                </div>
-                <div class="formInput" style="color: #c1c1c1; text-align: center; width: 150px; margin: auto">
-                    <label for="testcache">Test Cache: </label>
-                    <input type="checkbox" name="testcache" id="testcache">
+                <div class="formInput" id="options">
+                    <label for="liveupdate">Live updates: 
+                        <input type="checkbox" name="liveupdate" id="liveupdate" checked="checked">
+                    </label>
+                    <label for="testcache">Test Cache: 
+                        <input type="checkbox" name="testcache" id="testcache">
+                    </label>
+                    <label for="sideBySide">SxS: 
+                        <input type="checkbox" id="sideBySide">
+                    </label>
                 </div>
             </form>
         </div>

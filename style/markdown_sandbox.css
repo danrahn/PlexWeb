@@ -41,3 +41,40 @@ table {
     margin: auto;
     margin-top: 5px;
 }
+
+.sxs > #queryContainer {
+    position: absolute;
+    width: 48%;
+    margin-left: 1%;
+    margin-right: 1%;
+}
+
+.sxs .mdToolbar {
+    margin-left: 1%;
+}
+
+.sxs > #queryContainer > textarea {
+    width: 100%;
+}
+
+.sxs > #mdHolder {
+    width: calc(48% - 40px);
+    margin-left: 51%;
+    margin-right: 1%;
+}
+
+.formInput label {
+    margin: 10px 5px 10px 5px;
+}
+
+#options {
+    color: #c1c1c1;
+    text-align: center;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-around;
+}
+
+#info {
+    width: unset;
+}

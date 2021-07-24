@@ -62,3 +62,17 @@ MarkdownHelp.getHelp(function(response)
     $('#query').value = response.data;
     parseMarkdown();
 }, true /*raw*/);
+
+$('#sideBySide').addEventListener('change', function()
+{
+    $('#container').classList.toggle('sxs');
+    if (this.checked)
+    {
+        $('#query').style.height = '80vh';
+    }
+    else
+    {
+        $('#query').style.height = 'unset';
+        $('#query').setAttribute('rows', 20);
+    }
+});
