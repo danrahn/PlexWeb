@@ -622,9 +622,7 @@ def preminify_markdown(lines, rem_log):
     lines = re.sub(r'\btransform\b', next_var(), lines)
 
     # Now look for things that are very method-like.
-    v = 0
     for match in re.finditer(r'\n    (_\w+)\(', lines):
-        v += 1
         cur_var = next_var()
         if cur_var == '':
             return lines
@@ -660,7 +658,7 @@ def minify_markdown_state_enum(lines):
     lines = lines[:start] + lines[end + 2:]
     results = re.findall(r'(\w+) : (\d+)', definition)
     for result in results:
-        lines = lines.replace('State.' + result[0], str(result[1]))
+        lines = re.sub(r'\bState\.' + result[0] + r'\b', str(result[1]), lines)
     return lines
 
 
