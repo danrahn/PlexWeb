@@ -683,6 +683,30 @@ class MarkdownTestSuite
                         '<tr><td>`D</td><td>E</td></tr>' +
                     '</tbody>' +
                 '</table>'
+            ],
+            [
+                // Global style defined after table definition
+                'A|\n---|\nB|\n<style>\ntd{color: red;}\nthead{color: blue !important;}\n</style>',
+                '<table>' +
+                    '<thead style="color:blue;">' +
+                        '<tr><td style="color:blue;">A</td></tr>' +
+                    '</thead>' +
+                    '<tbody>' +
+                        '<tr><td style="color:red;">B</td></tr>' +
+                    '</tbody>' +
+                '</table>' +
+                this._divWrap('<!-- <style>\ntd{color: red;}\nthead{color: blue !important;}\n</style> -->')
+            ],
+            [
+                // Global style defined after table definition
+                '|<span class="a">A</span>\n|---\n<style>\n.a{color: red;}\n</style>',
+                '<table>' +
+                    '<thead>' +
+                        '<tr><td><span style="color:red;">A</span></td></tr>' +
+                    '</thead>' +
+                    '<tbody></tbody>' +
+                '</table>' +
+                this._divWrap('<!-- <style>\n.a{color: red;}\n</style> -->')
             ]
         );
 

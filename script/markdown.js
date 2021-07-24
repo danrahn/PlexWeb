@@ -40,6 +40,7 @@ const State =
     Subscript : 20,
     HtmlSpan : 21,
     HtmlStyle : 22,
+    TableElement : 23,
 };
 
 /// <summary>
@@ -176,7 +177,8 @@ class Markdown
     constructor()
     {
         this.topRun = null;
-        this._reset('', false);
+        this._reset('', 0 /*diffStart*/);
+        this._inlineOnly = false;
     }
 
     /// <summary>
@@ -214,11 +216,10 @@ class Markdown
         return text.replace(/\t/g, '    ');
     }
 
-    _resetCore(text, inlineOnly)
+    _resetCore(text)
     {
         this.text = text;
         this.sameText = false;
-        this._inlineOnly = inlineOnly;
         this._cachedParse = '';
         this._parseTime = 0;
         this._inParse = false;
@@ -231,9 +232,9 @@ class Markdown
     /// in the text.
     /// </summary>
     /// <returns>The index to start parsing at</returns>
-    _reset(text, inlineOnly, diffStart)
+    _reset(text, diffStart)
     {
-        this._resetCore(text, inlineOnly);
+        this._resetCore(text);
         if (diffStart <= 0 || this.topRun === null || parseInt(localStorage.getItem('mdCache')) == 0)
         {
             this._urls = {};
@@ -379,15 +380,11 @@ class Markdown
     /// <summary>
     /// Core parse routine. Processes the given text, and returns its HTML representation
     /// </summary>
-    /// <param name="inlineOnly">
-    /// True to ignore block elements (code blocks, lists, etc)
-    /// Currently only used when parsing the inner contents of a table.
-    /// </param>
     /// <remarks>
     /// We should probably utilize recursion to process nested elements instead of
     /// having logic in various places to check the bounds of inner elements
     /// </remarks>
-    parse(text, inlineOnly=false)
+    parse(text)
     {
         if (this._inParse)
         {
@@ -398,13 +395,12 @@ class Markdown
         // Make some assumptions about inlineOnly not continuing from a previous
         // parse and skip some of the checks below to save some time
         let i;
-        if (inlineOnly)
+        if (this._inlineOnly)
         {
-            this._resetCore(text, inlineOnly);
+            this._resetCore(text);
             this.text = text;
             this.topRun = new Run(State.None, 0 /*start*/, this.text.length, null /*parent*/, this._globalStyle);
             this.currentRun = this.topRun;
-            this._inlineOnly = inlineOnly;
             i = 0;
         }
         else
@@ -412,7 +408,6 @@ class Markdown
             // Do some initial pruning, and get rid of carriage returns
             text = this._trimInput(text).replace(/\r/g, '');
             if (this._cachedParse.length != 0 &&
-                this._inlineOnly == inlineOnly &&
                 this.text == text)
             {
                 Log.tmi('Identical content, returning cached content');
@@ -420,7 +415,7 @@ class Markdown
                 return this._cachedParse;
             }
 
-            i = this._reset(text, inlineOnly, this._checkCache(text));
+            i = this._reset(text, this._checkCache(text));
         }
 
         this._inParse = true;
@@ -2089,19 +2084,21 @@ class Markdown
             definition = definition.replace(quoteRegex, '');
         }
 
-        let table = { header : [], rows : [], columnAlign : [], };
-        if (!this._processTableAlignment(table, definition))
+        let alignment = [];
+        if (!this._processTableAlignment(definition, alignment))
         {
             return -1;
         }
 
         // We have valid column definitions. Now back to the header
-        this._addTableHeaders(table, headerRow);
+        let tableHead = this._addTableHeaders(headerRow, alignment);
+        let tableBody = new TableBody(null);
 
-        let end = this._getTableRows(table, bounds.defineEnd, bounds.blockEnd, quoteRegex);
-        this._parseTableCells(table);
+        let end = this._getTableRows(bounds.defineEnd, bounds.blockEnd, alignment, quoteRegex, tableBody);
 
-        new Table(bounds.tableStart, end, table, this.currentRun);
+        let table = new Table(bounds.tableStart, end, this.currentRun);
+        table.attach(tableHead);
+        table.attach(tableBody);
         return end;
     }
 
@@ -2137,10 +2134,10 @@ class Markdown
     }
 
     /// <summary>
-    /// Fill out the alignment array of our table based on the given definition
+    /// Determine cell alignment for each column in the given table definition
     /// </summary>
     /// <returns>True if we have a valid definition row, false otherwise</returns>
-    _processTableAlignment(table, definition)
+    _processTableAlignment(definition, alignment)
     {
         let groups = this._splitAndTrimTableRow(definition);
         if (groups.length == 0)
@@ -2158,15 +2155,15 @@ class Markdown
             }
 
             // -2 means we don't have specific alignment
-            table.columnAlign.push(-2);
+            alignment.push(-2);
 
             if (col.startsWith(':'))
             {
-                table.columnAlign[i] = col.endsWith(':') ? 0 : -1;
+                alignment[i] = col.endsWith(':') ? 0 : -1;
             }
             else if (col.endsWith(':'))
             {
-                table.columnAlign[i] = 1;
+                alignment[i] = 1;
             }
         }
 
@@ -2174,33 +2171,11 @@ class Markdown
     }
 
     /// <summary>
-    /// Parses each individual cell of the table
-    /// </summary>
-    _parseTableCells(table)
-    {
-        let md = new Markdown();
-        md._globalStyle = this._globalStyle;
-        // Normal rows
-        for (let row = 0; row < table.rows.length; ++row)
-        {
-            for (let col = 0; col < table.rows[row].length; ++col)
-            {
-                table.rows[row][col] = md.parse(table.rows[row][col], true /*inlineOnly*/);
-            }
-        }
-
-        // Header row
-        for (let col = 0; col < table.header.length; ++col)
-        {
-            table.header[col] = md.parse(table.header[col], true /*inlineOnly*/);
-        }
-    }
-
-    /// <summary>
-    /// Processes normal rows of the table until an invalid row is found
+    /// Processes normal rows of the table until an invalid row is found.
+    /// Adds a TableRow to the given tableBody for each row found
     /// </summary>
     /// <returns>The end index of the table</returns>
-    _getTableRows(table, defineEnd, blockEnd, quoteRegex)
+    _getTableRows(defineEnd, blockEnd, alignment, quoteRegex, tableBody)
     {
         let newline = defineEnd;
         let end = newline;
@@ -2228,13 +2203,12 @@ class Markdown
                 break;
             }
 
-            let row = [];
-            for (let i= 0; i < table.columnAlign.length; ++i)
+            let row = new TableRow(tableBody);
+            for (let i= 0; i < alignment.length; ++i)
             {
-                row.push(i >= split.length ? '' : split[i]);
+                let content = i >= split.length ? '' : split[i];
+                new TableData(content, alignment[i], row);
             }
-
-            table.rows.push(row);
 
             end = next;
             newline = next;
@@ -2246,17 +2220,22 @@ class Markdown
     }
 
     /// <summary>
-    /// Adds individual column headers to the table given the entire row
+    /// Builds and returns the TableHeader for the given header row text
     /// </summary>
-    _addTableHeaders(table, headerRow)
+    _addTableHeaders(headerRow, alignment)
     {
         let headers = this._splitAndTrimTableRow(headerRow);
+        let thead = new TableHeader(null);
+        let tableRow = new TableRow(thead);
 
-        for (let i = 0; i < table.columnAlign.length; ++i)
+        for (let i = 0; i < alignment.length; ++i)
         {
             // Fill the front rows first and push empty strings to any rows we didn't find content for
-            table.header.push(i >= headers.length ? '' : headers[i]);
+            let data = i < headers.length ? headers[i] : '';
+            new TableData(data, alignment[i], tableRow);
         }
+
+        return thead;
     }
 
     /// <summary>
@@ -3608,6 +3587,26 @@ class Markdown
 }
 
 /// <summary>
+/// Extension of the Markdown parser that only allows inline elements
+/// </summary>
+class InlineMarkdown extends Markdown
+{
+    /// <summary>
+    /// Create the InlineMarkdown parser, optionally initialized with
+    /// the given parent Markdown's style.
+    /// </summary>
+    constructor(parentStyle=null)
+    {
+        super();
+        this._inlineOnly = true;
+        if (parentStyle)
+        {
+            this._globalStyle = parentStyle;
+        }
+    }
+}
+
+/// <summary>
 /// Enum of sides passed into Run.transform to let us
 /// know what portion of the element we're processing
 /// </summary>
@@ -3897,10 +3896,10 @@ class Run
     /// Returns a 'style="..."' string with the styles for the given
     /// tag, or an empty string if none are present.
     /// </summary>
-    _addStyle(tag)
+    _addStyle()
     {
         let styles = this._globalStyle();
-        if (!styles || !styles[tag])
+        if (!styles || !styles[this.baseTag()])
         {
             return '';
         }
@@ -3954,6 +3953,7 @@ class Run
             case State.Subscript:
             case State.HtmlSpan:
             case State.HtmlStyle:
+            case State.TableElement:
                 return false;
             default:
                 Log.warn('Unknown state: ' + this.state);
@@ -4408,7 +4408,7 @@ class Run
     /// </summary>
     basicTag(end)
     {
-        return `<${end ? '/' : ''}${this.baseTag()}${end ? '' : this._getAttributes() + this._addStyle(this.baseTag())}>`;
+        return `<${end ? '/' : ''}${this.baseTag()}${end ? '' : this._getAttributes() + this._addStyle()}>`;
     }
 }
 
@@ -4861,7 +4861,7 @@ class Header extends Run
             return endTag;
         }
 
-        return `<${hTag} id="__ID__"${this._addStyle(hTag)}>`;
+        return `<${hTag} id="__ID__"${this._addStyle()}>`;
     }
 
     baseTag() { return `h${this.headerLevel}`; }
@@ -5645,16 +5645,9 @@ class IndentCodeBlock extends CodeBlock
 /// </summary>
 class Table extends Run
 {
-    /// <param name="table">
-    /// Table object:
-    ///  header - array of column headers
-    ///  columnAlign - alignment info for each column
-    ///  rows - array of rows, where each row is an array of cells
-    /// </param>
-    constructor(start, end, table, parent)
+    constructor(start, end, parent)
     {
         super(State.Table, start, end, parent);
-        this.table = table;
     }
 
     startContextLength() { return 0; }
@@ -5667,43 +5660,102 @@ class Table extends Run
     /// <summary>
     /// Builds and returns the <table> content from this.table
     /// </summary>
-    transform(/*newText,*/ /*side*/)
+    transform(/*newText,*/ /*side*/) { return ''; }
+
+    /// <summary>
+    /// Attaches the given element to this table
+    ///
+    /// Because we create our table head and body before we create the table itself,
+    /// we need a way to add that head and body to our table outside of the standard
+    /// parent passed to the constructor.
+    /// </summary>
+    attach(child)
     {
-        const wrap = (text, wrapper) => `<${wrapper}${this._addStyle(wrapper)}>${text}</${wrapper}>`;
-        const td = (text, align) =>
-        {
-            if (align == -2)
-            {
-                return wrap(text, 'td');
-            }
-
-            return '<td align="' + (align == -1 ? 'left' : align == 0 ? 'center' : 'right') + `"${this._addStyle('td')}>${text}</td>`;
-        };
-
-        // Ignore the text and use our table to build this up
-        let header = '';
-        for (let i = 0; i < this.table.header.length; ++i)
-        {
-            header += td(this.table.header[i], this.table.columnAlign[i]);
-        }
-
-        header = wrap(wrap(header, 'tr'), 'thead');
-
-        let body = '';
-        for (let row = 0; row < this.table.rows.length; ++row)
-        {
-            let rowText = '';
-            for (let col = 0; col < this.table.rows[row].length; ++col)
-            {
-                rowText += td(this.table.rows[row][col], this.table.columnAlign[col]);
-            }
-
-            body += wrap(rowText, 'tr');
-        }
-
-        body = wrap(body, 'tbody');
-        return header + body;
+        this.innerRuns.push(child);
+        child.parent = this;
     }
+}
+
+/// <summary>
+/// Base class for various table elements
+/// </summary>
+class TableElement extends Run
+{
+    constructor(tag, parent)
+    {
+        // We should never use start and end bounds, so just pass in 0.
+        super(State.TableElement, 0, 0, parent);
+        this._tag = tag;
+    }
+
+    tag(end) { return this.basicTag(end); }
+    baseTag() { return this._tag; }
+    transform(/*newText*/) { return ''; }
+}
+
+/// <summary>
+/// Table row - <tr>...</tr>
+/// Can only contain 0 or more TableData entries
+/// </summary>
+class TableRow extends TableElement
+{
+    constructor(parent) { super('tr', parent); }
+}
+
+/// <summary>
+/// Table data - <td>...</td>
+/// </summary>
+class TableData extends TableElement
+{
+    /// <param name="data">The raw text for this table cell.</param>
+    /// <param name="align">The text alignment for this table cell.</param>
+    constructor(data, align, parent)
+    {
+        super('td', parent);
+        this.content = data;
+        this.align = '';
+        if (align != -2)
+        {
+            this.align = ' align="' + (align == -1 ? 'left' : align == 0 ? 'center' : 'right') + '"';
+        }
+    }
+
+    tag(end)
+    {
+        if (end)
+        {
+            return this.basicTag(end);
+        }
+
+        return `<td${this.align}${this._addStyle()}>`;
+    }
+
+    transform(/*newText*/)
+    {
+        // Now that we've parsed all of our text, parse the table cell
+        // itself using the styles we've found from the entire document
+        return new InlineMarkdown(this._globalStyle()).parse(this.content);
+    }
+}
+
+/// <summary>
+/// Table header - <thead>...</thead>
+///
+/// Can only contain 0 or 1 TableRow
+/// </summary>
+class TableHeader extends TableElement
+{
+    constructor(parent) { super('thead', parent); }
+}
+
+/// <summary>
+/// Table body - <tbody>...</tbody>
+///
+/// Can only contain 0 or more TableRows
+/// </summary>
+class TableBody extends TableElement
+{
+    constructor(parent) { super('tbody', parent); }
 }
 
 /// <summary>
