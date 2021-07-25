@@ -380,6 +380,26 @@ class MarkdownTestSuite
                 this._divWrap('<img src="poster/movieDefault.svg" alt="Alt Text" width="300px" height="400px">')
             ],
             [
+                '![w=300px](poster/movieDefault.svg)',
+                this._divWrap('<img src="poster/movieDefault.svg" width="300px">')
+            ],
+            [
+                '![h=300px](poster/movieDefault.svg)',
+                this._divWrap('<img src="poster/movieDefault.svg" height="300px">')
+            ],
+            [
+                '![w=300px,h=400](poster/movieDefault.svg)',
+                this._divWrap('<img src="poster/movieDefault.svg" width="300px" height="400px">')
+            ],
+            [
+                '![Alt Text h=300px](poster/movieDefault.svg)',
+                this._divWrap('<img src="poster/movieDefault.svg" alt="Alt Text" height="300px">')
+            ],
+            [
+                '![Alt Text w=300px,h=400px](poster/movieDefault.svg)',
+                this._divWrap('<img src="poster/movieDefault.svg" alt="Alt Text" width="300px" height="400px">')
+            ],
+            [
                 '![Alt Text w=50%](poster/movieDefault.svg)',
                 this._divWrap('<img src="poster/movieDefault.svg" alt="Alt Text" width="50%">')
             ],
@@ -1502,6 +1522,33 @@ class MarkdownTestSuite
                     '<!-- <style>\n.a{\nfont-size:400px;\n}\n</style> -->' +
                     '<br />' +
                     '<span style="font-size:44px;">A</span>')
+            ],
+            [
+                '<style>\n.a{color:red!important;}\n.b{color:blue!important;}\n</style>\n' +
+                '<span class="a b">A</span>',
+
+                this._divWrap(
+                    '<!-- <style>\n.a{color:red!important;}\n.b{color:blue!important;}\n</style> -->' +
+                    '<br />' +
+                    '<span style="color:blue;">A</span>')
+            ],
+            [
+                '<style>\n.a{color:blue!important;}\n.b{color:red;}n.b{color:white!important;}\n</style>\n' +
+                '<span class="a b" style="color:green!important">A</span>',
+
+                this._divWrap(
+                    '<!-- <style>\n.a{color:blue!important;}\n.b{color:red;}n.b{color:white!important;}\n</style> -->' +
+                    '<br />' +
+                    '<span style="color:green;">A</span>')
+            ],
+            [
+                '<style>\n.b{color:blue!important;}\n.a{color:red!important;}\n</style>\n' +
+                '<span class="a b">A</span>',
+
+                this._divWrap(
+                    '<!-- <style>\n.b{color:blue!important;}\n.a{color:red!important;}\n</style> -->' +
+                    '<br />' +
+                    '<span style="color:red;">A</span>')
             ]
         );
         return this._runSingleSuite(tests, 'HTML Style');

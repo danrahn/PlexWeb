@@ -681,7 +681,7 @@ class Markdown
         // Non-standard width/height syntax, since I explicitly don't want
         // to support direct HTML insertion.
         // ![AltText w=X,h=Y](url)
-        let dimen = /(.*)[[ ]([wh])=(\d+%?)(?:,h=(\d+%?))?$/.exec(result.text);
+        let dimen = /(.*)[[ ]([wh])=(\d+(?:px|%)?)(?:,h=(\d+(?:px|%)?))?$/.exec(result.text);
         let width = '';
         let height = '';
         if (dimen !== null)
@@ -1696,18 +1696,6 @@ class Markdown
     }
 
     /// <summary>
-    /// Returns true if the current run state is a list, not counting
-    /// elements that are themselves nested within a list
-    /// </summary>
-    _inListOrQuote()
-    {
-        return this.currentRun.state == State.ListItem ||
-            this.currentRun.state == State.OrderedList ||
-            this.currentRun.state == State.UnorderedList ||
-            this.currentRun.state == State.BlockQuote;
-    }
-
-    /// <summary>
     /// Checks if we have a valid blockquote element, adding it the
     /// Run list if found.
     ///
@@ -2336,20 +2324,6 @@ class Markdown
     }
 
     /// <summary>
-    /// Returns the number of consecutive backticks
-    /// </summary>
-    _getInlineCodeMarkers(start)
-    {
-        let backticks = 1;
-        while (start + backticks < this.text.length && this.text[start + backticks] == '`')
-        {
-            ++backticks;
-        }
-
-        return backticks;
-    }
-
-    /// <summary>
     /// Checks for a valid code block. Despite the name, accepts both '`' and '~' as markers.
     ///
     /// Rules:
@@ -2838,25 +2812,6 @@ class Markdown
         params.nextline = this.text.substring(params.newline + 1, params.next + 1);
 
         return true;
-    }
-
-    /// <summary>
-    /// Returns whether the current run is or is nested in a Run of the given state
-    /// </summary>
-    _nestedIn(state)
-    {
-        let parent = this.currentRun;
-        while (parent !== null)
-        {
-            if (parent.state == state)
-            {
-                return true;
-            }
-
-            parent = parent.parent;
-        }
-
-        return false;
     }
 
     /// <summary>
@@ -3765,11 +3720,6 @@ class Run
 
         return nest;
     }
-
-    /// <summary>
-    /// Total length of this run
-    /// </summary>
-    length() { return this.end - this.start; }
 
     /// <summary>
     /// Number of prefixed characters that shouldn't be included
@@ -4734,10 +4684,10 @@ class StyleHelper
         {
             if (previous.important)
             {
-                return last.important ? orderWinner(last, previous) : previous;
+                return last.inline && last.important ? orderWinner(last, previous) : previous;
             }
 
-            return last.important ? last : last.inline ? orderWinner(last, previous) : previous;
+            return (last.inline && last.important) ? last : last.inline ? orderWinner(last, previous) : previous;
         }
 
         if (previous.important)
@@ -6010,70 +5960,6 @@ class HtmlSpan extends Run
     {
         this.computedStyle = StyleHelper.computeStyle(this, this._globalStyle());
         return StyleHelper.getStyleString(this.computedStyle);
-    }
-
-    /// <summary>
-    /// Determine the order of class styles to apply and return it as an array
-    /// </summary>
-    /// <returns>
-    /// An array of styles ordered from most- to least-recently defined, ensuring
-    /// styles declared later in the file overwrite previously defined values.
-    /// </returns>
-    _populateClassStyles(importantStyles)
-    {
-        let styleList = [];
-        let styles = this._globalStyle();
-        for (let className of this.classNames)
-        {
-            if (!styles[className])
-            {
-                continue;
-            }
-
-            for (const [key, value] of Object.entries(styles[className]))
-            {
-                let winner = StyleHelper.getWinner(value);
-                if (!winner)
-                {
-                    continue;
-                }
-
-                if (winner.important)
-                {
-                    importantStyles[key] = true;
-                }
-
-                styleList.push({
-                    key : key,
-                    value : StyleHelper.limitAttribute(key, winner.value),
-                    order : winner.order,
-                    important : winner.important
-                });
-            }
-        }
-
-        styleList.sort((a, b) => a.important == b.important ? b.order - a.order : b.important ? 1 : -1);
-
-        return styleList;
-    }
-
-    _populateInlineStyles()
-    {
-        let newStyles = {};
-        for (const [key, value] of Object.entries(this.inlineStyle))
-        {
-            let winner = StyleHelper.getWinner(value);
-            if (!winner)
-            {
-                continue;
-            }
-
-            if (StyleHelper.allowedAttribute(key))
-            {
-                newStyles[key] = { value : StyleHelper.limitAttribute(key, winner.value), important : winner.important };
-            }
-        }
-        return newStyles;
     }
 }
 
