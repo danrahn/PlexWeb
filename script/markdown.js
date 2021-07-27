@@ -47,9 +47,9 @@ const State =
 /// Maps a given State to its string representation. Used for logging only
 /// </summary>
 /* eslint-disable-next-line complexity, max-lines-per-function */ // Breaking up a switch is pointless
-const stateToStr = function(state)
+const stateToStr = function(run)
 {
-    switch (state)
+    switch (run.state)
     {
         case State.None:
             return 'None';
@@ -97,8 +97,10 @@ const stateToStr = function(state)
             return 'HtmlSpan';
         case State.HtmlStyle:
             return 'HtmlStyle';
+        case State.TableElement:
+            return 'TableElement.' + run.baseTag();
         default:
-            return 'Unknown state: ' + state;
+            return 'Unknown state: ' + run.state;
     }
 };
 
@@ -438,7 +440,7 @@ class Markdown
         {
             while (i == this.currentRun.end)
             {
-                Log.tmi('Resetting to parent: ' + (this.currentRun.parent === null ? '(null)' : stateToStr(this.currentRun.parent.state)));
+                Log.tmi('Resetting to parent: ' + (this.currentRun.parent === null ? '(null)' : stateToStr(this.currentRun.parent)));
                 this.currentRun = this.currentRun.parent;
             }
 
@@ -1731,7 +1733,7 @@ class Markdown
         if (newNestLevel > 1 && parentState != State.BlockQuote && parentState != State.ListItem)
         {
             Log.error('Something went wrong! ' +
-                'Nested blockquotes should have a blockquote parent or be nested in a list, found ' + stateToStr(parentState));
+                'Nested blockquotes should have a blockquote parent or be nested in a list, found ' + stateToStr(this.currentRun));
             return;
         }
 
@@ -3619,7 +3621,7 @@ class Run
         // Some runs need to be recomputed regardless of whether they're cached
         this.volatile = false;
 
-        Log.tmi(`Added ${stateToStr(state)}: start=${start}, end=${end}`);
+        Log.tmi(`Added ${stateToStr(this)}: start=${start}, end=${end}`);
     }
 
     /// <summary>
@@ -3648,7 +3650,7 @@ class Run
         let ident = shouldLogTmi ? ' '.repeat((this._nestLevel() + (inlineOnly ? 1 : 0)) * 3) : ''; // Indent logging to indicate nest level
         if (shouldLogTmi)
         {
-            Log.tmi(`${ident}Converting State.${stateToStr(this.state)} : ${this.start}-${this.end}. ${this.innerRuns.length} children.`);
+            Log.tmi(`${ident}Converting State.${stateToStr(this)} : ${this.start}-${this.end}. ${this.innerRuns.length} children.`);
         }
 
         this.cached = this.tag(false /*end*/);
