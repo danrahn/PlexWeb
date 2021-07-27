@@ -2529,6 +2529,13 @@ class Markdown
 
         nestLevel = Math.floor(nestLevel / 2);
 
+        // If we have an immediately nested list ('* * A'), our nest level will
+        // be 0, when it should be one greater than our parent.
+        if (nestLevel == 0 && this.currentRun.state == State.ListItem)
+        {
+            nestLevel = this.currentRun.parent.nestLevel + 1;
+        }
+
         // First need to determine if this is a new list. If so, create the ol/ul
         if (this.currentRun.state != (ordered ? State.OrderedList : State.UnorderedList) || nestLevel > this.currentRun.nestLevel)
         {

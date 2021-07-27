@@ -791,6 +791,18 @@ class MarkdownTestSuite
             [
                 '* A\n  * B\n\n    C',
                 '<ul><li>A<br /><ul><li>B<br /><br />C</li></ul></li></ul>'
+            ],
+            [
+                '* * A\n  * B',
+                '<ul><li><ul><li>A<br /></li><li>B</li></ul></li></ul>'
+            ],
+            [
+                '* * * A\n    * B',
+                '<ul><li><ul><li><ul><li>A<br /></li><li>B</li></ul></li></ul></li></ul>'
+            ],
+            [
+                '* * * A\n  * B',
+                '<ul><li><ul><li><ul><li>A<br /></li></ul><li>B</li></ul></li></ul>'
             ]
         );
 
@@ -855,6 +867,18 @@ class MarkdownTestSuite
             [
                 '1. A\n  2. B\n\n    C',
                 '<ol><li>A<br /><ol start="2"><li>B<br /><br />C</li></ol></li></ol>'
+            ],
+            [
+                '1. 1. A\n  2. B',
+                '<ol><li><ol><li>A<br /></li><li>B</li></ol></li></ol>'
+            ],
+            [
+                '1. 1. A\n  3. B',
+                '<ol><li><ol><li>A<br /></li><li>B</li></ol></li></ol>'
+            ],
+            [
+                '1. 1. 1. A\n    3. B',
+                '<ol><li><ol><li><ol><li>A<br /></li><li>B</li></ol></li></ol></li></ol>'
             ]
         );
 
