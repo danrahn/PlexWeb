@@ -25,7 +25,10 @@ class Table
 
         /// <summary>Custom filter options that can be applied to this table</summary>
         this.filter = tableFilter;
-        this.filter.setTable(this);
+        if (this.filter)
+        {
+            this.filter.setTable(this);
+        }
 
         /// <summary>List of current DOM table entries</summary>
         this.tableEntries = $("#tableEntries");
