@@ -22,6 +22,8 @@ let Chart = new function()
     /// Optional fields:
     ///  colors:
     ///    An array of colors to override the default choices
+    ///  colorMap:
+    ///    A dictionary mapping labels to colors. Takes precedence over colors.
     ///  noSort:
     ///    If true, points will not be sorted before creating the chart
     ///  labelOptions:
@@ -62,7 +64,16 @@ let Chart = new function()
             let sweep = (point.value > total / 2) ? "1" : "0";
             d += `A ${r} ${r} ${sweep} ${sweep} 0 ${endPoint.x} ${endPoint.y + titleOffset} `;
             d += `L ${endPoint.x} ${endPoint.y + titleOffset} ${r} ${r + titleOffset}`;
-            let slice = buildPieSlice(d, colors[colorIndex++ % colors.length]);
+            let sliceColor = "";
+            if (data.colorMap && data.colorMap[point.label])
+            {
+                sliceColor = data.colorMap[point.label];
+            }
+            else
+            {
+                sliceColor = colors[colorIndex++ % colors.length];
+            }
+            let slice = buildPieSlice(d, sliceColor);
 
             let label = buildPieTooltip(point, total, data.labelOptions);
             if (label.length != 0)

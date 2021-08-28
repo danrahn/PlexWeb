@@ -119,8 +119,9 @@ function get_library_map()
             <div id="spaceStats" class="statSection">
                 <div id="spaceList" class="statList">
                     <ul>
-                        <li id="spaceUsed"><strong>Library Size: </strong><span></span></li>
                         <li id="spaceTotal"><strong>Total Space: </strong><span></span></li>
+                        <li id="spaceUsed"><strong>Library Size: </strong><span></span></li>
+                        <li id="spaceOverhead" class="hidden"><strong>ZFS Overhead <sup>*</sup>: </strong><span></span></li>
                         <li id="spaceRemaining"><strong>Remaining Space: </strong><span></span></li>
                     </ul>
                 </div>

@@ -60,7 +60,7 @@ window.addEventListener("load", function()
         };
 
         sendHtmlJsonRequest("get_status.php", parameters, successFunc, getStatusFailure);
-        getCapacity();
+        getLibraryDetails(false /*forceRefresh*/);
         window.addEventListener("resize", ensureStatHeight);
     }
     else
@@ -91,45 +91,64 @@ function ensureStatHeight()
 let g_chartCache = {};
 
 /// <summary>
-/// Make a request to the server to see how much disk space we have left
+/// Add a graph detailing information about available space on the host filesystem
 /// </summary>
-function getCapacity()
+function addCapacity(cap)
 {
-    let successFunc = function(response)
+    if (!cap)
     {
-        if (response.total == 0)
-        {
-            return;
-        }
+        return;
+    }
 
-        let space = getFriendlySpace(response);
-        let setSpace = (ele, obj) =>
-        {
-            ele.innerHTML = obj.dec;
-            Tooltip.setTooltip(ele, obj.bin);
-        };
+    if (cap.total == 0)
+    {
+        return;
+    }
 
-        setSpace($$("#spaceUsed span"), space.used);
-        setSpace($$("#spaceTotal span"), space.total);
-        setSpace($$("#spaceRemaining span"), space.free);
-
-        g_chartCache.capacity =
-        {
-            radius : 70,
-            points : [
-                { value : response.free, label : "Free" },
-                { value : response.total - response.free, label : "Used" }
-            ],
-            colors : response.free < response.total - response.free ? ["#2e832e", "#a33e3e"] : ["#a33e3e", "#2e832e"],
-            title : "Plex Storage",
-            noTitle : true
-        };
-
-        appendChart(g_chartCache.capacity, "spaceGraph", true /*isPie*/);
-        getLibraryDetails(false /*forceRefresh*/);
+    let space = getFriendlySpace(cap);
+    let setSpace = (ele, obj) =>
+    {
+        ele.innerHTML = obj.dec;
+        Tooltip.setTooltip(ele, obj.bin);
     };
 
-    sendHtmlJsonRequest("process_request.php", { type : ProcessRequest.FreeSpace }, successFunc);
+    setSpace($$("#spaceTotal span"), space.total);
+    setSpace($$("#spaceUsed span"), space.used);
+
+    if (cap.overhead)
+    {
+        setSpace($$("#spaceOverhead span"), space.overhead);
+        let overheadSpan = $("#spaceOverhead");
+        overheadSpan.classList.remove("hidden");
+        Tooltip.setTooltip(overheadSpan, "Space used for RAIDZ2 redundancy and ZFS overhead");
+    }
+
+    setSpace($$("#spaceRemaining span"), space.free);
+
+    let colorMap = {
+        Used : "#a33e3e",
+        Free : "#2e832e",
+        "Filesystem Overhead" : "#313131"
+    };
+
+    g_chartCache.capacity =
+    {
+        radius : 70,
+        points : [
+            { value : cap.free, label : "Free" },
+            { value : cap.total - cap.free - cap.overhead, label : "Used" }
+        ],
+        colorMap : colorMap,
+        title : "Plex Storage",
+        noTitle : true
+    };
+
+    if (cap.overhead)
+    {
+        g_chartCache.capacity.points.push({ value : cap.overhead, label : "Filesystem Overhead" });
+    }
+
+    appendChart(g_chartCache.capacity, "spaceGraph", true /*isPie*/);
 }
 
 /// <summary>
@@ -148,6 +167,7 @@ function getLibraryDetails(forceRefresh)
     {
         clearStats();
         let libraries = JSON.parse(document.body.getAttribute("libraries"));
+        addCapacity(getStatSection("_FS", response));
         if (libraries.MOVIES) { addMovieStats(getStatSection(libraries.MOVIES, response)); }
         if (libraries.TV) { addTvStats(getStatSection(libraries.TV, response)); }
         if (libraries.AUDIOBOOKS) { addAudiobookStats(getStatSection(libraries.AUDIOBOOKS, response)); }
@@ -553,7 +573,8 @@ function getFriendlySpace(response)
     {
         total : reduceSize(response.total),
         free : reduceSize(response.free),
-        used : reduceSize(response.total - response.free)
+        used : reduceSize(response.total - response.free - response.overhead),
+        overhead : reduceSize(response.overhead)
     };
 
     return space;

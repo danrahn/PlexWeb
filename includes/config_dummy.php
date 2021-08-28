@@ -38,6 +38,15 @@ define('LIBRARIES',
         "AUDIOBOOKS" => "Audiobooks"
     ]
 ); // Map of Plex library types to library names
+
+// ZFS connection info. Very specific to users who have a
+// network-attached ZFS pool storing their media
+define('ZFS_STATS', FALSE);
+define('SSH_IP', '127.0.0.1');
+define('SSH_USER', 'plex');
+define('SSH_PASS', 'plex');
+define('ZFS_SHARE', 'pool');
+
 $db = new mysqli(DB_SERVER, DB_USERNAME, DB_PASSWORD, DB_NAME);
 if ($db->connect_error)
 {

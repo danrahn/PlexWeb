@@ -200,7 +200,7 @@ function process_request($type)
             $message = get_markdown_text(try_get('mdType'));
             break;
         case ProcessRequest::FreeSpace:
-            $message = get_available_space();
+            $message = json_error("Deprecated Request FreeSpace");
             break;
         case ProcessRequest::LibraryStats:
             $message = get_library_stats(try_get('force'));
@@ -2617,27 +2617,6 @@ function get_markdown_text($type)
 }
 
 /// <summary>
-/// Get the amount of total and free disk space, in bytes
-/// </summary>
-function get_available_space()
-{
-    if (UserLevel::current() < UserLevel::Regular)
-    {
-        return '{ "total" : 0, "free" : 0}';
-    }
-
-    $total = 0;
-    $available = 0;
-    foreach (BACKING_STORAGE as $disk)
-    {
-        $total += disk_total_space($disk . ":");
-        $available += disk_free_space($disk . ":");
-    }
-
-    return "{ \"total\" : $total, \"free\" : $available }";
-}
-
-/// <summary>
 /// Gets the stats for each section of the Plex library
 ///
 /// Results are cached for four hours, because it's not a cheap operation, and library
@@ -2688,6 +2667,8 @@ function refresh_library_stats()
         array_push($json_sections, parse_section($section));
     }
 
+    array_push($json_sections, parse_capacity());
+
     // Always add a new entry. Not really necessary, but could be nice to see the history of the
     // library over time.
     $data = json_encode($json_sections);
@@ -2698,6 +2679,75 @@ function refresh_library_stats()
         return db_error();
     }
 
+    return $data;
+}
+
+/// <summary>
+/// Get the amount of total and free disk space, in bytes
+/// </summary>
+function parse_capacity()
+{
+    $cap = new \stdClass();
+    $cap->title = "_FS";
+    $cap->total = 0;
+    $cap->free = 0;
+    if (UserLevel::current() < UserLevel::Regular)
+    {
+        return $cap;
+    }
+
+    $total = 0;
+    $available = 0;
+    $zfs_overhead = 0;
+    foreach (BACKING_STORAGE as $disk)
+    {
+        $total += disk_total_space($disk . ":");
+        $available += disk_free_space($disk . ":");
+    }
+
+    if (ZFS_STATS)
+    {
+        $ssh = ssh2_connect(SSH_IP);
+        if ($ssh && ssh2_auth_password($ssh, SSH_USER, SSH_PASS))
+        {
+            $stream = ssh2_exec($ssh, 'zpool list -Hp ' . ZFS_SHARE);
+            if ($stream)
+            {
+                $zfs_overhead = (int)explode("\t", get_stream_data($stream))[1] - $total;
+                $total += $zfs_overhead;
+            }
+        }
+    }
+
+    $cap->total = $total;
+    $cap->free = $available;
+    $cap->overhead = $zfs_overhead;
+    return $cap;
+}
+
+/// <summary>
+/// Reads and returns all data from the given stream
+/// </summary>
+function get_stream_data($stream)
+{
+    $data = '';
+    stream_set_blocking($stream, FALSE);
+    $wait = 0;
+    while (!feof($stream))
+    {
+        if ($wait) { usleep($wait); }
+        $wait = 50000;
+        if (!feof($stream))
+        {
+            $block = stream_get_contents($stream);
+            if ($block === FALSE) { break; }
+            if ($block != '') { $data .= $block; $wait = 0; }
+        }
+    }
+
+    stream_set_blocking($stream, TRUE);
+    stream_get_contents($stream);
+    fclose($stream);
     return $data;
 }
 
