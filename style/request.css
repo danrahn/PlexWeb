@@ -411,6 +411,9 @@ option {
 #imdbLink img {
     height: 30px;
     vertical-align: text-bottom;
+}
+
+.hasRating #imdbLink img {
     margin-right: 5px;
 }
 

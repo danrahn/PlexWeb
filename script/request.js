@@ -688,7 +688,7 @@ function buildRequestExternalLink(request)
     let imdb;
     if (request.imdb_id)
     {
-        imdb = buildNode("div", { class : "mediaLink", id : "imdbLink", title : "View on IMDb" });
+        imdb = buildNode("div", { class : "mediaLink hasRating", id : "imdbLink", title : "View on IMDb" });
         imdb.appendChild(
             externalLink(`https://imdb.com/title/${request.imdb_id}`, "").appendChildren(
                 buildNode(
@@ -702,11 +702,17 @@ function buildRequestExternalLink(request)
             )
         );
 
+        let failureFunc = () =>
+        {
+            $("#imdbRating").parentElement.removeChild($("#imdbRating"));
+            $("#imdbLink").classList.remove("hasRating");
+        };
+
         sendHtmlJsonRequest(
             "process_request.php",
             { type : ProcessRequest.ImdbRating, tt : request.imdb_id },
             function(response) { $("#imdbRating").innerHTML = response.rating; },
-            () => { $("#imdbRating").innerHTML = ""; });
+            failureFunc);
     }
     else if (request.id)
     {
@@ -769,7 +775,7 @@ function buildPage(data)
     title.appendChild(getStatusSpan(status));
 
     let release = data.release_date || data.first_air_date;
-    let year = buildNode("div", { id : "mediaYear" }, release.length > 4 ? release.substring(0, 4) : "Unknown Release Date");
+    let year = buildNode("div", { id : "mediaYear" }, (release && release.length) > 4 ? release.substring(0, 4) : "Unknown Release Date");
 
     let imdb = buildRequestExternalLink(data);
 
