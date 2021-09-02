@@ -55,6 +55,7 @@ window.addEventListener("load", function()
         let parameters = { type : QueryType.AllSessions };
         let successFunc = function(response)
         {
+            addPlayStatus(response);
             writeSessions(response);
             startUpdates();
         };
@@ -776,6 +777,15 @@ function writeSessions(activeSessions)
 }
 
 /// <summary>
+/// Add a helpful "playing" field to sessions for when we only want to
+/// differentiate between playing and not playing (i.e. playing vs paused/buffering)
+/// </summary>
+function addPlayStatus(sessions)
+{
+    sessions.forEach(session => { session.playing = session.state == "playing"; });
+}
+
+/// <summary>
 /// Write the number of active streams to the titlebar
 /// </summary>
 function writeTitle(streams)
@@ -785,13 +795,13 @@ function writeTitle(streams)
 
     for (let i = 0; i < streams.length; ++i)
     {
-        if (streams[i].paused)
+        if (streams[i].playing)
         {
-            ++paused;
+            ++playing;
         }
         else
         {
-            ++playing;
+            ++paused;
         }
     }
 
@@ -831,6 +841,7 @@ function startUpdates()
         let parameters = { type : QueryType.Progress };
         let successFunc = function(response)
         {
+            addPlayStatus(response);
             processUpdate(response);
             requestInProgress = false;
         };
@@ -873,6 +884,16 @@ function showRestartSessionOverlay()
 }
 
 /// <summary>
+/// Dictionary mapping session states to their icons
+/// </summary>
+const stateIcons =
+{
+    playing : { icon : () => "&#x25ba;  " },
+    buffering : { icon : (hover) => sessionBufferingHTML(hover) },
+    paused : { icon : () => "&#10073;&#10073;  " }
+};
+
+/// <summary>
 /// Updates the progress of the current stream and adjusts the play/pause icon as necessary
 /// </summary>
 function updateSessionProgress(item, sesh, id)
@@ -884,27 +905,31 @@ function updateSessionProgress(item, sesh, id)
 
     let ppbutton = item.$$(".ppbutton");
 
-    if (sesh.paused)
+    if (!sesh.playing)
     {
         // Transcode progress may still be updated, so do a one-off here
         innerUpdate(id);
-        ppbutton.classList.remove("play");
-        ppbutton.classList.add("pause");
-        ppbutton.innerHTML = "&#10073;&#10073;  ";
-    }
-    else
-    {
-        ppbutton.classList.remove("pause");
-        ppbutton.classList.add("play");
-        ppbutton.innerHTML = "&#x25ba;  ";
     }
 
-    if (sesh.paused && innerProgressTimers[id])
+    let state = sesh.state;
+    if (!stateIcons[state])
+    {
+        state = "paused";
+    }
+
+    if (ppbutton.getAttribute("state") != state)
+    {
+
+        ppbutton.setAttribute("state", state);
+        ppbutton.innerHTML = stateIcons[state].icon(parseInt(ppbutton.parentNode.getAttribute("hovered")));
+    }
+
+    if (!sesh.playing && innerProgressTimers[id])
     {
         clearInterval(innerProgressTimers[id]);
         delete innerProgressTimers[id];
     }
-    else if (!sesh.paused && !innerProgressTimers[id])
+    else if (sesh.playing && !innerProgressTimers[id])
     {
         // Create a new timer to simulate progress while we wait for an actual update
         innerProgressTimers[id] = setInterval(innerUpdate, 1000, id);
@@ -1033,13 +1058,14 @@ function reorderSessions(newOrder, existingSessions)
 }
 
 /// <summary>
-/// Sort function for sessions. Playing items are always before paused ones. Order by time remaining from there
+/// Sort function for sessions. Playing items are always before paused ones, and paused
+/// sessions are equal to buffering sessions. Order by time remaining from there
 /// </summary>
 function sessionSort(sessionA, sessionB)
 {
-    if (sessionA.paused != sessionB.paused)
+    if (sessionA.playing != sessionB.playing)
     {
-        return sessionA.paused ? 1 : -1;
+        return sessionA.playing ? -1 : 1;
     }
 
     return (sessionA.duration - sessionA.progress) - (sessionB.duration - sessionB.progress);
@@ -1165,7 +1191,7 @@ function addSession(response)
     // If we have existing sessions, find its place in the list
     for (let i = 0; i < currentSessions.length; ++i)
     {
-        if ((!response.paused && currentSessions[i].$$(".ppbutton").classList.contains("pause")) ||
+        if ((response.playing && currentSessions[i].$$(".ppbutton").getAttribute("state") != "playing") ||
             (response.progress / response.duration) * 100 < parseFloat(currentSessions[i].$$(".progress").style.width))
         {
             // Found our position if this item is playing and the next is paused, or this item has less
@@ -1234,6 +1260,8 @@ function getInlineIconForTitle(mediaType, hover)
             return Icons.getColor("musicicon", color);
         case "Audiobook":
             return Icons.getColor("audiobookicon", color);
+        case "Buffering":
+            return Icons.getColor("loading", color);
         default:
             return "";
     }
@@ -1295,9 +1323,7 @@ function buildActiveStreamTitle(sesh)
     }
 
     let link = buildNode("a", { href : hyperlink, target : "_blank", rel : "noreferrer", title : getExternalLinkTitle(hyperlink) });
-    link.appendChild(buildNode("span",
-        { class : `ppbutton  ${sesh.paused ? "pause" : "play"}` },
-        sesh.paused ? "&#10073;&#10073;  " : "&#x25ba;  "));
+    link.appendChild(getSessionStateNode(sesh, false /*hover*/));
 
     link.appendChild(buildNode("span", {}, `${sesh.title}`));
 
@@ -1319,13 +1345,45 @@ function buildActiveStreamTitle(sesh)
 }
 
 /// <summary>
+/// Return a span containing the state icon for the given session.
+/// If the session is playing/paused, returns plain text icons.
+/// If the session is buffering, returns a loading icon
+/// </summary>
+function getSessionStateNode(sesh, hover)
+{
+    let state = sesh.state;
+    if (!stateIcons[state])
+    {
+        Log.warn(`Unknown Session State: ${state}`);
+        state = "paused";
+    }
+
+    return buildNode("span", { class : "ppbutton", state : state }, stateIcons[state].icon(hover));
+}
+
+/// <summary>
+/// Returns the img HTML for the session buffering icon
+/// </summary>
+function sessionBufferingHTML(hover)
+{
+    return buildNode(
+        "img",
+        { src : getInlineIconForTitle("Buffering", hover), alt : "Buffering", class : "inlineIcon stateIcon" }
+    ).outerHTML;
+}
+
+/// <summary>
 /// Sets the svg icon source for the given link
 /// i.e. changes the color based on the hover state
 /// </summary>
 function inlineHover(link, hovered)
 {
-    let icon = link.$$("img");
-    icon.src = getInlineIconForTitle(icon.getAttribute("alt"), hovered);
+    link.$(".inlineIcon").forEach(icon =>
+    {
+        icon.src = getInlineIconForTitle(icon.getAttribute("alt"), hovered);
+    });
+
+    link.setAttribute("hovered", hovered ? 1 : 0);
 }
 
 /// <summary>
@@ -1537,7 +1595,7 @@ function buildMediaInfo(sesh)
     container.append(progressHolder);
 
     // Event to simulate play progress. Updates only come in every 10 seconds, so pretend like we're updating every second
-    if (!sesh.paused)
+    if (sesh.playing)
     {
         innerProgressTimers[sesh.session_id] = setInterval(innerUpdate, 1000, sesh.session_id);
     }

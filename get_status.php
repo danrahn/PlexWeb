@@ -217,7 +217,7 @@ function get_all_progress()
         $entry = new \stdClass();
         $entry->duration = get_duration($sesh);
         $entry->progress = (int)$sesh['viewOffset'];
-        $entry->paused = strcmp($sesh->xpath("Player")[0]['state'], 'paused') == 0;
+        $entry->state = (string)$sesh->xpath("Player")[0]['state'];
         $entry->id = get_sesh_id($sesh);
 
         $transcode = $sesh->xpath("TranscodeSession");
@@ -484,7 +484,7 @@ function build_sesh($sesh, $library_names)
     }
 
     $player = $sesh->xpath("Player")[0];
-    $slim_sesh->paused = strcmp($player['state'], 'paused') == 0;
+    $slim_sesh->state = (string)$sesh->xpath("Player")[0]['state'];
     $slim_sesh->playback_device = get_playback_device($player);
 
     if ($level == UserLevel::Admin)
