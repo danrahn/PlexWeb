@@ -2626,11 +2626,11 @@ function get_library_stats($force)
 {
     if ($force && UserLevel::is_admin())
     {
-        return refresh_library_stats();
+        return refresh_library_stats_foreground();
     }
 
     global $db;
-    $query = "SELECT id, data, CONVERT_TZ(timestamp, @@session.time_zone, '+00:00') AS `utc_timestamp` FROM `library_stats_cache` ORDER BY id DESC LIMIT 1";
+    $query = "SELECT id, `data`, CONVERT_TZ(timestamp, @@session.time_zone, '+00:00') AS `utc_timestamp` FROM `library_stats_cache` ORDER BY id DESC LIMIT 1";
     $result = $db->query($query);
     if (!$result)
     {
@@ -2639,7 +2639,7 @@ function get_library_stats($force)
 
     if ($result->num_rows == 0)
     {
-        return refresh_library_stats();
+        return refresh_library_stats_foreground();
     }
 
     $row = $result->fetch_assoc();
@@ -2648,252 +2648,36 @@ function get_library_stats($force)
     $diff = ($now->getTimestamp() - $timestamp->getTimestamp()) / 60 / 60;
     if ($diff > 4)
     {
-        return refresh_library_stats();
+        // Minimize (but not completely eliminate since I'm lazy) duplicate updates
+        // by first creating a dummy entry in the table so that if new requests come
+        // in before the initial update is done, we won't kick off another expensive update
+        $db_data = $db->real_escape_string($row['data']);
+        $db->query("INSERT INTO `library_stats_cache` (`data`) VALUES ('$db_data')");
+
+        // Race condition. Better not have inserted a new value between our initial query and the insert above
+        refresh_library_stats_background($row['id'] + 1);
     }
 
     return $row['data'];
 }
 
 /// <summary>
-/// Refresh our cached library stats by querying the Plex server
+/// Refresh and return library and capacity stats
 /// </summary>
-function refresh_library_stats()
+function refresh_library_stats_foreground()
 {
-    global $db;
-    $json_sections = array();
-    $sections = simplexml_load_string(curl(PLEX_SERVER . '/library/sections?' . PLEX_TOKEN));
-    foreach ($sections as $section)
-    {
-        array_push($json_sections, parse_section($section));
-    }
-
-    array_push($json_sections, parse_capacity());
-
-    // Always add a new entry. Not really necessary, but could be nice to see the history of the
-    // library over time.
-    $data = json_encode($json_sections);
-    $db_data = $db->real_escape_string($data);
-    $query = "INSERT INTO `library_stats_cache` (`data`) VALUES ('$db_data')";
-    if (!$db->query($query))
-    {
-        return db_error();
-    }
-
-    return $data;
+    return curl(SITE_ROOT_LOCAL . "/includes/update_library_stats.php?ul=" . UserLevel::current());
 }
 
 /// <summary>
-/// Get the amount of total and free disk space, in bytes
+/// Refresh library and capacity stats in the background so we don't have to wait
+/// for this potentially expensive operation to complete before returning.
+/// Only called when there's previously cached data available (even if it's stale).
 /// </summary>
-function parse_capacity()
+function refresh_library_stats_background($id)
 {
-    $cap = new \stdClass();
-    $cap->title = "_FS";
-    $cap->total = 0;
-    $cap->free = 0;
-    if (UserLevel::current() < UserLevel::Regular)
-    {
-        return $cap;
-    }
-
-    $total = 0;
-    $available = 0;
-    $zfs_overhead = 0;
-    foreach (BACKING_STORAGE as $disk)
-    {
-        $total += disk_total_space($disk . ":");
-        $available += disk_free_space($disk . ":");
-    }
-
-    if (ZFS_STATS)
-    {
-        $ssh = ssh2_connect(SSH_IP);
-        if ($ssh && ssh2_auth_password($ssh, SSH_USER, SSH_PASS))
-        {
-            $stream = ssh2_exec($ssh, 'zpool list -Hp ' . ZFS_SHARE);
-            if ($stream)
-            {
-                $zfs_overhead = (int)explode("\t", get_stream_data($stream))[1] - $total;
-                $total += $zfs_overhead;
-            }
-        }
-    }
-
-    $cap->total = $total;
-    $cap->free = $available;
-    $cap->overhead = $zfs_overhead;
-    return $cap;
-}
-
-/// <summary>
-/// Reads and returns all data from the given stream
-/// </summary>
-function get_stream_data($stream)
-{
-    $data = '';
-    stream_set_blocking($stream, FALSE);
-    $wait = 0;
-    while (!feof($stream))
-    {
-        if ($wait) { usleep($wait); }
-        $wait = 50000;
-        if (!feof($stream))
-        {
-            $block = stream_get_contents($stream);
-            if ($block === FALSE) { break; }
-            if ($block != '') { $data .= $block; $wait = 0; }
-        }
-    }
-
-    stream_set_blocking($stream, TRUE);
-    stream_get_contents($stream);
-    fclose($stream);
-    return $data;
-}
-
-/// <summary>
-/// Parses a single section of a Plex library
-/// </summary>
-function parse_section($section)
-{
-    $types = [
-        "movie" => 1,
-        "show" => 2, "season" => 3, "episode" => 4,
-        "trailer" => 5, "comic" => 6, "person" => 7,
-        "artist" => 8, "album" => 9, "track" => 10,
-        "photoAlbum" => 11, "picture" => 12, "photo" => 13, "clip" => 14, "playlistItem" => 15
-    ];
-
-    $json = new \stdClass();
-    $json->title = (string)$section['title'];
-    process_section_items((int)$section['key'], $types[(string)$section['type']], $json);
-    return $json;
-
-}
-
-/// <summary>
-/// Processes the items of a given section, doing different operations
-/// based on the section type
-/// </summary>
-function process_section_items($key, $type, &$section)
-{
-    $type_start = $type;
-    $type_end = $type;
-    $labels = array("Movies");
-    $audiobook_section = FALSE;
-
-    if ($type > 1 && $type < 5)
-    {
-        // TV shows, 4 indicates number of episodes - get shows, seasons, and episodes
-        $type_start = 2;
-        $type_end = 4;
-        $labels = array("Shows", "Seasons", "Episodes");
-    }
-    else if ($type > 7 && $type < 11)
-    {
-        // Music, get artists, albums, and tracks
-        $type_start = 8;
-        $type_end = 10;
-        $audiobook_section = $section->title == LIBRARIES["AUDIOBOOKS"];
-        $labels = $audiobook_section ? array("Authors", "Books", "Chapters") : array("Artists", "Albums", "Tracks");
-    }
-
-    $items = array();
-    for ($iType = $type_start; $iType <= $type_end; ++$iType)
-    {
-        $xml = simplexml_load_string(curl(PLEX_SERVER . '/library/sections/' . $key . '/all?type=' . $iType . '&X-Plex-Container-Start=0&X-Plex-Container-Size=0&' . PLEX_TOKEN));
-        $section->{$labels[$iType - $type_start]} = (int)$xml['totalSize'];
-        array_push($items, (int)$xml['totalSize']);
-    }
-
-    switch ($type)
-    {
-        case 1:
-            addMovieDetails($key, $section);
-            break;
-        case 2:
-            addTvDetails($key, $section);
-            break;
-        case 8:
-            addAudioDetails($key, $section, $audiobook_section);
-            break;
-        default:
-            break;
-    }
-
-    return $items;
-}
-
-/// <summary>
-/// Adds details about the resolutions of movies in the Plex library
-/// </summary>
-function addMovieDetails($key, $section)
-{
-    addSectionDetails(1, $key, "resolution", $section);
-}
-
-/// <summary>
-///  Adds details about the content rating of tv shows in the Plex library
-/// </summary>
-function addTvDetails($key, $section)
-{
-    addSectionDetails(2, $key, "contentRating", $section);
-}
-
-/// <summary>
-/// Adds details about music sections. For "real" music, organize by tracks per decade.
-/// For audiobooks, organize by books (i.e. albums) per decade.
-/// </summary>
-function addAudioDetails($key, $section, $audiobook_section)
-{
-    $type_query = $audiobook_section ? "9&" : "10&album.";
-    $before = PLEX_SERVER . "/library/sections/$key/all?type=" . $type_query . "year%3C%3C=1900";
-    $append = "&" . PLEX_TOKEN . "&type=" . ($audiobook_section ? "9" : "10") . "&X-Plex-Container-Start=0&X-Plex-Container-Size=0";
-    
-    $items = new \stdClass();
-    $before_count = (int)simplexml_load_string(curl($before . $append))["totalSize"];
-    if ($before_count != 0)
-    {
-        $dc = "<1900";
-        $items->$dc = $before_count;
-    }
-
-    $max = (int)date("Y") / 10 * 10;
-    $decade = 1900;
-    $any = false;
-    while ($decade <= $max)
-    {
-        $decadePath = PLEX_SERVER . "/library/sections/$key/all?type=" . $type_query . "decade=$decade" . $append;
-        $count = (int)simplexml_load_string(curl($decadePath))["totalSize"];
-        if ($count != 0 || $any)
-        {
-            $any = TRUE;
-            $items->$decade = $count;
-        }
-
-        $decade += 10;
-    }
-
-    $section->decades = $items;
-}
-
-/// <summary>
-/// Retrieves details for the given section and adds it to the current section
-/// </summary>
-function addSectionDetails($type, $sectionKey, $detailKey, &$section)
-{
-    $append = "&type=$type&X-Plex-Container-Start=0&X-Plex-Container-Size=0";
-    $base = PLEX_SERVER . "/library/sections/$sectionKey";
-    $data = simplexml_load_string(curl($base . "/$detailKey?" . PLEX_TOKEN));
-    $items = new \stdClass();
-    foreach ($data as $item)
-    {
-        $path = $base . "/all?type=$type&$detailKey=" . (string)$item["key"] . "&" . PLEX_TOKEN . $append;
-        $dict_key = (string)$item["title"];
-        $items->$dict_key = (int)simplexml_load_string(curl($path))["totalSize"];
-    }
-
-    $section->$detailKey = $items;
+    $params = http_build_query(array("ul" => UserLevel::current(), "id" => $id));
+    fire_and_forget(SITE_ROOT_LOCAL . "/includes/update_library_stats.php", $params);
 }
 
 /// <summary>
@@ -3026,7 +2810,7 @@ function refresh_imdb_ratings($force)
     file_put_contents("includes/status.json", json_encode($status));
 
     // This is an expensive operation. Fire and forget so we don't lock up the site
-    fire_and_forget("http://127.0.0.1/plex/includes/update_imdb_ratings.php", "");
+    fire_and_forget(SITE_ROOT_LOCAL . "/includes/update_imdb_ratings.php", "");
     return TRUE;
 }
 

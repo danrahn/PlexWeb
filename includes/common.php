@@ -731,7 +731,7 @@ function fire_and_forget($url, $data)
 /// </summary>
 function send_email_forget($to, $content, $subject)
 {
-    $url = "http://127.0.0.1/plex/includes/send_email.php";
+    $url = SITE_ROOT_LOCAL . "/includes/send_email.php";
     $data = http_build_query(array("to" => $to, "content" => $content, "subject" => $subject));
     fire_and_forget($url, $data);
 }
