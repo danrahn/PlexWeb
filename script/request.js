@@ -814,10 +814,10 @@ function showStatusChangeOverlay()
 
     Overlay.build(
         { dismissible : true, centered : false },
-        buildNode("div", { id : "changeStatus" }).appendChildren(
+        buildNode("div", { id : "changeStatus", class : "overlayDiv" }).appendChildren(
             buildNode("div", {}, "Update request status"),
             select,
-            buildNode("input", { type : "button", value : "Change" }, 0, { click : changeStatus })
+            buildNode("input", { type : "button", value : "Change", class : "overlayInput overlayButton" }, 0, { click : changeStatus })
         )
     );
 }
@@ -878,8 +878,8 @@ function confirmDeleteRequest()
         {
             type : "button",
             id : "confirmDeleteButton",
+            class : "overlayInlineButton rightButton",
             value : "Delete",
-            style : "width: 100px; margin-right: 10px; display: inline",
         },
         0,
         { click : deleteRequest }
@@ -889,20 +889,20 @@ function confirmDeleteRequest()
         "input",
         {
             type : "button",
+            class : "overlayInlineButton",
             value : "Cancel",
-            style : "width: 100px; display: inline"
         },
         0,
         { click : Overlay.dismiss }
     );
 
     let outerButtonContainer = buildNode("div", { class : "formInput", style : "text-align: center" });
-    let buttonContainer = buildNode("div", { style : "float: right; overflow: auto; width: 100%; margin: auto" });
+    let buttonContainer = buildNode("div", { style : "width: 100%; margin: auto" });
     outerButtonContainer.appendChild(buttonContainer.appendChildren(okayButton, cancelButton));
 
     Overlay.build(
         { dismissible : true, centered : false },
-        buildNode("div").appendChildren(
+        buildNode("div", { class : "overlayDiv" }).appendChildren(
             buildNode("div", {}, "Are you sure you want to delete this request?"),
             outerButtonContainer
         )
@@ -953,12 +953,13 @@ function deleteRequestFailed()
         }
 
         container.appendChildren(
-            buildNode("div", { id : "overlayMessage" }, message),
+            buildNode("div", { id : "overlayMessage", class : "overlayDiv" }, message),
             buildNode(
                 "input",
                 {
                     type : "button",
                     id : "overlayBtn",
+                    class : "overlayInput overlayButton",
                     value : "OK",
                     style : "width: 100px"
                 },
@@ -1104,7 +1105,7 @@ function getYesNoOverlayButtons()
         {
             type : "button",
             value : "Yes",
-            style : "width: 100px; margin-right: 10px; display: inline"
+            class : "thinOverlayButton rightButton",
         },
         0,
         {
@@ -1119,7 +1120,7 @@ function getYesNoOverlayButtons()
         {
             type : "button",
             value : "No",
-            style : "width: 100px; margin-right: 10px; display: inline"
+            class : "thinOverlayButton",
         },
         0,
         {
@@ -1137,8 +1138,8 @@ function getYesNoOverlayButtons()
 /// </summary>
 function promptForNotifications()
 {
-    let promptHolder = buildNode("div", { style : "background-color: rgba(0,0,0,0.5)" }); // Darker background
-    let title = buildNode("h4", {}, "Enable Notifications");
+    let promptHolder = buildNode("div", { style : "background-color: rgba(0,0,0,0.5); overflow: auto", class : "overlayDiv" }); // Darker background
+    let title = buildNode("h4", { style : "margin-top: 10px;" }, "Enable Notifications");
     let prompt = buildNode("div", {}, "Thanks for your request! Do you want to get notifications when the status of your requests are changed?");
     let checkHolder = buildNode("div", { class : "formInput" });
     let check = buildNode("input",

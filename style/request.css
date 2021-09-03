@@ -426,6 +426,18 @@ option {
     line-height: 30px;
 }
 
+.thinOverlayButton {
+    display : inline;
+    float : none;
+    margin: auto;
+    margin-top: 10px;
+    width: 100px;
+}
+
+.rightButton {
+    margin-right: 10px;
+}
+
 @media (orientation: landscape), (min-width: 767px) {
     #innerInfoContainer {
         float: left;

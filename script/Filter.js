@@ -119,11 +119,7 @@ class Filter
     tableFilterKeyHandler(e)
     {
         let key = e.keyCode ? e.keyCode : e.which;
-        if (key == KEY.ESC)
-        {
-            this.dismiss();
-        }
-        else if (key == KEY.ENTER && e.ctrlKey)
+        if (key == KEY.ENTER && e.ctrlKey)
         {
             let overlay = $("#filterOverlay");
             if (overlay && overlay.style.opacity == "1")
@@ -139,7 +135,7 @@ class Filter
     launch()
     {
         Log.info(this);
-        let overlay = this._buildAndAttachFilterOverlay();
+        let overlay = this.html();
 
         // Somewhat hacky to do this here, but query selection doesn't
         // work until the item is actually added to the DOM
@@ -149,7 +145,17 @@ class Filter
             perPage.value = this.table.getPerPage();
         }
 
-        this.populate();
+        let setup = {
+            fn : this._setupFunction,
+            args : [this]
+        };
+
+        Overlay.build({ dismissible : true, centered : false, noborder : true, setup : setup }, overlay);
+    }
+
+    _setupFunction(filter)
+    {
+        filter.populate();
         $("#applyFilter").addEventListener("click", function()
         {
             this.table.setPage(0);
@@ -160,58 +166,19 @@ class Filter
                 this.table.setPerPage($("#showPerPage").value, true /*update*/);
             }
 
-            this.dismiss();
-        }.bind(this));
+            Overlay.dismiss();
+        }.bind(filter));
 
-        $("#cancelFilter").addEventListener("click", this.dismiss);
+        $("#cancelFilter").addEventListener("click", Overlay.dismiss);
         $("#resetFilter").addEventListener("click", function()
         {
             this.table.setPage(0);
             this.set(this.default(), true);
-            this.dismiss();
-        }.bind(this));
-
-        Animation.queue({ opacity : 1 }, overlay, 250);
+            Overlay.dismiss();
+        }.bind(filter));
 
         // Set focus to the first input
-        overlay.$$("input").focus();
-    }
-
-    /// <summary>
-    /// Dismisses the filter overlay with an animation if it's present
-    /// </summary>
-    dismiss()
-    {
-        let overlay = $("#filterOverlay");
-        if (overlay && overlay.style.opacity == "1")
-        {
-            Animation.queue({ opacity : 0 }, overlay, 250, true);
-        }
-    }
-
-    /// <summary>
-    /// Build and return the filter dialog element
-    /// </summary>
-    _buildAndAttachFilterOverlay()
-    {
-        let overlay = buildNode(
-            "div",
-            { id : "filterOverlay", style : "opacity: 0" },
-            this.html().outerHTML,
-            {
-                click : function(e)
-                {
-                    // A click outside the main dialog will dismiss it
-                    if (e.target.id == "filterOverlay")
-                    {
-                        this.dismiss();
-                    }
-                }.bind(this)
-            }
-        );
-
-        document.body.appendChild(overlay);
-        return overlay;
+        $("#mainOverlay").$$("input").focus();
     }
 
     /* Functions to be overridden */

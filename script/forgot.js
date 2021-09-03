@@ -90,13 +90,14 @@ function setupForgotForm()
     {
         // From for phone# or email. If none, pop this
         Overlay.build({ dismissible : true, centered : false },
-            buildNode("div", {}, "Please reach out to the administrator to get help recovering your account."),
+            buildNode("div", { class : "overlayDiv" }, "Please reach out to the administrator to get help recovering your account."),
             buildNode(
                 "input",
                 {
                     type : "button",
                     id : "noRecovery",
                     value : "OK",
+                    class : "overlayInput overlayButton",
                     style : "width: 100px"
                 },
                 0,

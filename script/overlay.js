@@ -13,12 +13,13 @@ let Overlay = new function()
     this.show = function(message, buttonText, buttonFunc, dismissible=true)
     {
         this.build({ dismissible : dismissible, centered : false },
-            buildNode("div", { id : "overlayMessage" }, message),
+            buildNode("div", { id : "overlayMessage", class : "overlayDiv" }, message),
             buildNode(
                 "input",
                 {
                     type : "button",
                     id : "overlayBtn",
+                    class : "overlayInput overlayButton",
                     value : buttonText,
                     style : "width: 100px"
                 },
@@ -44,8 +45,10 @@ let Overlay = new function()
     /// </summary>
     /// <param name="options">
     /// Options that define how the overlay is shown:
-    ///   Dismissible : Determines whether the overlay can be dismissed
-    ///   Centered : Determines whether the overlay is centered in the screen (versus closer to the top)
+    ///   dismissible : Determines whether the overlay can be dismissed
+    ///   centered : Determines whether the overlay is centered in the screen (versus closer to the top)
+    ///   noborder : Determine whether to surround the overlay's children with a dark border (defaults to false)
+    ///   setup : A function to run after attaching the children to the DOM, but before triggering the show animation
     /// </param>
     /// <param name="...children">The list of nodes to append to the overlay.</param>
     this.build = function(options, ...children)
@@ -55,7 +58,45 @@ let Overlay = new function()
             return;
         }
 
-        let overlayNode = buildNode("div",
+        let overlayNode = _overlayNode(options);
+
+        let container = buildNode("div", { id : "overlayContainer", class : options.centered ? "centeredOverlay" : "defaultOverlay" });
+        if (!options.noborder)
+        {
+            container.classList.add("darkerOverlay");
+        }
+
+        children.forEach(function(element)
+        {
+            container.appendChild(element);
+        });
+
+        overlayNode.appendChild(container);
+        document.body.appendChild(overlayNode);
+        if ($("#tooltip"))
+        {
+            Tooltip.dismiss();
+        }
+
+        if (options.setup)
+        {
+            options.setup.fn(...options.setup.args);
+        }
+
+        Animation.queue({ opacity : 1 }, overlayNode, 250);
+        if (container.clientHeight / window.innerHeight > 0.7)
+        {
+            container.classList.add("centeredOverlay");
+            container.classList.remove("defaultOverlay");
+            addFullscreenOverlayElements(container);
+        }
+
+        window.addEventListener("keydown", overlayKeyListener, false);
+    };
+
+    let _overlayNode = function(options)
+    {
+        return buildNode("div",
             {
                 id : "mainOverlay",
                 style : "opacity: 0",
@@ -68,33 +109,14 @@ let Overlay = new function()
                     let overlayElement = $("#mainOverlay");
                     if (overlayElement &&
                         overlayElement.getAttribute("dismissible") == "1" &&
-                        e.target.id == "mainOverlay" &&
-                        e.target.style.opacity == 1)
+                        (e.target.id == "mainOverlay" || (options.noborder && e.target.id == "overlayContainer")) &&
+                        overlayElement.style.opacity == 1)
                     {
                         Overlay.dismiss();
                     }
                 }
-            });
-
-        let container = buildNode("div", { id : "overlayContainer", class : options.centered ? "centeredOverlay" : "defaultOverlay" });
-        children.forEach(function(element)
-        {
-            container.appendChild(element);
-        });
-
-        overlayNode.appendChild(container);
-        document.body.appendChild(overlayNode);
-        if ($("#tooltip"))
-        {
-            Tooltip.dismiss();
-        }
-        Animation.queue({ opacity : 1 }, overlayNode, 250);
-        if (container.clientHeight / window.innerHeight > 0.7)
-        {
-            addFullscreenOverlayElements(container);
-        }
-
-        window.addEventListener("keydown", overlayKeyListener, false);
+            }
+        );
     };
 
     /// <summary>

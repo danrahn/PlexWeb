@@ -175,11 +175,11 @@ function ensureImdbUpdateSpan()
 function appendImdbUpdateSpan()
 {
     $("#overlayContainer").appendChildren(
-        buildNode("div", { id : "imdbUpdateTitle" }).appendChildren(
+        buildNode("div", { id : "imdbUpdateTitle", class : "overlayDiv" }).appendChildren(
             buildNode("span", {}, "Updating IMDb ratings"),
             buildNode("img", { src : Icons.get("loading"), alt : "loading", height : "12pt" })
         ),
-        buildNode("div", { id : "imdbStatus" }, "Status: Unknown"));
+        buildNode("div", { id : "imdbStatus", class : "overlayDiv" }, "Status: Unknown"));
 }
 
 /// <summary>
@@ -189,21 +189,29 @@ function banOverlay()
 {
     Overlay.build(
         { dismissible : true },
-        buildNode("div", { style : "width: 30vw; min-width: 300px; max-width: 400px" }).appendChildren(
+        buildNode("div", { style : "width: 30vw; min-width: 300px; max-width: 400px", class : "overlayDiv" }).appendChildren(
             buildNode("span", {}, "Select the client to ban"),
             buildNode("div").appendChildren(
                 buildNode("div", { class : "formInput" }).appendChildren(
                     buildNode("label", { for : "banIp" }, "IP Address:"),
-                    buildNode("input", { type : "text", name : "banIp", id : "banIp", style : "float: right" })
+                    buildNode("input", { type : "text", name : "banIp", id : "banIp" })
                 ),
                 buildNode("div", { class : "formInput" }).appendChildren(
                     buildNode("label", { for : "banReason" }, "Reason"),
-                    buildNode("input", { type : "text", name : "banReason", id : "banReason", style : "float: right" })
+                    buildNode("input", { type : "text", name : "banReason", id : "banReason" })
                 )
             ),
             buildNode("div", { style : "width: 30vw; min-width: 300px; max-width: 400px; overflow: auto" }).appendChildren(
-                buildNode("input", { type : "button", value : "Ban", style : "float: left; width: 100px" }, 0, { click : banClient }),
-                buildNode("input", { type : "button", value : "Cancel", style : "float: right; width: 100px" }, 0, { click : Overlay.dismiss })
+                buildNode(
+                    "input",
+                    { type : "button", value : "Ban", style : "float: left;", class : "overlayInlineButton" },
+                    0,
+                    { click : banClient }),
+                buildNode(
+                    "input",
+                    { type : "button", value : "Cancel", style : "float: right;", class : "overlayInlineButton" },
+                    0,
+                    { click : Overlay.dismiss })
             )
         )
     );

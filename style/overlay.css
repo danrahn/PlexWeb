@@ -12,8 +12,11 @@
 #overlayContainer {
     width: auto;
     height: auto;
-    background-color: rgba(0,0,0,0.3);
     color: rgb(196, 196, 196);
+}
+
+.darkerOverlay {
+    background-color: rgba(0,0,0,0.3);
 }
 
 .fullOverlay {
@@ -21,14 +24,14 @@
     margin-bottom: 50px;
 }
 
-#overlayContainer > div {
+.overlayDiv {
     padding-bottom: 20px;
     margin: auto;
     display: block;
     text-align: center;
 }
 
-#overlayContainer textarea {
+.overlayTextarea {
     display: block;
     width: 50%;
     min-width: 200px;
@@ -37,16 +40,24 @@
     height: 50px;
 }
 
-#overlayContainer input {
+.overlayInput {
     display: block;
     float: none;
     margin: auto;
 }
 
-#overlayContainer input[type=button] {
+.overlayButton {
     margin-top: 10px;
     padding: 10px;
+}
 
+.overlayInlineButton {
+    display : inline;
+    float : none;
+    margin: auto;
+    margin-top: 10px;
+    padding: 10px;
+    width: 100px;
 }
 
 .centeredOverlay {

@@ -132,3 +132,15 @@ form select {
 #name:hover {
     background-color: rgba(0,0,0,0.2);
 }
+
+.existingRequestButton {
+    width: 120px;
+    display: inline;
+    float: none;
+    margin: auto;
+    margin-top: 10px;
+}
+
+.rightButton {
+    margin-right: 10px;
+}

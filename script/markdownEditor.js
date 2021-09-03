@@ -426,7 +426,8 @@ let MarkdownEditor = new function()
             "input",
             {
                 type : "text",
-                id : "addLinkLink"
+                id : "addLinkLink",
+                class : "overlayInput",
             },
             0,
             {
@@ -438,6 +439,7 @@ let MarkdownEditor = new function()
             {
                 type : "text",
                 id : "addLinkText",
+                class : "overlayInput",
                 value : initialText
             },
             0,
@@ -445,7 +447,7 @@ let MarkdownEditor = new function()
                 keyup : mdInsertKeyupHandler
             });
 
-        let container = buildNode("div", { id : "mdInsertOverlay" });
+        let container = buildNode("div", { id : "mdInsertOverlay", class : "overlayDiv" });
         container.appendChildren(title, linkText, linkInput, displayText, displayInput);
         if (isPhoto)
         {
@@ -482,7 +484,7 @@ let MarkdownEditor = new function()
             {
                 type : "text",
                 id : "insertWidth",
-                style : "width: 75px; display: inline",
+                class : "mdInlineInput",
                 placeholder : "Width"
             },
             0,
@@ -495,7 +497,7 @@ let MarkdownEditor = new function()
             {
                 type : "text",
                 id : "insertHeight",
-                style : "width: 75px; display: inline",
+                class : "mdInlineInput",
                 placeholder : "Height"
             },
             0,
@@ -521,7 +523,7 @@ let MarkdownEditor = new function()
                 type : "button",
                 id : id,
                 value : "Insert",
-                style : "width: 100px; margin-right: 10px; display: inline",
+                class : "overlayInlineButton rightButton",
                 targetTextarea : comment.id
             },
             0,
@@ -543,7 +545,7 @@ let MarkdownEditor = new function()
             {
                 type : "button",
                 value : "Cancel",
-                style : "width: 100px; display: inline"
+                class : "overlayInlineButton"
             },
             0,
             {
@@ -645,7 +647,7 @@ let MarkdownEditor = new function()
     /// </summary>
     let addTable = function(comment)
     {
-        let container = buildNode("div", { id : "mdInsertOverlay" });
+        let container = buildNode("div", { id : "mdInsertOverlay", class : "overlayDiv" });
         let header = buildNode("h2", {}, "Insert Table");
         let resizeButtons = getBuildTableButtons();
         let table = defaultInsertTable();
@@ -753,7 +755,7 @@ let MarkdownEditor = new function()
             ++i;
             let node = buildNode(
                 "input",
-                { type : "button", value : button.text, id : button.id },
+                { type : "button", value : button.text, id : button.id, class : "overlayInput overlayButton" },
                 0,
                 {
                     click : button.func

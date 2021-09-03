@@ -247,6 +247,12 @@ hr {
     outline: none;
 }
 
+.hidden {
+    visibility: hidden;
+    overflow: hidden;
+    height: 0;
+}
+
 @media (orientation: landscape), (min-width: 767px) {
     /* width*/
     ::-webkit-scrollbar {
@@ -300,7 +306,7 @@ hr {
 
 /* Track */
 ::-webkit-scrollbar-track {
-     background: transparent;
+    background: transparent;
 }
 
 /* Handle */

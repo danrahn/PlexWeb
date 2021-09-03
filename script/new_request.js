@@ -636,15 +636,14 @@ function showAlreadyExistsAlert(response)
     let secondaryText = "Would you like to add a comment to the existing request?";
     let message = buildNode(
         "div",
-        {},
+        { class : "overlayDiv" },
         `You have already made a request for '${response.name}', and its status is '${status}'.<br><br>${secondaryText}`);
     let button1 = buildNode(
         "input",
         {
             type : "button",
-            id : "overlayOK",
             value : "Go to Request",
-            style : "width: 120px; margin-right: 10px; display: inline",
+            class : "existingRequestButton rightButton",
             rid : response.rid
         },
         0,
@@ -658,7 +657,7 @@ function showAlreadyExistsAlert(response)
             type : "button",
             id : "overlayCancel",
             value : "Cancel",
-            style : "width: 120px; display: inline",
+            class : "existingRequestButton",
         },
         0,
         {

@@ -320,10 +320,6 @@ option {
         margin-left: 10px;
     }
 
-    #filterContainer {
-        margin-top: 25vh;
-    }
-
     .textHolder {
         max-width: calc(100% - 100px);
     }
@@ -373,10 +369,6 @@ option {
 
     .searchInput {
         max-width: calc(100% - 45px);
-    }
-
-    #filterContainer {
-        margin-top: 15vh;
     }
 
     #filterContainer label {

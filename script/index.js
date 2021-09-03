@@ -461,11 +461,13 @@ function buildChartOverlay(chartData)
     let titleSav = !!chartData.noTitle;
     chartData.noTitle = false;
     Overlay.build({ dismissible : true, centered : true },
-        buildNode("div").appendChildren(chartData.radius ? Chart.pie(chartData) : Chart.bar(chartData)),
+        buildNode("div", { class : "overlayDiv" }).appendChildren(
+            chartData.radius ? Chart.pie(chartData) : Chart.bar(chartData)),
         buildNode("input",
             {
                 type : "button",
                 id : "overlayBtn",
+                class : "overlayInput overlayButton",
                 value : "Close",
                 style : "width: 100px"
             },
@@ -473,6 +475,7 @@ function buildChartOverlay(chartData)
             {
                 click : Overlay.dismiss
             }));
+
     chartData.noTitle = titleSav;
 
     if (chartData.radius)
@@ -693,9 +696,9 @@ function getStreamAccessString()
 /// </summary>
 function showStreamAccessOverlay()
 {
-    let message = buildNode("div", {}, "Add a message for the admins to let them know who you are (optional)");
+    let message = buildNode("div", { class : "overlayDiv" }, "Add a message for the admins to let them know who you are (optional)");
     let textbox = buildNode("textarea",
-        { maxlength : "1024" },
+        { maxlength : "1024", class : "overlayTextarea" },
         0,
         {
             keydown : function(e)
@@ -712,6 +715,7 @@ function showStreamAccessOverlay()
         {
             type : "button",
             id : "requestButton",
+            class : "overlayInput overlayButton",
             value : "Request"
         },
         0,
@@ -866,13 +870,14 @@ function startUpdates()
 /// </summary>
 function showRestartSessionOverlay()
 {
-    let message = buildNode("div", {}, "Your session has expired, please log in again");
+    let message = buildNode("div", { class : "overlayDiv" }, "Your session has expired, please log in again");
     let button = buildNode(
         "input",
         {
             type : "button",
             id : "goToLogin",
             value : "OK",
+            class : "overlayInput overlayButton",
             style : "width: 100px"
         },
         0,
