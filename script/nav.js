@@ -178,37 +178,16 @@ function enableSingle(id, enabled)
 /// Window keydown event handler to process
 /// potential keyboard shortcuts
 /// </summary>
-function tryNavKeyDispatch(key)
+function tryNavKeyDispatch(key, altKey, ctrlKey)
 {
     let target = "";
-    switch (key)
+    if (!altKey && !ctrlKey)
     {
-        case KEY.H:
-            target = "index.php";
-            break;
-        case KEY.R:
-            target = "requests.php";
-            break;
-        case KEY.N:
-            target = "new_request.php";
-            break;
-        case KEY.S:
-            target = "user_settings.php";
-            break;
-        case KEY.A:
-            target = "activity.php";
-            break;
-        case KEY.M:
-        {
-            let menu = $("#leftMenu");
-            expandContractMenu(menu, menu.style.opacity == 0);
-            break;
-        }
-        case KEY.P:
-            target = $("#nav").getAttribute("plex_host");
-            break;
-        default:
-            break;
+        target = dispatchShift(key);
+    }
+    else if (altKey && !ctrlKey)
+    {
+        target = dispatchAltShift(key);
     }
 
     if (target.length > 0)
@@ -222,6 +201,46 @@ function tryNavKeyDispatch(key)
         {
             window.location = target;
         }
+    }
+}
+
+function dispatchAltShift(key)
+{
+    switch (key)
+    {
+        case KEY.A:
+            return "administration.php";
+        default:
+            return "";
+    }
+}
+
+function dispatchShift(key)
+{
+    switch (key)
+    {
+        case KEY.H:
+            return "index.php";
+        case KEY.R:
+            return "requests.php";
+        case KEY.N:
+            return "new_request.php";
+        case KEY.S:
+            return "user_settings.php";
+        case KEY.A:
+            return "activity.php";
+        case KEY.M:
+        {
+            let menu = $("#leftMenu");
+            expandContractMenu(menu, menu.style.opacity == 0);
+            return "";
+        }
+        case KEY.P:
+            return $("#nav").getAttribute("plex_host");
+        case KEY.E:
+            return "embed.php";
+        default:
+            return "";
     }
 }
 
@@ -250,9 +269,9 @@ window.addEventListener("keydown", function(e)
         return;
     }
 
-    if (e.shiftKey && !e.altKey && !e.ctrlKey)
+    if (e.shiftKey)
     {
-        tryNavKeyDispatch(key);
+        tryNavKeyDispatch(key, e.altKey, e.ctrlKey);
     }
 });
 
@@ -280,7 +299,19 @@ window.addEventListener("click", function(e)
     {
         expandContractMenu(menu, false);
     }
+});
 
+/// <summary>
+/// On window load, try to detect whether we're using a desktop browser.
+/// If we are, adjust some css that can't be easily determined by media queries.
+/// </summary>
+window.addEventListener("load", function()
+{
+    let frame = $("#plexFrame");
+    if (frame && !navigator.userAgent.toLowerCase().match(/mobile/))
+    {
+        frame.style.overflow = "auto";
+    }
 });
 
 // Keep track of where our touch started
