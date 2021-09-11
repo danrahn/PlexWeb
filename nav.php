@@ -20,7 +20,7 @@
             <div class=btnImg><image src='<?php icon('bell') ?>' alt='Activity' class="activityImg" style='margin-top:8px;height:24px'/></div>
         </div>
     </div>
-    <button id="pageName" class="navPageInfo btnimg" title="Home (Shift + H)"><image style='margin-top:6px' src='<?php icon('home') ?>' alt='Home' /></button>
+    <button id="pageName" class="navPageInfo btnimg" title="Home (Shift + H)"><image style='margin-top:6px;margin-bottom:-6px' src='<?php icon('home') ?>' alt='Home' /></button>
     <?php
         if ($_SERVER['REQUEST_URI'] != '/plex/index.php' &&
             $_SERVER['REQUEST_URI'] != '/plex/')
