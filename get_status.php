@@ -114,13 +114,21 @@ abstract class MediaType {
 }
 
 /// <summary>
-/// Sorts sessions by play time remaining, with playing items always taking precedence over paused items
+/// Sorts sessions by play time remaining, with playing items always taking precedence over paused/buffering items
 /// </summary>
 function session_sort($session1, $session2)
 {
-    if ($session1->paused != $session2->paused)
+    if ($session1->state != $session2->state)
     {
-        return $session1->paused ? 1 : -1;
+        if ($session1->state == "playing")
+        {
+            return -1;
+        }
+
+        if ($session2->state == "playing")
+        {
+            return 1;
+        }
     }
 
     return ($session1->duration - $session1->progress) - ($session2->duration - $session2->progress);
