@@ -219,21 +219,11 @@ option {
     filter: invert(20%);
 }
 
-#filterOverlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    background-color: rgba(0,0,0,0.6);
-}
-
 #filterContainer {
     margin: auto;
     width: 80%;
     min-width: 200px;
     max-width: 400px;
-    height: auto;
     padding: 20px;
     background-color: rgba(0,0,0,0.6);
     color: rgb(196, 196, 196);

@@ -86,8 +86,6 @@ let Overlay = new function()
         Animation.queue({ opacity : 1 }, overlayNode, 250);
         if (container.clientHeight / window.innerHeight > 0.7)
         {
-            container.classList.add("centeredOverlay");
-            container.classList.remove("defaultOverlay");
             addFullscreenOverlayElements(container);
         }
 
@@ -126,6 +124,7 @@ let Overlay = new function()
     let addFullscreenOverlayElements = function(container)
     {
         container.classList.remove("defaultOverlay");
+        container.classList.remove("centeredOverlay");
         container.classList.add("fullOverlay");
         let close = buildNode(
             "img",
