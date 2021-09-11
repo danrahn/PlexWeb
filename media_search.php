@@ -145,12 +145,23 @@ function search_audible($query)
     {
         $title_start = strpos($text, "aria-label='", $find) + 12;
         $title_end = strpos($text, "'", $title_start);
+        if ($title_start == 12 || $title_end === FALSE)
+        {
+            // If we can't even find the title of something, break early
+            break;
+        }
+
         $title = html_entity_decode(substr($text, $title_start, $title_end - $title_start), ENT_QUOTES | ENT_HTML5);
 
         $ref_find = strpos($text, "bc-color-link", $title_end);
         $ref_start = strpos($text, "href=\"", $ref_find) + 6;
         $ref_end = strpos($text, "?", $ref_start);
-        $ref = "https://audible.com" . substr($text, $ref_start, $ref_end - $ref_start);
+
+        $ref = "https://audible.com";
+        if ($ref_find && $ref_start != 6 && $ref_end)
+        {
+            $ref .= substr($text, $ref_start, $ref_end - $ref_start);
+        }
 
         $id_start = strrpos($ref, "/") + 1;
         $id = substr($ref, $id_start);
@@ -158,11 +169,29 @@ function search_audible($query)
         $img_find = strpos($text, "bc-image-inset-border", $find);
         $img_start = strpos($text, "data-lazy=", $img_find) + 11;
         $img_end = strpos($text, "\"", $img_start);
-        $img = substr($text, $img_start, $img_end - $img_start);
+        $img = "";
+        if ($img_find && $img_start != 11 && $img_end)
+        {
+            $img = substr($text, $img_start, $img_end - $img_start);
+        }
+        else
+        {
+            $img_find = $find;
+        }
+
 
         $rel_start = strpos($text, "Release date:", $img_find) + 13;
         $rel_end = strpos($text, "</span", $rel_start);
-        $rel = str_replace("\n", "", str_replace(" ", "", substr($text, $rel_start, $rel_end - $rel_start)));
+        $rel = "Unknown";
+        if ($rel_start != 13 && $rel_end)
+        {
+            $rel = str_replace("\n", "", str_replace(" ", "", substr($text, $rel_start, $rel_end - $rel_start)));
+        }
+        else
+        {
+            $rel_end = $img_find;
+        }
+
 
         $item = new \stdClass();
         $item->title = $title;
