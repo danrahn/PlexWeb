@@ -121,7 +121,7 @@ class Filter
         let key = e.keyCode ? e.keyCode : e.which;
         if (key == KEY.ENTER && e.ctrlKey)
         {
-            let overlay = $("#filterOverlay");
+            let overlay = $("#mainOverlay");
             if (overlay && overlay.style.opacity == "1")
             {
                 $("#applyFilter").click();
@@ -146,16 +146,16 @@ class Filter
         }
 
         let setup = {
-            fn : this._setupFunction,
+            fn : this._setupFunction.bind(this),
             args : [this]
         };
 
         Overlay.build({ dismissible : true, centered : false, noborder : true, setup : setup }, overlay);
     }
 
-    _setupFunction(filter)
+    _setupFunction()
     {
-        filter.populate();
+        this.populate();
         $("#applyFilter").addEventListener("click", function()
         {
             this.table.setPage(0);
@@ -167,7 +167,7 @@ class Filter
             }
 
             Overlay.dismiss();
-        }.bind(filter));
+        }.bind(this));
 
         $("#cancelFilter").addEventListener("click", Overlay.dismiss);
         $("#resetFilter").addEventListener("click", function()
@@ -175,7 +175,7 @@ class Filter
             this.table.setPage(0);
             this.set(this.default(), true);
             Overlay.dismiss();
-        }.bind(filter));
+        }.bind(this));
 
         // Set focus to the first input
         $("#mainOverlay").$$("input").focus();
