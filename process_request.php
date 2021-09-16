@@ -78,6 +78,8 @@ switch ($type)
         break;
 }
 
+include "includes/verify_valid.php";
+
 json_message_and_exit(process_request($type));
 
 } catch (Throwable $e)
@@ -1276,7 +1278,7 @@ function search($query, $kind)
 
     $prefix = ($type == RequestType::AudioBook ? "albums" : "all");
     $url = PLEX_SERVER . "/library/sections/" . $section . "/" . $prefix . "?" . PLEX_TOKEN;
-    $url .= '&title=' . urlencode($query) . '&sort=addedAt:desc';
+    $url .= '&title=' . urlencode($query) . '&sort=addedAt:desc&includeGuids=1';
     $results = simplexml_load_string(curl($url));
     $existing = array();
 
@@ -1289,7 +1291,9 @@ function search($query, $kind)
             $item->thumb = 'thumb' . $result['thumb'];
         }
         $item->year = (string)$result['year'];
-        $item->imdbid = get_imdb_link_from_guid((string)$result['guid'], $type);
+
+        $item->imdbid = get_imdb_link_from_result($result, $type);
+
         if (RequestType::is_audio($type))
         {
             // Todo - search Audible/music apis?
@@ -1342,12 +1346,31 @@ function search($query, $kind)
 function extract_id_from_guid($guid)
 {
     $guid = substr($guid, strpos($guid, '://') + 3);
-    if (($lang = strpos($guid, '?')) != -1)
+    
+    if (($lang = strpos($guid, '?')) !== FALSE)
     {
         return substr($guid, 0, $lang);
     }
 
     return $guid;
+}
+
+/// <summary>
+/// Returns the IMDb guid for the given search result
+/// </summary>
+function get_imdb_link_from_result($result, $type)
+{
+    foreach ($result->Guid as $guid)
+    {
+        $id = extract_id_from_guid((string)$guid['id']);
+        if (strpos($guid['id'], "imdb") !== FALSE)
+        {
+            return $id;
+        }
+    }
+
+    // Probably a legacy agent, try falling back to the old guid.
+    return get_imdb_link_from_guid((string)$result['guid'], $type);
 }
 
 /// <summary>
