@@ -178,6 +178,15 @@ CREATE TABLE `banned_ips` (
  PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci
 
+CREATE TABLE `server_status` (
+ `id` int(11) NOT NULL AUTO_INCREMENT,
+ `status` varchar(512) CHARACTER SET utf32 COLLATE utf32_unicode_ci NOT NULL,
+ `severity` int(11) NOT NULL,
+ `active` tinyint(1) NOT NULL DEFAULT '1',
+ `timestamp` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci
+
 # Triggers
 CREATE TRIGGER `IncrementCommentCount` AFTER INSERT ON `request_comments`
  FOR EACH ROW UPDATE user_requests r SET r.comment_count=r.comment_count+1 WHERE r.id=NEW.req_id

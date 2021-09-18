@@ -2,6 +2,7 @@ window.addEventListener("load", function()
 {
     $("#imdbUpdate").addEventListener("click", tryUpdateImdbRatings);
     $("#banClient").addEventListener("click", banOverlay);
+    $("#updateStatus").addEventListener("click", updatePlexStatus);
 });
 
 let updateInterval = null;
@@ -189,7 +190,7 @@ function banOverlay()
 {
     Overlay.build(
         { dismissible : true },
-        buildNode("div", { style : "width: 30vw; min-width: 300px; max-width: 400px", class : "overlayDiv" }).appendChildren(
+        buildNode("div", { class : "overlayDiv adminOverlayHolder" }).appendChildren(
             buildNode("span", {}, "Select the client to ban"),
             buildNode("div").appendChildren(
                 buildNode("div", { class : "formInput" }).appendChildren(
@@ -201,21 +202,16 @@ function banOverlay()
                     buildNode("input", { type : "text", name : "banReason", id : "banReason" })
                 )
             ),
-            buildNode("div", { style : "width: 30vw; min-width: 300px; max-width: 400px; overflow: auto" }).appendChildren(
-                buildNode(
-                    "input",
-                    { type : "button", value : "Ban", style : "float: left;", class : "overlayInlineButton" },
-                    0,
-                    { click : banClient }),
-                buildNode(
-                    "input",
-                    { type : "button", value : "Cancel", style : "float: right;", class : "overlayInlineButton" },
-                    0,
-                    { click : Overlay.dismiss })
+            buildNode("div").appendChildren(
+                getOverlayButton("Cancel", Overlay.dismiss, "", "float: left;"),
+                getOverlayButton("Ban", banClient, "", "float: right;")
             )
         )
     );
 }
+
+function flashSuccess() { flashOverlay(true); }
+function flashFailure() { flashOverlay(false); }
 
 /// <summary>
 /// Actually ban the given client. No real validation is done,
@@ -223,14 +219,11 @@ function banOverlay()
 /// </summary>
 function banClient()
 {
-    let successFunc = () => flashOverlay(true);
-    let failureFunc = () => flashOverlay(false);
-
     sendHtmlJsonRequest(
         "administration.php",
         { type : "ban", ip : $("#banIp").value, reason : $("#banReason").value },
-        successFunc,
-        failureFunc);
+        flashSuccess,
+        flashFailure);
 }
 
 function flashOverlay(success)
@@ -242,4 +235,119 @@ function flashOverlay(success)
         Animation.queue({ backgroundColor : overlayColor }, overlay, 500);
         Animation.queueDelayed({ backgroundColor : "rgba(0,0,0,0.5)", opacity : "0" }, overlay, 500, 500, true);
     }
+}
+
+/// <summary>
+/// Get the current custom status, if any, and pass it into the overlay launcher
+/// </summary>
+function updatePlexStatus()
+{
+    sendHtmlJsonRequest(
+        "administration.php",
+        {
+            type : "status",
+            action : "get"
+        },
+        launchStatusOverlay);
+}
+
+/// <summary>
+/// Show the Plex status overlay pre-filled with the current custom status, if any.
+/// </summary>
+function launchStatusOverlay(response)
+{
+    if (response.severity == -1)
+    {
+        response.severity = 0;
+    }
+
+    const severities = ["Normal", "Warning", "Error"];
+    let select = buildNode("select", { id : "statusSeverity" });
+    for (let i = 0; i < severities.length; ++i)
+    {
+        let option = buildNode("option", { value : i }, severities[i]);
+        if (i == response.severity)
+        {
+            option.selected = "selected";
+        }
+
+        select.appendChild(option);
+    }
+
+    Overlay.build(
+        { dismissible : true },
+        buildNode("div", { class : "overlayDiv adminOverlayHolder" }).appendChildren(
+            buildNode("span", {}, "Update Plex Server Status"),
+            buildNode("div").appendChildren(
+                buildNode("div", { class : "formInput" }).appendChildren(
+                    buildNode("label", { for : "statusMessage" }, "Status:"),
+                    buildNode("input",
+                        {
+                            type : "text",
+                            name : "statusMessage",
+                            id : "statusMessage",
+                            value : response.status,
+                            maxlength : 512
+                        })
+                ),
+                buildNode("div", { class : "formInput" }).appendChildren(
+                    buildNode("label", { for : "statusSeverity" }, "Severity:"),
+                    select
+                ),
+            ),
+            buildNode("div").appendChildren(
+                getOverlayButton("Cancel", Overlay.dismiss),
+                getOverlayButton("Clear Status", clearStatus, "middleAdminButton"),
+                getOverlayButton("Set", setStatus)
+            )
+        )
+    );
+}
+
+/// <summary>
+/// Return a button to be used in an overlay with the given text value, callback function,
+/// and optional additional classes/style.
+/// </summary>
+function getOverlayButton(value, callback, buttonClass="", style="")
+{
+    return buildNode(
+        "input",
+        { type : "button", value : value, class : "overlayInlineButton smallAdminButton " + buttonClass, style : style },
+        0,
+        { click : callback }
+    );
+}
+
+/// <summary>
+/// Clear any currently set custom status.
+/// </summary>
+function clearStatus()
+{
+    sendHtmlJsonRequest(
+        "administration.php",
+        {
+            type : "status",
+            action : "clear",
+        },
+        flashSuccess,
+        flashFailure
+    );
+}
+
+/// <summary>
+/// Set the custom status text based on the current overlay values.
+/// </summary>
+function setStatus()
+{
+    sendHtmlJsonRequest(
+        "administration.php",
+        {
+            type : "status",
+            action : "set",
+            status : $("#statusMessage").value,
+            severity : $("#statusSeverity").value
+        },
+        flashSuccess,
+        flashFailure
+    );
 }

@@ -1,0 +1,14 @@
+.adminOverlayHolder {
+    width: 30vw;
+    min-width: 300px;
+    max-width: 400px;
+}
+
+.smallAdminButton {
+    padding: 5px !important;
+}
+
+.middleAdminButton {
+    margin-left: 15px;
+    margin-right: 15px;
+}

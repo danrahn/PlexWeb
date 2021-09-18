@@ -40,14 +40,70 @@ function does_plex_exist()
 function get_plex_status($class)
 {
     global $plex_ok;
+
+    $custom_status = get_custom_status();
+
     if ($class)
     {
-        print ($plex_ok ? 'statusOk' : 'statusBad');
+        $custom_severity = ["statusOk", "statusMedium", "statusBad"];
+
+        // Override a custom status if the server is down, unless the custom status is an error
+        if (!$plex_ok && $custom_status->severity != 2)
+        {
+            print('statusBad');
+        }
+        else if ($custom_status->severity != -1)
+        {
+            print($custom_severity[$custom_status->severity]);
+        }
+        else
+        {
+            print('statusOk');
+        }
     }
     else
     {
-        print($plex_ok ? 'Plex is running!' : 'Unable to find the plex server!');
+        if (!$plex_ok && $custom_status->severity != 2)
+        {
+            print('Unable to find the plex server!');
+        }
+        else if ($custom_status->severity != -1 && strlen($custom_status->status) > 0)
+        {
+            print($custom_status->status);
+        }
+        else
+        {
+            print('Plex is running!');
+        }
     }
+}
+
+/// <summary>
+/// Returns the current custom status, if any. If one doesn't exist,
+/// the severity of the returned object will be -1.
+/// </summary>
+function get_custom_status()
+{
+    global $db;
+    $result = $db->query("SELECT * FROM `server_status` ORDER BY `id` DESC LIMIT 1");
+
+    $status = new \stdClass();
+    $status->status = "";
+    $status->severity = -1;
+
+    if (!$result || $result->num_rows == 0)
+    {
+        return $status;
+    }
+
+    $row = $result->fetch_assoc();
+    if ($row['active'] == 1)
+    {
+        $status->status = $row['status'];
+        $status->severity = $row['severity'];
+    }
+
+    return $status;
 }
 
 /// <summary>

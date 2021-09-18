@@ -47,6 +47,17 @@ function process_query($type)
             return refresh_library(get("section"));
         case "ban":
             return ban_client(get("ip"), get("reason"));
+        case "status":
+            switch (get("action"))
+            {
+                case "set":
+                    return set_plex_status(get("status"), get("severity"));
+                case "clear":
+                    return clear_plex_status();
+                case "get":
+                default:
+                    return get_plex_status();
+            }
         default:
             return json_error("Unknown admin request: " . $type);
     }
@@ -183,6 +194,70 @@ function ban_client($ip, $reason)
     return json_success();
 }
 
+function set_plex_status($status, $severity)
+{
+    global $db;
+    if (strlen($status) >= 512)
+    {
+        return json_error("Status must be under 512 characters");
+    }
+
+    $severity = (int)$severity;
+    if ($severity < 0 || $severity > 2)
+    {
+        return json_error("Invalid status severity");
+    }
+
+    $status_escaped = $db->real_escape_string($status);
+    $db->query("INSERT INTO `server_status` (`status`, `severity`) VALUES ('$status_escaped', $severity)");
+    return json_success();
+}
+
+function clear_plex_status()
+{
+    global $db;
+    $result = $db->query("SELECT * FROM `server_status` ORDER BY `id` DESC LIMIT 1");
+    if (!$result)
+    {
+        return db_error();
+    }
+
+    if ($result->num_rows == 0)
+    {
+        return json_success();
+    }
+
+    $id = $result->fetch_assoc()['id'];
+    $db->query("UPDATE `server_status` SET `active` = 0 WHERE `id`=$id");
+    return json_success();
+}
+
+function get_plex_status()
+{
+    global $db;
+    $result = $db->query("SELECT * FROM `server_status` ORDER BY `id` DESC LIMIT 1");
+    if (!$result)
+    {
+        return json_error("Could not get current status");
+    }
+
+    $obj = new \stdClass();
+    $obj->status = "";
+    $obj->severity = -1;
+    if ($result->num_rows == 1)
+    {
+        $row = $result->fetch_assoc();
+        if ((int)$row['active'] == 1)
+        {
+
+            $obj->status = $row['status'];
+            $obj->severity = $row['severity'];
+        }
+    }
+
+    return json_encode($obj);
+}
+
 $type = try_get("type");
 if ($type)
 {
@@ -237,8 +312,14 @@ else
             </div>
             <div class="action actionRight">
                 <a href="remote.php" class="actionLink">
-                    <img src="<?php icon('remote') ?>" alt="remote control" class="actionImg" alt="Remote Control">
+                    <img src="<?php icon('remote') ?>" class="actionImg" alt="Remote Control">
                     <span>Remote Control</span>
+                </a>
+            </div>
+            <div class="action actionRight">
+                <a href="#" class="actionLink" id="updateStatus">
+                    <img src="<?php icon('edit') ?>" class="actionImg" alt="Edit Status">
+                    <span>Edit Plex Status</span>
                 </a>
             </div>
         </div>
