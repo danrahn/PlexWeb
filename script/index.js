@@ -181,7 +181,7 @@ function getLibraryDetails(forceRefresh)
         let statButton = $("#showStatsBtn");
         if (forceRefresh && statButton)
         {
-            statButton.src = Icons.getColor("stats", "2e832e");
+            statButton.src = Icons.getColor("stats", statIconColor());
             statButton.setAttribute("iconType", "stats");
         }
     };
@@ -526,7 +526,7 @@ function showStatsIcon()
     let existing = $("#showStatsBtn");
     if (existing)
     {
-        existing.src = Icons.getColor("stats", "2e832e");
+        existing.src = Icons.getColor("stats", statIconColor());
         existing.setAttribute("iconType", "stats");
         return;
     }
@@ -535,7 +535,7 @@ function showStatsIcon()
         "img",
         {
             style : "width: 20px; cursor: pointer",
-            src : Icons.getColor("stats", "2e832e"),
+            src : Icons.getColor("stats", statIconColor()),
             id : "showStatsBtn",
             iconType : "stats",
             alt : "toggle stats"
@@ -544,11 +544,25 @@ function showStatsIcon()
         {
             click : showHideStats,
             mouseover : function() { this.src = Icons.getColor(this.getAttribute("iconType"), "80A020"); },
-            mouseout : function() { this.src = Icons.getColor(this.getAttribute("iconType"), "2e832e"); },
+            mouseout : function() { this.src = Icons.getColor(this.getAttribute("iconType"), statIconColor()); },
         }
     );
     Tooltip.setTooltip(stats, "Show Plex Stats", 250 /*delay*/, true /*static*/);
     $("#header").appendChildren(stats);
+}
+
+function statIconColor()
+{
+    switch ($("#header").classList[0])
+    {
+        case "statusBad":
+            return "a33e3e";
+        case "statusMedium":
+            return "83832e";
+        case "statusOk":
+        default:
+            return "2e832e";
+    }
 }
 
 /// <summary>
@@ -593,7 +607,7 @@ function showHideStats(e)
     // is needed to ensure that a forced refresh is actually coming from an admin
     if (e.shiftKey && document.body.getAttribute("isAdmin") == "1")
     {
-        this.src = Icons.getColor("loading", "2e832e");
+        this.src = Icons.getColor("loading", statIconColor());
         this.setAttribute("iconType", "loading");
         getLibraryDetails(true);
         return;
