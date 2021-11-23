@@ -584,7 +584,7 @@ function goToExternal()
         else
         {
             let extId = request.linkElement.parentNode.parentNode.getAttribute("tmdbid");
-            window.open("https://www.themoviedb.org/" + (getType() == "movie" ? "movie" : "tv") + "/" + extId);
+            window.open("https://www.themoviedb.org/" + (getType() == "movie" ? "movie" : "tv") + "/" + extId, "_blank", "noreferrer");
         }
     };
     sendHtmlJsonRequest("media_search.php", parameters, successFunc, null, { linkElement : this });
