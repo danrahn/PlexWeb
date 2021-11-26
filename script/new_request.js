@@ -350,7 +350,8 @@ function buildSuggestionBody(match)
         { href : "#" },
         linkString,
         {
-            click : goToExternal
+            click : goToExternal,
+            auxclick : goToExternal
         }));
 
     // For TV shows, give the option to get information about what seasons are available
@@ -553,18 +554,32 @@ function buildSeasonDetails(response, request)
 /// <summary>
 /// Go to IMDb (or TMDb) when the user clicks on a suggestion
 /// </summary>
-function goToExternal()
+function goToExternal(e)
 {
+    // Prevent middle mouse button click default behavior
+    if (e.which == 2 || e.button == 4)
+    {
+        e.preventDefault();
+    }
+
     let value = getType();
     let grandparent = this.parentNode.parentNode;
     const imdbid = grandparent.getAttribute("imdbid");
+    const tmdbid = grandparent.getAttribute("tmdbid");
     if (imdbid)
     {
+        if (parseInt(imdbid) == -1)
+        {
+            // We previously tried to find an imdbid, but came up empty. Use the tmdbid
+            window.open("https://www.themoviedb.org/" + (getType() == "movie" ? "movie" : "tv") + "/" + tmdbid, "_blank", "noreferrer");
+        }
+
         Log.tmi("Clicked on an existing item");
         window.open(`https://www.imdb.com/title/${imdbid}`, "_blank", "noreferrer");
         return;
     }
 
+    // Audiobooks use a different schema, setting 'ref' opposed to tmdbid/imdbid
     const ref = grandparent.getAttribute("ref");
     if (ref)
     {
@@ -572,18 +587,21 @@ function goToExternal()
         return;
     }
 
-    const tmdbid = grandparent.getAttribute("tmdbid");
     let parameters = { type : value == "movie" ? 1 : 2, query : tmdbid, by_id : "true" };
     let successFunc = function(response, request)
     {
         Log.info(response);
+        let match = request.linkElement.parentNode.parentNode;
         if (response.imdb_id)
         {
+            match.setAttribute("imdbid", response.imdb_id);
             window.open("https://www.imdb.com/title/" + response.imdb_id, "_blank", "noreferrer");
         }
         else
         {
-            let extId = request.linkElement.parentNode.parentNode.getAttribute("tmdbid");
+            // Tell future requests that we didn't find anything
+            match.setAttribute("imdbid", "-1");
+            let extId = match.getAttribute("tmdbid");
             window.open("https://www.themoviedb.org/" + (getType() == "movie" ? "movie" : "tv") + "/" + extId, "_blank", "noreferrer");
         }
     };
