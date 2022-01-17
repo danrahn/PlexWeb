@@ -3214,7 +3214,7 @@ class Markdown
         }
 
         let domain = this.text.substring(start + 1, domainEnd);
-        if (!/^(?:com|org|net|edu|gov|de|ru|uk|jp|it|fr|nl|ca|au|es|ch|se|us|no|mil)$/.test(domain))
+        if (!/^(?:com|org|net|edu|gov|de|ru|uk|jp|it|fr|nl|ca|au|es|ch|se|us|no|mil|io|blog|cc|co|dev|mp|eu|ly|global|services)$/.test(domain))
         {
             return -1;
         }
@@ -4526,8 +4526,10 @@ class StyleHelper
             case 'font-style':
             case 'font-weight':
             case 'letter-spacing':
+            case 'text-align':
             case 'text-decoration':
             case 'text-transform':
+            case 'width':
             case 'word-spacing':
                 return true;
             default:
@@ -4567,7 +4569,7 @@ class StyleHelper
                     newVal = sign * Math.min(newVal, StyleHelper.limits.spacing[parts[1] ? 'neg' : 'pos'][parts[3]]);
                 }
 
-                return newVal + parts[3];
+                return newVal + parts[3] + (parts[4] ? parts[4] : "");
             }
             default:
                 return value;
@@ -4662,7 +4664,7 @@ class StyleHelper
         let styleString = '';
         for (const [attribute, value] of Object.entries(style))
         {
-            styleString += `${attribute}:${StyleHelper.limitAttribute(attribute, value.value)};`;
+            styleString += `${attribute}:${StyleHelper.limitAttribute(attribute, value.value)}${value.important ? '!important' : ''};`;
         }
 
         return styleString.length ? ` style="${styleString}"` : styleString;
@@ -5437,7 +5439,7 @@ class CodeBlock extends Run
     lineNumber(line, pad)
     {
         line = line.toString();
-        line += ' '.repeat(pad - line.length);
+        line = ' '.repeat(pad - line.length) + line;
         return `<span class="codeLineNumber">${line}</span>`;
     }
 }
