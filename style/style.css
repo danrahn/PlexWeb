@@ -2,6 +2,20 @@ html, body {
     height: 100%;
 }
 
+/*
+Note: This currently doesn't allow the address bar to scroll out of
+view on mobile devices. The following will "work", but on some browsers
+there will be a gap of no background where the address bar used to be
+#plexFrame {
+    background fixed
+    remove overflow: auto
+        this causes issues in desktop browsers, as the background won't fill behind the scrollbar
+    position: absolute, top 0, left 0, width 100vw
+#body {
+    background-color: something that blends (#2B3846;)
+    background-attachment: fixed;
+}
+*/
 #plexFrame {
     background: rgba(0,0,0,0) url("/plex/res/noise.8b05ce45d0df59343e206bc9ae78d85d.png") repeat scroll 0% 0%;
     margin: 0;
@@ -253,7 +267,7 @@ hr {
     height: 0;
 }
 
-@media (orientation: landscape), (min-width: 767px) {
+@media (min-width: 767px) {
     /* width*/
     ::-webkit-scrollbar {
         width: 10px;
@@ -273,7 +287,7 @@ hr {
     }
 }
 
-@media all and (orientation: portrait) and (max-width: 767px) {
+@media all and (max-width: 767px) { */
     /* width*/
     ::-webkit-scrollbar {
         width: 3px;

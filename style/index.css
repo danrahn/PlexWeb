@@ -65,6 +65,7 @@
 
 .innerHolder {
     margin: 15px;
+    overflow: hidden;
 }
 
 .progressHolder {

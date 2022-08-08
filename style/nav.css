@@ -149,7 +149,7 @@
     background-color: #d15211;
 }
 
-@media all and (orientation: portrait) and (max-width: 767px) {
+@media all and (max-width: 767px) {
     #navShort {
         display: none;
     }
